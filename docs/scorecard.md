@@ -26,8 +26,8 @@ There is no test project yet, so most evidence is a build or a boot. Boots
 were run headless under the QEMU that Cosmos bundles:
 
 ```sh
-cosmos run -p Venture.OS --headless            # default e1000e NIC
-cosmos run -p Venture.OS --headless --nic none # no network card
+cosmos run -p src/Venture.OS --headless            # default e1000e NIC
+cosmos run -p src/Venture.OS --headless --nic none # no network card
 ```
 
 VentureOS's system messages reach the serial log with a `[Venture] ` prefix
@@ -79,8 +79,8 @@ output stays on the console.
 
 | Id | Target | Status | Evidence |
 |---|---|---|---|
-| PLAT-1 | Builds for x64 with no warnings | done | `cosmos build -v -p Venture.OS`: 0 warnings, 0 errors |
-| PLAT-2 | Builds for ARM64 | done | `cosmos build -a arm64 -p Venture.OS`: build completed |
+| PLAT-1 | Builds for x64 with no warnings | done | `cosmos build -v -p src/Venture.OS`: 0 warnings, 0 errors |
+| PLAT-2 | Builds for ARM64 | done | `cosmos build -a arm64 -p src/Venture.OS`: build completed |
 | PLAT-3 | Pinned to the latest Cosmos release | done | `Venture.OS.csproj`: `Cosmos.Sdk` 3.0.94; `cosmos update --check` reported nothing newer on 2026-10-15 |
 | PLAT-4 | Boots on ARM64 | missing | Not booted; ARM64 needs `-a arm64` and a virtio NIC to test networking |
 | PLAT-5 | Lua scripting | missing | `LuaCSharp` 0.5.7 is referenced but unused, and untested under the ahead-of-time compiler |

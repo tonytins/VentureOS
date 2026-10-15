@@ -23,6 +23,7 @@ env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   PROJECT: Venture.OS
+  PROJECT_DIR: src/Venture.OS
 
 jobs:
   build:
@@ -43,9 +44,9 @@ jobs:
     - name: Read Cosmos version
       id: cosmos
       run: |
-        version=$(sed -n 's|.*Sdk="Cosmos.Sdk/\([^"]*\)".*|\1|p' "$PROJECT/$PROJECT.csproj")
+        version=$(sed -n 's|.*Sdk="Cosmos.Sdk/\([^"]*\)".*|\1|p' "$PROJECT_DIR/$PROJECT.csproj")
         if [ -z "$version" ]; then
-          echo "::error::Couldn't read the Cosmos.Sdk version from $PROJECT/$PROJECT.csproj"
+          echo "::error::Couldn't read the Cosmos.Sdk version from $PROJECT_DIR/$PROJECT.csproj"
           exit 1
         fi
         echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -90,4 +91,4 @@ jobs:
       run: cosmos check
 
     - name: Build
-      run: cosmos build -v -p "$PROJECT"
+      run: cosmos build -v -p "$PROJECT_DIR"

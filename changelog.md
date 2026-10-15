@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+- VentureOS reaches alpha: it boots reliably, explains failures, and has a shell with arguments and commands to inspect and control the system. No other changes since 0.1.117.
+
 ## 0.1.117
 
 - Commands now take arguments. Quotes group words (`help "net"`), and a missing quote or the wrong number of arguments is explained instead of ignored.

@@ -1,7 +1,10 @@
 #!/bin/sh
 
+# Run from the repository root (this script's folder), so it works from anywhere.
+cd "$(dirname "$0")" || exit 1
+
 ARCHITECTURE="x64" # Bit of a workaround for macOS on Apple Silicon
-PROJECT="Venture.OS"
+PROJECT="src/Venture.OS"
 
 cosmos check
 cosmos build -a $ARCHITECTURE -p $PROJECT

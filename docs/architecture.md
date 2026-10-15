@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (the shell: registry, arguments, and system commands; versioning corrected) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (project moved into `src/`; version base 0.2.0) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-10-15)
 
@@ -95,35 +95,36 @@ and the project file, and nothing in the shell.**
 
 ```text
 VentureOS/
-├─ Venture.slnx                 solution
-├─ Venture.OS/
-│  ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
-│  ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
-│  ├─ HostInfo.cs               name, version, build number, network identity
-│  ├─ Kernel/                   Venture.OS.Kernel: the lifecycle and how the system reports and stops
-│  │  ├─ VentureKernel.cs       the kernel class: BeforeRun (boot), Run (shell loop)
-│  │  ├─ KernelLog.cs           system messages to serial and the console
-│  │  └─ KernelPanic.cs         deliberate, reported halt
-│  ├─ Startup/                  Venture.OS.Startup: boot steps
-│  │  ├─ Bootstrap.cs           RAM disk, timer check, network and DHCP
-│  │  └─ BootRamDisk.cs         in-memory IBlockDevice
-│  ├─ Shell/                    Venture.OS.Shell: parsing, the registry, running commands
-│  │  ├─ CommandLine.cs         splits a line into words (kernel-free)
-│  │  ├─ CommandRegistry.cs     commands by name; source of `help`
-│  │  ├─ CommandShell.cs        parse, look up, check arguments, run
-│  │  ├─ IShellCommand.cs       what every command declares
-│  │  ├─ ShellContext.cs        what a command can reach
-│  │  ├─ IShellOutput.cs        where commands write (ConsoleShellOutput.cs)
-│  │  ├─ IShellHost.cs          halt, reboot, shutdown, implemented by the kernel
-│  │  └─ Commands/              one class per command
-│  ├─ Bootloader/limine.conf    Limine boot entry
-│  ├─ GitInfo.txt               base version
-│  └─ src/C/                    reserved for native C sources (empty)
+├─ src/
+│  ├─ Venture.slnx              solution
+│  └─ Venture.OS/
+│     ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
+│     ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
+│     ├─ HostInfo.cs               name, version, build number, network identity
+│     ├─ Kernel/                   Venture.OS.Kernel: the lifecycle and how the system reports and stops
+│     │  ├─ VentureKernel.cs       the kernel class: BeforeRun (boot), Run (shell loop)
+│     │  ├─ KernelLog.cs           system messages to serial and the console
+│     │  └─ KernelPanic.cs         deliberate, reported halt
+│     ├─ Startup/                  Venture.OS.Startup: boot steps
+│     │  ├─ Bootstrap.cs           RAM disk, timer check, network and DHCP
+│     │  └─ BootRamDisk.cs         in-memory IBlockDevice
+│     ├─ Shell/                    Venture.OS.Shell: parsing, the registry, running commands
+│     │  ├─ CommandLine.cs         splits a line into words (kernel-free)
+│     │  ├─ CommandRegistry.cs     commands by name; source of `help`
+│     │  ├─ CommandShell.cs        parse, look up, check arguments, run
+│     │  ├─ IShellCommand.cs       what every command declares
+│     │  ├─ ShellContext.cs        what a command can reach
+│     │  ├─ IShellOutput.cs        where commands write (ConsoleShellOutput.cs)
+│     │  ├─ IShellHost.cs          halt, reboot, shutdown, implemented by the kernel
+│     │  └─ Commands/              one class per command
+│     ├─ Bootloader/limine.conf    Limine boot entry
+│     ├─ GitInfo.txt               base version
+│     └─ src/C/                    reserved for native C sources (empty)
 ├─ docs/                        architecture, roadmap, scorecard
 ├─ .agents/skills/              C# and Cosmos guidance for agents
 ├─ .github/workflows/cosmos.yml CI: build with cached Cosmos tools
 ├─ changelog.md                 user-facing history
-└─ run.sh                       check, build, and run x64 locally
+└─ run.sh                       check, build, and run x64 locally (--headless for serial only)
 ```
 
 **Naming.** The kernel class is `VentureKernel` rather than `Kernel`,
@@ -374,13 +375,17 @@ the virtual machine instead; without those flags both work.
 
 - **Version:** [GitInfo](https://github.com/devlooped/GitInfo) reads
   `GitInfo.txt` (base `major.minor.patch`) and adds the number of commits
-  that changed the `Venture.OS/` folder since that file changed. Commits
+  that changed the `src/Venture.OS/` folder since that file changed. Commits
   that only touch docs or CI don't change the version. CI checks out full
   history for this.
+- **Moving `GitInfo.txt` resets the count.** GitInfo finds the file's last
+  change with `git log` without following renames, so a move looks like a
+  new base. Set a new base version in the same commit as any move: moving
+  the project into `src/` started 0.2.0.
 - **Build number:** derived from the commit hash: its first four characters
   read as a number and reduced to at most six digits. It identifies a build
   but doesn't increase over time.
-- **`HostInfo.DisplayVersion`** (`VentureOS 0.1.116 (Build 123456)`) is the
+- **`HostInfo.DisplayVersion`** (`VentureOS 0.2.0 (Build 123456)`) is the
   one string used at the start of boot, in the banner, and in the panic
   report.
 - **The changelog** records only versions with changes a user would notice,
@@ -391,8 +396,8 @@ the virtual machine instead; without those flags both work.
 ## 11. Build, run, and CI
 
 - **Locally:** `cosmos check` (always first: tool status and CLI updates),
-  `cosmos build -p Venture.OS`, then `./run.sh` or
-  `cosmos run -p Venture.OS --headless` for serial only. `--nic none`
+  `cosmos build -p src/Venture.OS`, then `./run.sh` (add `--headless`
+  for serial only) or `cosmos run -p src/Venture.OS --headless`. `--nic none`
   boots without a network card.
 - **CI** (`.github/workflows/cosmos.yml`): builds x64 on every push and pull
   request. The Cosmos CLI, patcher, and toolchain are cached per Cosmos
@@ -435,5 +440,6 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | minor | The project moved into `src/` (§2, §11), and the version base became 0.2.0 because moving `GitInfo.txt` resets GitInfo's count (§10). |
 | 2026-10-15 | minor | The shell (§9): parsing, the registry, seven commands, and the shell boot step; layering and boot diagrams updated. Versioning corrected: only commits that change `Venture.OS/` raise the version. |
 | 2026-10-15 | major | First architecture overview: principles, the rules for absorbing Cosmos changes, layout, layering, boot, failure model, output, storage, network, shell, versioning, build and CI, testing, and open decisions. |

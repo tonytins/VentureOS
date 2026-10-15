@@ -16,25 +16,26 @@ first, then [docs/architecture.md](./docs/architecture.md),
 ## 1. Workspace map
 
 ```text
-Venture.slnx                 solution (the VS Code default solution)
-Venture.OS/
-  Venture.OS.csproj          Cosmos SDK project; package versions and CosmosKernelClass live here
-  HostInfo.cs                OS name, version, build number, network identity
-  GlobalUsings.cs            global usings for System, Cosmos.Kernel.*, and Venture.OS.Kernel
-  Kernel/                    namespace Venture.OS.Kernel
-    VentureKernel.cs         entry point: OnBoot, BeforeRun (boot sequence), Run (shell loop)
-    KernelPanic.cs           deliberate halt with a report to serial and the console
-    KernelLog.cs             system messages to serial (prefixed [Venture]) and the console
-  Startup/
-    Bootstrap.cs             boot steps: RAM disk, timer check, network and DHCP
-    BootRamDisk.cs           in-memory IBlockDevice backing the FAT16 disk at /mnt
-  Shell/                     namespace Venture.OS.Shell: parsing, registry, running commands
-    Commands/                one class per command (help, clear, info, net, halt, reboot, shutdown)
-  Bootloader/limine.conf     Limine boot entry (boots /boot/Venture.elf)
-  GitInfo.txt                base version for GitInfo (major.minor.patch)
-  src/C/                     reserved for native C sources (empty)
-  .vscode/tasks.json         build, run, and debug tasks for QEMU on x64 and ARM64
-run.sh                       check, build, and run x64 with the Cosmos CLI
+src/
+  Venture.slnx               solution (the VS Code default solution)
+  Venture.OS/
+    Venture.OS.csproj          Cosmos SDK project; package versions and CosmosKernelClass live here
+    HostInfo.cs                OS name, version, build number, network identity
+    GlobalUsings.cs            global usings for System, Cosmos.Kernel.*, and Venture.OS.Kernel
+    Kernel/                    namespace Venture.OS.Kernel
+      VentureKernel.cs         entry point: OnBoot, BeforeRun (boot sequence), Run (shell loop)
+      KernelPanic.cs           deliberate halt with a report to serial and the console
+      KernelLog.cs             system messages to serial (prefixed [Venture]) and the console
+    Startup/
+      Bootstrap.cs             boot steps: RAM disk, timer check, network and DHCP
+      BootRamDisk.cs           in-memory IBlockDevice backing the FAT16 disk at /mnt
+    Shell/                     namespace Venture.OS.Shell: parsing, registry, running commands
+      Commands/                one class per command (help, clear, info, net, halt, reboot, shutdown)
+    Bootloader/limine.conf     Limine boot entry (boots /boot/Venture.elf)
+    GitInfo.txt                base version for GitInfo (major.minor.patch)
+    src/C/                     reserved for native C sources (empty)
+    .vscode/tasks.json         build, run, and debug tasks for QEMU on x64 and ARM64
+run.sh                       check, build, and run x64 with the Cosmos CLI; pass --headless for serial only
 .github/workflows/cosmos.yml CI: installs the Cosmos toolchain and builds
 changelog.md                 user-facing history by version
 ```
@@ -76,7 +77,7 @@ skills.
   register it in `VentureKernel.CreateShell`.
 - **Version.** `HostInfo.Version` comes from the GitInfo package:
   `GitInfo.txt` holds the base `major.minor.patch`, and the patch number
-  goes up by one with each later commit that changes `Venture.OS/`. Commits
+  goes up by one with each later commit that changes `src/Venture.OS/`. Commits
   that only touch docs or CI keep the same version. `BuildNumber` is derived from
   the commit hash. The changelog only records versions with user-facing
   changes, so its latest entry is expected to lag behind the version the
@@ -171,14 +172,14 @@ an update, mention it to the owner after the build succeeds.
 
 ```sh
 cosmos check                                   # always first: system and tool info, CLI updates
-cosmos build -p Venture.OS                     # must build with no new warnings
+cosmos build -p src/Venture.OS                 # must build with no new warnings
 ./run.sh                                       # boots x64 in QEMU; confirm the banner and your change
 ```
 
 - If you touched boot, storage, or networking, boot it and read the
   console. Without QEMU, say that you couldn't boot it.
 - If you touched architecture-sensitive code, also build ARM64
-  (`cosmos build -a arm64 -p Venture.OS`, or the "Build ARM64" VS Code
+  (`cosmos build -a arm64 -p src/Venture.OS`, or the "Build ARM64" VS Code
   task).
 - For logic that doesn't depend on the kernel (parsing, formatting,
   arithmetic), prefer adding a small test project over relying only on a
