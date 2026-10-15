@@ -37,6 +37,11 @@ changelog.md                 user-facing history by version
 Build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`) is ignored;
 never commit it.
 
+`Stash/` is also ignored. It's the owner's personal space for brainstormed
+material and notes. Read it for context when it helps, but treat it as
+drafts rather than decisions, and don't depend on it from code, docs, or
+skills.
+
 ## 2. How it works today
 
 - **Boot.** `Kernel.BeforeRun` runs the `Bootstrap` steps in order through
@@ -103,6 +108,10 @@ priority. The rule depends on the phase:
 
 ### Cosmos constraints
 
+- Use the [Cosmos gen3 skill](./.agents/skills/cosmos-gen3/SKILL.md) for
+  the CLI, the kernel lifecycle, execution contexts, logging, and subsystem
+  APIs. The Cosmos docs track the latest release, so check that an API
+  exists in the pinned version before using it.
 - The kernel is compiled ahead of time with no JIT. Avoid reflection,
   `dynamic`, runtime code generation, and APIs that Cosmos doesn't
   implement. Prefer simple types, `Span<T>`, and explicit control flow.
