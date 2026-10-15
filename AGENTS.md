@@ -20,6 +20,7 @@ Venture.OS/
   Venture.OS.csproj          Cosmos SDK project; package versions live here
   Kernel.cs                  entry point: OnBoot, BeforeRun (boot sequence), Run (shell loop)
   HostInfo.cs                OS name, version, build number, network identity
+  KernelPanic.cs             deliberate halt with a report to serial and the console
   GlobalUsings.cs            global usings for System and Cosmos.Kernel.* namespaces
   Startup/
     Bootstrap.cs             boot steps: RAM disk, timer check, network and DHCP
@@ -38,15 +39,21 @@ never commit it.
 
 ## 2. How it works today
 
-- **Boot.** `Kernel.BeforeRun` runs the `Bootstrap` steps in order, prints
-  each result, clears the screen, and shows the version banner. Each step
-  reports a failure on the console and boot continues.
+- **Boot.** `Kernel.BeforeRun` runs the `Bootstrap` steps in order through
+  `RunCriticalStep` or `RunOptionalStep`, then clears the screen and shows
+  the version banner. The RAM filesystem and the timer are critical: they
+  return `false` on failure, and a failure or exception panics the kernel.
+  Networking is optional: an exception is reported and boot continues.
+- **Panic.** `KernelPanic.Halt` writes the version, the failed step, and the
+  reason to serial (via `Log`) and the console, then halts the CPU in a
+  loop. It never returns.
 - **Storage.** A 32 MiB RAM disk is formatted as FAT16 and mounted at `/mnt`
   through `VfsManager`. Nothing persists across boots.
 - **Network.** If a NIC is present, `Bootstrap.ConnectToNetwork` records its
   MAC and name in `HostInfo` and asks DHCP for an address.
 - **Shell.** `Kernel.Run` is called in a loop. It reads one line and
-  dispatches `help`, `clear`, and `halt` in a `switch`. Keep the `help` text
+  `ExecuteCommand` dispatches `help`, `clear`, and `halt` in a `switch`.
+  `Run` catches every exception, reports it, and returns to the prompt. Keep the `help` text
   in step with the commands.
 - **Version.** `HostInfo.Version` comes from the GitInfo package:
   `GitInfo.txt` holds the base `major.minor.patch`, and the patch number
@@ -59,15 +66,30 @@ never commit it.
 
 ## 3. Golden rules
 
-### The kernel must not fall over
+### Never crash uncontrolled
 
-There is no host process underneath. An unhandled exception or trap in the
-kernel stops the machine, so treat stability as the top priority.
+There is no host process underneath. An unhandled exception in the kernel
+stops the machine with no explanation, so treat stability as the top
+priority. The rule depends on the phase:
 
+- **During boot (`BeforeRun`):** optional steps degrade, and critical ones
+  panic deliberately. A step is critical if the system can't do its job
+  without it; running on with it broken only makes later failures harder
+  to understand. Critical steps return `bool` and go through
+  `RunCriticalStep`; optional steps go through `RunOptionalStep`. When you
+  add a boot step, decide which it is and say so in the change. Never let
+  an exception escape `BeforeRun` on its own.
+- **After boot (the `Run` loop):** never crash. Nothing that happens once
+  the shell is running may halt the system, except the user's `halt`
+  command. Commands and the subsystems they call report errors and return
+  to the prompt. `Run` catches everything as a last resort; don't rely on
+  it in place of handling errors where they happen.
+- **Panic only through `KernelPanic.Halt`**, and only during boot. Don't
+  call `Power.Halt`, `Stop`, or an endless loop to stop the system
+  anywhere else.
 - **Validate everything that crosses a boundary:** shell input, file and
   disk contents, network packets, device-reported values, and sizes passed
-  to constructors. Reject bad input with a clear console message; don't
-  let it throw out of `Run` or `BeforeRun`.
+  to constructors. Reject bad input with a clear console message.
 - **Check sizes and offsets before casting or slicing.** Block devices and
   buffers use `ulong` counts; check range and overflow before narrowing to
   `int` or calling `AsSpan`.
@@ -117,9 +139,12 @@ kernel stops the machine, so treat stability as the top priority.
 ## 4. Before you finish a task
 
 There is no test project yet. The build plus a boot in QEMU is the gate.
+Always run `cosmos check` before building. It reports system and tool
+information and checks for updates to the Cosmos CLI itself. If it reports
+an update, mention it to the owner after the build succeeds.
 
 ```sh
-cosmos check                                   # toolchain is installed and complete
+cosmos check                                   # always first: system and tool info, CLI updates
 cosmos build -p Venture.OS                     # must build with no new warnings
 ./run.sh                                       # boots x64 in QEMU; confirm the banner and your change
 ```
