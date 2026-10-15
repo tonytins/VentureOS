@@ -13,6 +13,10 @@
 Named after the Siemens' [passenger cars](https://en.wikipedia.org/wiki/Siemens_Venture), VentureOS is my hobby operating
 system written in C# and based on the [Cosmos](https://github.com/CosmosOS/Cosmos) framework. It is the spiritual successor to my earlier project, [TOMAS](https://github.com/tonytins/tomas/).
 
+## 🤖 AI Disclaimer
+
+Yes, I use AI assistants, such as Claude and Copilot, while working on VentureOS. I'm not [Terry Davis](https://en.wikipedia.org/wiki/TempleOS), and Cosmos gen3 is still pretty bleeding edge.
+
 ## 🚀Getting Started
 
 See the Cosmos [installation guide](https://cosmosos.github.io/articles/user/install.html).

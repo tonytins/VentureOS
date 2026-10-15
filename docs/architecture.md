@@ -129,15 +129,29 @@ The shell is expected to be next, as `Shell/` (Hiawatha).
 
 ## 3. Layering
 
-```text
- VentureOS   Venture.OS.Kernel     lifecycle, failure policy, system output
-               │ calls
-             Venture.OS.Startup    boot steps
-               │ both use
-             Venture.OS            HostInfo
- ─────────── Cosmos.Kernel.System (the supported API) ───────────
- Cosmos      Drivers · HAL · Core (memory, GC, scheduler, serial) · Native
-             Limine · UEFI
+```mermaid
+flowchart TD
+    subgraph VentureOS
+        Kernel["Venture.OS.Kernel<br/>lifecycle, failure policy, system output"]
+        Startup["Venture.OS.Startup<br/>boot steps"]
+        Host["Venture.OS<br/>HostInfo"]
+        Kernel -- calls --> Startup
+        Kernel -- uses --> Host
+        Startup -- uses --> Host
+    end
+
+    Ring["Cosmos.Kernel.System<br/>the supported API"]
+    Kernel --> Ring
+    Startup --> Ring
+    Host --> Ring
+
+    subgraph Cosmos
+        Lower["Drivers · HAL · Core<br/>memory, GC, scheduler, serial · Native"]
+        Boot["Limine · UEFI"]
+        Lower --> Boot
+    end
+
+    Ring --> Lower
 ```
 
 **Rules:**
@@ -160,17 +174,40 @@ The shell is expected to be next, as `Shell/` (Hiawatha).
 
 ## 4. Boot
 
-```text
-UEFI → Limine → Cosmos kmain (CPU, ACPI, heap, GC, HAL, scheduler, managers)
-     → Cosmos Kernel.Start: interrupts on, driver stage, OnBoot (console)
-     → VentureKernel.BeforeRun
-          "Starting VentureOS <version>..."
-          RunCriticalStep  filesystem     Bootstrap.BootIntoRam
-          RunCriticalStep  time manager   Bootstrap.CheckTimeManager
-          RunOptionalStep  network        Bootstrap.ConnectToNetwork
-          banner: "<version> booted successfully!"
-     → VentureKernel.Run, called in a loop until Stop()
+```mermaid
+flowchart TD
+    subgraph Cosmos
+        Firmware["UEFI → Limine"]
+        Kmain["kmain<br/>CPU, ACPI, heap, GC, HAL, scheduler, managers"]
+        Start["Kernel.Start<br/>interrupts on, driver stage, OnBoot (console)"]
+        Firmware --> Kmain --> Start
+    end
+
+    subgraph BeforeRun["VentureKernel.BeforeRun"]
+        Version["Starting VentureOS &lt;version&gt;..."]
+        Fs["filesystem<br/>Bootstrap.BootIntoRam"]
+        Timer["time manager<br/>Bootstrap.CheckTimeManager"]
+        Net["network<br/>Bootstrap.ConnectToNetwork"]
+        Banner["&lt;version&gt; booted successfully!"]
+        Version --> Fs
+        Fs -- ok --> Timer
+        Timer -- ok --> Net
+        Net -- "ok, or failure reported" --> Banner
+    end
+
+    Panic["KernelPanic.Halt<br/>report, then halt forever"]
+    Run["VentureKernel.Run<br/>called in a loop"]
+    Halt["Stop(): Cosmos halts the CPU"]
+
+    Start --> Version
+    Fs -- "false or exception" --> Panic
+    Timer -- "false or exception" --> Panic
+    Banner --> Run
+    Run -- halt command --> Halt
 ```
+
+The filesystem and time manager steps are critical (`RunCriticalStep`);
+the network step is optional (`RunOptionalStep`).
 
 | Step | Kind | Succeeds when | On failure |
 |---|---|---|---|

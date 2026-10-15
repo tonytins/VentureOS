@@ -31,7 +31,7 @@ blocking`, which makes it a beta item. ARM64 only has to keep building.
 (Hiawatha). Cascades is finished, so that is all that stands between
 VentureOS and alpha.
 
-Persistent storage is deferred until after alpha by the owner (Blue Water).
+Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 ## Current focus
 
@@ -39,7 +39,7 @@ In order:
 
 1. **Build the shell** (Hiawatha): a command registry, argument parsing, and
    system commands.
-2. **Choose the Lua library** (Illini): the owner is tracking down a
+2. **Choose the Lua library** (Illini): I'm tracking down a
    Cosmos-based Lua API to use in place of, or beside, `LuaCSharp`.
 
 ## Milestones
@@ -87,7 +87,7 @@ Beta needs ranks 1–5 in substance, about 33–66 hours.
 - [x] Trigger the panic in a real boot and confirm the report and the halt.
 - [x] Copy key console lines (step results, the banner, panics) to serial.
 - [x] Decide whether to keep the 0.5 s pauses around each boot step: kept, so
-  boot messages stay readable (owner decision).
+  boot messages stay readable (my decision).
 
 ### Hiawatha: Shell
 
@@ -121,7 +121,7 @@ Beta needs ranks 1–5 in substance, about 33–66 hours.
 
 ### Illini: Lua scripting
 
-- [ ] Choose the library: the Cosmos-based Lua API the owner is tracking
+- [ ] Choose the library: the Cosmos-based Lua API I'm tracking
   down, or `LuaCSharp`.
 - [ ] Confirm it works under the ahead-of-time compiler.
 - [ ] Run a Lua script from the shell.
@@ -141,7 +141,7 @@ Beta needs ranks 1–5 in substance, about 33–66 hours.
 Cascades is done, and Hiawatha is the rest of alpha. Wolverine's test
 project should start with Hiawatha's argument parser, since that's the first
 logic worth testing outside the kernel. Blue Water's file commands need
-Hiawatha's arguments. Illini waits on the owner's library choice. The long
+Hiawatha's arguments. Illini waits on my library choice. The long
 poles are Blue Water and Illini.
 
 ## Risks most likely to push estimates up
@@ -163,5 +163,5 @@ poles are Blue Water and Illini.
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-15 | minor | Cascades complete: a forced panic proven in a headless boot, and system messages copied to serial with a `[Venture]` prefix through `KernelLog`. Alpha now waits on Hiawatha alone, 10–20 h. |
-| 2026-10-15 | minor | Boot delay kept by owner decision (BUG-1 resolved): boot is otherwise too fast to read. Cascades at 75%, 2–5 h remaining. |
-| 2026-10-15 | major | First roadmap: a usable-shell alpha gate (pre-alpha: the shell blocks), eight milestones named after Amtrak Venture routes, and estimates. Persistent storage deferred past alpha by the owner. |
+| 2026-10-15 | minor | Boot delay kept by my decision (BUG-1 resolved): boot is otherwise too fast to read. Cascades at 75%, 2–5 h remaining. |
+| 2026-10-15 | major | First roadmap: a usable-shell alpha gate (pre-alpha: the shell blocks), eight milestones named after Amtrak Venture routes, and estimates. Persistent storage deferred past alpha by my decision. |
