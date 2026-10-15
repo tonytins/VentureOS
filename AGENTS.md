@@ -171,6 +171,12 @@ cosmos build -p Venture.OS                     # must build with no new warnings
   internal changes such as refactors, docs, and tooling. Also update
   [README.md](./README.md) if setup or build steps change, and this file if
   the layout or rules change.
+- Bring [docs/scorecard.md](./docs/scorecard.md) up to date: flip the rows
+  you moved, with their new evidence, and update the summary counts.
+- Bring [docs/ROADMAP.md](./docs/ROADMAP.md) up to date: tick checklist
+  items, update the milestone's done percentage and estimate, bump the
+  status line, and add a revision-history row. Pick work from its current
+  focus and ranked list, and leave scope decisions to the owner.
 - Don't edit `GitInfo.txt` unless you're asked to cut a version.
 
 Describe only what works today, and keep the tree building at every step.
