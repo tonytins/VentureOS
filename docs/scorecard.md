@@ -20,7 +20,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Reliability](#reliability) | 2 | 1 | 2 | 0 tests |
 | [Documentation](#documentation) | 2 | 1 | 1 | |
 | [Distribution](#distribution) | 1 | 0 | 3 | CI builds x64 only |
-| [Known issues](#known-issues) | | | | 2 open, 1 resolved |
+| [Known issues](#known-issues) | | | | 1 open, 2 resolved |
 
 There is no test project yet, so most evidence is a build or a boot. Boots
 were run headless under the QEMU that Cosmos bundles:
@@ -115,6 +115,6 @@ loop started, not what was printed.
 
 | Id | Issue | Status | Note |
 |---|---|---|---|
-| BUG-1 | Boot waits 0.5 s before and after each step, about 2 s in all | open | `Kernel.BootStepDelay`; deliberate pacing or leftover, owner to decide |
+| BUG-1 | Boot waits 0.5 s before and after each step, about 2 s in all | resolved | Kept deliberately (owner decision, 2026-10-15): boot is otherwise too fast to read. Documented at `Kernel.BootStepDelay` |
 | BUG-2 | VentureOS's console output doesn't reach the serial log | open | Limits what a headless boot can verify; mirroring key lines through `Log` would fix it |
 | BUG-3 | `DhcpClient.SendDiscoverPacket()` returning `-1` for a timeout was an assumption | resolved | Confirmed by the Cosmos network docs |

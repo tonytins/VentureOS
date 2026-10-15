@@ -7,6 +7,7 @@ namespace Venture.OS;
 /// </summary>
 public class Kernel : Sys.Kernel
 {
+    // Boot finishes faster than its messages can be read, so each step pauses before the screen clears.
     private static readonly TimeSpan BootStepDelay = TimeSpan.FromSeconds(0.5);
 
     protected override void BeforeRun()

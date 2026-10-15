@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** major (first roadmap) · **Stage:** pre-alpha
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (boot delay kept by owner decision; Cascades re-estimated) · **Stage:** pre-alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -23,12 +23,12 @@ blocking`, which makes it a beta item. ARM64 only has to keep building.
 
 | Core workflow | Works end to end? | Evidence | Hours to pass (est.) |
 |---|---|---|---|
-| Boot, and say clearly why when boot can't finish | partial, not blocking | Boots to the shell; critical steps panic with a report and optional steps degrade (BOOT-1 to BOOT-5). The panic has never been triggered in a real boot (BOOT-6) | 3–6 |
+| Boot, and say clearly why when boot can't finish | partial, not blocking | Boots to the shell; critical steps panic with a report and optional steps degrade (BOOT-1 to BOOT-5). The panic has never been triggered in a real boot (BOOT-6) | 2–5 |
 | Run commands that take arguments | **no** | Input is matched as a whole line, and every command is a `case` in one `switch` (SHELL-3, SHELL-5) | 6–12 |
 | Inspect and control the system: version, network, reboot, shutdown | **no** | The boot banner shows the version, and `halt` stops the machine. No command shows the network afterwards, and there's no reboot or shutdown (SHELL-4) | 4–8 |
 
 **Result: pre-alpha.** The shell rows block, about 10–20 hours of work
-(Hiawatha). With Cascades finished as well, alpha is about 13–26 hours away.
+(Hiawatha). With Cascades finished as well, alpha is about 12–25 hours away.
 
 Persistent storage is deferred until after alpha by the owner (Blue Water).
 
@@ -36,9 +36,8 @@ Persistent storage is deferred until after alpha by the owner (Blue Water).
 
 In order:
 
-1. **Finish Cascades:** trigger the panic in a real boot, copy key console
-   lines to serial so headless boots can check them, and decide whether to
-   keep the boot delay (BUG-1).
+1. **Finish Cascades:** trigger the panic in a real boot, and copy key
+   console lines to serial so headless boots can check them.
 2. **Build the shell** (Hiawatha): a command registry, argument parsing, and
    system commands.
 3. **Choose the Lua library** (Illini): the owner is tracking down a
@@ -51,7 +50,7 @@ In order:
 
 | Route | Milestone | Done | Remaining (h, est.) | Notes |
 |---|---|---:|---:|---|
-| Cascades | Reliable boot | 63% | 3–6 | Boot steps, panic, and range-checked RAM disk done. Missing: a proven panic, serial output, the boot delay decision |
+| Cascades | Reliable boot | 75% | 2–5 | Boot steps, panic, range-checked RAM disk, and the boot delay decision done. Missing: a proven panic, serial output |
 | Hiawatha | Shell | 0% | 10–20 | Command registry, arguments, system commands |
 | Wolverine | Tests and CI | 0% | 8–16 | Test project, headless boot check in CI, ARM64 build in CI |
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
@@ -59,13 +58,13 @@ In order:
 | Illini | Lua scripting | 0% | 10–25 | Library not chosen yet |
 | Saluki | ARM64 | 0% | 6–12 | Boot and test on ARM64 |
 | Borealis | Releases | 0% | 3–6 | Publish ISOs |
-| | **Total** | | **≈ 65–135** | |
+| | **Total** | | **≈ 64–134** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Prove the panic, serial output, the boot delay decision | Cascades | 3–6 |
+| 1 | Prove the panic and copy console lines to serial | Cascades | 2–5 |
 | 2 | Command registry and argument parsing | Hiawatha | 6–12 |
 | 3 | `info`, `net`, `reboot`, and `shutdown` commands | Hiawatha | 4–8 |
 | 4 | Test project for the argument parser and other kernel-free logic | Wolverine | 3–6 |
@@ -74,7 +73,7 @@ In order:
 | 7 | Choose and wire up a Lua library | Illini | 10–25 |
 | 8 | DNS and network commands | Pere Marquette | 10–20 |
 
-Beta needs ranks 1–6 in substance, about 36–72 hours.
+Beta needs ranks 1–6 in substance, about 35–71 hours.
 
 ## Milestone checklists
 
@@ -89,7 +88,8 @@ Beta needs ranks 1–6 in substance, about 36–72 hours.
 - [x] The RAM disk validates its size and range-checks every block access.
 - [ ] Trigger the panic in a real boot and confirm the report and the halt.
 - [ ] Copy key console lines (step results, the banner, panics) to serial.
-- [ ] Decide whether to keep the 0.5 s pauses around each boot step.
+- [x] Decide whether to keep the 0.5 s pauses around each boot step: kept, so
+  boot messages stay readable (owner decision).
 
 ### Hiawatha: Shell
 
@@ -164,4 +164,5 @@ poles are Blue Water and Illini.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | minor | Boot delay kept by owner decision (BUG-1 resolved): boot is otherwise too fast to read. Cascades at 75%, 2–5 h remaining. |
 | 2026-10-15 | major | First roadmap: a usable-shell alpha gate (pre-alpha: the shell blocks), eight milestones named after Amtrak Venture routes, and estimates. Persistent storage deferred past alpha by the owner. |

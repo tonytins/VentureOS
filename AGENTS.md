@@ -183,7 +183,7 @@ Describe only what works today, and keep the tree building at every step.
 
 ## 5. Calling things out
 
-The owner reviews changes alone, so make review easy:
+The owner often reviews changes alone, so make review easy:
 
 - State breaking changes, package version bumps, new dependencies, and
   boot-order changes clearly in the summary or commit message.
