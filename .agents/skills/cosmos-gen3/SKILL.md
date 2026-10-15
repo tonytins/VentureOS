@@ -17,10 +17,11 @@ beyond what this file covers.
 
 The docs follow the latest Cosmos release, and a project pins an older one in
 its `.csproj` (`Sdk="Cosmos.Sdk/<version>"` and the `Cosmos.*` package
-references). Names have moved between releases: for example, 3.0.87 has
+references). Names move between releases: for example, 3.0.87 had
 `Cosmos.Kernel.System.Vfs.VfsManager.RegisterFilesystem` and
-`Filesystems.Fat.FatFilesystemType`, where the docs show
-`FileSystem.VfsManager.RegisterFileSystem` and `FileSystem.Fat.FatFileSystemType`.
+`Filesystems.Fat.FatFilesystemType`, which became
+`FileSystem.VfsManager.RegisterFileSystem` and `FileSystem.Fat.FatFileSystemType`
+in 3.0.94. [Cosmos.md](./Cosmos.md) lists the renames from that upgrade.
 
 - Before using an API from the docs, confirm it exists in the pinned version.
   The build is the quickest check. To browse, list the package's types with
@@ -38,7 +39,9 @@ references). Names have moved between releases: for example, 3.0.87 has
   whether the CLI has an update. If it reports one, mention it after the
   build succeeds.
 - `cosmos update --check` reports CLI, tool, and project pin updates without
-  installing anything. `cosmos check` doesn't report pin updates.
+  installing anything. `cosmos check` doesn't report pin updates. When an
+  upgrade has been agreed, `cosmos update -y` applies it; without `-y` it
+  prompts, which fails outside an interactive terminal.
 - `cosmos build -p <project> [-a x64|arm64] [-c Debug|Release] [-v]` writes
   `output-<arch>/`.
 - `cosmos run -p <project> [-a arch]` boots in QEMU. Useful options:

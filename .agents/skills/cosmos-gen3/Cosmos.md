@@ -7,27 +7,34 @@ package, the package wins.
 
 ## Version drift
 
-The docs follow the latest Cosmos release. On 2026-10-15 that was **3.0.94**,
-while VentureOS pins **3.0.87** (`cosmos update --check` reports
-`3.0.87 -> 3.0.94 (3 pins)`). Some names differ between the two:
+The docs follow the latest Cosmos release. VentureOS moved from **3.0.87** to
+**3.0.94**, the latest release on 2026-10-15, so the docs and the pinned
+package matched then. They drift apart again with every Cosmos release the
+project doesn't take.
 
-| Docs (3.0.94) | Installed (3.0.87) |
+Names move between releases. The 3.0.87 to 3.0.94 upgrade needed these
+renames, a guide to what an upgrade can involve:
+
+| 3.0.87 | 3.0.94 |
 |---|---|
-| `Cosmos.Kernel.System.FileSystem` (`VfsManager`, `MountFlags`) | `Cosmos.Kernel.System.Vfs` |
-| `Cosmos.Kernel.System.FileSystem.Fat.FatFileSystemType` | `Cosmos.Kernel.System.Filesystems.Fat.FatFilesystemType` |
-| `VfsManager.RegisterFileSystem` | `VfsManager.RegisterFilesystem` |
-| `Cosmos.Kernel.System.Timers` | `Cosmos.Kernel.System.Timer` |
-| `Cosmos.Kernel.HAL.Devices.Storage.IBlockDevice` | `Cosmos.Kernel.HAL.Interfaces.Devices.IBlockDevice` |
-| `Kernel.Current`, `SessionManager` | Not present in 3.0.87 |
+| `Cosmos.Kernel.System.Vfs` (`VfsManager`, `MountFlags`) | `Cosmos.Kernel.System.FileSystem` |
+| `Cosmos.Kernel.System.Filesystems.Fat.FatFilesystemType` | `Cosmos.Kernel.System.FileSystem.Fat.FatFileSystemType` |
+| `VfsManager.RegisterFilesystem` | `VfsManager.RegisterFileSystem` |
+| `Cosmos.Kernel.System.Timer` | `Cosmos.Kernel.System.Timers` |
+| `Cosmos.Kernel.HAL.Interfaces.Devices.IBlockDevice` | `Cosmos.Kernel.HAL.Devices.Storage.IBlockDevice` |
+| `Network.Config`, `Network.DNS`, `Network.IPv4`, `Network.IPv4.DHCP` | Merged into `Cosmos.Kernel.System.Network` |
+| `Cosmos.Kernel.System.Mouse` | `Cosmos.Kernel.System.Input` |
+| No `SessionManager` | `Cosmos.Kernel.System.Sessions` |
 
 Before using an API from the docs, confirm it exists in the pinned version:
 build against it, or list the package's types with `ilspycmd -l c` on
 `~/.nuget/packages/cosmos.kernel.system/<version>/runtimes/linux-x64/lib/net10.0/Cosmos.Kernel.System.dll`.
-`Cosmos.Kernel.HAL.Interfaces` ships an XML doc file; `Cosmos.Kernel.System`
-does not.
+`Cosmos.Kernel.System` ships no XML doc file.
 
 `cosmos check` reports the toolchain and CLI status but not project pin
-updates. `cosmos update --check` reports both without installing anything.
+updates. `cosmos update --check` reports both without installing anything,
+and `cosmos update -y` applies them without the interactive prompt, which
+fails outside a terminal.
 
 ## What gen3 is
 
@@ -234,7 +241,7 @@ Drivers can be dropped or opted into in the `.csproj` with
   include German, Spanish, Turkish, French and British.
 - **Graphics:** `Canvas` on the primary display, 32-bit colour only, BMP and
   PNG images, TrueType fonts, CPU-drawn 2D.
-- **Sessions (newer than 3.0.87):** virtual consoles (Alt+F1 to F12) and a
+- **Sessions (3.0.94 and later):** virtual consoles (Alt+F1 to F12) and a
   Telnet server package.
 - **Audio:** Intel HD Audio playback.
 - **Drivers:** a driver kit on an experimental API (`COSMOS0003`).

@@ -2,7 +2,7 @@
 
 VentureOS is a hobby operating system written in **C#** on the
 [Cosmos](https://github.com/CosmosOS/Cosmos) gen3 framework
-(`Cosmos.Sdk` 3.0.87, .NET 10). Cosmos compiles the kernel ahead of time to
+(`Cosmos.Sdk` 3.0.94, .NET 10). Cosmos compiles the kernel ahead of time to
 a bootable ELF, which Limine loads from an ISO. It targets **x64** and
 **ARM64** and runs in QEMU. It is the spiritual successor to
 [TOMAS](https://github.com/tonytins/tomas/). Write the name as **VentureOS**

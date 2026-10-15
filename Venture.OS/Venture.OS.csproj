@@ -1,4 +1,4 @@
-<Project Sdk="Cosmos.Sdk/3.0.87">
+<Project Sdk="Cosmos.Sdk/3.0.94">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cosmos.Kernel" Version="3.0.87" />
-    <PackageReference Include="Cosmos.Kernel.System" Version="3.0.87" />
-    <PackageReference Include="GitInfo" Version="2.3.0">
+    <PackageReference Include="Cosmos.Kernel" Version="3.0.94" />
+    <PackageReference Include="Cosmos.Kernel.System" Version="3.0.94" />
+    <PackageReference Include="GitInfo" Version="3.6.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

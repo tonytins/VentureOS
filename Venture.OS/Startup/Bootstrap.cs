@@ -14,9 +14,9 @@ internal static class Bootstrap
         Console.WriteLine("Initializing filesystem...");
 
         BootRamDisk ramdisk = new("RAMDISK", 512, 65536); // 32 MiB
-        FatFilesystemType fat = new(ramdisk);
+        FatFileSystemType fat = new(ramdisk);
 
-        if (!VfsManager.RegisterFilesystem(RamFilesystemName, fat))
+        if (!VfsManager.RegisterFileSystem(RamFilesystemName, fat))
         {
             Console.WriteLine("RAM disk setup failed: couldn't register the filesystem.");
             return false;

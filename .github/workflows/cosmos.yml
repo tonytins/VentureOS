@@ -1,5 +1,6 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+# Builds the VentureOS kernel with the Cosmos toolchain.
+# The Cosmos CLI, patcher, and toolchain bundles are cached per Cosmos version,
+# so they're only downloaded when the version pinned in the project changes.
 
 name: Cosmos
 
@@ -11,11 +12,16 @@ on:
       "v*"
     ]
   pull_request:
-    branches: [ 
+    branches: [
       "main",
       "feature/*",
       "v*"
     ]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  PROJECT: Venture.OS
 
 jobs:
   build:
@@ -23,16 +29,55 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
-    - name: Setup Cosmos
-      uses: actions/setup-dotnet@v4
+    - uses: actions/checkout@v7
+      with:
+        # GitInfo counts commits since GitInfo.txt changed, so it needs full history.
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 10.0.x
+
+    - name: Read Cosmos version
+      id: cosmos
+      run: |
+        version=$(sed -n 's|.*Sdk="Cosmos.Sdk/\([^"]*\)".*|\1|p' "$PROJECT/$PROJECT.csproj")
+        if [ -z "$version" ]; then
+          echo "::error::Couldn't read the Cosmos.Sdk version from $PROJECT/$PROJECT.csproj"
+          exit 1
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Cosmos tools
+      id: cache-tools
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cosmos
+          ~/.dotnet/tools
+        key: cosmos-tools-${{ runner.os }}-${{ steps.cosmos.outputs.version }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v6
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+        restore-keys: nuget-${{ runner.os }}-
+
+    - name: Add .NET tools to PATH
+      run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
     - name: Install Cosmos CLI
-      run: dotnet tool install -g Cosmos.Tools
+      if: steps.cache-tools.outputs.cache-hit != 'true'
+      run: dotnet tool install -g Cosmos.Tools --version ${{ steps.cosmos.outputs.version }}
+
     - name: Install Cosmos toolchain
+      if: steps.cache-tools.outputs.cache-hit != 'true'
       run: cosmos install -y
+
     - name: Validate toolchain
       run: cosmos check
+
     - name: Build
-      run: cosmos build -v -p Venture.OS
+      run: cosmos build -v -p "$PROJECT"
