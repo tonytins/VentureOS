@@ -43,7 +43,7 @@ csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
 csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
 csharp_style_prefer_not_pattern = true:suggestion
 
-# Section 9: error handling
+# Section 8: error handling
 csharp_style_throw_expression = true:suggestion
 dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_null_propagation = true:suggestion
