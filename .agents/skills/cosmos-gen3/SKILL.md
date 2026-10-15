@@ -8,7 +8,10 @@ description: How to write, build, run, and debug a Cosmos gen3 kernel in C# (Nat
 Cosmos gen3 compiles a C# kernel with .NET NativeAOT and the Cosmos IL
 patcher, boots it with Limine on UEFI, and targets x64 and ARM64. The
 documentation lives at <https://cosmosos.github.io/>. Gen3 is new, so the docs
-are still rough in places.
+are still rough in places. Fuller notes, with the details behind this skill,
+are in [Cosmos.md](./Cosmos.md): the CLI options, the boot phases, and the
+subsystem APIs and limitations. Read the relevant section when a task goes
+beyond what this file covers.
 
 ## 1. Check the API exists in the pinned version
 
