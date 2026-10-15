@@ -15,7 +15,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Boot](#boot) | 7 | 0 | 0 | 3 boot steps: 2 critical, 1 optional |
 | [Storage](#storage) | 2 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt` |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
-| [Shell](#shell) | 2 | 1 | 2 | 3 commands |
+| [Shell](#shell) | 6 | 0 | 0 | 7 commands |
 | [Platform](#platform) | 3 | 0 | 2 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
 | [Reliability](#reliability) | 2 | 1 | 2 | 0 tests |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
@@ -53,7 +53,7 @@ output stays on the console.
 | STOR-1 | A RAM disk is formatted FAT16 and mounted at `/mnt` | done | `Bootstrap.BootIntoRam`; headless boot passes the critical filesystem step |
 | STOR-2 | The RAM disk validates its size and range-checks every read and write, throwing as `IBlockDevice` requires | done | `BootRamDisk` constructor and `GetByteRange` |
 | STOR-3 | Files persist across boots on a real disk | missing | Only the RAM disk is mounted; nothing reads `StorageManager.Partitions` |
-| STOR-4 | The shell can list, read, and write files | missing | No file commands in `VentureKernel.ExecuteCommand` |
+| STOR-4 | The shell can list, read, and write files, and show mounts and free space | missing | No file commands are registered (Blue Water) |
 
 ## Network
 
@@ -68,11 +68,12 @@ output stays on the console.
 
 | Id | Target | Status | Evidence |
 |---|---|---|---|
-| SHELL-1 | `help`, `clear`, and `halt` work, and unknown input is reported | done | `VentureKernel.ExecuteCommand` |
+| SHELL-1 | `help`, `clear`, and `halt` work, names ignore case, and unknown commands are reported | done | `Shell/Commands/`, `CommandShell.Execute`; boot test 2026-10-15: `HELP info` worked, `nope` was reported as not a command |
 | SHELL-2 | A failing command reports its error and returns to the prompt | done | `VentureKernel.Run` catches every exception and logs it to serial |
-| SHELL-3 | Commands take arguments | missing | Input is matched whole after `ToLower()`; nothing splits arguments |
-| SHELL-4 | Commands show system information (version, network, mounts) | partial | The boot banner shows the version and build; no command shows it, the network, or mounts afterwards |
-| SHELL-5 | Commands can be added without growing one `switch` | missing | Every command is a `case` in `ExecuteCommand` |
+| SHELL-3 | Commands take arguments, with quoting and clear errors | done | `CommandLine.TryParse`; boot test: `help "net"` passed the quoted name, `help "open` reported the missing quote, `help a b` printed the usage |
+| SHELL-4 | Commands show the version, uptime, memory, and network | done | `info` (version, commit, Cosmos version, uptime, memory) and `net` (device, MAC, link, address); boot test showed real values, such as 10.0.2.15 and 462 of 500 MiB free |
+| SHELL-5 | Commands are added by registering them, and `help` is generated from the registry | done | `CommandRegistry` rejects invalid and duplicate names; `help` lists 7 commands from it |
+| SHELL-6 | `reboot` and `shutdown` work | done | Boot tests in QEMU without `-no-reboot`/`-no-shutdown`: a build that ran `reboot` at boot rebooted 13 times in 60 s; one that ran `shutdown` powered QEMU off in 4 s. `cosmos run` passes both flags, so there the VM pauses instead |
 
 ## Platform
 

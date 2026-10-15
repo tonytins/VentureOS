@@ -28,6 +28,8 @@ Venture.OS/
   Startup/
     Bootstrap.cs             boot steps: RAM disk, timer check, network and DHCP
     BootRamDisk.cs           in-memory IBlockDevice backing the FAT16 disk at /mnt
+  Shell/                     namespace Venture.OS.Shell: parsing, registry, running commands
+    Commands/                one class per command (help, clear, info, net, halt, reboot, shutdown)
   Bootloader/limine.conf     Limine boot entry (boots /boot/Venture.elf)
   GitInfo.txt                base version for GitInfo (major.minor.patch)
   src/C/                     reserved for native C sources (empty)
@@ -52,6 +54,7 @@ skills.
   the version banner. The RAM filesystem and the timer are critical: they
   return `false` on failure, and a failure or exception panics the kernel.
   Networking is optional: an exception is reported and boot continues.
+  Creating the shell is the last critical step.
 - **Panic.** `KernelPanic.Halt` writes the version, the failed step, and the
   reason to serial and the console, then halts the CPU in a loop. It never
   returns.
@@ -64,12 +67,17 @@ skills.
 - **Network.** If a NIC is present, `Bootstrap.ConnectToNetwork` records its
   MAC and name in `HostInfo` and asks DHCP for an address.
 - **Shell.** `VentureKernel.Run` is called in a loop. It reads one line and
-  `ExecuteCommand` dispatches `help`, `clear`, and `halt` in a `switch`.
-  `Run` catches every exception, reports it, and returns to the prompt. Keep the `help` text
-  in step with the commands.
+  hands it to `CommandShell`, which splits it with `CommandLine` (quotes and
+  escapes), finds the command in `CommandRegistry`, checks the argument
+  count, and runs it. `help` is generated from the registry. Commands write
+  through `IShellOutput` and ask for halt, reboot, or shutdown through
+  `IShellHost`. `Run` catches every exception, reports it, and returns to
+  the prompt. To add a command, write a class in `Shell/Commands/` and
+  register it in `VentureKernel.CreateShell`.
 - **Version.** `HostInfo.Version` comes from the GitInfo package:
   `GitInfo.txt` holds the base `major.minor.patch`, and the patch number
-  goes up by one with each commit after it. `BuildNumber` is derived from
+  goes up by one with each later commit that changes `Venture.OS/`. Commits
+  that only touch docs or CI keep the same version. `BuildNumber` is derived from
   the commit hash. The changelog only records versions with user-facing
   changes, so its latest entry is expected to lag behind the version the
   kernel reports.

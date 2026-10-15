@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.117
+
+- Commands now take arguments. Quotes group words (`help "net"`), and a missing quote or the wrong number of arguments is explained instead of ignored.
+- `help` lists every command with a short description, and `help <command>` shows how to use one.
+- New `info` command: version, build, commit, Cosmos version, uptime, and memory.
+- New `net` command: the network adapter, its MAC address and link, and its IP address, subnet, and gateway.
+- New `reboot` and `shutdown` commands, beside `halt`.
+- Command names ignore case, so `HELP` works like `help`.
+
 ## 0.1.116
 
 - If a part of the system it can't run without fails at boot (filesystem or timer), VentureOS now stops with a panic screen that names the failed step and the reason, instead of crashing without explanation.

@@ -1,3 +1,5 @@
+using Venture.OS.Shell;
+using Venture.OS.Shell.Commands;
 using Venture.OS.Startup;
 
 namespace Venture.OS.Kernel;
@@ -5,10 +7,12 @@ namespace Venture.OS.Kernel;
 /// <summary>
 /// The VentureOS kernel: runs the boot steps, then the shell loop.
 /// </summary>
-public class VentureKernel : Sys.Kernel
+public class VentureKernel : Sys.Kernel, IShellHost
 {
     // Boot finishes faster than its messages can be read, so each step pauses before the screen clears.
     private static readonly TimeSpan BootStepDelay = TimeSpan.FromSeconds(0.5);
+
+    private CommandShell? shell;
 
     protected override void BeforeRun()
     {
@@ -19,11 +23,12 @@ public class VentureKernel : Sys.Kernel
         RunCriticalStep("filesystem", Bootstrap.BootIntoRam);
         RunCriticalStep("time manager", Bootstrap.CheckTimeManager);
         RunOptionalStep("network", Bootstrap.ConnectToNetwork);
+        RunCriticalStep("shell", CreateShell);
 
         Console.Clear();
 
         KernelLog.WriteLine($"{HostInfo.DisplayVersion} booted successfully!");
-        Console.WriteLine("Type a command to get it executed.");
+        Console.WriteLine("Type \"help\" for a list of commands.");
     }
 
     // Early initialization
@@ -47,7 +52,9 @@ public class VentureKernel : Sys.Kernel
             if (string.IsNullOrEmpty(input))
                 return;
 
-            ExecuteCommand(input);
+            // The shell step is critical, so boot panics before reaching here without a shell.
+            var current = shell ?? throw new InvalidOperationException("The shell wasn't set up during boot.");
+            current.Execute(input);
         }
         catch (Exception exception)
         {
@@ -56,31 +63,40 @@ public class VentureKernel : Sys.Kernel
         }
     }
 
-    private void ExecuteCommand(string input)
+    /// <summary>
+    /// Registers the shell's commands. Fails only on a programming error, such as two commands with one name.
+    /// </summary>
+    private bool CreateShell()
     {
-        switch (input.ToLower())
-        {
-            case "help":
-                const string Help = """
-                                    Available commands:
-                                        help     - Show this help message
-                                        clear    - Clear the screen
-                                        halt     - Halt the system
-                                    """;
-                Console.WriteLine(Help);
-                break;
+        CommandRegistry commands = new();
+        commands.Register(new HelpCommand());
+        commands.Register(new ClearCommand());
+        commands.Register(new InfoCommand());
+        commands.Register(new NetCommand());
+        commands.Register(new HaltCommand());
+        commands.Register(new RebootCommand());
+        commands.Register(new ShutdownCommand());
 
-            case "clear":
-                Console.Clear();
-                break;
-            case "halt":
-                KernelLog.WriteLine("Halting system...");
-                Stop();
-                break;
-            default:
-                Console.WriteLine($"\"{input}\" is not a command");
-                break;
-        }
+        shell = new CommandShell(new ShellContext(new ConsoleShellOutput(), this, commands));
+        return true;
+    }
+
+    void IShellHost.Halt()
+    {
+        KernelLog.WriteLine("Halting system...");
+        Stop();
+    }
+
+    void IShellHost.Reboot()
+    {
+        KernelLog.WriteLine("Rebooting...");
+        Sys.Power.Reboot();
+    }
+
+    void IShellHost.Shutdown()
+    {
+        KernelLog.WriteLine("Shutting down...");
+        Sys.Power.Shutdown();
     }
 
     /// <summary>

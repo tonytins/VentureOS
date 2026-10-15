@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** major (first architecture overview) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (the shell: registry, arguments, and system commands; versioning corrected) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-10-15)
 
@@ -8,24 +8,25 @@ What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
-- **Project:** one kernel project, `Venture.OS`, with 7 C# files in 3
-  namespaces (`Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`). No
-  test project yet.
+- **Project:** one kernel project, `Venture.OS`, with 22 C# files in 5
+  namespaces (`Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
+  `Venture.OS.Shell`, `Venture.OS.Shell.Commands`). No test project yet.
 - **Platform:** Cosmos gen3 3.0.94 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
-- **Boot:** three steps, two critical (RAM filesystem, timer) and one
+- **Boot:** four steps, three critical (RAM filesystem, timer, shell) and one
   optional (network). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
-- **Shell:** a line-based loop with three commands (`help`, `clear`,
-  `halt`). A failing command reports its error and returns to the prompt.
+- **Shell:** a command registry with seven commands (`help`, `clear`,
+  `info`, `net`, `halt`, `reboot`, `shutdown`), and input split into a
+  command and arguments with quoting. A failing command reports its error and
+  returns to the prompt.
 - **Storage:** a 32 MiB RAM disk, formatted FAT16 and mounted at `/mnt`.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** a command registry and arguments (Hiawatha), tests
-  (Wolverine), persistent storage (Blue Water), Lua (Illini). See the
+- **Not built yet:** tests (Wolverine), persistent storage (Blue Water), Lua (Illini). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
 
@@ -106,6 +107,15 @@ VentureOS/
 │  ├─ Startup/                  Venture.OS.Startup: boot steps
 │  │  ├─ Bootstrap.cs           RAM disk, timer check, network and DHCP
 │  │  └─ BootRamDisk.cs         in-memory IBlockDevice
+│  ├─ Shell/                    Venture.OS.Shell: parsing, the registry, running commands
+│  │  ├─ CommandLine.cs         splits a line into words (kernel-free)
+│  │  ├─ CommandRegistry.cs     commands by name; source of `help`
+│  │  ├─ CommandShell.cs        parse, look up, check arguments, run
+│  │  ├─ IShellCommand.cs       what every command declares
+│  │  ├─ ShellContext.cs        what a command can reach
+│  │  ├─ IShellOutput.cs        where commands write (ConsoleShellOutput.cs)
+│  │  ├─ IShellHost.cs          halt, reboot, shutdown, implemented by the kernel
+│  │  └─ Commands/              one class per command
 │  ├─ Bootloader/limine.conf    Limine boot entry
 │  ├─ GitInfo.txt               base version
 │  └─ src/C/                    reserved for native C sources (empty)
@@ -122,8 +132,9 @@ namespace. Cosmos looks for `<RootNamespace>.Kernel` by default, so the
 project file sets `CosmosKernelClass` to `Venture.OS.Kernel.VentureKernel`.
 
 **Growth.** New subsystems (commands, drivers, filesystems) get their own
-folder and namespace under `Venture.OS`, as `Kernel/` and `Startup/` do.
-The shell is expected to be next, as `Shell/` (Hiawatha).
+folder and namespace under `Venture.OS`, as `Kernel/`, `Startup/`, and
+`Shell/` do. A new command is a class in `Shell/Commands/` plus one
+`Register` call in `VentureKernel.CreateShell`.
 
 ---
 
@@ -134,15 +145,20 @@ flowchart TD
     subgraph VentureOS
         Kernel["Venture.OS.Kernel<br/>lifecycle, failure policy, system output"]
         Startup["Venture.OS.Startup<br/>boot steps"]
+        Shell["Venture.OS.Shell<br/>parsing, registry, commands"]
         Host["Venture.OS<br/>HostInfo"]
         Kernel -- calls --> Startup
+        Kernel -- runs --> Shell
+        Shell -. "halt, reboot, shutdown<br/>through IShellHost" .-> Kernel
         Kernel -- uses --> Host
         Startup -- uses --> Host
+        Shell -- uses --> Host
     end
 
     Ring["Cosmos.Kernel.System<br/>the supported API"]
     Kernel --> Ring
     Startup --> Ring
+    Shell --> Ring
     Host --> Ring
 
     subgraph Cosmos
@@ -156,14 +172,15 @@ flowchart TD
 
 **Rules:**
 
-1. **Only `Venture.OS.Kernel` decides that the system stops.** Boot steps
-   report success with `bool` (critical) or by returning (optional), and
-   throw when something unexpected happens. They never call
-   `KernelPanic`, `Power.Halt`, or `Stop` themselves.
+1. **Only `Venture.OS.Kernel` stops the system.** Boot steps report success
+   with `bool` (critical) or by returning (optional), and throw when
+   something unexpected happens. Shell commands ask the kernel to halt,
+   reboot, or shut down through `IShellHost`. Neither calls `KernelPanic`,
+   `Power`, or `Stop` itself.
 2. **Boot steps don't know whether they're critical.** `VentureKernel`
    decides that when it runs them (§4), so the policy lives in one place.
-3. **System messages go through `KernelLog`** (§6). Command output uses
-   `Console` directly.
+3. **System messages go through `KernelLog`** (§6). Command output goes
+   through `IShellOutput`, which writes to the console.
 4. **VentureOS code reaches Cosmos only through `Cosmos.Kernel.System`**
    and `IBlockDevice`. Cosmos's internal namespaces (`Cosmos.Kernel.Core`
    and the HAL beyond `IBlockDevice`) are off limits.
@@ -188,31 +205,35 @@ flowchart TD
         Fs["filesystem<br/>Bootstrap.BootIntoRam"]
         Timer["time manager<br/>Bootstrap.CheckTimeManager"]
         Net["network<br/>Bootstrap.ConnectToNetwork"]
+        ShellStep["shell<br/>VentureKernel.CreateShell"]
         Banner["&lt;version&gt; booted successfully!"]
         Version --> Fs
         Fs -- ok --> Timer
         Timer -- ok --> Net
-        Net -- "ok, or failure reported" --> Banner
+        Net -- "ok, or failure reported" --> ShellStep
+        ShellStep -- ok --> Banner
     end
 
     Panic["KernelPanic.Halt<br/>report, then halt forever"]
     Run["VentureKernel.Run<br/>called in a loop"]
-    Halt["Stop(): Cosmos halts the CPU"]
+    Halt["halt, reboot, or shutdown"]
 
     Start --> Version
     Fs -- "false or exception" --> Panic
     Timer -- "false or exception" --> Panic
+    ShellStep -- exception --> Panic
     Banner --> Run
-    Run -- halt command --> Halt
+    Run -- "power command" --> Halt
 ```
 
-The filesystem and time manager steps are critical (`RunCriticalStep`);
-the network step is optional (`RunOptionalStep`).
+The filesystem, time manager, and shell steps are critical
+(`RunCriticalStep`); the network step is optional (`RunOptionalStep`).
 
 | Step | Kind | Succeeds when | On failure |
 |---|---|---|---|
 | Filesystem | critical | The RAM disk registers, formats as FAT16, and mounts at `/mnt` | Reports which of the three failed, then panics |
 | Time manager | critical | Cosmos reports `TimerManager.IsInitialized` | Reports it, then panics |
+| Shell | critical | Every command registers | Registration only fails on a programming error, such as two commands with one name; it panics |
 | Network | optional | Always returns; records the MAC and DHCP address when it can | No NIC, a DHCP timeout, or no address is reported; an exception is reported and boot continues |
 
 A step is **critical** when the system can't do its job without it, so
@@ -232,7 +253,8 @@ it, boot is too fast to read on screen.
 | An optional boot step throws | Reported; boot continues without it | `RunOptionalStep` |
 | A command throws | Reported; back to the prompt | `VentureKernel.Run` catches everything |
 | Invalid input reaches a device or API | A specific exception (`ArgumentException`, `ArgumentOutOfRangeException`), caught by the boundaries above | e.g. `BootRamDisk` range checks |
-| The user types `halt` | `Stop()`: the loop ends and Cosmos halts the CPU | `ExecuteCommand` |
+| The user mistypes a command | The shell explains: unknown command, the usage line, or an unclosed quote; nothing throws | `CommandShell.Execute` |
+| The user types `halt`, `reboot`, or `shutdown` | `Stop()` ends the loop and Cosmos halts the CPU; `Power.Reboot()` or `Power.Shutdown()` | `VentureKernel` through `IShellHost` |
 
 **The panic.** `KernelPanic.Halt` writes a report with the version, the
 failed step, and the reason (for an exception, its type name and message),
@@ -298,17 +320,53 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
 
 ## 9. Shell
 
-**Today.** `VentureKernel.Run` prints a prompt, reads a line with
-`Console.ReadLine()` (Cosmos provides line editing), and passes it to
-`ExecuteCommand`, a `switch` on the lowercased line. Cosmos calls `Run`
-again as soon as it returns, so it never loops itself.
+`VentureKernel.Run` prints a prompt, reads a line with `Console.ReadLine()`
+(Cosmos provides line editing), and passes it to `CommandShell.Execute`.
+Cosmos calls `Run` again as soon as it returns, so it never loops itself.
 
-**Planned (Hiawatha).** A command registry in its own `Shell/` namespace:
-each command declares its name, help text, and handler; `help` is
-generated from the registry; and input is split into a command and
-arguments, with quoting. The argument parser is kernel-free logic, which
-makes it the first candidate for the test project (Wolverine). New
-commands: `info`, `net`, `reboot`, and `shutdown`.
+```mermaid
+flowchart LR
+    Line["input line"] --> Parse["CommandLine.TryParse"]
+    Parse -- "unclosed quote" --> Err["explain, back to prompt"]
+    Parse -- words --> Find["CommandRegistry.TryGet"]
+    Find -- "unknown" --> Err
+    Find --> Count["argument count check"]
+    Count -- "wrong" --> Usage["print usage"]
+    Count -- ok --> Exec["IShellCommand.Execute"]
+```
+
+- **Parsing** (`CommandLine`): words are separated by spaces or tabs.
+  `'single quotes'` are literal, `"double quotes"` allow `\"` and `\\`,
+  and a backslash outside quotes makes the next character literal. An
+  unclosed quote or a trailing backslash is reported, not thrown. The parser
+  doesn't depend on the kernel, so it's the first candidate for the test
+  project (Wolverine).
+- **Commands** (`IShellCommand`) declare a name (lowercase letters, digits,
+  and hyphens), a one-line summary, a usage line, and their minimum and
+  maximum argument counts. The shell checks the count before running a
+  command, so commands don't repeat that check.
+- **The registry** (`CommandRegistry`) rejects invalid and duplicate names,
+  looks names up ignoring case, and lists commands in name order. `help`
+  is generated from it.
+- **Output and power.** Commands write through `IShellOutput` and ask for
+  halt, reboot, or shutdown through `IShellHost`, which `VentureKernel`
+  implements. That keeps power calls in `Venture.OS.Kernel` and lets tests
+  capture output later.
+
+| Command | Does |
+|---|---|
+| `help [command]` | Lists the commands, or shows one's summary and usage |
+| `clear` | Clears the screen |
+| `info` | Version and build, commit, Cosmos version, uptime, and free and total memory |
+| `net` | Device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
+| `halt` | Ends the shell loop; the CPU halts and the machine stays on |
+| `reboot` | Restarts through ACPI |
+| `shutdown` | Powers off through ACPI |
+
+Uptime comes from `Stopwatch`, which Cosmos plugs to the CPU's timestamp
+counter on x64, so it counts from when the CPU started. Under `cosmos run`,
+QEMU runs with `-no-reboot -no-shutdown`, so `reboot` and `shutdown` pause
+the virtual machine instead; without those flags both work.
 
 ---
 
@@ -316,8 +374,9 @@ commands: `info`, `net`, `reboot`, and `shutdown`.
 
 - **Version:** [GitInfo](https://github.com/devlooped/GitInfo) reads
   `GitInfo.txt` (base `major.minor.patch`) and adds the number of commits
-  since that file changed to the patch number, so every commit has its own
-  version. CI checks out full history for this.
+  that changed the `Venture.OS/` folder since that file changed. Commits
+  that only touch docs or CI don't change the version. CI checks out full
+  history for this.
 - **Build number:** derived from the commit hash: its first four characters
   read as a number and reduced to at most six digits. It identifies a build
   but doesn't increase over time.
@@ -376,4 +435,5 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | minor | The shell (§9): parsing, the registry, seven commands, and the shell boot step; layering and boot diagrams updated. Versioning corrected: only commits that change `Venture.OS/` raise the version. |
 | 2026-10-15 | major | First architecture overview: principles, the rules for absorbing Cosmos changes, layout, layering, boot, failure model, output, storage, network, shell, versioning, build and CI, testing, and open decisions. |

@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (Cascades complete: panic proven, system messages on serial) · **Stage:** pre-alpha
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** major (Hiawatha complete; the alpha gate passes) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -24,12 +24,11 @@ blocking`, which makes it a beta item. ARM64 only has to keep building.
 | Core workflow | Works end to end? | Evidence | Hours to pass (est.) |
 |---|---|---|---|
 | Boot, and say clearly why when boot can't finish | yes | Boots to the shell; critical steps panic with a report and optional steps degrade (BOOT-1 to BOOT-5); a forced panic was proven in a real boot (BOOT-6); messages reach serial (BOOT-7) | 0 |
-| Run commands that take arguments | **no** | Input is matched as a whole line, and every command is a `case` in one `switch` (SHELL-3, SHELL-5) | 6–12 |
-| Inspect and control the system: version, network, reboot, shutdown | **no** | The boot banner shows the version, and `halt` stops the machine. No command shows the network afterwards, and there's no reboot or shutdown (SHELL-4) | 4–8 |
+| Run commands that take arguments | yes | Commands come from a registry, and input is split into a command and arguments with quoting and clear errors (SHELL-3, SHELL-5) | 0 |
+| Inspect and control the system: version, network, reboot, shutdown | yes | `info` and `net` show the system; `halt`, `reboot`, and `shutdown` control it, with reboot and shutdown verified in QEMU (SHELL-4, SHELL-6) | 0 |
 
-**Result: pre-alpha.** The shell rows block, about 10–20 hours of work
-(Hiawatha). Cascades is finished, so that is all that stands between
-VentureOS and alpha.
+**Result: alpha.** Every row passes as of 2026-10-15, with Cascades and
+Hiawatha complete. Beta work starts with tests and CI (Wolverine).
 
 Persistent storage is deferred until after alpha by my decision (Blue Water).
 
@@ -37,8 +36,8 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Build the shell** (Hiawatha): a command registry, argument parsing, and
-   system commands.
+1. **Tests and CI** (Wolverine): a test project for the argument parser, a
+   headless boot check in CI, and an ARM64 build in CI.
 2. **Choose the Lua library** (Illini): I'm tracking down a
    Cosmos-based Lua API to use in place of, or beside, `LuaCSharp`.
 
@@ -50,28 +49,26 @@ In order:
 | Route | Milestone | Done | Remaining (h, est.) | Notes |
 |---|---|---:|---:|---|
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
-| Hiawatha | Shell | 0% | 10–20 | Command registry, arguments, system commands |
+| Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
 | Wolverine | Tests and CI | 0% | 8–16 | Test project, headless boot check in CI, ARM64 build in CI |
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua scripting | 0% | 10–25 | Library not chosen yet |
 | Saluki | ARM64 | 0% | 6–12 | Boot and test on ARM64 |
 | Borealis | Releases | 0% | 3–6 | Publish ISOs |
-| | **Total** | | **≈ 62–129** | |
+| | **Total** | | **≈ 52–109** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Command registry and argument parsing | Hiawatha | 6–12 |
-| 2 | `info`, `net`, `reboot`, and `shutdown` commands | Hiawatha | 4–8 |
-| 3 | Test project for the argument parser and other kernel-free logic | Wolverine | 3–6 |
-| 4 | Headless boot check and ARM64 build in CI | Wolverine | 5–10 |
-| 5 | File commands, then mounting a real disk | Blue Water | 15–30 |
-| 6 | Choose and wire up a Lua library | Illini | 10–25 |
-| 7 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | Test project for the argument parser and other kernel-free logic | Wolverine | 3–6 |
+| 2 | Headless boot check and ARM64 build in CI | Wolverine | 5–10 |
+| 3 | File commands, then mounting a real disk | Blue Water | 15–30 |
+| 4 | Choose and wire up a Lua library | Illini | 10–25 |
+| 5 | DNS and network commands | Pere Marquette | 10–20 |
 
-Beta needs ranks 1–5 in substance, about 33–66 hours.
+Beta needs ranks 1–3 in substance, about 23–46 hours.
 
 ## Milestone checklists
 
@@ -91,12 +88,12 @@ Beta needs ranks 1–5 in substance, about 33–66 hours.
 
 ### Hiawatha: Shell
 
-- [ ] A command registry: each command declares its name, help text, and
+- [x] A command registry: each command declares its name, help text, and
   handler, and `help` is generated from it.
-- [ ] Argument parsing, with quoting, and clear errors for bad arguments.
-- [ ] `info`: version, build, uptime, and memory.
-- [ ] `net`: adapter, MAC, link, and address.
-- [ ] `reboot` and `shutdown` beside `halt`.
+- [x] Argument parsing, with quoting, and clear errors for bad arguments.
+- [x] `info`: version, build, uptime, and memory.
+- [x] `net`: adapter, MAC, link, and address.
+- [x] `reboot` and `shutdown` beside `halt`.
 
 ### Wolverine: Tests and CI
 
@@ -138,10 +135,10 @@ Beta needs ranks 1–5 in substance, about 33–66 hours.
 
 ## Critical path
 
-Cascades is done, and Hiawatha is the rest of alpha. Wolverine's test
-project should start with Hiawatha's argument parser, since that's the first
-logic worth testing outside the kernel. Blue Water's file commands need
-Hiawatha's arguments. Illini waits on my library choice. The long
+Cascades and Hiawatha, the alpha milestones, are done. Wolverine's test
+project should start with the shell's argument parser (`CommandLine`), the
+first logic worth testing outside the kernel. Blue Water's file commands
+build on the shell's registry and arguments. Illini waits on my library choice. The long
 poles are Blue Water and Illini.
 
 ## Risks most likely to push estimates up
@@ -162,6 +159,7 @@ poles are Blue Water and Illini.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | major | Hiawatha complete: a command registry with generated `help`, argument parsing with quoting, and `info`, `net`, `reboot`, and `shutdown`. Both shell rows of the alpha gate pass, so the stage is alpha. |
 | 2026-10-15 | minor | Cascades complete: a forced panic proven in a headless boot, and system messages copied to serial with a `[Venture]` prefix through `KernelLog`. Alpha now waits on Hiawatha alone, 10–20 h. |
 | 2026-10-15 | minor | Boot delay kept by my decision (BUG-1 resolved): boot is otherwise too fast to read. Cascades at 75%, 2–5 h remaining. |
 | 2026-10-15 | major | First roadmap: a usable-shell alpha gate (pre-alpha: the shell blocks), eight milestones named after Amtrak Venture routes, and estimates. Persistent storage deferred past alpha by my decision. |
