@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Venture.OS;
+namespace Venture.OS.Kernel;
 
 /// <summary>
 /// Stops the system deliberately when it can't continue, after reporting why.
@@ -20,16 +20,15 @@ internal static class KernelPanic
                       ========================================
                       KERNEL PANIC
                       ========================================
-                      {HostInfo.Name} {HostInfo.Version} (Build {HostInfo.BuildNumber})
+                      {HostInfo.DisplayVersion}
                       Failed step: {step}
                       Reason:      {reason}
                       ========================================
                       System halted.
                       """;
 
-        // Serial first, so the report survives even if the console is what broke.
-        Log.WriteString(report + "\n");
-        Console.WriteLine(report);
+        // KernelLog writes serial first, so the report survives even if the console is what broke.
+        KernelLog.WriteLine(report);
 
         // Power.Halt returns when an interrupt wakes the CPU, so keep halting.
         while (true)

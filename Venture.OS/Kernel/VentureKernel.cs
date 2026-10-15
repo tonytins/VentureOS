@@ -1,18 +1,19 @@
 using Venture.OS.Startup;
 
-namespace Venture.OS;
+namespace Venture.OS.Kernel;
 
 /// <summary>
-/// Main kernel class - inherits from Cosmos.Kernel.System.Kernel.
+/// The VentureOS kernel: runs the boot steps, then the shell loop.
 /// </summary>
-public class Kernel : Sys.Kernel
+public class VentureKernel : Sys.Kernel
 {
     // Boot finishes faster than its messages can be read, so each step pauses before the screen clears.
     private static readonly TimeSpan BootStepDelay = TimeSpan.FromSeconds(0.5);
 
     protected override void BeforeRun()
     {
-        Console.WriteLine("Initializing kernel...");
+        KernelLog.WriteLine($"Starting {HostInfo.DisplayVersion}...");
+        KernelLog.WriteLine("Initializing kernel...");
         Thread.Sleep(BootStepDelay);
 
         RunCriticalStep("filesystem", Bootstrap.BootIntoRam);
@@ -21,7 +22,7 @@ public class Kernel : Sys.Kernel
 
         Console.Clear();
 
-        Console.WriteLine($"{HostInfo.Name} {HostInfo.Version} (Build {HostInfo.BuildNumber}) booted successfully!");
+        KernelLog.WriteLine($"{HostInfo.DisplayVersion} booted successfully!");
         Console.WriteLine("Type a command to get it executed.");
     }
 
@@ -51,8 +52,7 @@ public class Kernel : Sys.Kernel
         catch (Exception exception)
         {
             // The shell loop is the post-boot boundary, so it catches everything to keep the system up.
-            Console.WriteLine($"Command failed: {exception.Message}");
-            Log.WriteString($"[Shell] {exception.GetType().Name}: {exception.Message}\n");
+            KernelLog.WriteLine($"Command failed ({exception.GetType().Name}): {exception.Message}");
         }
     }
 
@@ -74,7 +74,7 @@ public class Kernel : Sys.Kernel
                 Console.Clear();
                 break;
             case "halt":
-                Console.WriteLine("Halting system...");
+                KernelLog.WriteLine("Halting system...");
                 Stop();
                 break;
             default:
@@ -112,8 +112,8 @@ public class Kernel : Sys.Kernel
         }
         catch (Exception exception)
         {
-            Console.WriteLine($"Boot step \"{name}\" failed: {exception.Message} Continuing without it.");
-            Log.WriteString($"[Boot] {name}: {exception.GetType().Name}: {exception.Message}\n");
+            KernelLog.WriteLine(
+                $"Boot step \"{name}\" failed ({exception.GetType().Name}): {exception.Message} Continuing without it.");
         }
 
         Thread.Sleep(BootStepDelay);

@@ -12,6 +12,11 @@ internal struct HostInfo
     /// </summary>
     public const string Version = $"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}";
 
+    /// <summary>
+    /// The name, version, and build number as shown to the user, such as <c>VentureOS 0.1.116 (Build 123456)</c>.
+    /// </summary>
+    public static string DisplayVersion => $"{Name} {Version} (Build {BuildNumber})";
+
     public static string? IpAddress { get; set; } = string.Empty;
 
     public static string? MacAddress { get; set; } = string.Empty;

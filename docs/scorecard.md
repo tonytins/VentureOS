@@ -12,7 +12,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 
 | Area | Done | Partial | Missing | Key numbers |
 |---|---:|---:|---:|---|
-| [Boot](#boot) | 5 | 1 | 0 | 3 boot steps: 2 critical, 1 optional |
+| [Boot](#boot) | 7 | 0 | 0 | 3 boot steps: 2 critical, 1 optional |
 | [Storage](#storage) | 2 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt` |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 2 | 1 | 2 | 3 commands |
@@ -20,7 +20,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Reliability](#reliability) | 2 | 1 | 2 | 0 tests |
 | [Documentation](#documentation) | 2 | 1 | 1 | |
 | [Distribution](#distribution) | 1 | 0 | 3 | CI builds x64 only |
-| [Known issues](#known-issues) | | | | 1 open, 2 resolved |
+| [Known issues](#known-issues) | | | | 0 open, 3 resolved |
 
 There is no test project yet, so most evidence is a build or a boot. Boots
 were run headless under the QEMU that Cosmos bundles:
@@ -30,20 +30,21 @@ cosmos run -p Venture.OS --headless            # default e1000e NIC
 cosmos run -p Venture.OS --headless --nic none # no network card
 ```
 
-The serial log shows Cosmos's own boot lines but not VentureOS's console
-output, so a boot proves that boot steps passed (no panic) and that the shell
-loop started, not what was printed.
+VentureOS's system messages reach the serial log with a `[Venture] ` prefix
+(BOOT-7), so a headless boot shows each step's result and the banner. Command
+output stays on the console.
 
 ## Boot
 
 | Id | Target | Status | Evidence |
 |---|---|---|---|
 | BOOT-1 | The kernel boots to the shell loop on x64 | done | Headless boot on 3.0.94: `[Kernel] Entering main loop...`, `[Kernel] Calling Run()...` |
-| BOOT-2 | Critical steps (RAM filesystem, timer) panic deliberately on failure or exception | done | `Kernel.RunCriticalStep`; `Bootstrap.BootIntoRam` and `CheckTimeManager` return `bool` |
-| BOOT-3 | Optional steps (network) report a failure and boot continues | done | `Kernel.RunOptionalStep`; boot with `--nic none` reaches `Calling Run()` |
+| BOOT-2 | Critical steps (RAM filesystem, timer) panic deliberately on failure or exception | done | `VentureKernel.RunCriticalStep`; `Bootstrap.BootIntoRam` and `CheckTimeManager` return `bool` |
+| BOOT-3 | Optional steps (network) report a failure and boot continues | done | `VentureKernel.RunOptionalStep`; boot with `--nic none` reaches `Calling Run()` |
 | BOOT-4 | A panic reports the version, failed step, and reason to serial and the console, then stays halted | done | `KernelPanic.Halt`: `Log` first, then `Console`, then `Power.Halt()` in a loop |
 | BOOT-5 | Each boot step says which part failed | done | `BootIntoRam` reports register, format, or mount; `ConnectToNetwork` reports no device, DHCP timeout, or no address |
-| BOOT-6 | The panic path is proven by a boot that triggers it | partial | Code reviewed only; no boot has forced a critical step to fail yet |
+| BOOT-6 | The panic path is proven by a boot that triggers it | done | 2026-10-15, a temporary critical step that threw `InvalidOperationException`: the full report reached serial with the exception type name, no later step ran, `Run()` was never called, and the machine stayed halted until QEMU was stopped |
+| BOOT-7 | Boot step results, the banner, failures, and panics reach the serial log | done | `KernelLog.WriteLine`; headless boot shows `[Venture]` lines for the version at start, every step, the network details, and the banner, all using `HostInfo.DisplayVersion` |
 
 ## Storage
 
@@ -52,7 +53,7 @@ loop started, not what was printed.
 | STOR-1 | A RAM disk is formatted FAT16 and mounted at `/mnt` | done | `Bootstrap.BootIntoRam`; headless boot passes the critical filesystem step |
 | STOR-2 | The RAM disk validates its size and range-checks every read and write, throwing as `IBlockDevice` requires | done | `BootRamDisk` constructor and `GetByteRange` |
 | STOR-3 | Files persist across boots on a real disk | missing | Only the RAM disk is mounted; nothing reads `StorageManager.Partitions` |
-| STOR-4 | The shell can list, read, and write files | missing | No file commands in `Kernel.ExecuteCommand` |
+| STOR-4 | The shell can list, read, and write files | missing | No file commands in `VentureKernel.ExecuteCommand` |
 
 ## Network
 
@@ -67,8 +68,8 @@ loop started, not what was printed.
 
 | Id | Target | Status | Evidence |
 |---|---|---|---|
-| SHELL-1 | `help`, `clear`, and `halt` work, and unknown input is reported | done | `Kernel.ExecuteCommand` |
-| SHELL-2 | A failing command reports its error and returns to the prompt | done | `Kernel.Run` catches every exception and logs it to serial |
+| SHELL-1 | `help`, `clear`, and `halt` work, and unknown input is reported | done | `VentureKernel.ExecuteCommand` |
+| SHELL-2 | A failing command reports its error and returns to the prompt | done | `VentureKernel.Run` catches every exception and logs it to serial |
 | SHELL-3 | Commands take arguments | missing | Input is matched whole after `ToLower()`; nothing splits arguments |
 | SHELL-4 | Commands show system information (version, network, mounts) | partial | The boot banner shows the version and build; no command shows it, the network, or mounts afterwards |
 | SHELL-5 | Commands can be added without growing one `switch` | missing | Every command is a `case` in `ExecuteCommand` |
@@ -99,7 +100,7 @@ loop started, not what was printed.
 |---|---|---|---|
 | DOC-1 | An agent and contributor guide matches the code | done | `AGENTS.md`, reviewed 2026-10-15 |
 | DOC-2 | Coding guidance for C# and for Cosmos | done | `.agents/skills/dotnet-guidelines`, `.agents/skills/cosmos-gen3` |
-| DOC-3 | Every declaration has a documentation comment where its name isn't enough | partial | `KernelPanic`, `BootRamDisk`, the boot steps, and `BuildNumber` have them; `Kernel.OnBoot`, `HostInfo.IpAddress`, and `MacAddress` don't |
+| DOC-3 | Every declaration has a documentation comment where its name isn't enough | partial | `KernelPanic`, `BootRamDisk`, the boot steps, and `BuildNumber` have them; `VentureKernel.OnBoot`, `HostInfo.IpAddress`, and `MacAddress` don't |
 | DOC-4 | An architecture overview in `docs/` | missing | Only `docs/README.md` and this scorecard |
 
 ## Distribution
@@ -115,6 +116,6 @@ loop started, not what was printed.
 
 | Id | Issue | Status | Note |
 |---|---|---|---|
-| BUG-1 | Boot waits 0.5 s before and after each step, about 2 s in all | resolved | Kept deliberately (owner decision, 2026-10-15): boot is otherwise too fast to read. Documented at `Kernel.BootStepDelay` |
-| BUG-2 | VentureOS's console output doesn't reach the serial log | open | Limits what a headless boot can verify; mirroring key lines through `Log` would fix it |
+| BUG-1 | Boot waits 0.5 s before and after each step, about 2 s in all | resolved | Kept deliberately (owner decision, 2026-10-15): boot is otherwise too fast to read. Documented at `VentureKernel.BootStepDelay` |
+| BUG-2 | VentureOS's console output doesn't reach the serial log | resolved | System messages go through `KernelLog` to serial and the console (BOOT-7); command output stays console-only by design |
 | BUG-3 | `DhcpClient.SendDiscoverPacket()` returning `-1` for a timeout was an assumption | resolved | Confirmed by the Cosmos network docs |

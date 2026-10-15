@@ -27,3 +27,6 @@ global using Cosmos.Kernel.System.Input;
 
 // Timer
 global using Cosmos.Kernel.System.Timers;
+
+// VentureOS
+global using Venture.OS.Kernel;

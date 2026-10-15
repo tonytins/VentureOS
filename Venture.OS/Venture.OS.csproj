@@ -5,6 +5,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <RollForward>LatestMajor</RollForward>
     <AssemblyName>Venture</AssemblyName>
+    <!-- The kernel class lives in Venture.OS.Kernel, not the default <RootNamespace>.Kernel. -->
+    <CosmosKernelClass>Venture.OS.Kernel.VentureKernel</CosmosKernelClass>
   </PropertyGroup>
 
   <ItemGroup>

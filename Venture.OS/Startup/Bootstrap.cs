@@ -11,26 +11,26 @@ internal static class Bootstrap
     /// <returns><see langword="true"/> if the disk is mounted.</returns>
     public static bool BootIntoRam()
     {
-        Console.WriteLine("Initializing filesystem...");
+        KernelLog.WriteLine("Initializing filesystem...");
 
         BootRamDisk ramdisk = new("RAMDISK", 512, 65536); // 32 MiB
         FatFileSystemType fat = new(ramdisk);
 
         if (!VfsManager.RegisterFileSystem(RamFilesystemName, fat))
         {
-            Console.WriteLine("RAM disk setup failed: couldn't register the filesystem.");
+            KernelLog.WriteLine("RAM disk setup failed: couldn't register the filesystem.");
             return false;
         }
 
         if (!VfsManager.TryFormat(RamFilesystemName, "", new FatFormatOptions { Type = FatType.Fat16 }))
         {
-            Console.WriteLine("RAM disk setup failed: couldn't format the disk as FAT16.");
+            KernelLog.WriteLine("RAM disk setup failed: couldn't format the disk as FAT16.");
             return false;
         }
 
         if (!VfsManager.TryMount(RamFilesystemName, "", MountFlags.None, RamMountPoint, out _))
         {
-            Console.WriteLine($"RAM disk setup failed: couldn't mount the disk at {RamMountPoint}.");
+            KernelLog.WriteLine($"RAM disk setup failed: couldn't mount the disk at {RamMountPoint}.");
             return false;
         }
 
@@ -43,11 +43,11 @@ internal static class Bootstrap
     /// <returns><see langword="true"/> if the timer manager is ready.</returns>
     public static bool CheckTimeManager()
     {
-        Console.WriteLine("Initializing time manager...");
+        KernelLog.WriteLine("Initializing time manager...");
         if (TimerManager.IsInitialized)
             return true;
 
-        Console.WriteLine("Time manager setup failed.");
+        KernelLog.WriteLine("Time manager setup failed.");
         return false;
     }
 
@@ -57,11 +57,11 @@ internal static class Bootstrap
     /// </summary>
     public static void ConnectToNetwork()
     {
-        Console.WriteLine("Initializing network...");
+        KernelLog.WriteLine("Initializing network...");
 
         if (!HostInfo.IsLinkedToNetwork)
         {
-            Console.WriteLine("No network device found; skipping network setup.");
+            KernelLog.WriteLine("No network device found; skipping network setup.");
             return;
         }
 
@@ -73,20 +73,20 @@ internal static class Bootstrap
                            """;
         HostInfo.MacAddress = NetworkManager.MacAddress?.ToString();
         HostInfo.Domain = NetworkManager.Name;
-        Console.WriteLine(networkInfo);
+        KernelLog.WriteLine(networkInfo);
 
         DhcpClient dhcpClient = new();
 
         // SendDiscoverPacket returns -1 when no DHCP server answers in time.
         if (dhcpClient.SendDiscoverPacket() == -1)
         {
-            Console.WriteLine("DHCP request timed out; no IP address assigned.");
+            KernelLog.WriteLine("DHCP request timed out; no IP address assigned.");
             return;
         }
 
         if (!HostInfo.HasIp)
         {
-            Console.WriteLine("DHCP finished without assigning an IP address.");
+            KernelLog.WriteLine("DHCP finished without assigning an IP address.");
             return;
         }
 
@@ -97,6 +97,6 @@ internal static class Bootstrap
                         Gateway: {config?.DefaultGateway}
                         """;
         HostInfo.IpAddress = config?.Address.ToString();
-        Console.WriteLine(dhcpInfo);
+        KernelLog.WriteLine(dhcpInfo);
     }
 }

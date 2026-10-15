@@ -17,11 +17,13 @@ first, then [README.md](./README.md) and [changelog.md](./changelog.md).
 ```text
 Venture.slnx                 solution (the VS Code default solution)
 Venture.OS/
-  Venture.OS.csproj          Cosmos SDK project; package versions live here
-  Kernel.cs                  entry point: OnBoot, BeforeRun (boot sequence), Run (shell loop)
+  Venture.OS.csproj          Cosmos SDK project; package versions and CosmosKernelClass live here
   HostInfo.cs                OS name, version, build number, network identity
-  KernelPanic.cs             deliberate halt with a report to serial and the console
-  GlobalUsings.cs            global usings for System and Cosmos.Kernel.* namespaces
+  GlobalUsings.cs            global usings for System, Cosmos.Kernel.*, and Venture.OS.Kernel
+  Kernel/                    namespace Venture.OS.Kernel
+    VentureKernel.cs         entry point: OnBoot, BeforeRun (boot sequence), Run (shell loop)
+    KernelPanic.cs           deliberate halt with a report to serial and the console
+    KernelLog.cs             system messages to serial (prefixed [Venture]) and the console
   Startup/
     Bootstrap.cs             boot steps: RAM disk, timer check, network and DHCP
     BootRamDisk.cs           in-memory IBlockDevice backing the FAT16 disk at /mnt
@@ -44,19 +46,23 @@ skills.
 
 ## 2. How it works today
 
-- **Boot.** `Kernel.BeforeRun` runs the `Bootstrap` steps in order through
+- **Boot.** `VentureKernel.BeforeRun` runs the `Bootstrap` steps in order through
   `RunCriticalStep` or `RunOptionalStep`, then clears the screen and shows
   the version banner. The RAM filesystem and the timer are critical: they
   return `false` on failure, and a failure or exception panics the kernel.
   Networking is optional: an exception is reported and boot continues.
 - **Panic.** `KernelPanic.Halt` writes the version, the failed step, and the
-  reason to serial (via `Log`) and the console, then halts the CPU in a
-  loop. It never returns.
+  reason to serial and the console, then halts the CPU in a loop. It never
+  returns.
+- **System messages.** `KernelLog.WriteLine` writes boot step results, the
+  banner, failures, and panics to serial with a `[Venture] ` prefix, then to
+  the console. Use it for anything a headless boot should be able to check;
+  ordinary command output uses `Console` only.
 - **Storage.** A 32 MiB RAM disk is formatted as FAT16 and mounted at `/mnt`
   through `VfsManager`. Nothing persists across boots.
 - **Network.** If a NIC is present, `Bootstrap.ConnectToNetwork` records its
   MAC and name in `HostInfo` and asks DHCP for an address.
-- **Shell.** `Kernel.Run` is called in a loop. It reads one line and
+- **Shell.** `VentureKernel.Run` is called in a loop. It reads one line and
   `ExecuteCommand` dispatches `help`, `clear`, and `halt` in a `switch`.
   `Run` catches every exception, reports it, and returns to the prompt. Keep the `help` text
   in step with the commands.
@@ -139,7 +145,9 @@ priority. The rule depends on the phase:
   top of each file, and don't add duplicates there.
 - Give public and internal APIs `///` doc comments. Comments explain why,
   not what.
-- Keep `Kernel.cs` thin. Put boot steps in `Startup/`, and put new
+- Keep `VentureKernel.cs` thin. It's named so the class doesn't clash with
+  the `Venture.OS.Kernel` namespace; `CosmosKernelClass` in the project file
+  points Cosmos at it. Put boot steps in `Startup/`, and put new
   subsystems (commands, drivers, filesystems) in their own folder and
   namespace under `Venture.OS`.
 - Match the surrounding code when it disagrees with this file, and mention
