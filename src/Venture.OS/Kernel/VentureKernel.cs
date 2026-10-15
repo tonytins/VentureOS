@@ -76,6 +76,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new HaltCommand());
         commands.Register(new RebootCommand());
         commands.Register(new ShutdownCommand());
+        commands.Register(new EchoCommand());
 
         shell = new CommandShell(new ShellContext(new ConsoleShellOutput(), this, commands));
         return true;
