@@ -1,6 +1,7 @@
 # Builds the VentureOS kernel with the Cosmos toolchain.
-# The Cosmos CLI, patcher, and toolchain bundles are cached per Cosmos version,
-# so they're only downloaded when the version pinned in the project changes.
+# The Cosmos CLI, patcher, and toolchain bundles are cached per Cosmos version:
+# restored before installing, and saved right after a fresh install, so they're
+# only downloaded when the version pinned in the project changes.
 
 name: Cosmos
 
@@ -49,9 +50,9 @@ jobs:
         fi
         echo "version=$version" >> "$GITHUB_OUTPUT"
 
-    - name: Cache Cosmos tools
-      id: cache-tools
-      uses: actions/cache@v6
+    - name: Restore Cosmos tools
+      id: restore-tools
+      uses: actions/cache/restore@v6
       with:
         path: |
           ~/.cosmos
@@ -68,13 +69,22 @@ jobs:
     - name: Add .NET tools to PATH
       run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
+    # Both installs run every time so anything outside the cached folders is set up too.
+    # With the cache restored, they find the CLI and the toolchain bundles already in place.
     - name: Install Cosmos CLI
-      if: steps.cache-tools.outputs.cache-hit != 'true'
-      run: dotnet tool install -g Cosmos.Tools --version ${{ steps.cosmos.outputs.version }}
+      run: dotnet tool update -g Cosmos.Tools --version ${{ steps.cosmos.outputs.version }}
 
     - name: Install Cosmos toolchain
-      if: steps.cache-tools.outputs.cache-hit != 'true'
       run: cosmos install -y
+
+    - name: Save Cosmos tools
+      if: steps.restore-tools.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: |
+          ~/.cosmos
+          ~/.dotnet/tools
+        key: ${{ steps.restore-tools.outputs.cache-primary-key }}
 
     - name: Validate toolchain
       run: cosmos check
