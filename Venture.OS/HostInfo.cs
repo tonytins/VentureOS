@@ -23,24 +23,21 @@ internal struct HostInfo
 
     public static bool IsLinkedToNetwork => NetworkManager.DeviceCount > 0;
 
-    public static bool HasIp => NetworkManager.Primary.IPConfig is not null;
-
+    public static bool HasIp => IsLinkedToNetwork && NetworkManager.Primary.IPConfig is not null;
 
     /// <summary>
-    /// Generates the build number from the commit hash.
+    /// A build number of up to six digits, derived from the commit hash.
     /// </summary>
-    /// <returns>The build number as a uint.</returns>
+    /// <remarks>
+    /// The first four characters of the hash are read as a little-endian integer and reduced modulo 1,000,000.
+    /// The number identifies a build but doesn't increase over time. It's 0 when the hash is unavailable.
+    /// </remarks>
     public static uint BuildNumber
     {
         get
         {
-            // Get the bytes of the commit hash as a UTF-8 encoded string
             var commit = Encoding.UTF8.GetBytes(ThisAssembly.Git.Commit);
-
-            // Convert the first 4 bytes of the commit hash to a uint and return it modulo 1000000
-            // (this will give us a 6-digit number with the first 3 digits being the first 3 digits of the commit hash
-            // and the last 3 digits being the last 3 digits of the commit hash)
-            return BitConverter.ToUInt32(commit, 0) % 1000000;
+            return commit.Length < sizeof(uint) ? 0 : BitConverter.ToUInt32(commit, 0) % 1_000_000;
         }
     }
 }

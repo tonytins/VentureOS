@@ -2,20 +2,33 @@ namespace Venture.OS.Startup;
 
 internal static class Bootstrap
 {
+    private const string RamFilesystemName = "ramfat";
+    private const string RamMountPoint = "/mnt";
+
+    /// <summary>
+    /// Formats a 32 MiB RAM disk as FAT16 and mounts it at <c>/mnt</c>, reporting the step that fails.
+    /// </summary>
     public static void BootIntoRam()
     {
         Console.WriteLine("Initializing filesystem...");
 
-        // RAM disk
         BootRamDisk ramdisk = new("RAMDISK", 512, 65536); // 32 MiB
         FatFilesystemType fat = new(ramdisk);
 
-        if (!VfsManager.RegisterFilesystem("ramfat", fat)
-            || !VfsManager.TryFormat("ramfat", "", new FatFormatOptions { Type = FatType.Fat16 })
-            || !VfsManager.TryMount("ramfat", "", MountFlags.None, "/mnt", out _))
+        if (!VfsManager.RegisterFilesystem(RamFilesystemName, fat))
         {
-            Console.WriteLine("RAM disk setup failed.");
+            Console.WriteLine("RAM disk setup failed: couldn't register the filesystem.");
+            return;
         }
+
+        if (!VfsManager.TryFormat(RamFilesystemName, "", new FatFormatOptions { Type = FatType.Fat16 }))
+        {
+            Console.WriteLine("RAM disk setup failed: couldn't format the disk as FAT16.");
+            return;
+        }
+
+        if (!VfsManager.TryMount(RamFilesystemName, "", MountFlags.None, RamMountPoint, out _))
+            Console.WriteLine($"RAM disk setup failed: couldn't mount the disk at {RamMountPoint}.");
     }
 
     public static void IsTimeManagerEnabled()
@@ -25,38 +38,52 @@ internal static class Bootstrap
             Console.WriteLine("Time manager setup failed.");
     }
 
+    /// <summary>
+    /// Records the primary network device in <see cref="HostInfo"/> and requests an address over DHCP.
+    /// Skips DHCP when no network device is present.
+    /// </summary>
     public static void ConnectToNetwork()
     {
         Console.WriteLine("Initializing network...");
 
-        if (HostInfo.IsLinkedToNetwork)
+        if (!HostInfo.IsLinkedToNetwork)
         {
-            var networkInfo = $"""
-                               Device:  {NetworkManager.Name}
-                               MAC:     {NetworkManager.MacAddress}
-                               Link up: {NetworkManager.LinkUp}
-                               Ready:   {NetworkManager.Ready}
-                               """;
-            HostInfo.MacAddress = NetworkManager.MacAddress?.ToString();
-            HostInfo.Domain = NetworkManager.Name;
-            Console.WriteLine(networkInfo);
+            Console.WriteLine("No network device found; skipping network setup.");
+            return;
         }
+
+        var networkInfo = $"""
+                           Device:  {NetworkManager.Name}
+                           MAC:     {NetworkManager.MacAddress}
+                           Link up: {NetworkManager.LinkUp}
+                           Ready:   {NetworkManager.Ready}
+                           """;
+        HostInfo.MacAddress = NetworkManager.MacAddress?.ToString();
+        HostInfo.Domain = NetworkManager.Name;
+        Console.WriteLine(networkInfo);
 
         DhcpClient dhcpClient = new();
 
-        if (dhcpClient.SendDiscoverPacket() == -1) return;
-        if (HostInfo.HasIp)
+        // SendDiscoverPacket returns -1 when no DHCP server answers in time.
+        if (dhcpClient.SendDiscoverPacket() == -1)
         {
-            var config = NetworkManager.Primary.IPConfig;
-            var dhcpInfo = $"""
-                            IP address: {config?.Address}
-                            Subnet: {config?.SubnetMask}
-                            Gateway: {config?.DefaultGateway}
-                            """;
-            HostInfo.IpAddress = config?.Address.ToString();
-            Console.WriteLine(dhcpInfo);
+            Console.WriteLine("DHCP request timed out; no IP address assigned.");
+            return;
         }
-        else
-            Console.WriteLine("DHCP timed out");
+
+        if (!HostInfo.HasIp)
+        {
+            Console.WriteLine("DHCP finished without assigning an IP address.");
+            return;
+        }
+
+        var config = NetworkManager.Primary.IPConfig;
+        var dhcpInfo = $"""
+                        IP address: {config?.Address}
+                        Subnet: {config?.SubnetMask}
+                        Gateway: {config?.DefaultGateway}
+                        """;
+        HostInfo.IpAddress = config?.Address.ToString();
+        Console.WriteLine(dhcpInfo);
     }
 }
