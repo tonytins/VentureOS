@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Venture.OS.Shell;
 
@@ -15,7 +16,7 @@ namespace Venture.OS.Shell;
 /// <para>Quoted and unquoted parts next to each other form one word, so <c>a"b c"</c> is <c>ab c</c>, and
 /// <c>""</c> is an empty word. This type doesn't depend on the kernel, so it can be tested on its own.</para>
 /// </remarks>
-internal static class CommandLine
+public static class CommandLine
 {
     /// <summary>
     /// Splits <paramref name="input"/> into words.

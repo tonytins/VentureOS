@@ -3,7 +3,7 @@ namespace Venture.OS.Shell;
 /// <summary>
 /// A command the shell can run.
 /// </summary>
-internal interface IShellCommand
+public interface IShellCommand
 {
     /// <summary>The name the user types: lowercase letters, digits, and hyphens.</summary>
     string Name { get; }

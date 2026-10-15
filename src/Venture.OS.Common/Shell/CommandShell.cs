@@ -7,7 +7,7 @@ namespace Venture.OS.Shell;
 /// Mistakes the user can fix (bad quoting, an unknown command, the wrong number of arguments) are reported here.
 /// Exceptions from a command propagate to the kernel's shell loop, which reports them.
 /// </remarks>
-internal sealed class CommandShell(ShellContext context)
+public sealed class CommandShell(ShellContext context)
 {
     private readonly ShellContext context = context ?? throw new ArgumentNullException(nameof(context));
 

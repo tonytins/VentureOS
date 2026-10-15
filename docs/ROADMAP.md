@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** major (Hiawatha complete; the alpha gate passes) · **Stage:** alpha
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (Wolverine: the test project is in) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,8 +36,8 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Tests and CI** (Wolverine): a test project for the argument parser, a
-   headless boot check in CI, and an ARM64 build in CI.
+1. **CI checks** (Wolverine): a headless boot check in CI, and an ARM64
+   build in CI.
 2. **Choose the Lua library** (Illini): I'm tracking down a
    Cosmos-based Lua API to use in place of, or beside, `LuaCSharp`.
 
@@ -50,25 +50,24 @@ In order:
 |---|---|---:|---:|---|
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
-| Wolverine | Tests and CI | 0% | 8–16 | Test project, headless boot check in CI, ARM64 build in CI |
+| Wolverine | Tests and CI | 33% | 5–10 | Test project done (59 tests, run in CI). Missing: headless boot check and ARM64 build in CI |
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua scripting | 0% | 10–25 | Library not chosen yet |
 | Saluki | ARM64 | 0% | 6–12 | Boot and test on ARM64 |
 | Borealis | Releases | 0% | 3–6 | Publish ISOs |
-| | **Total** | | **≈ 52–109** | |
+| | **Total** | | **≈ 49–103** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Test project for the argument parser and other kernel-free logic | Wolverine | 3–6 |
-| 2 | Headless boot check and ARM64 build in CI | Wolverine | 5–10 |
-| 3 | File commands, then mounting a real disk | Blue Water | 15–30 |
-| 4 | Choose and wire up a Lua library | Illini | 10–25 |
-| 5 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | Headless boot check and ARM64 build in CI | Wolverine | 5–10 |
+| 2 | File commands, then mounting a real disk | Blue Water | 15–30 |
+| 3 | Choose and wire up a Lua library | Illini | 10–25 |
+| 4 | DNS and network commands | Pere Marquette | 10–20 |
 
-Beta needs ranks 1–3 in substance, about 23–46 hours.
+Beta needs ranks 1–2 in substance, about 20–40 hours.
 
 ## Milestone checklists
 
@@ -97,8 +96,9 @@ Beta needs ranks 1–3 in substance, about 23–46 hours.
 
 ### Wolverine: Tests and CI
 
-- [ ] A test project for logic that doesn't need the kernel, starting with
-  the argument parser.
+- [x] A test project for logic that doesn't need the kernel, starting with
+  the argument parser: `Venture.OS.Common.Tests` covers the shell framework,
+  which moved into the kernel-free `Venture.OS.Common` library.
 - [ ] CI boots the kernel headless and fails when the serial log shows a
   panic or never reaches the shell.
 - [ ] CI builds ARM64 as well as x64.
@@ -135,9 +135,9 @@ Beta needs ranks 1–3 in substance, about 23–46 hours.
 
 ## Critical path
 
-Cascades and Hiawatha, the alpha milestones, are done. Wolverine's test
-project should start with the shell's argument parser (`CommandLine`), the
-first logic worth testing outside the kernel. Blue Water's file commands
+Cascades and Hiawatha, the alpha milestones, are done, and Wolverine's test
+project is in. New kernel-free logic, such as Blue Water's path handling,
+should go into `Venture.OS.Common` with tests. Blue Water's file commands
 build on the shell's registry and arguments. Illini waits on my library choice. The long
 poles are Blue Water and Illini.
 
@@ -146,8 +146,8 @@ poles are Blue Water and Illini.
 - Cosmos renames APIs between releases (3.0.87 to 3.0.94 moved the
   filesystem, timer, network, and storage namespaces), and its docs follow
   the latest release only.
-- With no tests, regressions are found by booting by hand until Wolverine
-  lands.
+- Only `Venture.OS.Common` is tested; kernel code is checked by booting by
+  hand until CI boots the kernel (Wolverine).
 - A Lua library may not work under the ahead-of-time compiler, or may need
   plugs.
 - Nothing has run on real hardware, and the Cosmos docs warn against testing
@@ -159,6 +159,7 @@ poles are Blue Water and Illini.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | minor | Wolverine 33%: the shell framework moved into the kernel-free `Venture.OS.Common` library, with 59 xUnit v3 tests that run locally and in CI. Wolverine has 5–10 h left; beta needs about 20–40 h. |
 | 2026-10-15 | major | Hiawatha complete: a command registry with generated `help`, argument parsing with quoting, and `info`, `net`, `reboot`, and `shutdown`. Both shell rows of the alpha gate pass, so the stage is alpha. |
 | 2026-10-15 | minor | Cascades complete: a forced panic proven in a headless boot, and system messages copied to serial with a `[Venture]` prefix through `KernelLog`. Alpha now waits on Hiawatha alone, 10–20 h. |
 | 2026-10-15 | minor | Boot delay kept by my decision (BUG-1 resolved): boot is otherwise too fast to read. Cascades at 75%, 2–5 h remaining. |

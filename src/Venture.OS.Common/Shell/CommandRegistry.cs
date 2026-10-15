@@ -5,7 +5,7 @@ namespace Venture.OS.Shell;
 /// <summary>
 /// The commands the shell knows, by name.
 /// </summary>
-internal sealed class CommandRegistry
+public sealed class CommandRegistry
 {
     private readonly Dictionary<string, IShellCommand> commands = [];
 

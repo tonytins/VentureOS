@@ -17,13 +17,15 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 6 | 0 | 0 | 7 commands |
 | [Platform](#platform) | 3 | 0 | 2 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 2 | 1 | 2 | 0 tests |
+| [Reliability](#reliability) | 3 | 1 | 1 | 59 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
-| [Distribution](#distribution) | 1 | 0 | 3 | CI builds x64 only |
+| [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 0 open, 3 resolved |
 
-There is no test project yet, so most evidence is a build or a boot. Boots
-were run headless under the QEMU that Cosmos bundles:
+Kernel-free code in `Venture.OS.Common` is covered by tests
+(`dotnet test --project src/Venture.OS.Common.Tests`). Everything else is
+proven by a build or a boot. Boots were run headless under the QEMU that
+Cosmos bundles:
 
 ```sh
 cosmos run -p src/Venture.OS --headless            # default e1000e NIC
@@ -92,7 +94,7 @@ output stays on the console.
 | REL-1 | Nothing crashes uncontrolled: boot failures panic deliberately or degrade, and nothing crashes after boot | done | BOOT-2, BOOT-3, SHELL-2 |
 | REL-2 | Input from devices and callers is validated where it enters | partial | `BootRamDisk` validates sizes and ranges; shell input is only matched against known commands, which is safe today but untested |
 | REL-3 | `BuildNumber` can't throw | done | `HostInfo.BuildNumber` returns 0 when the commit hash is shorter than four bytes |
-| REL-4 | A test project covers logic that doesn't need the kernel | missing | No test project |
+| REL-4 | A test project covers logic that doesn't need the kernel | done | `Venture.OS.Common.Tests`: 59 xUnit v3 tests for `CommandLine`, `CommandRegistry`, and `CommandShell`, all passing on 2026-10-15. Breaking single-quote parsing on purpose failed 7 of them |
 | REL-5 | Boot tests run automatically and check the serial log | missing | Boots are run by hand |
 
 ## Documentation
@@ -109,6 +111,7 @@ output stays on the console.
 | Id | Target | Status | Evidence |
 |---|---|---|---|
 | DIST-1 | CI builds x64 on every push and pull request, with cached tools | done | `.github/workflows/cosmos.yml`; cache hit confirmed by the owner on 2026-10-15 |
+| DIST-5 | CI runs the tests on every push and pull request, before installing Cosmos | done | `.github/workflows/cosmos.yml`, "Test" step |
 | DIST-2 | CI also builds ARM64 | missing | The workflow builds the default architecture only |
 | DIST-3 | CI boots the kernel headless and checks it reaches the shell | missing | |
 | DIST-4 | Release ISOs are published | missing | No release workflow |

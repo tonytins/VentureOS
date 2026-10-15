@@ -18,6 +18,9 @@ first, then [docs/architecture.md](./docs/architecture.md),
 ```text
 src/
   Venture.slnx               solution (the VS Code default solution)
+  Venture.OS.Common/         kernel-free library: no Cosmos, AOT-compatible, tested on ordinary .NET
+    Shell/                   namespace Venture.OS.Shell: CommandLine, CommandRegistry, CommandShell, interfaces
+  Venture.OS.Common.Tests/   xUnit v3 tests for Venture.OS.Common
   Venture.OS/
     Venture.OS.csproj          Cosmos SDK project; package versions and CosmosKernelClass live here
     HostInfo.cs                OS name, version, build number, network identity
@@ -29,16 +32,20 @@ src/
     Startup/
       Bootstrap.cs             boot steps: RAM disk, timer check, network and DHCP
       BootRamDisk.cs           in-memory IBlockDevice backing the FAT16 disk at /mnt
-    Shell/                     namespace Venture.OS.Shell: parsing, registry, running commands
+    Shell/                     namespace Venture.OS.Shell: the commands and ConsoleShellOutput
       Commands/                one class per command (help, clear, info, net, halt, reboot, shutdown)
     Bootloader/limine.conf     Limine boot entry (boots /boot/Venture.elf)
     GitInfo.txt                base version for GitInfo (major.minor.patch)
     src/C/                     reserved for native C sources (empty)
     .vscode/tasks.json         build, run, and debug tasks for QEMU on x64 and ARM64
+global.json                  opts dotnet test into Microsoft.Testing.Platform (needed by xUnit v3 on .NET 10)
 run.sh                       check, build, and run x64 with the Cosmos CLI; pass --headless for serial only
-.github/workflows/cosmos.yml CI: installs the Cosmos toolchain and builds
+.github/workflows/cosmos.yml CI: runs the tests, installs the Cosmos toolchain, and builds
 changelog.md                 user-facing history by version
 ```
+
+Every .NET project, tests included, lives in its own folder under `src/`
+and is listed in `src/Venture.slnx`.
 
 Build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`) is ignored;
 never commit it.
@@ -73,7 +80,9 @@ skills.
   count, and runs it. `help` is generated from the registry. Commands write
   through `IShellOutput` and ask for halt, reboot, or shutdown through
   `IShellHost`. `Run` catches every exception, reports it, and returns to
-  the prompt. To add a command, write a class in `Shell/Commands/` and
+  the prompt. The shell framework lives in `Venture.OS.Common`; the
+  commands live in the kernel because they use Cosmos. To add a command,
+  write a class in `src/Venture.OS/Shell/Commands/` and
   register it in `VentureKernel.CreateShell`.
 - **Version.** `HostInfo.Version` comes from the GitInfo package:
   `GitInfo.txt` holds the base `major.minor.patch`, and the patch number
@@ -108,6 +117,11 @@ priority. The rule depends on the phase:
 - **Panic only through `KernelPanic.Halt`**, and only during boot. Don't
   call `Power.Halt`, `Stop`, or an endless loop to stop the system
   anywhere else.
+- **Kernel-free logic goes in `Venture.OS.Common`, with tests.** Parsing,
+  formatting, validation, and anything else that doesn't need hardware
+  belongs there, where it's tested on ordinary .NET. The library must never
+  reference Cosmos; its project builds with the AOT analyzers and warnings
+  as errors, so anything the kernel couldn't compile fails there first.
 - **Validate everything that crosses a boundary:** shell input, file and
   disk contents, network packets, device-reported values, and sizes passed
   to constructors. Reject bad input with a clear console message.
@@ -165,13 +179,15 @@ priority. The rule depends on the phase:
 
 ## 4. Before you finish a task
 
-There is no test project yet. The build plus a boot in QEMU is the gate.
+The tests, the build, and a boot in QEMU are the gate. The tests cover
+`Venture.OS.Common`; kernel code is still checked by booting.
 Always run `cosmos check` before building. It reports system and tool
 information and checks for updates to the Cosmos CLI itself. If it reports
 an update, mention it to the owner after the build succeeds.
 
 ```sh
-cosmos check                                   # always first: system and tool info, CLI updates
+dotnet test --project src/Venture.OS.Common.Tests     # all tests must pass
+cosmos check                                   # always first before building: system and tool info, CLI updates
 cosmos build -p src/Venture.OS                 # must build with no new warnings
 ./run.sh                                       # boots x64 in QEMU; confirm the banner and your change
 ```
@@ -181,9 +197,8 @@ cosmos build -p src/Venture.OS                 # must build with no new warnings
 - If you touched architecture-sensitive code, also build ARM64
   (`cosmos build -a arm64 -p src/Venture.OS`, or the "Build ARM64" VS Code
   task).
-- For logic that doesn't depend on the kernel (parsing, formatting,
-  arithmetic), prefer adding a small test project over relying only on a
-  boot. Propose it first if none exists yet.
+- If you changed `Venture.OS.Common`, add or update its tests in the same
+  change, and check that a new test fails without your fix.
 - Update [changelog.md](./changelog.md) only for changes a user would
   notice, under the version the kernel reports for that commit. Skip
   internal changes such as refactors, docs, and tooling. Also update

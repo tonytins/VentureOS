@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (project moved into `src/`; version base 0.2.0) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (the kernel-free `Venture.OS.Common` library and its tests) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-10-15)
 
@@ -8,9 +8,11 @@ What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
-- **Project:** one kernel project, `Venture.OS`, with 22 C# files in 5
-  namespaces (`Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
-  `Venture.OS.Shell`, `Venture.OS.Shell.Commands`). No test project yet.
+- **Projects:** the kernel, `Venture.OS` (15 C# files); a kernel-free
+  library, `Venture.OS.Common` (7 files, the shell framework); and an xUnit
+  v3 test project for the library, `Venture.OS.Common.Tests` (59 tests).
+  Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
+  `Venture.OS.Shell`, and `Venture.OS.Shell.Commands`.
 - **Platform:** Cosmos gen3 3.0.94 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
@@ -26,7 +28,8 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** tests (Wolverine), persistent storage (Blue Water), Lua (Illini). See the
+- **Not built yet:** a CI boot check and ARM64 builds in CI (Wolverine),
+  persistent storage (Blue Water), Lua (Illini). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
 
@@ -97,6 +100,16 @@ and the project file, and nothing in the shell.**
 VentureOS/
 ├─ src/
 │  ├─ Venture.slnx              solution
+│  ├─ Venture.OS.Common/        kernel-free library: no Cosmos, AOT-compatible, warnings as errors
+│  │  └─ Shell/                 Venture.OS.Shell: the shell framework
+│  │     ├─ CommandLine.cs      splits a line into words
+│  │     ├─ CommandRegistry.cs  commands by name; source of `help`
+│  │     ├─ CommandShell.cs     parse, look up, check arguments, run
+│  │     ├─ IShellCommand.cs    what every command declares
+│  │     ├─ ShellContext.cs     what a command can reach
+│  │     ├─ IShellOutput.cs     where commands write
+│  │     └─ IShellHost.cs       halt, reboot, shutdown, implemented by the kernel
+│  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
 │  └─ Venture.OS/
 │     ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
 │     ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
@@ -108,21 +121,16 @@ VentureOS/
 │     ├─ Startup/                  Venture.OS.Startup: boot steps
 │     │  ├─ Bootstrap.cs           RAM disk, timer check, network and DHCP
 │     │  └─ BootRamDisk.cs         in-memory IBlockDevice
-│     ├─ Shell/                    Venture.OS.Shell: parsing, the registry, running commands
-│     │  ├─ CommandLine.cs         splits a line into words (kernel-free)
-│     │  ├─ CommandRegistry.cs     commands by name; source of `help`
-│     │  ├─ CommandShell.cs        parse, look up, check arguments, run
-│     │  ├─ IShellCommand.cs       what every command declares
-│     │  ├─ ShellContext.cs        what a command can reach
-│     │  ├─ IShellOutput.cs        where commands write (ConsoleShellOutput.cs)
-│     │  ├─ IShellHost.cs          halt, reboot, shutdown, implemented by the kernel
+│     ├─ Shell/                    Venture.OS.Shell: what needs Cosmos
+│     │  ├─ ConsoleShellOutput.cs  IShellOutput on the console
 │     │  └─ Commands/              one class per command
 │     ├─ Bootloader/limine.conf    Limine boot entry
 │     ├─ GitInfo.txt               base version
 │     └─ src/C/                    reserved for native C sources (empty)
+├─ global.json                  opts dotnet test into Microsoft.Testing.Platform
 ├─ docs/                        architecture, roadmap, scorecard
 ├─ .agents/skills/              C# and Cosmos guidance for agents
-├─ .github/workflows/cosmos.yml CI: build with cached Cosmos tools
+├─ .github/workflows/cosmos.yml CI: tests, then build with cached Cosmos tools
 ├─ changelog.md                 user-facing history
 └─ run.sh                       check, build, and run x64 locally (--headless for serial only)
 ```
@@ -131,6 +139,9 @@ VentureOS/
 because a class can't share its name with the `Venture.OS.Kernel`
 namespace. Cosmos looks for `<RootNamespace>.Kernel` by default, so the
 project file sets `CosmosKernelClass` to `Venture.OS.Kernel.VentureKernel`.
+
+**Every .NET project lives under `src/`**, tests included, each in its own
+folder and listed in `src/Venture.slnx`.
 
 **Growth.** New subsystems (commands, drivers, filesystems) get their own
 folder and namespace under `Venture.OS`, as `Kernel/`, `Startup/`, and
@@ -146,7 +157,7 @@ flowchart TD
     subgraph VentureOS
         Kernel["Venture.OS.Kernel<br/>lifecycle, failure policy, system output"]
         Startup["Venture.OS.Startup<br/>boot steps"]
-        Shell["Venture.OS.Shell<br/>parsing, registry, commands"]
+        Shell["Venture.OS.Shell<br/>commands"]
         Host["Venture.OS<br/>HostInfo"]
         Kernel -- calls --> Startup
         Kernel -- runs --> Shell
@@ -155,6 +166,12 @@ flowchart TD
         Startup -- uses --> Host
         Shell -- uses --> Host
     end
+
+    subgraph Common["Venture.OS.Common (no Cosmos)"]
+        Framework["Venture.OS.Shell<br/>parsing, registry, dispatch"]
+    end
+    Kernel -- builds --> Framework
+    Shell -- implements --> Framework
 
     Ring["Cosmos.Kernel.System<br/>the supported API"]
     Kernel --> Ring
@@ -187,6 +204,11 @@ flowchart TD
    and the HAL beyond `IBlockDevice`) are off limits.
 5. **No `unsafe` code.** Cosmos keeps pointers in its Core layer; VentureOS
    has no need for them.
+6. **`Venture.OS.Common` never references Cosmos.** It holds logic that
+   doesn't need hardware, so it can be tested on ordinary .NET. It builds
+   with the AOT analyzers and warnings as errors, so code the kernel
+   couldn't compile ahead of time fails there first. Its root namespace is
+   `Venture.OS`, so a type keeps its namespace when it moves into it.
 
 ---
 
@@ -339,9 +361,7 @@ flowchart LR
 - **Parsing** (`CommandLine`): words are separated by spaces or tabs.
   `'single quotes'` are literal, `"double quotes"` allow `\"` and `\\`,
   and a backslash outside quotes makes the next character literal. An
-  unclosed quote or a trailing backslash is reported, not thrown. The parser
-  doesn't depend on the kernel, so it's the first candidate for the test
-  project (Wolverine).
+  unclosed quote or a trailing backslash is reported, not thrown.
 - **Commands** (`IShellCommand`) declare a name (lowercase letters, digits,
   and hyphens), a one-line summary, a usage line, and their minimum and
   maximum argument counts. The shell checks the count before running a
@@ -349,6 +369,10 @@ flowchart LR
 - **The registry** (`CommandRegistry`) rejects invalid and duplicate names,
   looks names up ignoring case, and lists commands in name order. `help`
   is generated from it.
+- **Where it lives.** The framework (`CommandLine`, `CommandRegistry`,
+  `CommandShell`, `ShellContext`, and the three interfaces) is in
+  `Venture.OS.Common` and covered by tests. The commands and
+  `ConsoleShellOutput` are in the kernel, because they use Cosmos.
 - **Output and power.** Commands write through `IShellOutput` and ask for
   halt, reboot, or shutdown through `IShellHost`, which `VentureKernel`
   implements. That keeps power calls in `Venture.OS.Kernel` and lets tests
@@ -395,12 +419,14 @@ the virtual machine instead; without those flags both work.
 
 ## 11. Build, run, and CI
 
-- **Locally:** `cosmos check` (always first: tool status and CLI updates),
+- **Locally:** `dotnet test --project src/Venture.OS.Common.Tests`, then
+  `cosmos check` (always first before building: tool status and CLI updates),
   `cosmos build -p src/Venture.OS`, then `./run.sh` (add `--headless`
   for serial only) or `cosmos run -p src/Venture.OS --headless`. `--nic none`
   boots without a network card.
-- **CI** (`.github/workflows/cosmos.yml`): builds x64 on every push and pull
-  request. The Cosmos CLI, patcher, and toolchain are cached per Cosmos
+- **CI** (`.github/workflows/cosmos.yml`): on every push and pull request,
+  runs the tests (before the Cosmos toolchain, so a failing test stops the
+  run early), then builds x64. The Cosmos CLI, patcher, and toolchain are cached per Cosmos
   version and NuGet packages per project file, so tools are downloaded only
   when the pinned version changes.
 - **Not built yet:** ARM64 builds and a headless boot check in CI
@@ -415,7 +441,11 @@ the virtual machine instead; without those flags both work.
 | Build | x64 with no warnings, locally and in CI; ARM64 locally | ARM64 in CI |
 | Boot | Headless boots by hand, read through `[Venture]` serial lines | CI boots headless and fails on a panic or a missing banner |
 | Failure paths | A forced panic and a no-NIC boot, verified by hand | Kept as repeatable checks |
-| Logic | None | A test project for kernel-free logic, starting with the argument parser |
+| Logic | 59 xUnit v3 tests for `Venture.OS.Common`: parsing, the registry, and dispatch. Run locally and in CI | Each new kernel-free type comes with tests |
+
+xUnit v3 runs on Microsoft.Testing.Platform, which the .NET 10 SDK's
+`dotnet test` only uses when `global.json` opts in; without it, `dotnet
+test` stops with an error.
 
 Cosmos's own test kernels use `Cosmos.TestRunner.Framework`. Whether it's
 published for use outside the Cosmos repository hasn't been confirmed.
@@ -440,6 +470,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | minor | The shell framework moved into `Venture.OS.Common`, a library with no Cosmos reference, tested by `Venture.OS.Common.Tests` (xUnit v3, 59 tests) locally and in CI (§2, §3 rule 6, §9, §11, §12). |
 | 2026-10-15 | minor | The project moved into `src/` (§2, §11), and the version base became 0.2.0 because moving `GitInfo.txt` resets GitInfo's count (§10). |
 | 2026-10-15 | minor | The shell (§9): parsing, the registry, seven commands, and the shell boot step; layering and boot diagrams updated. Versioning corrected: only commits that change `Venture.OS/` raise the version. |
 | 2026-10-15 | major | First architecture overview: principles, the rules for absorbing Cosmos changes, layout, layering, boot, failure model, output, storage, network, shell, versioning, build and CI, testing, and open decisions. |

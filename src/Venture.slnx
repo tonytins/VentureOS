@@ -6,6 +6,11 @@
       <File Path="../run.sh" />
       <File Path="../.editorconfig" />
       <File Path="../.github/workflows/cosmos.yml" />
+      <File Path="../global.json" />
   </Folder>
   <Project Path="Venture.OS\Venture.OS.csproj" />
+  <Project Path="Venture.OS.Common\Venture.OS.Common.csproj" />
+  <Folder Name="/tests/">
+      <Project Path="Venture.OS.Common.Tests/Venture.OS.Common.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -6,7 +6,7 @@ namespace Venture.OS.Shell;
 /// <remarks>
 /// The kernel implements this, so the power calls stay in <c>Venture.OS.Kernel</c>.
 /// </remarks>
-internal interface IShellHost
+public interface IShellHost
 {
     /// <summary>Ends the shell loop; the CPU then halts.</summary>
     void Halt();
