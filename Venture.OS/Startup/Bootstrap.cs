@@ -8,7 +8,8 @@ internal static class Bootstrap
     /// <summary>
     /// Formats a 32 MiB RAM disk as FAT16 and mounts it at <c>/mnt</c>, reporting the step that fails.
     /// </summary>
-    public static void BootIntoRam()
+    /// <returns><see langword="true"/> if the disk is mounted.</returns>
+    public static bool BootIntoRam()
     {
         Console.WriteLine("Initializing filesystem...");
 
@@ -18,24 +19,36 @@ internal static class Bootstrap
         if (!VfsManager.RegisterFilesystem(RamFilesystemName, fat))
         {
             Console.WriteLine("RAM disk setup failed: couldn't register the filesystem.");
-            return;
+            return false;
         }
 
         if (!VfsManager.TryFormat(RamFilesystemName, "", new FatFormatOptions { Type = FatType.Fat16 }))
         {
             Console.WriteLine("RAM disk setup failed: couldn't format the disk as FAT16.");
-            return;
+            return false;
         }
 
         if (!VfsManager.TryMount(RamFilesystemName, "", MountFlags.None, RamMountPoint, out _))
+        {
             Console.WriteLine($"RAM disk setup failed: couldn't mount the disk at {RamMountPoint}.");
+            return false;
+        }
+
+        return true;
     }
 
-    public static void IsTimeManagerEnabled()
+    /// <summary>
+    /// Confirms that Cosmos initialized the timer manager.
+    /// </summary>
+    /// <returns><see langword="true"/> if the timer manager is ready.</returns>
+    public static bool CheckTimeManager()
     {
         Console.WriteLine("Initializing time manager...");
-        if (!TimerManager.IsInitialized)
-            Console.WriteLine("Time manager setup failed.");
+        if (TimerManager.IsInitialized)
+            return true;
+
+        Console.WriteLine("Time manager setup failed.");
+        return false;
     }
 
     /// <summary>

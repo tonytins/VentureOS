@@ -7,19 +7,16 @@ namespace Venture.OS;
 /// </summary>
 public class Kernel : Sys.Kernel
 {
+    private static readonly TimeSpan BootStepDelay = TimeSpan.FromSeconds(0.5);
 
     protected override void BeforeRun()
     {
-        var delayInSeconds = TimeSpan.FromSeconds(0.5);
+        Console.WriteLine("Initializing kernel...");
+        Thread.Sleep(BootStepDelay);
 
-        Console.WriteLine($"Initializing kernel...");
-        Thread.Sleep(delayInSeconds);
-        Bootstrap.BootIntoRam();
-        Thread.Sleep(delayInSeconds);
-        Bootstrap.IsTimeManagerEnabled();
-        Thread.Sleep(delayInSeconds);
-        Bootstrap.ConnectToNetwork();
-        Thread.Sleep(delayInSeconds);
+        RunCriticalStep("filesystem", Bootstrap.BootIntoRam);
+        RunCriticalStep("time manager", Bootstrap.CheckTimeManager);
+        RunOptionalStep("network", Bootstrap.ConnectToNetwork);
 
         Console.Clear();
 
@@ -34,14 +31,32 @@ public class Kernel : Sys.Kernel
 
     }
 
+    /// <summary>
+    /// Reads and runs one command. Once boot has finished, a failing command reports its error and
+    /// returns to the prompt instead of stopping the system.
+    /// </summary>
     protected override void Run()
     {
-        Console.Write("> ");
-        var input = Console.ReadLine();
+        try
+        {
+            Console.Write("> ");
+            var input = Console.ReadLine();
 
-        if (string.IsNullOrEmpty(input))
-            return;
+            if (string.IsNullOrEmpty(input))
+                return;
 
+            ExecuteCommand(input);
+        }
+        catch (Exception exception)
+        {
+            // The shell loop is the post-boot boundary, so it catches everything to keep the system up.
+            Console.WriteLine($"Command failed: {exception.Message}");
+            Log.WriteString($"[Shell] {exception.GetType().Name}: {exception.Message}\n");
+        }
+    }
+
+    private void ExecuteCommand(string input)
+    {
         switch (input.ToLower())
         {
             case "help":
@@ -65,5 +80,41 @@ public class Kernel : Sys.Kernel
                 Console.WriteLine($"\"{input}\" is not a command");
                 break;
         }
+    }
+
+    /// <summary>
+    /// Runs a boot step the system can't work without. A failure or exception panics the kernel.
+    /// </summary>
+    private static void RunCriticalStep(string name, Func<bool> step)
+    {
+        try
+        {
+            if (!step())
+                KernelPanic.Halt(name, "The step reported a failure; see the messages above.");
+        }
+        catch (Exception exception)
+        {
+            KernelPanic.Halt(name, exception);
+        }
+
+        Thread.Sleep(BootStepDelay);
+    }
+
+    /// <summary>
+    /// Runs a boot step the system can work without. An exception is reported and boot continues.
+    /// </summary>
+    private static void RunOptionalStep(string name, Action step)
+    {
+        try
+        {
+            step();
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Boot step \"{name}\" failed: {exception.Message} Continuing without it.");
+            Log.WriteString($"[Boot] {name}: {exception.GetType().Name}: {exception.Message}\n");
+        }
+
+        Thread.Sleep(BootStepDelay);
     }
 }
