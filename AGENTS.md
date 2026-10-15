@@ -10,7 +10,8 @@ in prose; the project is `Venture.OS`, the assembly is `Venture`, and the
 namespaces start with `Venture.OS`.
 
 This is early-stage, solo work held to production standards. Read this file
-first, then [README.md](./README.md) and [changelog.md](./changelog.md).
+first, then [docs/architecture.md](./docs/architecture.md),
+[README.md](./README.md), and [changelog.md](./changelog.md).
 
 ## 1. Workspace map
 
@@ -179,6 +180,9 @@ cosmos build -p Venture.OS                     # must build with no new warnings
   internal changes such as refactors, docs, and tooling. Also update
   [README.md](./README.md) if setup or build steps change, and this file if
   the layout or rules change.
+- Bring [docs/architecture.md](./docs/architecture.md) up to date when
+  behavior, layout, or a principle changes: edit the section, refresh the
+  current-state summary, and add a revision-history row.
 - Bring [docs/scorecard.md](./docs/scorecard.md) up to date: flip the rows
   you moved, with their new evidence, and update the summary counts.
 - Bring [docs/ROADMAP.md](./docs/ROADMAP.md) up to date: tick checklist

@@ -18,7 +18,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Shell](#shell) | 2 | 1 | 2 | 3 commands |
 | [Platform](#platform) | 3 | 0 | 2 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
 | [Reliability](#reliability) | 2 | 1 | 2 | 0 tests |
-| [Documentation](#documentation) | 2 | 1 | 1 | |
+| [Documentation](#documentation) | 3 | 1 | 0 | |
 | [Distribution](#distribution) | 1 | 0 | 3 | CI builds x64 only |
 | [Known issues](#known-issues) | | | | 0 open, 3 resolved |
 
@@ -101,7 +101,7 @@ output stays on the console.
 | DOC-1 | An agent and contributor guide matches the code | done | `AGENTS.md`, reviewed 2026-10-15 |
 | DOC-2 | Coding guidance for C# and for Cosmos | done | `.agents/skills/dotnet-guidelines`, `.agents/skills/cosmos-gen3` |
 | DOC-3 | Every declaration has a documentation comment where its name isn't enough | partial | `KernelPanic`, `BootRamDisk`, the boot steps, and `BuildNumber` have them; `VentureKernel.OnBoot`, `HostInfo.IpAddress`, and `MacAddress` don't |
-| DOC-4 | An architecture overview in `docs/` | missing | Only `docs/README.md` and this scorecard |
+| DOC-4 | An architecture overview in `docs/` | done | `docs/architecture.md`, written 2026-10-15 |
 
 ## Distribution
 
