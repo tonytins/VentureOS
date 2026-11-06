@@ -27,16 +27,19 @@ public sealed class ScriptCommands : ICommandSource
 
     private readonly string directory;
     private readonly string workingDirectory;
+    private readonly ISystemInfo? system;
 
     /// <param name="directory">Where the command scripts are.</param>
     /// <param name="workingDirectory">Where relative paths in a script start.</param>
-    public ScriptCommands(string directory, string workingDirectory)
+    /// <param name="system">What the scripts' <c>venture</c> table reports, or <see langword="null"/> for none.</param>
+    public ScriptCommands(string directory, string workingDirectory, ISystemInfo? system = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(directory);
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
 
         this.directory = directory.TrimEnd('/');
         this.workingDirectory = workingDirectory;
+        this.system = system;
     }
 
     public IReadOnlyList<IShellCommand> Commands
@@ -99,13 +102,15 @@ public sealed class ScriptCommands : ICommandSource
                 summary ??= text;
         }
 
-        return new ScriptCommand(name, string.IsNullOrEmpty(summary) ? NoSummary : summary, usage, path, workingDirectory);
+        return new ScriptCommand(
+            name, string.IsNullOrEmpty(summary) ? NoSummary : summary, usage, path, workingDirectory, system);
     }
 
     /// <summary>
     /// One Lua command script, run by <see cref="LuaRunner"/> with the command's arguments.
     /// </summary>
-    private sealed class ScriptCommand(string name, string summary, string usage, string path, string workingDirectory)
+    private sealed class ScriptCommand(
+        string name, string summary, string usage, string path, string workingDirectory, ISystemInfo? system)
         : IShellCommand
     {
         public string Name { get; } = name;
@@ -120,7 +125,7 @@ public sealed class ScriptCommands : ICommandSource
             for (var index = 0; index < values.Length; index++)
                 values[index] = arguments[index];
 
-            LuaRunner.Run(context.Output, workingDirectory, lua => lua.DoFile(path, values));
+            LuaRunner.Run(context.Output, workingDirectory, lua => lua.DoFile(path, values), system);
         }
     }
 }

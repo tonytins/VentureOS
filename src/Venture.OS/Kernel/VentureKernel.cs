@@ -75,16 +75,16 @@ public class VentureKernel : Sys.Kernel, IShellHost
     /// </remarks>
     private bool CreateShell()
     {
+        KernelSystemInfo system = new();
+
         CommandRegistry commands = new();
         commands.Register(new HelpCommand());
         commands.Register(new ClearCommand());
-        commands.Register(new InfoCommand());
-        commands.Register(new NetCommand());
         commands.Register(new HaltCommand());
         commands.Register(new RebootCommand());
         commands.Register(new ShutdownCommand());
-        commands.Register(new LuaCommand());
-        commands.AddSource(new ScriptCommands(Bootstrap.CommandsDirectoryPath, Bootstrap.RamMountPoint));
+        commands.Register(new LuaCommand(system));
+        commands.AddSource(new ScriptCommands(Bootstrap.CommandsDirectoryPath, Bootstrap.RamMountPoint, system));
 
         shell = new CommandShell(new ShellContext(new ConsoleShellOutput(), this, commands));
         return true;

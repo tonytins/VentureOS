@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-06 · **Last updated:** 2026-11-06 · **Change:** minor (Lua script commands; `echo` moves to Lua) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-06 · **Last updated:** 2026-11-06 · **Change:** minor (the `venture` table; `info` and `net` move to Lua) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-06)
 
@@ -8,10 +8,11 @@ What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
-- **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
-  scripts in `system/`); a kernel-free library, `Venture.OS.Common` (13
+- **Projects:** the kernel, `Venture.OS` (15 C# files, plus Lua system
+  scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (111 tests).
+  for the library, `Venture.OS.Common.Tests` (134 tests, including runs of
+  the shipped scripts).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -22,17 +23,18 @@ the code wins and this page is out of date.
   optional (system files, network). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
-- **Shell:** a command registry with eight built-in commands (`help`,
-  `clear`, `info`, `lua`, `net`, `halt`, `reboot`, `shutdown`), plus Lua
-  script commands from `/mnt/system/commands` (`echo`), and input split
-  into a command and arguments with quoting. A failing command reports its error and
+- **Shell:** a command registry with six built-in commands (`help`,
+  `clear`, `lua`, `halt`, `reboot`, `shutdown`), plus Lua script commands
+  from `/mnt/system/commands` (`echo`, `info`, `net`) that reach the kernel
+  through the `venture` table, and input split into a command and arguments
+  with quoting. A failing command reports its error and
   returns to the prompt.
 - **Storage:** a 32 MiB RAM disk, formatted FAT16 and mounted at `/mnt`,
   with the system files built into the kernel installed to `/mnt/system`.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** the `venture` table and running `init.lua` (Illini); a CI boot check and ARM64 builds in CI (Wolverine);
+- **Not built yet:** running `init.lua` (Illini); a CI boot check and ARM64 builds in CI (Wolverine);
   persistent storage (Blue Water). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -119,12 +121,15 @@ VentureOS/
 │  │     ├─ EmbeddedFile.cs     a file built into the kernel image
 │  │     ├─ SystemDirectory.cs  writes those files to disk, after checking every path
 │  │     ├─ LuaRunner.cs        runs Lua for a command: output to the shell, errors reported
-│  │     └─ ScriptCommands.cs   <name>.lua files as commands
+│  │     ├─ ScriptCommands.cs   <name>.lua files as commands
+│  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
+│  │     └─ VentureLibrary.cs   the `venture` table
 │  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
 │  └─ Venture.OS/
 │     ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
 │     ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
 │     ├─ HostInfo.cs               name, version, and build number
+│     ├─ Scripting/                Venture.OS.Scripting: KernelSystemInfo, ISystemInfo read from Cosmos
 │     ├─ Kernel/                   Venture.OS.Kernel: the lifecycle and how the system reports and stops
 │     │  ├─ VentureKernel.cs       the kernel class: BeforeRun (boot), Run (shell loop)
 │     │  ├─ KernelLog.cs           system messages to serial and the console
@@ -137,7 +142,7 @@ VentureOS/
 │     │  └─ Commands/              one class per command
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               placeholder; runs after boot from Illini phase 4
-│     │  └─ commands/              Lua command scripts, such as echo.lua
+│     │  └─ commands/              Lua command scripts: echo.lua, info.lua, net.lua
 │     ├─ Bootloader/limine.conf    Limine boot entry
 │     ├─ GitInfo.txt               base version
 │     └─ src/C/                    reserved for native C sources (empty)
@@ -173,24 +178,31 @@ flowchart TD
         Startup["Venture.OS.Startup<br/>boot steps"]
         Shell["Venture.OS.Shell<br/>commands"]
         Host["Venture.OS<br/>HostInfo"]
+        SystemInfo["Venture.OS.Scripting<br/>KernelSystemInfo"]
         Kernel -- calls --> Startup
         Kernel -- runs --> Shell
         Shell -. "halt, reboot, shutdown<br/>through IShellHost" .-> Kernel
         Kernel -- uses --> Host
-        Shell -- uses --> Host
+        SystemInfo -- uses --> Host
     end
 
-    subgraph Common["Venture.OS.Common (no Cosmos)"]
+    subgraph Common["Venture.OS.Common (no Cosmos kernel)"]
         Framework["Venture.OS.Shell<br/>parsing, registry, dispatch"]
+        Scripting["Venture.OS.Scripting<br/>Lua runner, script commands, venture table"]
+        Lua["Cosmos.Executable.Lua<br/>Lua 5.5"]
+        Framework -- "unknown names" --> Scripting
+        Scripting --> Lua
     end
     Kernel -- builds --> Framework
     Shell -- implements --> Framework
+    SystemInfo -- implements --> Scripting
 
     Ring["Cosmos.Kernel.System<br/>the supported API"]
     Kernel --> Ring
     Startup --> Ring
     Shell --> Ring
     Host --> Ring
+    SystemInfo --> Ring
 
     subgraph Cosmos
         Lower["Drivers · HAL · Core<br/>memory, GC, scheduler, serial · Native"]
@@ -217,8 +229,11 @@ flowchart TD
    and the HAL beyond `IBlockDevice`) are off limits.
 5. **No `unsafe` code.** Cosmos keeps pointers in its Core layer; VentureOS
    has no need for them.
-6. **`Venture.OS.Common` never references Cosmos.** It holds logic that
-   doesn't need hardware, so it can be tested on ordinary .NET. It builds
+6. **`Venture.OS.Common` never references the Cosmos kernel.** It holds
+   logic that doesn't need hardware, so it can be tested on ordinary .NET.
+   `Cosmos.Executable.Lua` is the one Cosmos-named package it uses, because
+   it runs on ordinary .NET too. Scripts reach the kernel only through
+   `ISystemInfo`, which the kernel implements. It builds
    with the AOT analyzers and warnings as errors, so code the kernel
    couldn't compile ahead of time fails there first. Its root namespace is
    `Venture.OS`, so a type keeps its namespace when it moves into it.
@@ -419,9 +434,9 @@ flowchart LR
 | `help [command]` | Lists the commands, or shows one's summary and usage |
 | `clear` | Clears the screen |
 | `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
-| `info` | Version and build, commit, Cosmos version, uptime, and free and total memory |
+| `info` | Lua script: version and build, commit, Cosmos version, uptime, and free and total memory |
 | `lua <code>` | Runs one chunk of Lua 5.5 in a fresh interpreter |
-| `net` | Device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
+| `net` | Lua script: device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
 | `halt` | Ends the shell loop; the CPU halts and the machine stays on |
 | `reboot` | Restarts through ACPI |
 | `shutdown` | Powers off through ACPI |
@@ -438,7 +453,25 @@ nothing carries over. `print`, `io.write`, and `io.stderr` go through
 `IShellOutput` (`ShellOutputWriter` joins pieces into lines), and relative
 paths in `dofile` and `io.open` start at `/mnt`. Lua errors are reported with
 their traceback, and `os.exit` with a non-zero status as that status; neither
-reaches the shell loop. A
+reaches the shell loop.
+
+**The `venture` table** is how scripts reach the kernel, in `lua` and in
+script commands alike. Its functions return plain values or tables, and the
+scripts do the formatting:
+
+| Function | Returns |
+|---|---|
+| `venture.version()` | `{ name, version, build, commit, cosmos, display }` |
+| `venture.uptime()` | Whole seconds since the CPU started counting, or `nil` |
+| `venture.memory()` | `{ free, total }` in bytes, or `nil` |
+| `venture.net()` | `nil` without an adapter, else `{ device, mac, link_up, ready, address, subnet, gateway }`; the last three are `nil` until IPv4 is configured |
+
+`VentureLibrary` builds the table from an `ISystemInfo`, which
+`KernelSystemInfo` implements by reading Cosmos on every call, so scripts see
+current values. A value that can't be read reliably (an uptime counter with
+no frequency, a page count that would overflow) is `nil`, and an exception
+from a device becomes a Lua error that `pcall` can catch. Tests use a fake
+`ISystemInfo` and run the shipped `info.lua` and `net.lua` against it. A
 chunk can't be interrupted yet, so an endless loop leaves the shell waiting.
 Cosmos's limits apply: local time is UTC, `os.getenv` returns nil, and there
 is no `io.popen` or `/tmp`.
@@ -517,6 +550,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-06 | minor | The `venture` table (§2, §3, §9): scripts reach the kernel through `ISystemInfo`, and `info` and `net` are now Lua scripts. |
 | 2026-11-06 | minor | Script commands (§2, §9): `/mnt/system/commands/<name>.lua` runs as `name` through a new command source, Lua output goes through `IShellOutput`, and `echo` is now a script. |
 | 2026-11-06 | minor | System files (§2, §4, §7): Lua scripts under `src/Venture.OS/system/` are built into the kernel and installed to `/mnt/system` by a new optional boot step. |
 | 2026-11-05 | minor | Lua (§9): `Cosmos.Executable.Lua` replaces `LuaCSharp`, and the `lua` command runs one chunk; the Lua library is no longer an open decision (§13). |

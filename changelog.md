@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.8
+
+- `info` and `net` are now Lua scripts in `/mnt/system/commands`, with the same output, except that `net` shows `yes` or `no` for the link and readiness instead of `True` or `False`.
+- Lua code, in `lua` and in script commands, can read the system through a `venture` table: `venture.version()`, `venture.uptime()`, `venture.memory()`, and `venture.net()`.
+
 ## 0.2.7
 
 - Commands can be written in Lua. A file at `/mnt/system/commands/<name>.lua` runs as the command `name`, with its arguments as `...`, and shows up in `help`. Its first comment line is its description, and a `-- Usage:` comment line its usage.

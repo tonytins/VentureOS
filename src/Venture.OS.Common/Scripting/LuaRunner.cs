@@ -20,8 +20,12 @@ public static class LuaRunner
     /// <param name="output">Where the code's output and any error go.</param>
     /// <param name="workingDirectory">Where relative paths in <c>dofile</c>, <c>require</c>, and <c>io.open</c> start.</param>
     /// <param name="run">What to do with the interpreter, such as <c>lua =&gt; lua.DoString(code)</c>.</param>
+    /// <param name="system">
+    /// What the <c>venture</c> table reports, or <see langword="null"/> to leave the table out.
+    /// </param>
     /// <returns><see langword="true"/> if the code finished without an error or a non-zero exit.</returns>
-    public static bool Run(IShellOutput output, string workingDirectory, Action<LuaInterpreter> run)
+    public static bool Run(
+        IShellOutput output, string workingDirectory, Action<LuaInterpreter> run, ISystemInfo? system = null)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
@@ -29,6 +33,8 @@ public static class LuaRunner
 
         using ShellOutputWriter writer = new(output);
         using LuaInterpreter lua = new() { WorkingDirectory = workingDirectory, Output = writer, Error = writer };
+        if (system is not null)
+            VentureLibrary.Open(lua.State, system);
 
         try
         {

@@ -24,4 +24,9 @@
     <ProjectReference Include="../Venture.OS.Common/Venture.OS.Common.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The kernel's Lua system files, so tests run the scripts that actually ship. -->
+    <None Include="../Venture.OS/system/**/*" LinkBase="system" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

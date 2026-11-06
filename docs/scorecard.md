@@ -15,9 +15,9 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Boot](#boot) | 7 | 0 | 0 | 5 boot steps: 3 critical, 2 optional |
 | [Storage](#storage) | 3 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system` |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
-| [Shell](#shell) | 7 | 0 | 0 | 8 built-in commands, plus Lua script commands (`echo`) |
+| [Shell](#shell) | 8 | 0 | 0 | 6 built-in commands, plus Lua script commands (`echo`, `info`, `net`) |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 111 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 134 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 0 open, 3 resolved |
@@ -78,6 +78,7 @@ output stays on the console.
 | SHELL-5 | Commands are added by registering them, and `help` is generated from the registry | done | `CommandRegistry` rejects invalid and duplicate names; `help` lists 9 commands from it; boot tests 2026-11-05: `echo` and `lua`, each added by one `Register` call, appeared in `help`, and `echo "a  b" c` printed `a  b c` |
 | SHELL-6 | `reboot` and `shutdown` work | done | Boot tests in QEMU without `-no-reboot`/`-no-shutdown`: a build that ran `reboot` at boot rebooted 13 times in 60 s; one that ran `shutdown` powered QEMU off in 4 s. `cosmos run` passes both flags, so there the VM pauses instead |
 | SHELL-7 | Commands can be written in Lua, as `/mnt/system/commands/<name>.lua` | done | `ScriptCommands`, `LuaRunner`, `ShellOutputWriter` (37 tests, running real Lua). Boot test 2026-11-06: `help` listed `echo` from its script, `help echo` showed the script's summary and usage, `ECHO "a  b" c` printed `a  b c`, and a `greet.lua` written through `lua` ran at once as `greet Tony` |
+| SHELL-8 | Lua scripts can read the system through a `venture` table, and `info` and `net` are scripts | done | `VentureLibrary`, `KernelSystemInfo`; tests run the shipped `info.lua` and `net.lua` against a fake `ISystemInfo`. Boot tests 2026-11-06: `info` showed the version, commit, uptime, and 458 of 497 MiB free; `net` showed the e1000e at 10.0.2.15, and `No network device.` with `--nic none` |
 
 ## Platform
 

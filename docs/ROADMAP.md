@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-06 · **Last updated:** 2026-11-06 · **Change:** minor (Illini phase 2: script commands) · **Stage:** alpha
+> **Last reviewed:** 2026-11-06 · **Last updated:** 2026-11-06 · **Change:** minor (Illini phase 3: the `venture` table) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -50,19 +50,19 @@ In order:
 |---|---|---:|---:|---|
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
-| Wolverine | Tests and CI | 33% | 5–10 | Test project done (111 tests, run in CI). Missing: headless boot check and ARM64 build in CI |
+| Wolverine | Tests and CI | 33% | 5–10 | Test project done (134 tests, run in CI). Missing: headless boot check and ARM64 build in CI |
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
-| Illini | Lua system scripts | 60% | 4–8 | System files install to `/mnt/system`, and `<name>.lua` there runs as a command (`echo` moved). Missing: the `venture` table and `init.lua` |
+| Illini | Lua system scripts | 80% | 2–4 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, and the `venture` table lets `echo`, `info`, and `net` be scripts. Missing: `init.lua` |
 | Saluki | ARM64 | 0% | 6–12 | Boot and test on ARM64 |
 | Borealis | Releases | 0% | 3–6 | Publish ISOs |
-| | **Total** | | **≈ 43–86** | |
+| | **Total** | | **≈ 41–82** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Lua system scripts: the `venture` table and `init.lua` | Illini | 4–8 |
+| 1 | Lua system scripts: run `init.lua` after boot | Illini | 2–4 |
 | 2 | Headless boot check and ARM64 build in CI | Wolverine | 5–10 |
 | 3 | File commands, then mounting a real disk | Blue Water | 15–30 |
 | 4 | DNS and network commands | Pere Marquette | 10–20 |
@@ -129,7 +129,7 @@ C#, so the shell still works if the scripts don't.
 - [x] Phase 2, script commands: the shell runs
   `/mnt/system/commands/<name>.lua` for names it doesn't know, `help` lists
   them, and `echo` moves to Lua.
-- [ ] Phase 3, the `venture` table: kernel functions for scripts, tested in
+- [x] Phase 3, the `venture` table: kernel functions for scripts, tested in
   `Venture.OS.Common`; `info` and `net` move to Lua.
 - [ ] Phase 4, `init.lua`: runs after boot as an optional step.
 
@@ -169,6 +169,7 @@ and on `/mnt/system`. The long pole is Blue Water.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-06 | minor | Illini 80%: phase 3, the `venture` table, with `info` and `net` moved to Lua. 2–4 h left; about 41–82 h overall. |
 | 2026-11-06 | minor | Illini 60%: phase 2, script commands from `/mnt/system/commands`, with `echo` moved to Lua. 4–8 h left; about 43–86 h overall. |
 | 2026-11-06 | minor | Illini repurposed: Lua system scripts installed to `/mnt/system`, in four phases, and phase 1 is done. It's now the current focus, with 6–12 h left; about 45–90 h remain overall. |
 | 2026-11-05 | minor | Illini complete: `Cosmos.Executable.Lua` replaces `LuaCSharp`, and `lua <code>` runs a chunk from the shell, verified in an x64 boot. About 39–78 h remain overall. |
