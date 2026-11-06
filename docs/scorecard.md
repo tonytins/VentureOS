@@ -15,7 +15,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Boot](#boot) | 7 | 0 | 0 | 3 boot steps: 2 critical, 1 optional |
 | [Storage](#storage) | 2 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt` |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
-| [Shell](#shell) | 6 | 0 | 0 | 7 commands |
+| [Shell](#shell) | 6 | 0 | 0 | 8 commands |
 | [Platform](#platform) | 3 | 0 | 2 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
 | [Reliability](#reliability) | 3 | 1 | 1 | 59 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
@@ -74,7 +74,7 @@ output stays on the console.
 | SHELL-2 | A failing command reports its error and returns to the prompt | done | `VentureKernel.Run` catches every exception and logs it to serial |
 | SHELL-3 | Commands take arguments, with quoting and clear errors | done | `CommandLine.TryParse`; boot test: `help "net"` passed the quoted name, `help "open` reported the missing quote, `help a b` printed the usage |
 | SHELL-4 | Commands show the version, uptime, memory, and network | done | `info` (version, commit, Cosmos version, uptime, memory) and `net` (device, MAC, link, address); boot test showed real values, such as 10.0.2.15 and 462 of 500 MiB free |
-| SHELL-5 | Commands are added by registering them, and `help` is generated from the registry | done | `CommandRegistry` rejects invalid and duplicate names; `help` lists 7 commands from it |
+| SHELL-5 | Commands are added by registering them, and `help` is generated from the registry | done | `CommandRegistry` rejects invalid and duplicate names; `help` lists 8 commands from it; boot test 2026-11-05: `echo`, added by one `Register` call, appeared in `help`, and `echo "a  b" c` printed `a  b c` |
 | SHELL-6 | `reboot` and `shutdown` work | done | Boot tests in QEMU without `-no-reboot`/`-no-shutdown`: a build that ran `reboot` at boot rebooted 13 times in 60 s; one that ran `shutdown` powered QEMU off in 4 s. `cosmos run` passes both flags, so there the VM pauses instead |
 
 ## Platform

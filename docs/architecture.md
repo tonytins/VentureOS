@@ -1,14 +1,14 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (the kernel-free `Venture.OS.Common` library and its tests) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-05 · **Last updated:** 2026-11-05 · **Change:** minor (the `echo` command) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
-## Current state (2026-10-15)
+## Current state (2026-11-05)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
-- **Projects:** the kernel, `Venture.OS` (15 C# files); a kernel-free
+- **Projects:** the kernel, `Venture.OS` (16 C# files); a kernel-free
   library, `Venture.OS.Common` (7 files, the shell framework); and an xUnit
   v3 test project for the library, `Venture.OS.Common.Tests` (59 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -20,8 +20,8 @@ the code wins and this page is out of date.
   optional (network). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
-- **Shell:** a command registry with seven commands (`help`, `clear`,
-  `info`, `net`, `halt`, `reboot`, `shutdown`), and input split into a
+- **Shell:** a command registry with eight commands (`help`, `clear`,
+  `echo`, `info`, `net`, `halt`, `reboot`, `shutdown`), and input split into a
   command and arguments with quoting. A failing command reports its error and
   returns to the prompt.
 - **Storage:** a 32 MiB RAM disk, formatted FAT16 and mounted at `/mnt`.
@@ -382,6 +382,7 @@ flowchart LR
 |---|---|
 | `help [command]` | Lists the commands, or shows one's summary and usage |
 | `clear` | Clears the screen |
+| `echo [text...]` | Prints its arguments on one line, separated by single spaces |
 | `info` | Version and build, commit, Cosmos version, uptime, and free and total memory |
 | `net` | Device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
 | `halt` | Ends the shell loop; the CPU halts and the machine stays on |
@@ -470,6 +471,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-05 | minor | The `echo` command, bringing the shell to eight commands (§9). |
 | 2026-10-15 | minor | The shell framework moved into `Venture.OS.Common`, a library with no Cosmos reference, tested by `Venture.OS.Common.Tests` (xUnit v3, 59 tests) locally and in CI (§2, §3 rule 6, §9, §11, §12). |
 | 2026-10-15 | minor | The project moved into `src/` (§2, §11), and the version base became 0.2.0 because moving `GitInfo.txt` resets GitInfo's count (§10). |
 | 2026-10-15 | minor | The shell (§9): parsing, the registry, seven commands, and the shell boot step; layering and boot diagrams updated. Versioning corrected: only commits that change `Venture.OS/` raise the version. |

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- New `echo` command: prints its arguments on one line, so `echo "a  b" c` shows `a  b c`.
+
 ## 0.2.0
 
 - VentureOS reaches alpha: it boots reliably, explains failures, and has a shell with arguments and commands to inspect and control the system. No other changes since 0.1.117.
