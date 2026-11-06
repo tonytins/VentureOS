@@ -21,6 +21,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
         Thread.Sleep(BootStepDelay);
 
         RunCriticalStep("filesystem", Bootstrap.BootIntoRam);
+        RunOptionalStep("system files", Bootstrap.InstallSystemFiles);
         RunCriticalStep("time manager", Bootstrap.CheckTimeManager);
         RunOptionalStep("network", Bootstrap.ConnectToNetwork);
         RunCriticalStep("shell", CreateShell);

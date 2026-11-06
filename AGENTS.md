@@ -15,10 +15,13 @@ Every .NET project lives in its own folder under `src/` and is listed in
 - `src/Venture.OS` is the kernel. `Kernel/` holds the entry point
   (`VentureKernel`), `KernelPanic`, and `KernelLog`; `Startup/` holds the boot
   steps and the RAM disk; `Shell/Commands/` holds one class per shell command.
-  `CosmosKernelClass` and the package versions are in `Venture.OS.csproj`.
-- `src/Venture.OS.Common` is kernel-free code, currently the shell framework
-  (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces). It
-  must never reference Cosmos.
+  `system/` holds Lua system files, which the build turns into C# and boot
+  installs to `/mnt/system`. `CosmosKernelClass` and the package versions are
+  in `Venture.OS.csproj`.
+- `src/Venture.OS.Common` is kernel-free code: the shell framework
+  (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and
+  Lua system support (`Scripting/`). It must never reference the Cosmos
+  kernel; `Cosmos.Executable.Lua` is allowed, since it runs on ordinary .NET.
 - `src/Venture.OS.Common.Tests` covers `Venture.OS.Common` with xUnit v3.
 
 [docs/architecture.md](docs/architecture.md) explains how the system works,

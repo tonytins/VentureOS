@@ -1,3 +1,5 @@
+using Venture.OS.Scripting;
+
 namespace Venture.OS.Startup;
 
 internal static class Bootstrap
@@ -5,6 +7,9 @@ internal static class Bootstrap
     private const string RamFilesystemName = "ramfat";
     /// <summary>Where the RAM disk is mounted.</summary>
     public const string RamMountPoint = "/mnt";
+
+    /// <summary>Where the system scripts built into the kernel are installed at boot.</summary>
+    public const string SystemDirectoryPath = RamMountPoint + "/system";
 
     /// <summary>
     /// Formats a 32 MiB RAM disk as FAT16 and mounts it at <c>/mnt</c>, reporting the step that fails.
@@ -36,6 +41,21 @@ internal static class Bootstrap
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Writes the files built into the kernel (<see cref="SystemFiles"/>) to <c>/mnt/system</c>.
+    /// </summary>
+    /// <remarks>
+    /// The RAM disk starts empty at every boot, so this always installs a fresh copy that matches the kernel.
+    /// It's optional: without it, the built-in commands still work.
+    /// </remarks>
+    public static void InstallSystemFiles()
+    {
+        KernelLog.WriteLine("Installing system files...");
+        SystemDirectory.Install(SystemDirectoryPath, SystemFiles.All);
+        var count = SystemFiles.All.Length;
+        KernelLog.WriteLine($"Installed {count} system {(count == 1 ? "file" : "files")} to {SystemDirectoryPath}.");
     }
 
     /// <summary>

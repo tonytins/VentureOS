@@ -1,0 +1,5 @@
+-- init.lua: runs once, after VentureOS finishes booting.
+--
+-- VentureOS installs this file to /mnt/system/init.lua at every boot, from
+-- the copy built into the kernel, so edits made on the running system don't
+-- survive a reboot. Change src/Venture.OS/system/init.lua instead.

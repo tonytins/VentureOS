@@ -1,34 +1,38 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-05 · **Last updated:** 2026-11-05 · **Change:** minor (Lua through the `lua` command) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-06 · **Last updated:** 2026-11-06 · **Change:** minor (system files installed to `/mnt/system`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
-## Current state (2026-11-05)
+## Current state (2026-11-06)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
-- **Projects:** the kernel, `Venture.OS` (16 C# files); a kernel-free
-  library, `Venture.OS.Common` (7 files, the shell framework); and an xUnit
-  v3 test project for the library, `Venture.OS.Common.Tests` (59 tests).
+- **Projects:** the kernel, `Venture.OS` (17 C# files, plus Lua system
+  scripts in `system/`); a kernel-free library, `Venture.OS.Common` (9
+  files: the shell framework and the system-file installer); and an xUnit
+  v3 test project for the library, `Venture.OS.Common.Tests` (74 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
-  `Venture.OS.Shell`, and `Venture.OS.Shell.Commands`.
+  `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
+  `Venture.OS.Scripting`.
 - **Platform:** Cosmos gen3 3.0.94 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
-- **Boot:** four steps, three critical (RAM filesystem, timer, shell) and one
-  optional (network). A critical failure panics with a report; an optional
+- **Boot:** five steps, three critical (RAM filesystem, timer, shell) and two
+  optional (system files, network). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
 - **Shell:** a command registry with nine commands (`help`, `clear`,
   `echo`, `info`, `lua`, `net`, `halt`, `reboot`, `shutdown`), and input split into a
   command and arguments with quoting. A failing command reports its error and
   returns to the prompt.
-- **Storage:** a 32 MiB RAM disk, formatted FAT16 and mounted at `/mnt`.
+- **Storage:** a 32 MiB RAM disk, formatted FAT16 and mounted at `/mnt`,
+  with the system files built into the kernel installed to `/mnt/system`.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** a CI boot check and ARM64 builds in CI (Wolverine),
+- **Not built yet:** Lua script commands, the `venture` table, and running
+  `init.lua` (Illini); a CI boot check and ARM64 builds in CI (Wolverine);
   persistent storage (Blue Water). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -109,6 +113,9 @@ VentureOS/
 │  │     ├─ ShellContext.cs     what a command can reach
 │  │     ├─ IShellOutput.cs     where commands write
 │  │     └─ IShellHost.cs       halt, reboot, shutdown, implemented by the kernel
+│  │  └─ Scripting/             Venture.OS.Scripting: Lua system support
+│  │     ├─ EmbeddedFile.cs     a file built into the kernel image
+│  │     └─ SystemDirectory.cs  writes those files to disk, after checking every path
 │  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
 │  └─ Venture.OS/
 │     ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
@@ -124,6 +131,8 @@ VentureOS/
 │     ├─ Shell/                    Venture.OS.Shell: what needs Cosmos
 │     │  ├─ ConsoleShellOutput.cs  IShellOutput on the console
 │     │  └─ Commands/              one class per command
+│     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
+│     │  └─ init.lua               placeholder; runs after boot from Illini phase 4
 │     ├─ Bootloader/limine.conf    Limine boot entry
 │     ├─ GitInfo.txt               base version
 │     └─ src/C/                    reserved for native C sources (empty)
@@ -225,12 +234,14 @@ flowchart TD
     subgraph BeforeRun["VentureKernel.BeforeRun"]
         Version["Starting VentureOS &lt;version&gt;..."]
         Fs["filesystem<br/>Bootstrap.BootIntoRam"]
+        SysFiles["system files<br/>Bootstrap.InstallSystemFiles"]
         Timer["time manager<br/>Bootstrap.CheckTimeManager"]
         Net["network<br/>Bootstrap.ConnectToNetwork"]
         ShellStep["shell<br/>VentureKernel.CreateShell"]
         Banner["&lt;version&gt; booted successfully!"]
         Version --> Fs
-        Fs -- ok --> Timer
+        Fs -- ok --> SysFiles
+        SysFiles -- "ok, or failure reported" --> Timer
         Timer -- ok --> Net
         Net -- "ok, or failure reported" --> ShellStep
         ShellStep -- ok --> Banner
@@ -249,11 +260,13 @@ flowchart TD
 ```
 
 The filesystem, time manager, and shell steps are critical
-(`RunCriticalStep`); the network step is optional (`RunOptionalStep`).
+(`RunCriticalStep`); the system files and network steps are optional
+(`RunOptionalStep`).
 
 | Step | Kind | Succeeds when | On failure |
 |---|---|---|---|
 | Filesystem | critical | The RAM disk registers, formats as FAT16, and mounts at `/mnt` | Reports which of the three failed, then panics |
+| System files | optional | Every file under `src/Venture.OS/system/` is written to `/mnt/system` | An invalid path or I/O error is reported and boot continues; the built-in C# commands still work |
 | Time manager | critical | Cosmos reports `TimerManager.IsInitialized` | Reports it, then panics |
 | Shell | critical | Every command registers | Registration only fails on a programming error, such as two commands with one name; it panics |
 | Network | optional | Always returns; records the MAC and DHCP address when it can | No NIC, a DHCP timeout, or no address is reported; an exception is reported and boot continues |
@@ -321,6 +334,15 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
   throwing as Cosmos's `IBlockDevice` contract requires instead of
   overflowing or copying the wrong range.
 - `/` is Cosmos's read-only virtual root, so files live under `/mnt`.
+- **System files.** Everything under `src/Venture.OS/system/` is turned
+  into byte arrays in generated C# at build time (`GenerateSystemFiles` in
+  `Venture.OS.csproj`), because Cosmos 3.0.94 doesn't expose Limine's
+  modules, so the ISO can't hand the kernel loose files. At boot,
+  `SystemDirectory.Install` checks every path, then writes the files to
+  `/mnt/system`. The RAM disk starts empty, so the system files always match
+  the kernel, and edits made on the running system are lost at reboot.
+  Cosmos's FAT16 keeps long file names (a 23-character name was read back in
+  a boot test) and ignores case when looking names up.
 - **Not built yet:** mounting a real disk, and file commands (Blue Water,
   after alpha). Whether VentureOS formats blank disks itself is an open
   decision (§13).
@@ -478,6 +500,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-06 | minor | System files (§2, §4, §7): Lua scripts under `src/Venture.OS/system/` are built into the kernel and installed to `/mnt/system` by a new optional boot step. |
 | 2026-11-05 | minor | Lua (§9): `Cosmos.Executable.Lua` replaces `LuaCSharp`, and the `lua` command runs one chunk; the Lua library is no longer an open decision (§13). |
 | 2026-11-05 | minor | `HostInfo` holds only the build's identity; the network fields it cached at boot were never read and are gone (§2, §3, §8). |
 | 2026-11-05 | minor | The `echo` command, bringing the shell to eight commands (§9). |

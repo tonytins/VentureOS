@@ -12,12 +12,12 @@ change. Statuses are `done`, `partial`, and `missing`.
 
 | Area | Done | Partial | Missing | Key numbers |
 |---|---:|---:|---:|---|
-| [Boot](#boot) | 7 | 0 | 0 | 3 boot steps: 2 critical, 1 optional |
-| [Storage](#storage) | 2 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt` |
+| [Boot](#boot) | 7 | 0 | 0 | 5 boot steps: 3 critical, 2 optional |
+| [Storage](#storage) | 3 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system` |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 6 | 0 | 0 | 9 commands |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 59 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 74 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 0 open, 3 resolved |
@@ -42,7 +42,7 @@ output stays on the console.
 |---|---|---|---|
 | BOOT-1 | The kernel boots to the shell loop on x64 | done | Headless boot on 3.0.94: `[Kernel] Entering main loop...`, `[Kernel] Calling Run()...` |
 | BOOT-2 | Critical steps (RAM filesystem, timer) panic deliberately on failure or exception | done | `VentureKernel.RunCriticalStep`; `Bootstrap.BootIntoRam` and `CheckTimeManager` return `bool` |
-| BOOT-3 | Optional steps (network) report a failure and boot continues | done | `VentureKernel.RunOptionalStep`; boot with `--nic none` reaches `Calling Run()` |
+| BOOT-3 | Optional steps (system files, network) report a failure and boot continues | done | `VentureKernel.RunOptionalStep`; boot with `--nic none` reaches `Calling Run()` |
 | BOOT-4 | A panic reports the version, failed step, and reason to serial and the console, then stays halted | done | `KernelPanic.Halt`: `Log` first, then `Console`, then `Power.Halt()` in a loop |
 | BOOT-5 | Each boot step says which part failed | done | `BootIntoRam` reports register, format, or mount; `ConnectToNetwork` reports no device, DHCP timeout, or no address |
 | BOOT-6 | The panic path is proven by a boot that triggers it | done | 2026-10-15, a temporary critical step that threw `InvalidOperationException`: the full report reached serial with the exception type name, no later step ran, `Run()` was never called, and the machine stayed halted until QEMU was stopped |
@@ -56,6 +56,7 @@ output stays on the console.
 | STOR-2 | The RAM disk validates its size and range-checks every read and write, throwing as `IBlockDevice` requires | done | `BootRamDisk` constructor and `GetByteRange` |
 | STOR-3 | Files persist across boots on a real disk | missing | Only the RAM disk is mounted; nothing reads `StorageManager.Partitions` |
 | STOR-4 | The shell can list, read, and write files, and show mounts and free space | missing | No file commands are registered (Blue Water) |
+| STOR-5 | The system files built into the kernel are installed to `/mnt/system` at boot | done | `Bootstrap.InstallSystemFiles`, `SystemDirectory.Install` (15 tests). Boot test 2026-11-06: serial shows `Installed 1 system file to /mnt/system.` (2 with the probe), and `lua` read `system/init.lua` back, as well as a temporary `system/commands/long-name-probe.lua` |
 
 ## Network
 
