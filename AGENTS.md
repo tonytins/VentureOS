@@ -1,229 +1,142 @@
-# AGENTS.md: guide for AI agents and contributors
+# Project Guidelines
 
-VentureOS is a hobby operating system written in **C#** on the
-[Cosmos](https://github.com/CosmosOS/Cosmos) gen3 framework
-(`Cosmos.Sdk` 3.0.94, .NET 10). Cosmos compiles the kernel ahead of time to
-a bootable ELF, which Limine loads from an ISO. It targets **x64** and
-**ARM64** and runs in QEMU. It is the spiritual successor to
-[TOMAS](https://github.com/tonytins/tomas/). Write the name as **VentureOS**
-in prose; the project is `Venture.OS`, the assembly is `Venture`, and the
-namespaces start with `Venture.OS`.
+## Project structure
 
-This is early-stage, solo work held to production standards. Read this file
-first, then [docs/architecture.md](./docs/architecture.md),
-[README.md](./README.md), and [changelog.md](./changelog.md).
+VentureOS is a hobby operating system written in C# on the
+[Cosmos](https://github.com/CosmosOS/Cosmos) gen3 framework (`Cosmos.Sdk`
+3.0.94, .NET 10). Cosmos compiles the kernel ahead of time to an ELF, which
+Limine boots from an ISO. It targets x64 and ARM64 and runs in QEMU. Write the
+name as **VentureOS** in prose; the project is `Venture.OS`, the assembly is
+`Venture`, and namespaces start with `Venture.OS`.
 
-## 1. Workspace map
+Every .NET project lives in its own folder under `src/` and is listed in
+`src/Venture.slnx`:
 
-```text
-src/
-  Venture.slnx               solution (the VS Code default solution)
-  Venture.OS.Common/         kernel-free library: no Cosmos, AOT-compatible, tested on ordinary .NET
-    Shell/                   namespace Venture.OS.Shell: CommandLine, CommandRegistry, CommandShell, interfaces
-  Venture.OS.Common.Tests/   xUnit v3 tests for Venture.OS.Common
-  Venture.OS/
-    Venture.OS.csproj          Cosmos SDK project; package versions and CosmosKernelClass live here
-    HostInfo.cs                OS name, version, build number, network identity
-    GlobalUsings.cs            global usings for System, Cosmos.Kernel.*, and Venture.OS.Kernel
-    Kernel/                    namespace Venture.OS.Kernel
-      VentureKernel.cs         entry point: OnBoot, BeforeRun (boot sequence), Run (shell loop)
-      KernelPanic.cs           deliberate halt with a report to serial and the console
-      KernelLog.cs             system messages to serial (prefixed [Venture]) and the console
-    Startup/
-      Bootstrap.cs             boot steps: RAM disk, timer check, network and DHCP
-      BootRamDisk.cs           in-memory IBlockDevice backing the FAT16 disk at /mnt
-    Shell/                     namespace Venture.OS.Shell: the commands and ConsoleShellOutput
-      Commands/                one class per command (help, clear, info, net, halt, reboot, shutdown)
-    Bootloader/limine.conf     Limine boot entry (boots /boot/Venture.elf)
-    GitInfo.txt                base version for GitInfo (major.minor.patch)
-    src/C/                     reserved for native C sources (empty)
-    .vscode/tasks.json         build, run, and debug tasks for QEMU on x64 and ARM64
-global.json                  opts dotnet test into Microsoft.Testing.Platform (needed by xUnit v3 on .NET 10)
-run.sh                       check, build, and run x64 with the Cosmos CLI; pass --headless for serial only
-.github/workflows/cosmos.yml CI: runs the tests, installs the Cosmos toolchain, and builds
-changelog.md                 user-facing history by version
+- `src/Venture.OS` is the kernel. `Kernel/` holds the entry point
+  (`VentureKernel`), `KernelPanic`, and `KernelLog`; `Startup/` holds the boot
+  steps and the RAM disk; `Shell/Commands/` holds one class per shell command.
+  `CosmosKernelClass` and the package versions are in `Venture.OS.csproj`.
+- `src/Venture.OS.Common` is kernel-free code, currently the shell framework
+  (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces). It
+  must never reference Cosmos.
+- `src/Venture.OS.Common.Tests` covers `Venture.OS.Common` with xUnit v3.
+
+[docs/architecture.md](docs/architecture.md) explains how the system works,
+[docs/ROADMAP.md](docs/ROADMAP.md) tracks milestones, and
+[docs/scorecard.md](docs/scorecard.md) records verified status. Read
+`docs/architecture.md` before changing boot, storage, networking, or the shell.
+
+Never commit build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`).
+
+## Build and test
+
+```sh
+dotnet test --project src/Venture.OS.Common.Tests   # all tests must pass
+cosmos check                                        # always before building
+cosmos build -p src/Venture.OS                      # no new warnings
+./run.sh                                            # boots x64 in QEMU; --headless for serial only
 ```
 
-Every .NET project, tests included, lives in its own folder under `src/`
-and is listed in `src/Venture.slnx`.
+- `cosmos check` also reports updates to the Cosmos CLI. Mention one to the
+  owner after the build succeeds.
+- Kernel code has no unit tests; it is checked by booting. If you touch boot,
+  storage, or networking, boot it and read the console or serial log. If you
+  can't boot, say so.
+- If you touch architecture-sensitive code, also build ARM64 with
+  `cosmos build -a arm64 -p src/Venture.OS`.
+- If you change `Venture.OS.Common`, add or update its tests in the same change
+  and check that a new test fails without the fix.
 
-Build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`) is ignored;
-never commit it.
+## C# and Cosmos
 
-`Stash/` is also ignored. It's the owner's personal space for brainstormed
-material and notes. Read it for context when it helps, but treat it as
-drafts rather than decisions, and don't depend on it from code, docs, or
-skills.
+Follow the [.NET guidelines skill](.agents/skills/dotnet-guidelines/SKILL.md)
+and [.editorconfig](.editorconfig) for style, and the
+[Cosmos gen3 skill](.agents/skills/cosmos-gen3/SKILL.md) for the CLI and kernel
+APIs. Where they disagree with this file, this file wins.
 
-## 2. How it works today
+### Never crash
 
-- **Boot.** `VentureKernel.BeforeRun` runs the `Bootstrap` steps in order through
-  `RunCriticalStep` or `RunOptionalStep`, then clears the screen and shows
-  the version banner. The RAM filesystem and the timer are critical: they
-  return `false` on failure, and a failure or exception panics the kernel.
-  Networking is optional: an exception is reported and boot continues.
-  Creating the shell is the last critical step.
-- **Panic.** `KernelPanic.Halt` writes the version, the failed step, and the
-  reason to serial and the console, then halts the CPU in a loop. It never
-  returns.
-- **System messages.** `KernelLog.WriteLine` writes boot step results, the
-  banner, failures, and panics to serial with a `[Venture] ` prefix, then to
-  the console. Use it for anything a headless boot should be able to check;
-  ordinary command output uses `Console` only.
-- **Storage.** A 32 MiB RAM disk is formatted as FAT16 and mounted at `/mnt`
-  through `VfsManager`. Nothing persists across boots.
-- **Network.** If a NIC is present, `Bootstrap.ConnectToNetwork` records its
-  MAC and name in `HostInfo` and asks DHCP for an address.
-- **Shell.** `VentureKernel.Run` is called in a loop. It reads one line and
-  hands it to `CommandShell`, which splits it with `CommandLine` (quotes and
-  escapes), finds the command in `CommandRegistry`, checks the argument
-  count, and runs it. `help` is generated from the registry. Commands write
-  through `IShellOutput` and ask for halt, reboot, or shutdown through
-  `IShellHost`. `Run` catches every exception, reports it, and returns to
-  the prompt. The shell framework lives in `Venture.OS.Common`; the
-  commands live in the kernel because they use Cosmos. To add a command,
-  write a class in `src/Venture.OS/Shell/Commands/` and
-  register it in `VentureKernel.CreateShell`.
-- **Version.** `HostInfo.Version` comes from the GitInfo package:
-  `GitInfo.txt` holds the base `major.minor.patch`, and the patch number
-  goes up by one with each later commit that changes `src/Venture.OS/`. Commits
-  that only touch docs or CI keep the same version. `BuildNumber` is derived from
-  the commit hash. The changelog only records versions with user-facing
-  changes, so its latest entry is expected to lag behind the version the
-  kernel reports.
-- **Lua.** `LuaCSharp` is referenced in the project but not used in code
-  yet.
+There is no host process underneath: an unhandled exception stops the machine
+with no explanation. Stability outranks features.
 
-## 3. Golden rules
-
-### Never crash uncontrolled
-
-There is no host process underneath. An unhandled exception in the kernel
-stops the machine with no explanation, so treat stability as the top
-priority. The rule depends on the phase:
-
-- **During boot (`BeforeRun`):** optional steps degrade, and critical ones
-  panic deliberately. A step is critical if the system can't do its job
-  without it; running on with it broken only makes later failures harder
-  to understand. Critical steps return `bool` and go through
-  `RunCriticalStep`; optional steps go through `RunOptionalStep`. When you
-  add a boot step, decide which it is and say so in the change. Never let
-  an exception escape `BeforeRun` on its own.
-- **After boot (the `Run` loop):** never crash. Nothing that happens once
-  the shell is running may halt the system, except the user's `halt`
-  command. Commands and the subsystems they call report errors and return
-  to the prompt. `Run` catches everything as a last resort; don't rely on
-  it in place of handling errors where they happen.
-- **Panic only through `KernelPanic.Halt`**, and only during boot. Don't
-  call `Power.Halt`, `Stop`, or an endless loop to stop the system
-  anywhere else.
-- **Kernel-free logic goes in `Venture.OS.Common`, with tests.** Parsing,
-  formatting, validation, and anything else that doesn't need hardware
-  belongs there, where it's tested on ordinary .NET. The library must never
-  reference Cosmos; its project builds with the AOT analyzers and warnings
-  as errors, so anything the kernel couldn't compile fails there first.
-- **Validate everything that crosses a boundary:** shell input, file and
-  disk contents, network packets, device-reported values, and sizes passed
-  to constructors. Reject bad input with a clear console message.
-- **Check sizes and offsets before casting or slicing.** Block devices and
-  buffers use `ulong` counts; check range and overflow before narrowing to
-  `int` or calling `AsSpan`.
-- **Report failures explicitly.** Boot steps and commands print what failed.
-  Don't swallow a failure or substitute a silent default, and don't print
-  success when a step was skipped.
-- **Bound loops and waits** that depend on hardware or the network, such as
-  DHCP. A missing device must not hang boot.
-- **Don't add `Thread.Sleep` or blocking waits** to code paths that don't
-  already need them.
+- **During boot**, `VentureKernel.BeforeRun` runs each step through
+  `RunCriticalStep` or `RunOptionalStep`. A step is critical if the system
+  can't do its job without it; it returns `bool`, and a failure panics. An
+  optional step reports its failure and boot continues. When you add a step,
+  decide which it is and say so in the change.
+- **After boot**, nothing may halt the system except the user's `halt`,
+  `reboot`, or `shutdown`. Commands report errors and return to the prompt.
+  `Run` catches everything as a last resort; don't rely on it in place of
+  handling errors where they happen.
+- Panic only through `KernelPanic.Halt`, and only during boot.
+- Validate everything that crosses a boundary: shell input, disk contents,
+  network packets, device-reported values, and sizes passed to constructors.
+  Check `ulong` sizes and offsets before narrowing to `int` or slicing.
+- Report failures explicitly. Don't swallow one, substitute a silent default,
+  or print success for a skipped step.
+- Bound every loop and wait that depends on hardware or the network. Don't add
+  `Thread.Sleep` to paths that don't already need it.
 
 ### Cosmos constraints
 
-- Use the [Cosmos gen3 skill](./.agents/skills/cosmos-gen3/SKILL.md) for
-  the CLI, the kernel lifecycle, execution contexts, logging, and subsystem
-  APIs. The Cosmos docs track the latest release, so check that an API
-  exists in the pinned version before using it.
-- The kernel is compiled ahead of time with no JIT. Avoid reflection,
-  `dynamic`, runtime code generation, and APIs that Cosmos doesn't
-  implement. Prefer simple types, `Span<T>`, and explicit control flow.
-- Use Cosmos APIs (`Cosmos.Kernel.*`, aliased as `Sys`) for hardware,
-  storage, timers, and networking. Check the Cosmos gen3 docs or the
-  package's public API before assuming a .NET BCL feature works in the
-  kernel. If you can't confirm something works, say so rather than guess.
-- Keep both architectures building. Don't add x64-only code without a guard
-  and a note.
-- Changing the `Cosmos.*` package versions changes the kernel runtime.
-  Bump them deliberately, in a change of their own, and call it out.
-- New NuGet dependencies need the owner's approval, and they must work
-  under Cosmos's ahead-of-time compiler.
+- The kernel is compiled ahead of time with no JIT. Avoid reflection, `dynamic`,
+  runtime code generation, and BCL APIs Cosmos doesn't implement. Prefer simple
+  types, `Span<T>`, and explicit control flow.
+- The Cosmos docs track the latest release. Check that an API exists in the
+  pinned version before using it, and say so when you can't confirm it.
+- Put anything that doesn't need hardware (parsing, formatting, validation) in
+  `Venture.OS.Common`, which builds with the AOT analyzers and warnings as
+  errors, so problems the kernel couldn't compile fail there first.
+- Keep both architectures building. Guard and note any x64-only code.
+- Bump the `Cosmos.*` package versions only in a change of their own. New NuGet
+  dependencies need the owner's approval and must work under Cosmos's compiler.
 
-### Code style
+### Code
 
-- Follow the [.NET guidelines skill](./.agents/skills/dotnet-guidelines/SKILL.md)
-  for naming, comments, control flow, interfaces, API shape, error handling,
-  and tests. Where it and this file disagree, this file wins for VentureOS.
-- Follow [.editorconfig](./.editorconfig): file-scoped namespaces, `var`,
-  pattern matching and switch expressions, expression-bodied members on one
-  line, PascalCase types, members, and constants, camelCase locals and
-  private fields, and `I`/`T` prefixes for interfaces and type parameters.
-- Put a namespace's shared usings in `GlobalUsings.cs` rather than at the
-  top of each file, and don't add duplicates there.
-- Give public and internal APIs `///` doc comments. Comments explain why,
-  not what.
-- Keep `VentureKernel.cs` thin. It's named so the class doesn't clash with
-  the `Venture.OS.Kernel` namespace; `CosmosKernelClass` in the project file
-  points Cosmos at it. Put boot steps in `Startup/`, and put new
-  subsystems (commands, drivers, filesystems) in their own folder and
-  namespace under `Venture.OS`.
-- Match the surrounding code when it disagrees with this file, and mention
-  the disagreement.
+- Keep `VentureKernel.cs` thin. Put boot steps in `Startup/` and new subsystems
+  in their own folder and namespace under `Venture.OS`.
+- To add a command, write a class in `src/Venture.OS/Shell/Commands/` and
+  register it in `VentureKernel.CreateShell`. `help` is generated from the
+  registry. Commands write through `IShellOutput` and ask for power changes
+  through `IShellHost`.
+- Use `KernelLog.WriteLine` for messages a headless boot should be able to
+  check (boot results, the banner, failures). Ordinary command output goes to
+  the console only.
+- Give public and internal APIs `///` doc comments that explain why, not what.
+  Put shared usings in `GlobalUsings.cs`.
 
-## 4. Before you finish a task
-
-The tests, the build, and a boot in QEMU are the gate. The tests cover
-`Venture.OS.Common`; kernel code is still checked by booting.
-Always run `cosmos check` before building. It reports system and tool
-information and checks for updates to the Cosmos CLI itself. If it reports
-an update, mention it to the owner after the build succeeds.
-
-```sh
-dotnet test --project src/Venture.OS.Common.Tests     # all tests must pass
-cosmos check                                   # always first before building: system and tool info, CLI updates
-cosmos build -p src/Venture.OS                 # must build with no new warnings
-./run.sh                                       # boots x64 in QEMU; confirm the banner and your change
-```
-
-- If you touched boot, storage, or networking, boot it and read the
-  console. Without QEMU, say that you couldn't boot it.
-- If you touched architecture-sensitive code, also build ARM64
-  (`cosmos build -a arm64 -p src/Venture.OS`, or the "Build ARM64" VS Code
-  task).
-- If you changed `Venture.OS.Common`, add or update its tests in the same
-  change, and check that a new test fails without your fix.
-- Update [changelog.md](./changelog.md) only for changes a user would
-  notice, under the version the kernel reports for that commit. Skip
-  internal changes such as refactors, docs, and tooling. Also update
-  [README.md](./README.md) if setup or build steps change, and this file if
-  the layout or rules change.
-- Bring [docs/architecture.md](./docs/architecture.md) up to date when
-  behavior, layout, or a principle changes: edit the section, refresh the
-  current-state summary, and add a revision-history row.
-- Bring [docs/scorecard.md](./docs/scorecard.md) up to date: flip the rows
-  you moved, with their new evidence, and update the summary counts.
-- Bring [docs/ROADMAP.md](./docs/ROADMAP.md) up to date: tick checklist
-  items, update the milestone's done percentage and estimate, bump the
-  status line, and add a revision-history row. Pick work from its current
-  focus and ranked list, and leave scope decisions to the owner.
-- Don't edit `GitInfo.txt` unless you're asked to cut a version.
+## Keeping docs current
 
 Describe only what works today, and keep the tree building at every step.
 
-## 5. Calling things out
+- [changelog.md](changelog.md): only changes a user would notice, under the
+  version the kernel reports for that commit. `GitInfo.txt` holds the base
+  version, and the patch number rises with each commit that touches
+  `src/Venture.OS/`, so the changelog is expected to lag. Don't edit
+  `GitInfo.txt` unless asked to cut a version.
+- `docs/architecture.md`: update the section, the current-state summary, and
+  the revision history when behavior, layout, or a principle changes.
+- `docs/scorecard.md`: flip the rows you moved, with evidence, and update the
+  summary counts.
+- `docs/ROADMAP.md`: tick checklist items, update the milestone's progress and
+  estimate, and add a revision-history row. Leave scope decisions to the owner.
+- [README.md](README.md) when setup or build steps change, and this file when
+  the layout or rules change.
 
-The owner often reviews changes alone, so make review easy:
+State breaking changes, package bumps, new dependencies, and boot-order changes
+in the summary or commit message, along with anything you couldn't verify. If
+you notice a risk outside your task, report it rather than fixing it quietly.
 
-- State breaking changes, package version bumps, new dependencies, and
-  boot-order changes clearly in the summary or commit message.
-- List judgment calls and anything you couldn't verify, such as "builds,
-  but not booted on ARM64".
-- If you notice a risk outside your task, report it. Don't fix it quietly
-  in an unrelated change.
+See [REVIEW.md](REVIEW.md) for the project's review checklist.
+
+## Personal Configuration
+
+Keep personal preferences and machine-specific guidance in git-ignored
+`*.local` files or directories (such as `AGENTS.local.md`), rather than in
+shared project instructions. Check for relevant local guidance before
+environment-specific work. You can create or update these files for details
+such as:
+
+- Coding preferences
+- Local build and development environment
+- Personal shortcuts or workflows
