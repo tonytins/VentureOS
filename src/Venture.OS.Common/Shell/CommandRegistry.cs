@@ -3,18 +3,28 @@ using System.Diagnostics.CodeAnalysis;
 namespace Venture.OS.Shell;
 
 /// <summary>
-/// The commands the shell knows, by name.
+/// The commands the shell knows, by name: the built-in commands registered here, then any from added sources.
 /// </summary>
 public sealed class CommandRegistry
 {
     private readonly Dictionary<string, IShellCommand> commands = [];
+    private readonly List<ICommandSource> sources = [];
 
-    /// <summary>Every registered command, sorted by name.</summary>
+    /// <summary>
+    /// Every command, sorted by name: the registered ones, then each source's, skipping names already listed.
+    /// </summary>
     public IReadOnlyList<IShellCommand> Commands
     {
         get
         {
-            var sorted = new List<IShellCommand>(commands.Values);
+            var all = new Dictionary<string, IShellCommand>(commands);
+            foreach (var source in sources)
+            {
+                foreach (var command in source.Commands)
+                    all.TryAdd(command.Name, command);
+            }
+
+            var sorted = new List<IShellCommand>(all.Values);
             sorted.Sort((left, right) => string.CompareOrdinal(left.Name, right.Name));
             return sorted;
         }
@@ -45,15 +55,43 @@ public sealed class CommandRegistry
     }
 
     /// <summary>
-    /// Finds a command by name, ignoring case.
+    /// Adds a place to look for commands that aren't registered, such as Lua scripts. Sources are asked in the
+    /// order they were added, and only for names no registered command has.
+    /// </summary>
+    public void AddSource(ICommandSource source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        sources.Add(source);
+    }
+
+    /// <summary>
+    /// Finds a command by name, ignoring case: a registered command first, then the sources in order.
     /// </summary>
     public bool TryGet(string name, [NotNullWhen(true)] out IShellCommand? command)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return commands.TryGetValue(name.ToLowerInvariant(), out command);
+
+        var lowercase = name.ToLowerInvariant();
+        if (commands.TryGetValue(lowercase, out command))
+            return true;
+
+        if (!IsValidName(lowercase))
+            return false;
+
+        foreach (var source in sources)
+        {
+            if (source.TryGet(lowercase, out command))
+                return true;
+        }
+
+        return false;
     }
 
-    private static bool IsValidName(string? name)
+    /// <summary>
+    /// Whether <paramref name="name"/> is a valid command name: lowercase letters, digits, and hyphens. Script
+    /// commands use the same rule, so a name can never climb out of their directory.
+    /// </summary>
+    internal static bool IsValidName(string? name)
     {
         if (string.IsNullOrEmpty(name))
             return false;

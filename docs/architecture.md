@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-06 · **Last updated:** 2026-11-06 · **Change:** minor (system files installed to `/mnt/system`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-06 · **Last updated:** 2026-11-06 · **Change:** minor (Lua script commands; `echo` moves to Lua) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-06)
 
@@ -8,10 +8,10 @@ What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
-- **Projects:** the kernel, `Venture.OS` (17 C# files, plus Lua system
-  scripts in `system/`); a kernel-free library, `Venture.OS.Common` (9
-  files: the shell framework and the system-file installer); and an xUnit
-  v3 test project for the library, `Venture.OS.Common.Tests` (74 tests).
+- **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
+  scripts in `system/`); a kernel-free library, `Venture.OS.Common` (13
+  files: the shell framework and Lua support); and an xUnit v3 test project
+  for the library, `Venture.OS.Common.Tests` (111 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -22,17 +22,17 @@ the code wins and this page is out of date.
   optional (system files, network). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
-- **Shell:** a command registry with nine commands (`help`, `clear`,
-  `echo`, `info`, `lua`, `net`, `halt`, `reboot`, `shutdown`), and input split into a
-  command and arguments with quoting. A failing command reports its error and
+- **Shell:** a command registry with eight built-in commands (`help`,
+  `clear`, `info`, `lua`, `net`, `halt`, `reboot`, `shutdown`), plus Lua
+  script commands from `/mnt/system/commands` (`echo`), and input split
+  into a command and arguments with quoting. A failing command reports its error and
   returns to the prompt.
 - **Storage:** a 32 MiB RAM disk, formatted FAT16 and mounted at `/mnt`,
   with the system files built into the kernel installed to `/mnt/system`.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** Lua script commands, the `venture` table, and running
-  `init.lua` (Illini); a CI boot check and ARM64 builds in CI (Wolverine);
+- **Not built yet:** the `venture` table and running `init.lua` (Illini); a CI boot check and ARM64 builds in CI (Wolverine);
   persistent storage (Blue Water). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -112,10 +112,14 @@ VentureOS/
 │  │     ├─ IShellCommand.cs    what every command declares
 │  │     ├─ ShellContext.cs     what a command can reach
 │  │     ├─ IShellOutput.cs     where commands write
-│  │     └─ IShellHost.cs       halt, reboot, shutdown, implemented by the kernel
+│  │     ├─ IShellHost.cs       halt, reboot, shutdown, implemented by the kernel
+│  │     ├─ ICommandSource.cs   another place to find commands, after the registered ones
+│  │     └─ ShellOutputWriter.cs  a TextWriter that hands complete lines to IShellOutput
 │  │  └─ Scripting/             Venture.OS.Scripting: Lua system support
 │  │     ├─ EmbeddedFile.cs     a file built into the kernel image
-│  │     └─ SystemDirectory.cs  writes those files to disk, after checking every path
+│  │     ├─ SystemDirectory.cs  writes those files to disk, after checking every path
+│  │     ├─ LuaRunner.cs        runs Lua for a command: output to the shell, errors reported
+│  │     └─ ScriptCommands.cs   <name>.lua files as commands
 │  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
 │  └─ Venture.OS/
 │     ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
@@ -132,7 +136,8 @@ VentureOS/
 │     │  ├─ ConsoleShellOutput.cs  IShellOutput on the console
 │     │  └─ Commands/              one class per command
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
-│     │  └─ init.lua               placeholder; runs after boot from Illini phase 4
+│     │  ├─ init.lua               placeholder; runs after boot from Illini phase 4
+│     │  └─ commands/              Lua command scripts, such as echo.lua
 │     ├─ Bootloader/limine.conf    Limine boot entry
 │     ├─ GitInfo.txt               base version
 │     └─ src/C/                    reserved for native C sources (empty)
@@ -390,11 +395,20 @@ flowchart LR
   command, so commands don't repeat that check.
 - **The registry** (`CommandRegistry`) rejects invalid and duplicate names,
   looks names up ignoring case, and lists commands in name order. `help`
-  is generated from it.
+  is generated from it. Names it doesn't know go to its sources
+  (`ICommandSource`) in order, so a source can never replace a built-in.
+- **Script commands** (`ScriptCommands`, the one source) are
+  `/mnt/system/commands/<name>.lua` files. The directory is read on every
+  lookup, so a script saved on the running system works at once; if it's
+  missing, there are just no script commands. Only names that pass the
+  registry's rule are looked up, so a name can't climb out of the directory.
+  A script's leading `--` comments give its summary and a `-- Usage:` line,
+  it gets its arguments as `...`, and it checks them itself.
 - **Where it lives.** The framework (`CommandLine`, `CommandRegistry`,
-  `CommandShell`, `ShellContext`, and the three interfaces) is in
-  `Venture.OS.Common` and covered by tests. The commands and
-  `ConsoleShellOutput` are in the kernel, because they use Cosmos.
+  `CommandShell`, `ShellContext`, the interfaces, and script commands) is in
+  `Venture.OS.Common` and covered by tests, including real Lua runs on
+  ordinary .NET. The built-in commands and `ConsoleShellOutput` are in the
+  kernel, because they use Cosmos.
 - **Output and power.** Commands write through `IShellOutput` and ask for
   halt, reboot, or shutdown through `IShellHost`, which `VentureKernel`
   implements. That keeps power calls in `Venture.OS.Kernel` and lets tests
@@ -404,7 +418,7 @@ flowchart LR
 |---|---|
 | `help [command]` | Lists the commands, or shows one's summary and usage |
 | `clear` | Clears the screen |
-| `echo [text...]` | Prints its arguments on one line, separated by single spaces |
+| `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
 | `info` | Version and build, commit, Cosmos version, uptime, and free and total memory |
 | `lua <code>` | Runs one chunk of Lua 5.5 in a fresh interpreter |
 | `net` | Device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
@@ -417,11 +431,14 @@ counter on x64, so it counts from when the CPU started. Under `cosmos run`,
 QEMU runs with `-no-reboot -no-shutdown`, so `reboot` and `shutdown` pause
 the virtual machine instead; without those flags both work.
 
-**Lua.** `lua <code>` runs one chunk through `Cosmos.Executable.Lua`, a Lua
-5.5 interpreter from the CosmosOS organization. Each run gets a fresh
-interpreter, disposed afterwards, so nothing carries over. `print` writes to
-the console, and relative paths in `dofile` and `io.open` start at `/mnt`.
-Lua errors and `os.exit` are caught in the command and reported there. A
+**Lua.** `lua <code>` and script commands both run through `LuaRunner`,
+on `Cosmos.Executable.Lua`, a Lua 5.5 interpreter from the CosmosOS
+organization. Each run gets a fresh interpreter, disposed afterwards, so
+nothing carries over. `print`, `io.write`, and `io.stderr` go through
+`IShellOutput` (`ShellOutputWriter` joins pieces into lines), and relative
+paths in `dofile` and `io.open` start at `/mnt`. Lua errors are reported with
+their traceback, and `os.exit` with a non-zero status as that status; neither
+reaches the shell loop. A
 chunk can't be interrupted yet, so an endless loop leaves the shell waiting.
 Cosmos's limits apply: local time is UTC, `os.getenv` returns nil, and there
 is no `io.popen` or `/tmp`.
@@ -500,6 +517,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-06 | minor | Script commands (§2, §9): `/mnt/system/commands/<name>.lua` runs as `name` through a new command source, Lua output goes through `IShellOutput`, and `echo` is now a script. |
 | 2026-11-06 | minor | System files (§2, §4, §7): Lua scripts under `src/Venture.OS/system/` are built into the kernel and installed to `/mnt/system` by a new optional boot step. |
 | 2026-11-05 | minor | Lua (§9): `Cosmos.Executable.Lua` replaces `LuaCSharp`, and the `lua` command runs one chunk; the Lua library is no longer an open decision (§13). |
 | 2026-11-05 | minor | `HostInfo` holds only the build's identity; the network fields it cached at boot were never read and are gone (§2, §3, §8). |

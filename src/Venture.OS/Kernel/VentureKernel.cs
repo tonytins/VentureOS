@@ -1,3 +1,4 @@
+using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Shell.Commands;
 using Venture.OS.Startup;
@@ -65,8 +66,13 @@ public class VentureKernel : Sys.Kernel, IShellHost
     }
 
     /// <summary>
-    /// Registers the shell's commands. Fails only on a programming error, such as two commands with one name.
+    /// Registers the built-in commands, then the Lua command scripts in <c>/mnt/system/commands</c>. Fails only on a
+    /// programming error, such as two commands with one name.
     /// </summary>
+    /// <remarks>
+    /// Built-in commands win any name clash, and the built-ins alone keep the shell usable if the system files
+    /// didn't install.
+    /// </remarks>
     private bool CreateShell()
     {
         CommandRegistry commands = new();
@@ -77,8 +83,8 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new HaltCommand());
         commands.Register(new RebootCommand());
         commands.Register(new ShutdownCommand());
-        commands.Register(new EchoCommand());
         commands.Register(new LuaCommand());
+        commands.AddSource(new ScriptCommands(Bootstrap.CommandsDirectoryPath, Bootstrap.RamMountPoint));
 
         shell = new CommandShell(new ShellContext(new ConsoleShellOutput(), this, commands));
         return true;

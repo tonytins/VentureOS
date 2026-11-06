@@ -11,6 +11,9 @@ internal static class Bootstrap
     /// <summary>Where the system scripts built into the kernel are installed at boot.</summary>
     public const string SystemDirectoryPath = RamMountPoint + "/system";
 
+    /// <summary>Where the Lua command scripts are installed: <c>&lt;name&gt;.lua</c> runs as the command <c>name</c>.</summary>
+    public const string CommandsDirectoryPath = SystemDirectoryPath + "/commands";
+
     /// <summary>
     /// Formats a 32 MiB RAM disk as FAT16 and mounts it at <c>/mnt</c>, reporting the step that fails.
     /// </summary>

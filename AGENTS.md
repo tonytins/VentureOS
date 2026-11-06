@@ -98,10 +98,13 @@ with no explanation. Stability outranks features.
 
 - Keep `VentureKernel.cs` thin. Put boot steps in `Startup/` and new subsystems
   in their own folder and namespace under `Venture.OS`.
-- To add a command, write a class in `src/Venture.OS/Shell/Commands/` and
-  register it in `VentureKernel.CreateShell`. `help` is generated from the
-  registry. Commands write through `IShellOutput` and ask for power changes
-  through `IShellHost`.
+- Prefer writing a new command in Lua, as `src/Venture.OS/system/commands/<name>.lua`:
+  its first `--` comment is its summary, a `-- Usage:` comment its usage, and
+  it gets its arguments as `...`. Write it in C# only when it needs the kernel,
+  as a class in `src/Venture.OS/Shell/Commands/` registered in
+  `VentureKernel.CreateShell`; built-in commands win any name clash. `help` is
+  generated from both. C# commands write through `IShellOutput` and ask for
+  power changes through `IShellHost`.
 - Use `KernelLog.WriteLine` for messages a headless boot should be able to
   check (boot results, the banner, failures). Ordinary command output goes to
   the console only.

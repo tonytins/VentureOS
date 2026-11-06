@@ -85,11 +85,64 @@ public sealed class CommandRegistryTests
     }
 
     [Fact]
+    public void AsksSourcesForNamesItDoesNotKnow()
+    {
+        CommandRegistry registry = new();
+        TestCommand fromSource = new("extra");
+        registry.AddSource(new ListSource(fromSource));
+
+        Assert.True(registry.TryGet("EXTRA", out var found));
+        Assert.Same(fromSource, found);
+    }
+
+    [Fact]
+    public void AsksSourcesInOrderAndOnlyWithValidLowercaseNames()
+    {
+        CommandRegistry registry = new();
+        ListSource first = new(new TestCommand("tool"));
+        ListSource second = new(new TestCommand("tool"));
+        registry.AddSource(first);
+        registry.AddSource(second);
+
+        registry.TryGet("TOOL", out var found);
+        registry.TryGet("../tool", out _);
+
+        Assert.Same(first.Commands[0], found);
+        Assert.Equal(["tool"], first.Requests);
+        Assert.Empty(second.Requests);
+    }
+
+    [Fact]
+    public void ListsSourceCommandsWithTheRegisteredOnes()
+    {
+        CommandRegistry registry = new();
+        registry.Register(new TestCommand("help"));
+        registry.AddSource(new ListSource(new TestCommand("echo"), new TestCommand("help")));
+
+        Assert.Equal(["echo", "help"], registry.Commands.Select(command => command.Name));
+    }
+
+    [Fact]
     public void RejectsNullArguments()
     {
         CommandRegistry registry = new();
 
         Assert.Throws<ArgumentNullException>(() => registry.Register(null!));
         Assert.Throws<ArgumentNullException>(() => registry.TryGet(null!, out _));
+        Assert.Throws<ArgumentNullException>(() => registry.AddSource(null!));
+    }
+
+    private sealed class ListSource(params IShellCommand[] commands) : ICommandSource
+    {
+        public IReadOnlyList<IShellCommand> Commands { get; } = commands;
+
+        public List<string> Requests { get; } = [];
+
+        public bool TryGet(string name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IShellCommand? command)
+        {
+            Requests.Add(name);
+            command = Commands.FirstOrDefault(candidate => candidate.Name == name);
+            return command is not null;
+        }
     }
 }

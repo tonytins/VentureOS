@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.7
+
+- Commands can be written in Lua. A file at `/mnt/system/commands/<name>.lua` runs as the command `name`, with its arguments as `...`, and shows up in `help`. Its first comment line is its description, and a `-- Usage:` comment line its usage.
+- `echo` is now one of these Lua scripts, and works as before.
+- Lua output, from `lua` and from script commands, now goes through the shell like every other command.
+- Boot installs VentureOS's own system files to `/mnt/system`, and says so in the boot messages. They come from the kernel, so changes made to them are lost at reboot.
+
 ## 0.2.5
 
 - New `lua` command: runs a line of Lua 5.5, such as `lua "print(6 * 7)"`. Relative paths start at `/mnt`, so `lua "dofile('script.lua')"` runs a script from the RAM disk. Lua errors are shown with a traceback, and the shell carries on.
