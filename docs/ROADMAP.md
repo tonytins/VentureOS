@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (Wolverine: the test project is in) · **Stage:** alpha
+> **Last reviewed:** 2026-11-05 · **Last updated:** 2026-11-05 · **Change:** minor (Illini complete: the `lua` command) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -38,8 +38,6 @@ In order:
 
 1. **CI checks** (Wolverine): a headless boot check in CI, and an ARM64
    build in CI.
-2. **Choose the Lua library** (Illini): I'm tracking down a
-   Cosmos-based Lua API to use in place of, or beside, `LuaCSharp`.
 
 ## Milestones
 
@@ -53,10 +51,10 @@ In order:
 | Wolverine | Tests and CI | 33% | 5–10 | Test project done (59 tests, run in CI). Missing: headless boot check and ARM64 build in CI |
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
-| Illini | Lua scripting | 0% | 10–25 | Library not chosen yet |
+| Illini | Lua scripting | 100% | 0 | `Cosmos.Executable.Lua` (Lua 5.5) in place of `LuaCSharp`; a one-shot `lua <code>` command |
 | Saluki | ARM64 | 0% | 6–12 | Boot and test on ARM64 |
 | Borealis | Releases | 0% | 3–6 | Publish ISOs |
-| | **Total** | | **≈ 49–103** | |
+| | **Total** | | **≈ 39–78** | |
 
 ## Upcoming work, ranked
 
@@ -64,8 +62,7 @@ In order:
 |---|---|---|---|
 | 1 | Headless boot check and ARM64 build in CI | Wolverine | 5–10 |
 | 2 | File commands, then mounting a real disk | Blue Water | 15–30 |
-| 3 | Choose and wire up a Lua library | Illini | 10–25 |
-| 4 | DNS and network commands | Pere Marquette | 10–20 |
+| 3 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs ranks 1–2 in substance, about 20–40 hours.
 
@@ -118,11 +115,13 @@ Beta needs ranks 1–2 in substance, about 20–40 hours.
 
 ### Illini: Lua scripting
 
-- [ ] Choose the library: the Cosmos-based Lua API I'm tracking
-  down, or `LuaCSharp`.
-- [ ] Confirm it works under the ahead-of-time compiler.
-- [ ] Run a Lua script from the shell.
-- [ ] Remove whichever Lua package goes unused.
+- [x] Choose the library: `Cosmos.Executable.Lua` 4.0.1, a Lua 5.5
+  interpreter from the CosmosOS organization.
+- [x] Confirm it works under the ahead-of-time compiler: builds for x64 and
+  ARM64 with no warnings, and runs in an x64 boot.
+- [x] Run a Lua script from the shell: `lua <code>`, which can `dofile` a
+  script on the RAM disk.
+- [x] Remove whichever Lua package goes unused: `LuaCSharp` is gone.
 
 ### Saluki: ARM64
 
@@ -138,8 +137,8 @@ Beta needs ranks 1–2 in substance, about 20–40 hours.
 Cascades and Hiawatha, the alpha milestones, are done, and Wolverine's test
 project is in. New kernel-free logic, such as Blue Water's path handling,
 should go into `Venture.OS.Common` with tests. Blue Water's file commands
-build on the shell's registry and arguments. Illini waits on my library choice. The long
-poles are Blue Water and Illini.
+build on the shell's registry and arguments, and give Lua scripts somewhere
+to live across boots. Illini is done; the long pole is Blue Water.
 
 ## Risks most likely to push estimates up
 
@@ -159,6 +158,7 @@ poles are Blue Water and Illini.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-05 | minor | Illini complete: `Cosmos.Executable.Lua` replaces `LuaCSharp`, and `lua <code>` runs a chunk from the shell, verified in an x64 boot. About 39–78 h remain overall. |
 | 2026-10-15 | minor | Wolverine 33%: the shell framework moved into the kernel-free `Venture.OS.Common` library, with 59 xUnit v3 tests that run locally and in CI. Wolverine has 5–10 h left; beta needs about 20–40 h. |
 | 2026-10-15 | major | Hiawatha complete: a command registry with generated `help`, argument parsing with quoting, and `info`, `net`, `reboot`, and `shutdown`. Both shell rows of the alpha gate pass, so the stage is alpha. |
 | 2026-10-15 | minor | Cascades complete: a forced panic proven in a headless boot, and system messages copied to serial with a `[Venture]` prefix through `KernelLog`. Alpha now waits on Hiawatha alone, 10–20 h. |

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-05 · **Last updated:** 2026-11-05 · **Change:** minor (`HostInfo` holds only the build identity) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-05 · **Last updated:** 2026-11-05 · **Change:** minor (Lua through the `lua` command) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-05)
 
@@ -20,8 +20,8 @@ the code wins and this page is out of date.
   optional (network). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
-- **Shell:** a command registry with eight commands (`help`, `clear`,
-  `echo`, `info`, `net`, `halt`, `reboot`, `shutdown`), and input split into a
+- **Shell:** a command registry with nine commands (`help`, `clear`,
+  `echo`, `info`, `lua`, `net`, `halt`, `reboot`, `shutdown`), and input split into a
   command and arguments with quoting. A failing command reports its error and
   returns to the prompt.
 - **Storage:** a 32 MiB RAM disk, formatted FAT16 and mounted at `/mnt`.
@@ -29,7 +29,7 @@ the code wins and this page is out of date.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
 - **Not built yet:** a CI boot check and ARM64 builds in CI (Wolverine),
-  persistent storage (Blue Water), Lua (Illini). See the
+  persistent storage (Blue Water). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
 
@@ -384,6 +384,7 @@ flowchart LR
 | `clear` | Clears the screen |
 | `echo [text...]` | Prints its arguments on one line, separated by single spaces |
 | `info` | Version and build, commit, Cosmos version, uptime, and free and total memory |
+| `lua <code>` | Runs one chunk of Lua 5.5 in a fresh interpreter |
 | `net` | Device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
 | `halt` | Ends the shell loop; the CPU halts and the machine stays on |
 | `reboot` | Restarts through ACPI |
@@ -393,6 +394,15 @@ Uptime comes from `Stopwatch`, which Cosmos plugs to the CPU's timestamp
 counter on x64, so it counts from when the CPU started. Under `cosmos run`,
 QEMU runs with `-no-reboot -no-shutdown`, so `reboot` and `shutdown` pause
 the virtual machine instead; without those flags both work.
+
+**Lua.** `lua <code>` runs one chunk through `Cosmos.Executable.Lua`, a Lua
+5.5 interpreter from the CosmosOS organization. Each run gets a fresh
+interpreter, disposed afterwards, so nothing carries over. `print` writes to
+the console, and relative paths in `dofile` and `io.open` start at `/mnt`.
+Lua errors and `os.exit` are caught in the command and reported there. A
+chunk can't be interrupted yet, so an endless loop leaves the shell waiting.
+Cosmos's limits apply: local time is UTC, `os.getenv` returns nil, and there
+is no `io.popen` or `/tmp`.
 
 ---
 
@@ -455,15 +465,12 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 ## 13. Open decisions
 
-1. **Lua library.** I'm tracking down a Cosmos-based Lua API to
-   use in place of, or beside, `LuaCSharp`, which is referenced but unused
-   and untested under the ahead-of-time compiler (Illini).
-2. **Formatting disks.** Whether VentureOS formats a blank disk itself, or
+1. **Formatting disks.** Whether VentureOS formats a blank disk itself, or
    only mounts existing FAT partitions (Blue Water). The Cosmos docs warn
    against testing filesystem code on real hardware.
-3. **Telnet.** Whether to serve a shell over the network, given that it has
+2. **Telnet.** Whether to serve a shell over the network, given that it has
    no login and sends everything in the clear (Pere Marquette).
-4. **Experimental Cosmos APIs.** None are used. Any future need, such as
+3. **Experimental Cosmos APIs.** None are used. Any future need, such as
    custom drivers through the driver kit, is a decision I'll make when it
    comes up.
 
@@ -471,6 +478,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-05 | minor | Lua (§9): `Cosmos.Executable.Lua` replaces `LuaCSharp`, and the `lua` command runs one chunk; the Lua library is no longer an open decision (§13). |
 | 2026-11-05 | minor | `HostInfo` holds only the build's identity; the network fields it cached at boot were never read and are gone (§2, §3, §8). |
 | 2026-11-05 | minor | The `echo` command, bringing the shell to eight commands (§9). |
 | 2026-10-15 | minor | The shell framework moved into `Venture.OS.Common`, a library with no Cosmos reference, tested by `Venture.OS.Common.Tests` (xUnit v3, 59 tests) locally and in CI (§2, §3 rule 6, §9, §11, §12). |

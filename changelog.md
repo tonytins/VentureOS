@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+- New `lua` command: runs a line of Lua 5.5, such as `lua "print(6 * 7)"`. Relative paths start at `/mnt`, so `lua "dofile('script.lua')"` runs a script from the RAM disk. Lua errors are shown with a traceback, and the shell carries on.
+
 ## 0.2.2
 
 - New `echo` command: prints its arguments on one line, so `echo "a  b" c` shows `a  b c`.

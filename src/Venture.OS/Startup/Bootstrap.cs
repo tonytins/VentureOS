@@ -3,7 +3,8 @@ namespace Venture.OS.Startup;
 internal static class Bootstrap
 {
     private const string RamFilesystemName = "ramfat";
-    private const string RamMountPoint = "/mnt";
+    /// <summary>Where the RAM disk is mounted.</summary>
+    public const string RamMountPoint = "/mnt";
 
     /// <summary>
     /// Formats a 32 MiB RAM disk as FAT16 and mounts it at <c>/mnt</c>, reporting the step that fails.
