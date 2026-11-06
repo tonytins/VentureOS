@@ -61,8 +61,8 @@ output stays on the console.
 
 | Id | Target | Status | Evidence |
 |---|---|---|---|
-| NET-1 | DHCP configures the primary NIC and records the address in `HostInfo` | done | Headless boot: `[DHCP CONFIG] IP configuration _applied.`, address 10.0.2.15 on `e1000e` |
-| NET-2 | No NIC means network setup is skipped without touching the adapter | done | `HostInfo.IsLinkedToNetwork` guard; boot with `--nic none` reaches `Calling Run()` |
+| NET-1 | DHCP configures the primary NIC and reports the address | done | Headless boot: `[DHCP CONFIG] IP configuration _applied.`, address 10.0.2.15 on `e1000e` |
+| NET-2 | No NIC means network setup is skipped without touching the adapter | done | `NetworkManager.DeviceCount` guard; boot with `--nic none` reaches `Calling Run()` |
 | NET-3 | DNS resolution | missing | No `DnsConfig` setup, although DHCP reports a DNS server (10.0.2.3) |
 | NET-4 | Anything uses the network after boot | missing | No shell command or service touches the network |
 
@@ -103,7 +103,7 @@ output stays on the console.
 |---|---|---|---|
 | DOC-1 | An agent and contributor guide matches the code | done | `AGENTS.md`, reviewed 2026-10-15 |
 | DOC-2 | Coding guidance for C# and for Cosmos | done | `.agents/skills/dotnet-guidelines`, `.agents/skills/cosmos-gen3` |
-| DOC-3 | Every declaration has a documentation comment where its name isn't enough | partial | `KernelPanic`, `BootRamDisk`, the boot steps, and `BuildNumber` have them; `VentureKernel.OnBoot`, `HostInfo.IpAddress`, and `MacAddress` don't |
+| DOC-3 | Every declaration has a documentation comment where its name isn't enough | partial | `KernelPanic`, `BootRamDisk`, the boot steps, and `BuildNumber` have them; `VentureKernel.OnBoot` doesn't |
 | DOC-4 | An architecture overview in `docs/` | done | `docs/architecture.md`, written 2026-10-15 |
 
 ## Distribution

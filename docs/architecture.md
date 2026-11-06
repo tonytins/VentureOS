@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-05 · **Last updated:** 2026-11-05 · **Change:** minor (the `echo` command) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-05 · **Last updated:** 2026-11-05 · **Change:** minor (`HostInfo` holds only the build identity) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-05)
 
@@ -113,7 +113,7 @@ VentureOS/
 │  └─ Venture.OS/
 │     ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
 │     ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
-│     ├─ HostInfo.cs               name, version, build number, network identity
+│     ├─ HostInfo.cs               name, version, and build number
 │     ├─ Kernel/                   Venture.OS.Kernel: the lifecycle and how the system reports and stops
 │     │  ├─ VentureKernel.cs       the kernel class: BeforeRun (boot), Run (shell loop)
 │     │  ├─ KernelLog.cs           system messages to serial and the console
@@ -163,7 +163,6 @@ flowchart TD
         Kernel -- runs --> Shell
         Shell -. "halt, reboot, shutdown<br/>through IShellHost" .-> Kernel
         Kernel -- uses --> Host
-        Startup -- uses --> Host
         Shell -- uses --> Host
     end
 
@@ -330,11 +329,12 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
 
 ## 8. Network
 
-- At boot, if Cosmos found a NIC, `ConnectToNetwork` records its name and
-  MAC in `HostInfo` and runs DHCP. Under QEMU the default x64 NIC is an
+- At boot, if Cosmos found a NIC, `ConnectToNetwork` reports its name and
+  MAC and runs DHCP. Nothing caches the result: `net` reads `NetworkManager`
+  directly, so it shows the current state. Under QEMU the default x64 NIC is an
   e1000e, and DHCP leases 10.0.2.15.
 - `NetworkManager.Primary` is a struct handle that may name no device, so
-  it's only read after checking `HostInfo.IsLinkedToNetwork`.
+  it's only read after checking `NetworkManager.DeviceCount`.
 - **Not built yet:** DNS (DHCP reports a server, but it isn't registered),
   and any use of the network after boot (Pere Marquette).
 - Cosmos's limits apply: no TLS, and TCP doesn't retransmit.
@@ -471,6 +471,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-05 | minor | `HostInfo` holds only the build's identity; the network fields it cached at boot were never read and are gone (§2, §3, §8). |
 | 2026-11-05 | minor | The `echo` command, bringing the shell to eight commands (§9). |
 | 2026-10-15 | minor | The shell framework moved into `Venture.OS.Common`, a library with no Cosmos reference, tested by `Venture.OS.Common.Tests` (xUnit v3, 59 tests) locally and in CI (§2, §3 rule 6, §9, §11, §12). |
 | 2026-10-15 | minor | The project moved into `src/` (§2, §11), and the version base became 0.2.0 because moving `GitInfo.txt` resets GitInfo's count (§10). |

@@ -16,7 +16,7 @@ internal sealed class NetCommand : IShellCommand
         var output = context.Output;
 
         // NetworkManager.Primary is a handle that may name no device, so check for one first.
-        if (!HostInfo.IsLinkedToNetwork)
+        if (NetworkManager.DeviceCount == 0)
         {
             output.WriteLine("No network device.");
             return;

@@ -52,14 +52,15 @@ internal static class Bootstrap
     }
 
     /// <summary>
-    /// Records the primary network device in <see cref="HostInfo"/> and requests an address over DHCP.
+    /// Reports the primary network device and requests an address over DHCP.
     /// Skips DHCP when no network device is present.
     /// </summary>
     public static void ConnectToNetwork()
     {
         KernelLog.WriteLine("Initializing network...");
 
-        if (!HostInfo.IsLinkedToNetwork)
+        // NetworkManager.Primary is a handle that may name no device, so check for one first.
+        if (NetworkManager.DeviceCount == 0)
         {
             KernelLog.WriteLine("No network device found; skipping network setup.");
             return;
@@ -71,8 +72,6 @@ internal static class Bootstrap
                            Link up: {NetworkManager.LinkUp}
                            Ready:   {NetworkManager.Ready}
                            """;
-        HostInfo.MacAddress = NetworkManager.MacAddress?.ToString();
-        HostInfo.Domain = NetworkManager.Name;
         KernelLog.WriteLine(networkInfo);
 
         DhcpClient dhcpClient = new();
@@ -84,19 +83,18 @@ internal static class Bootstrap
             return;
         }
 
-        if (!HostInfo.HasIp)
+        var config = NetworkManager.Primary.IPConfig;
+        if (config is null)
         {
             KernelLog.WriteLine("DHCP finished without assigning an IP address.");
             return;
         }
 
-        var config = NetworkManager.Primary.IPConfig;
         var dhcpInfo = $"""
-                        IP address: {config?.Address}
-                        Subnet: {config?.SubnetMask}
-                        Gateway: {config?.DefaultGateway}
+                        IP address: {config.Address}
+                        Subnet: {config.SubnetMask}
+                        Gateway: {config.DefaultGateway}
                         """;
-        HostInfo.IpAddress = config?.Address.ToString();
         KernelLog.WriteLine(dhcpInfo);
     }
 }

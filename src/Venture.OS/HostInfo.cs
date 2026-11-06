@@ -1,6 +1,9 @@
 namespace Venture.OS;
 
-internal struct HostInfo
+/// <summary>
+/// Who this build is: the OS name, version, and build number shown at boot, by <c>info</c>, and in a panic report.
+/// </summary>
+internal static class HostInfo
 {
     /// <summary>
     /// The name of the operating system.
@@ -16,19 +19,6 @@ internal struct HostInfo
     /// The name, version, and build number as shown to the user, such as <c>VentureOS 0.1.116 (Build 123456)</c>.
     /// </summary>
     public static string DisplayVersion => $"{Name} {Version} (Build {BuildNumber})";
-
-    public static string? IpAddress { get; set; } = string.Empty;
-
-    public static string? MacAddress { get; set; } = string.Empty;
-
-    /// <summary>
-    ///  Host's name given by the user.
-    /// </summary>
-    public static string? Domain { get; set; } = string.Empty;
-
-    public static bool IsLinkedToNetwork => NetworkManager.DeviceCount > 0;
-
-    public static bool HasIp => IsLinkedToNetwork && NetworkManager.Primary.IPConfig is not null;
 
     /// <summary>
     /// A build number of up to six digits, derived from the commit hash.
