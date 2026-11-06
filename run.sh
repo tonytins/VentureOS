@@ -1,19 +1,31 @@
 #!/bin/sh
+# Checks the Cosmos tools, builds the kernel, and boots it in QEMU.
+# Usage: ./run.sh [-h|--headless]
+# Stops at the first step that fails and exits with its status.
+
+set -e
 
 # Run from the repository root (this script's folder), so it works from anywhere.
-cd "$(dirname "$0")" || exit 1
+cd "$(dirname "$0")"
 
 ARCHITECTURE="x64" # Bit of a workaround for macOS on Apple Silicon
 PROJECT="src/Venture.OS"
 
-cosmos check
-cosmos build -a $ARCHITECTURE -p $PROJECT
+case "${1:-}" in
+    "") HEADLESS="" ;;
+    -h|--headless) HEADLESS="--headless" ;;
+    *)
+        echo "Usage: $0 [-h|--headless]" >&2
+        exit 2
+        ;;
+esac
 
-if [ "$1" = "-h" ] || [ "$1" = "--headless" ]; then
+cosmos check
+cosmos build -a "$ARCHITECTURE" -p "$PROJECT"
+
+if [ -n "$HEADLESS" ]; then
     echo "Running in headless mode..."
-    cosmos run -a $ARCHITECTURE -p $PROJECT --headless
-    exit 0
-else
-    cosmos run -a $ARCHITECTURE -p $PROJECT
-    exit 0
 fi
+
+# exec hands the exit status of cosmos run back to the caller.
+exec cosmos run -a "$ARCHITECTURE" -p "$PROJECT" $HEADLESS

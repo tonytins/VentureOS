@@ -5,9 +5,9 @@
 </p>
 <hr>
 <p align="center">
-  <a href="https://github.com/tonytins/Venture/blob/main/LICENSE"><img src="https://img.shields.io/github/license/tonytins/Venture" alt="GitHub license"></a>
-  <a href="https://github.com/tonytins/Venture/actions?query=workflow%3Acosmos.yml"><img src="https://img.shields.io/github/actions/workflow/status/tonytins/Venture/cosmos.yml" alt="GitHub Workflow Status"></a>
-  <img src="https://img.shields.io/github/commit-activity/w/tonytins/Venture" alt="GitHub commit activity">
+  <a href="https://github.com/tonytins/VentureOS/blob/main/UNLICENSE"><img src="https://img.shields.io/github/license/tonytins/VentureOS" alt="GitHub license"></a>
+  <a href="https://github.com/tonytins/VentureOS/actions/workflows/cosmos.yml"><img src="https://img.shields.io/github/actions/workflow/status/tonytins/VentureOS/cosmos.yml" alt="GitHub Workflow Status"></a>
+  <img src="https://img.shields.io/github/commit-activity/w/tonytins/VentureOS" alt="GitHub commit activity">
 </p>
 
 Named after the Siemens' [passenger cars](https://en.wikipedia.org/wiki/Siemens_Venture), VentureOS is my hobby operating
@@ -41,9 +41,20 @@ cosmos install
 
 ### Building
 
+From the repository root, `run.sh` checks the Cosmos tools, builds the kernel, and boots it in QEMU:
+
 ```
-cosmos build
-cosmos run
+./run.sh              # boot with a window
+./run.sh --headless   # boot with serial output only
+```
+
+To run each step yourself, point the Cosmos CLI at the kernel project:
+
+```
+dotnet test --project src/Venture.OS.Common.Tests
+cosmos check
+cosmos build -p src/Venture.OS
+cosmos run -p src/Venture.OS
 ```
 
 ## 🤖 AI Disclaimer

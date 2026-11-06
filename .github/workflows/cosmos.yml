@@ -21,7 +21,7 @@ on:
 
 env:
   DOTNET_NOLOGO: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: false
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
   PROJECT: Venture.OS
   PROJECT_DIR: src/Venture.OS
 
