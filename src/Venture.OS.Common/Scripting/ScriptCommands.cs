@@ -90,24 +90,8 @@ public sealed class ScriptCommands : ICommandSource
 
     private ScriptCommand Load(string name, string path)
     {
-        string? summary = null;
-        var usage = $"{name} [arguments]";
-
-        // Only the leading comment block describes the script; reading stops at the first other line.
-        foreach (var line in File.ReadLines(path))
-        {
-            if (!line.StartsWith("--", StringComparison.Ordinal))
-                break;
-
-            var text = line[2..].Trim();
-            if (text.StartsWith("Usage:", StringComparison.OrdinalIgnoreCase))
-                usage = text["Usage:".Length..].Trim();
-            else
-                summary ??= text;
-        }
-
-        return new ScriptCommand(
-            name, string.IsNullOrEmpty(summary) ? NoSummary : summary, usage, path, workingDirectory, system, stop);
+        var header = ScriptHeader.Read(path);
+        return new ScriptCommand(name, header, path, workingDirectory, system, stop);
     }
 
     /// <summary>
@@ -115,27 +99,34 @@ public sealed class ScriptCommands : ICommandSource
     /// </summary>
     private sealed class ScriptCommand(
         string name,
-        string summary,
-        string usage,
+        ScriptHeader header,
         string path,
         string workingDirectory,
         ISystemInfo? system,
         Func<string?>? stop)
-        : IShellCommand
+        : IScriptCommand
     {
         public string Name { get; } = name;
-        public string Summary { get; } = summary;
-        public string Usage { get; } = usage;
+        public string Summary { get; } = string.IsNullOrEmpty(header.Summary) ? NoSummary : header.Summary;
+        public string Usage { get; } = header.Usage ?? $"{name} [arguments]";
         public int MinArguments => 0;
         public int MaxArguments => int.MaxValue;
+        public ScriptScopes Needs => header.Needs;
+        public string? HeaderError => header.Error;
 
         public void Execute(ShellContext context, IReadOnlyList<string> arguments)
         {
+            if (header.Error is { } error)
+            {
+                context.Output.WriteLine($"{Name} can't run. Its -- Needs: line: {error}");
+                return;
+            }
+
             var values = new string[arguments.Count];
             for (var index = 0; index < values.Length; index++)
                 values[index] = arguments[index];
 
-            LuaRunner.Run(context.Output, workingDirectory, lua => lua.DoFile(path, values), system, stop);
+            LuaRunner.Run(context.Output, workingDirectory, lua => lua.DoFile(path, values), system, stop, Needs);
         }
     }
 }

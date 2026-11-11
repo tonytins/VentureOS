@@ -1,5 +1,6 @@
 -- Show the network adapter and its address.
 -- Usage: net
+-- Needs: network
 
 local net = venture.net()
 if not net then

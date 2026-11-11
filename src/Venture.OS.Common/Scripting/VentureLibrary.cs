@@ -27,7 +27,12 @@ public static class VentureLibrary
     /// <summary>
     /// Adds the <c>venture</c> table to <paramref name="state"/>'s globals.
     /// </summary>
-    public static void Open(ILuaState state, ISystemInfo system)
+    /// <remarks>
+    /// Every function is in the table, so a script can see what exists. One outside <paramref name="scopes"/> raises
+    /// a Lua error that names the <c>-- Needs:</c> line the script is missing.
+    /// </remarks>
+    /// <param name="scopes">What the code may reach besides <c>venture.version()</c>.</param>
+    public static void Open(ILuaState state, ISystemInfo system, ScriptScopes scopes = ScriptScopes.All)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(system);
@@ -35,12 +40,27 @@ public static class VentureLibrary
         state.L_NewLib(
         [
             new("version", lua => PushVersion(lua, system)),
-            new("uptime", lua => PushUptime(lua, system)),
-            new("memory", lua => PushMemory(lua, system)),
-            new("net", lua => PushNetwork(lua, system)),
+            Gated("uptime", ScriptScopes.System, scopes, lua => PushUptime(lua, system)),
+            Gated("memory", ScriptScopes.System, scopes, lua => PushMemory(lua, system)),
+            Gated("net", ScriptScopes.Network, scopes, lua => PushNetwork(lua, system)),
         ]);
         state.SetGlobal(GlobalName);
     }
+
+    /// <summary>The error a script gets for calling <paramref name="function"/> without declaring its scope.</summary>
+    public static string UndeclaredMessage(string function, ScriptScopes scope) =>
+        $"venture.{function} needs \"-- Needs: {ScriptScopeNames.Name(scope)}\" in the script's header";
+
+    private static NameFuncPair Gated(
+        string name, ScriptScopes scope, ScriptScopes granted, CSharpFunctionDelegate function) =>
+        (granted & scope) != 0
+            ? new(name, function)
+            : new(name, lua =>
+            {
+                // Pushed rather than passed to L_Error, which would treat the message as a format string.
+                lua.PushString(LuaText.Encode(UndeclaredMessage(name, scope)));
+                return lua.Error();
+            });
 
     private static int PushVersion(ILuaState lua, ISystemInfo system)
     {

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Ctrl+C and Esc stop Lua; `init.lua` has a time limit) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (scripts declare what they need with `-- Needs:`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (152 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (174 tests, including runs of
   the shipped scripts).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -423,8 +423,9 @@ flowchart LR
   lookup, so a script saved on the running system works at once; if it's
   missing, there are just no script commands. Only names that pass the
   registry's rule are looked up, so a name can't climb out of the directory.
-  A script's leading `--` comments give its summary and a `-- Usage:` line,
-  it gets its arguments as `...`, and it checks them itself.
+  A script's leading `--` comments (`ScriptHeader`) give its summary, a
+  `-- Usage:` line, and a `-- Needs:` line; it gets its arguments as `...`,
+  and it checks them itself.
 - **Where it lives.** The framework (`CommandLine`, `CommandRegistry`,
   `CommandShell`, `ShellContext`, the interfaces, and script commands) is in
   `Venture.OS.Common` and covered by tests, including real Lua runs on
@@ -465,12 +466,25 @@ reaches the shell loop.
 script commands alike. Its functions return plain values or tables, and the
 scripts do the formatting:
 
-| Function | Returns |
-|---|---|
-| `venture.version()` | `{ name, version, build, commit, cosmos, display }` |
-| `venture.uptime()` | Whole seconds since the CPU started counting, or `nil` |
-| `venture.memory()` | `{ free, total }` in bytes, or `nil` |
-| `venture.net()` | `nil` without an adapter, else `{ device, mac, link_up, ready, address, subnet, gateway }`; the last three are `nil` until IPv4 is configured |
+| Function | Scope | Returns |
+|---|---|---|
+| `venture.version()` | *(always)* | `{ name, version, build, commit, cosmos, display }` |
+| `venture.uptime()` | `system` | Whole seconds since the CPU started counting, or `nil` |
+| `venture.memory()` | `system` | `{ free, total }` in bytes, or `nil` |
+| `venture.net()` | `network` | `nil` without an adapter, else `{ device, mac, link_up, ready, address, subnet, gateway }`; the last three are `nil` until IPv4 is configured |
+
+**Scopes.** A script declares what it reaches with `-- Needs:` in its header,
+like an app's permissions, such as `-- Needs: system, network`. Scopes are
+broad, so new functions in an area don't need new names. Every function is in
+the table, but one outside the declared scopes raises
+`venture.net needs "-- Needs: network" in the script's header`. A scope
+VentureOS doesn't know, or one it has reserved but doesn't offer yet
+(`files`), keeps the script from running at all, with the reason, so a script
+written for a newer VentureOS fails clearly rather than half working.
+`help <command>` shows a script's needs. `init.lua` follows the same rule;
+`lua` gets every scope, since it's the user typing. Scopes cover only the
+`venture` table: Lua's own `io` still reaches the RAM disk, until `files`
+replaces it (Blue Water).
 
 `VentureLibrary` builds the table from an `ISystemInfo`, which
 `KernelSystemInfo` implements by reading Cosmos on every call, so scripts see
@@ -575,6 +589,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | Scopes (§9): scripts declare `-- Needs: system` or `network`; the `venture` table refuses undeclared functions, and unknown or reserved scopes keep a script from running. |
 | 2026-11-10 | minor | Stopping Lua (§4, §9): Ctrl+C or Esc stops `lua` and script commands through a count hook, and `init.lua` also stops after 10 seconds. |
 | 2026-11-10 | minor | `init.lua` (§2, §4): runs once after the banner as an optional step, with its output on serial through `KernelLogOutput`; it now prints the help hint. |
 | 2026-11-06 | minor | The `venture` table (§2, §3, §9): scripts reach the kernel through `ISystemInfo`, and `info` and `net` are now Lua scripts. |

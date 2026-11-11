@@ -113,6 +113,34 @@ public sealed class VentureLibraryTests
         Assert.Contains("timer gone", output.Lines[0]);
     }
 
+    [Theory]
+    [InlineData("uptime", ScriptScopes.System)]
+    [InlineData("memory", ScriptScopes.System)]
+    [InlineData("net", ScriptScopes.Network)]
+    public void RefusesFunctionsOutsideTheDeclaredScopes(string function, ScriptScopes scope)
+    {
+        var finished = Run(new FakeSystemInfo(), $"print(pcall(venture.{function}))", ScriptScopes.All & ~scope);
+
+        Assert.True(finished);
+        Assert.Equal([$"false\t{VentureLibrary.UndeclaredMessage(function, scope)}"], output.Lines);
+    }
+
+    [Fact]
+    public void AlwaysGivesTheVersion()
+    {
+        Run(new FakeSystemInfo(), "print(venture.version().version)", ScriptScopes.None);
+
+        Assert.Equal(["1.2.3"], output.Lines);
+    }
+
+    [Fact]
+    public void GivesDeclaredScopesOnly()
+    {
+        Run(new FakeSystemInfo(), "print(pcall(venture.uptime)) print((pcall(venture.net)))", ScriptScopes.System);
+
+        Assert.Equal(["true\t3725", "false"], output.Lines);
+    }
+
     [Fact]
     public void IsLeftOutWithoutSystemInfo()
     {
@@ -130,6 +158,6 @@ public sealed class VentureLibraryTests
         Assert.Throws<ArgumentNullException>(() => VentureLibrary.Open(lua.State, null!));
     }
 
-    private bool Run(ISystemInfo system, string code) =>
-        LuaRunner.Run(output, Path.GetTempPath(), lua => lua.DoString(code), system);
+    private bool Run(ISystemInfo system, string code, ScriptScopes scopes = ScriptScopes.All) =>
+        LuaRunner.Run(output, Path.GetTempPath(), lua => lua.DoString(code), system, scopes: scopes);
 }

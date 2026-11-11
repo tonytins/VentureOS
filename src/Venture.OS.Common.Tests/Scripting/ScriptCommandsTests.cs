@@ -88,6 +88,32 @@ public sealed class ScriptCommandsTests : IDisposable
     }
 
     [Fact]
+    public void GivesAScriptOnlyTheScopesItNeeds()
+    {
+        Script("peek", "-- Needs: system\nprint(pcall(venture.uptime)) print((pcall(venture.net)))");
+        Source(new FakeSystemInfo()).TryGet("peek", out var command);
+
+        command!.Execute(Context(), []);
+
+        Assert.Equal(ScriptScopes.System, ((IScriptCommand)command).Needs);
+        Assert.Equal(["true\t3725", "false"], output.Lines);
+    }
+
+    [Fact]
+    public void RefusesToRunAScriptThatNeedsAnUnknownScope()
+    {
+        Script("future", "-- Needs: network, teleporter\nprint('ran')");
+        Source().TryGet("future", out var command);
+
+        command!.Execute(Context(), []);
+
+        var line = Assert.Single(output.Lines);
+        Assert.StartsWith("future can't run. Its -- Needs: line: ", line);
+        Assert.Contains("teleporter", line);
+        Assert.NotNull(((IScriptCommand)command).HeaderError);
+    }
+
+    [Fact]
     public void ListsValidScriptsOnly()
     {
         Script("beta", "-- Second.");
@@ -152,7 +178,7 @@ public sealed class ScriptCommandsTests : IDisposable
         Assert.Throws<ArgumentNullException>(() => Source().TryGet(null!, out _));
     }
 
-    private ScriptCommands Source() => new(commandsDirectory, root);
+    private ScriptCommands Source(ISystemInfo? system = null) => new(commandsDirectory, root, system);
 
     private ShellContext Context() => new(output, new RecordingHost(), registry);
 

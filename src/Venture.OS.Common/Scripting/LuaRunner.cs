@@ -79,13 +79,17 @@ public static class LuaRunner
     /// Checked every <see cref="StopCheckInterval"/> instructions. A reason it returns, such as <c>Interrupted.</c>,
     /// ends the code with that message. Without it, code runs until it finishes. See <see cref="ScriptStop"/>.
     /// </param>
+    /// <param name="scopes">
+    /// What the code may reach through the <c>venture</c> table besides the version; see <see cref="ScriptScopes"/>.
+    /// </param>
     /// <returns><see langword="true"/> if the code finished without an error, a stop, or a non-zero exit.</returns>
     public static bool Run(
         IShellOutput output,
         string workingDirectory,
         Action<LuaInterpreter> run,
         ISystemInfo? system = null,
-        Func<string?>? stop = null)
+        Func<string?>? stop = null,
+        ScriptScopes scopes = ScriptScopes.All)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
@@ -94,7 +98,7 @@ public static class LuaRunner
         using ShellOutputWriter writer = new(output);
         using LuaInterpreter lua = new() { WorkingDirectory = workingDirectory, Output = writer, Error = writer };
         if (system is not null)
-            VentureLibrary.Open(lua.State, system);
+            VentureLibrary.Open(lua.State, system, scopes);
         if (stop is not null)
             InstallStopHook(lua, stop);
 

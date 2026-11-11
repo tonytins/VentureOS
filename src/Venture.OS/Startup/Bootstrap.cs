@@ -72,7 +72,8 @@ internal static class Bootstrap
     /// </summary>
     /// <remarks>
     /// It's optional: a missing script or a Lua error is reported, and the shell starts anyway. Nobody may be at the
-    /// keyboard during boot, so besides Ctrl+C and Esc, it stops after <see cref="InitScriptLimit"/>.
+    /// keyboard during boot, so besides Ctrl+C and Esc, it stops after <see cref="InitScriptLimit"/>. Like any script,
+    /// it reaches the <c>venture</c> table only through the scopes its <c>-- Needs:</c> line declares.
     /// </remarks>
     public static void RunInitScript(ISystemInfo system)
     {
@@ -82,8 +83,16 @@ internal static class Bootstrap
             return;
         }
 
+        var header = ScriptHeader.Read(InitScriptPath);
+        if (header.Error is { } error)
+        {
+            KernelLog.WriteLine($"{InitScriptPath} can't run. Its -- Needs: line: {error} The shell still works.");
+            return;
+        }
+
         var stop = ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(InitScriptLimit));
-        if (!LuaRunner.Run(new KernelLogOutput(), RamMountPoint, lua => lua.DoFile(InitScriptPath), system, stop))
+        if (!LuaRunner.Run(
+                new KernelLogOutput(), RamMountPoint, lua => lua.DoFile(InitScriptPath), system, stop, header.Needs))
             KernelLog.WriteLine($"{InitScriptPath} failed; see the error above. The shell still works.");
     }
 

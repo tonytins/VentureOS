@@ -21,7 +21,7 @@ See the Cosmos [installation guide](https://cosmosos.github.io/articles/user/ins
 ### Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) or later
-- [Visual Studio Code](https://code.visualstudio.com/)
+- [Visual Studio Code](https://code.visualstudio.com/) or [Passenger IDE](https://passenger-ide.net)
 - [Homebrew](https://brew.sh/) on macOS
 
 #### Windows
@@ -56,10 +56,6 @@ cosmos check
 cosmos build -p src/Venture.OS
 cosmos run -p src/Venture.OS
 ```
-
-## 🤖 AI Disclaimer
-
-Yes, I use AI assistants, such as Claude and Copilot, while working on VentureOS. I'm not [Terry Davis](https://en.wikipedia.org/wiki/TempleOS), and Cosmos gen3 is still pretty bleeding edge.
 
 ## ⚖️ No Copyright
 

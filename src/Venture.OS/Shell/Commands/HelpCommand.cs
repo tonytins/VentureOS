@@ -1,3 +1,5 @@
+using Venture.OS.Scripting;
+
 namespace Venture.OS.Shell.Commands;
 
 /// <summary>
@@ -23,6 +25,10 @@ internal sealed class HelpCommand : IShellCommand
 
             context.Output.WriteLine(command.Summary);
             context.Output.WriteLine($"Usage: {command.Usage}");
+            if (command is IScriptCommand script)
+                context.Output.WriteLine(script.HeaderError is { } error
+                    ? $"Needs: {error}"
+                    : $"Needs: {ScriptScopeNames.Describe(script.Needs)}");
             return;
         }
 

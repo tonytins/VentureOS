@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Illini: stopping Lua) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Illini: script scopes) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -48,7 +48,7 @@ In order:
 |---|---|---:|---:|---|
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
-| Wolverine | Tests and CI | 33% | 5–10 | Test project done (152 tests, run in CI). Missing: headless boot check and ARM64 build in CI |
+| Wolverine | Tests and CI | 33% | 5–10 | Test project done (174 tests, run in CI). Missing: headless boot check and ARM64 build in CI |
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
@@ -130,6 +130,8 @@ C#, so the shell still works if the scripts don't.
   `Venture.OS.Common`; `info` and `net` move to Lua.
 - [x] Phase 4, `init.lua`: runs after boot as an optional step.
 - [x] Ctrl+C or Esc stops running Lua, and `init.lua` stops after 10 seconds.
+- [x] Scripts declare what they reach with `-- Needs:` (`system`, `network`;
+  `files` reserved).
 
 ### Saluki: ARM64
 
@@ -167,6 +169,7 @@ The long pole is Blue Water.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | Illini: scripts declare `-- Needs:` scopes, after the capability ideas in "A Programming Paradigm for Spatiotemporal Composability". Undoable changes are the planned next step. |
 | 2026-11-10 | minor | Illini: Ctrl+C or Esc now stops running Lua, and `init.lua` has a 10-second limit, closing the endless-loop gap. |
 | 2026-11-10 | minor | Illini complete: phase 4, `init.lua` runs after boot. CI checks (Wolverine) are the current focus again; about 39–78 h remain overall. |
 | 2026-11-06 | minor | Illini 80%: phase 3, the `venture` table, with `info` and `net` moved to Lua. 2–4 h left; about 41–82 h overall. |

@@ -99,10 +99,11 @@ with no explanation. Stability outranks features.
 - Keep `VentureKernel.cs` thin. Put boot steps in `Startup/` and new subsystems
   in their own folder and namespace under `Venture.OS`.
 - Prefer writing a new command in Lua, as `src/Venture.OS/system/commands/<name>.lua`:
-  its first `--` comment is its summary, a `-- Usage:` comment its usage, and
-  it gets its arguments as `...`. It reaches the kernel through the `venture`
-  table (`VentureLibrary`, backed by `ISystemInfo`); extend that table when a
-  script needs more. Write a command in C# only when it must control the kernel,
+  its first `--` comment is its summary, a `-- Usage:` comment its usage, a
+  `-- Needs:` comment the scopes it uses (`system`, `network`), and it gets its
+  arguments as `...`. It reaches the kernel through the `venture` table
+  (`VentureLibrary`, backed by `ISystemInfo`); extend that table when a script
+  needs more, and put each new function under a scope (`ScriptScopes`). Write a command in C# only when it must control the kernel,
   as a class in `src/Venture.OS/Shell/Commands/` registered in
   `VentureKernel.CreateShell`; built-in commands win any name clash. `help` is
   generated from both. C# commands write through `IShellOutput` and ask for

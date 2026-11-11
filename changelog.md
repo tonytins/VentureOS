@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.11
+
+- Lua scripts declare what they use with a `-- Needs:` line in their header, like an app's permissions: `system` for `venture.uptime()` and `venture.memory()`, and `network` for `venture.net()`. Every script can call `venture.version()`.
+- Calling an undeclared function names the line that's missing, and a script that needs a scope VentureOS doesn't offer won't run. `help <command>` shows what a script needs.
+- `lua` can still use everything.
+
 ## 0.2.10
 
 - Ctrl+C or Esc stops a Lua script that's running, from `lua` or a script command, with `Interrupted.`, and returns to the prompt. This works even if the script catches errors with `pcall` or runs in a coroutine.

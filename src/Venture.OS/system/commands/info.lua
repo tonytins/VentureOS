@@ -1,5 +1,6 @@
 -- Show the version, uptime, and memory.
 -- Usage: info
+-- Needs: system
 
 local version = venture.version()
 print(version.display)
