@@ -21,13 +21,21 @@ internal static class KernelLog
     /// </remarks>
     public static void WriteLine(string message)
     {
+        WriteSerialLine(message);
+        Console.WriteLine(message);
+    }
+
+    /// <summary>
+    /// Writes <paramref name="message"/> to serial only, for while the screen shows the desktop, where console
+    /// text would draw over it.
+    /// </summary>
+    public static void WriteSerialLine(string message)
+    {
         foreach (var line in message.Split('\n'))
         {
             Log.WriteString(SerialPrefix);
             Log.WriteString(line);
             Log.WriteString("\n");
         }
-
-        Console.WriteLine(message);
     }
 }

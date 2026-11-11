@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.20
+
+- New `desktop` command: a blue desktop with the pointer, drawn at 1024x768. Press Esc to go back to the shell. Windows, the menu bar, and the dock come next.
+- The screen is now 1024x768 in the shell too.
+
 ## 0.2.19
 
 - VentureOS ships its first app, Notes: `open notes`, then `note <text>` to add a note, `note` to list them, `note -d <number>` to delete one, and `note --clear` to start over. Notes are kept in `notes.txt` in the folder you opened it from.

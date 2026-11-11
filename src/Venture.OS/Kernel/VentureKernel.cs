@@ -104,6 +104,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new OpenCommand(() => appManager));
         commands.Register(new CloseCommand(() => appManager));
         commands.Register(new AppsCommand(() => appManager));
+        commands.Register(new DesktopCommand());
 
         ScriptCommands scripts = new(
             Bootstrap.CommandsDirectoryPath,

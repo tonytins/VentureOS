@@ -20,6 +20,15 @@ internal static class Bootstrap
     /// <summary>Where the system's apps are: <c>Name.app</c> bundles that <c>open</c> finds by name.</summary>
     public const string AppsDirectoryPath = SystemDirectoryPath + "/apps";
 
+    /// <summary>Where the desktop's fonts are, with their licenses.</summary>
+    public const string FontsDirectoryPath = SystemDirectoryPath + "/fonts";
+
+    /// <summary>Open Sans, for the desktop's interface.</summary>
+    public const string InterfaceFontPath = FontsDirectoryPath + "/OpenSans-Regular.ttf";
+
+    /// <summary>Fira Code, for monospaced text such as Terminal's.</summary>
+    public const string MonospaceFontPath = FontsDirectoryPath + "/FiraCode-Regular.ttf";
+
     /// <summary>How long an app's main script may run when it opens, as for <c>init.lua</c>.</summary>
     public static readonly TimeSpan AppStartupLimit = TimeSpan.FromSeconds(10);
 

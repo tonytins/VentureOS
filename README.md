@@ -60,3 +60,7 @@ cosmos run -p src/Venture.OS
 ## ⚖️ No Copyright
 
 Copyrights and any related rights for VentureOS are waived via the [UNLICENSE](UNLICENSE). Credit still appreciated.
+
+The desktop's fonts keep their own licenses, which ship beside them in
+`src/Venture.OS/system/fonts/`: Open Sans under the Apache License 2.0, and
+Fira Code under the SIL Open Font License 1.1.

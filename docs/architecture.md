@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the UIScript reader, with menus) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the `desktop` command: drawing and the frame loop) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (401 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (489 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -23,7 +23,7 @@ the code wins and this page is out of date.
   optional (system files, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
-- **Shell:** a command registry with ten built-in commands (`help`,
+- **Shell:** a command registry with eleven built-in commands (`help`, `desktop`,
   `clear`, `cd`, `lua`, `open`, `close`, `apps`, `halt`, `reboot`,
   `shutdown`), a current folder the prompt shows, `.app` bundles that open
   and close as owners, plus Lua script commands
@@ -136,6 +136,7 @@ VentureOS/
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
 │  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
+│  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, and DesktopSession
 │  └─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with the menus feature
 │  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
@@ -159,9 +160,11 @@ VentureOS/
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               runs once after boot; prints the help hint
 │     │  ├─ apps/Notes.app/        the sample app: a note command, notes kept in notes.txt
+│     │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
 │     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
 │     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
-│     ├─ Bootloader/limine.conf    Limine boot entry
+│     ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
+│     ├─ Bootloader/limine.conf    Limine boot entry; asks for a 1024x768 framebuffer
 │     ├─ GitInfo.txt               base version
 │     └─ src/C/                    reserved for native C sources (empty)
 ├─ global.json                  opts dotnet test into Microsoft.Testing.Platform
@@ -471,6 +474,7 @@ flowchart LR
 | `open <app>` | Opens an app from `/mnt/system/apps` by name, or any `.app` by path |
 | `close <app>` | Closes an open app, undoing what it set up |
 | `apps` | Lists the system's apps, and which are open |
+| `desktop` | Opens the desktop; Esc goes back to the shell |
 | `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
 | `ls [-l] [folder...]` | Lua script: lists a folder, folders marked with `/`; `-l` adds type and size |
 | `cat <file...>` | Lua script: prints files |
@@ -687,6 +691,27 @@ nothing else, the five standard entities, and numeric character references.
 A `DOCTYPE`, text, deeper nesting, CDATA, or an unknown entity is refused
 with its line.
 
+**The desktop.** `desktop` switches the screen to graphics until Esc. The
+layout and drawing live in `Venture.OS.Desktop` and draw through `IPainter`,
+so they're tested against a painter that records pixels; the kernel's
+`CanvasPainter` draws on Cosmos's full-screen canvas, with Open Sans for the
+interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
+
+- **Screen.** Limine is asked for 1024x768 in `limine.conf`; without it,
+  QEMU's framebuffer is 1280x800. The text console uses the same screen.
+- **Drawing.** The canvas doesn't blend, and the sky's glow and bubbles are
+  translucent, so `DesktopBackground` works the whole sky out once, as
+  pixels (85 ms at 1024x768 under QEMU), and each frame copies it, then draws
+  on top. `Canvas.Display` shows the finished frame at once.
+- **Frame loop.** `DesktopCommand` reads the PS/2 mouse and the keyboard,
+  and `DesktopSession` redraws only when they changed. The loop keeps the
+  CPU busy while the desktop is open.
+- **Leaving.** The console draws on the same canvas and can't be hidden, so
+  leaving clears it, which redraws the shell; earlier shell output isn't
+  kept. Any exception in the desktop clears back to the console and is
+  reported, so the screen is never left in graphics. While the desktop is
+  open, system messages go to serial only (`KernelLog.WriteSerialLine`).
+
 **Interfaces.** `UIScript` reads `.uix` documents in the format Hudini
 defines (a Draft, version 1), with the same rules as Hudini's reader:
 version and `requires` are checked first; unknown elements refuse the
@@ -794,6 +819,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | The desktop (§2, §9): `desktop` draws the sky and pointer through `IPainter` with the system fonts, at 1024x768, and Esc returns to the shell. |
 | 2026-11-11 | minor | Interfaces (§2, §9): a UIScript reader matching Hudini's, tested on its examples, with a `menus` feature drafted for Hudini. |
 | 2026-11-11 | minor | `Notes.app` ships in `/mnt/system/apps` (§2, §9), with a tested tutorial in `docs/writing-apps.md`. The missing-scope error now names both places a scope is declared. |
 | 2026-11-11 | minor | Apps (§9): `open`, `close`, and `apps`; each app is an owner with its declared `needs`, `venture.app`, and its own modules first for `require`. |

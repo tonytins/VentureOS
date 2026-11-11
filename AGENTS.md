@@ -21,7 +21,8 @@ Every .NET project lives in its own folder under `src/` and is listed in
 - `src/Venture.OS.Common` is kernel-free code: the shell framework
   (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and
   Lua system support (`Scripting/`), the flat XML reader (`Xml/`), bundles
-  (`Bundles/`), and the UIScript reader (`Interface/`), which must keep
+  (`Bundles/`), the desktop's drawing logic (`Desktop/`, drawn through
+  `IPainter`), and the UIScript reader (`Interface/`), which must keep
   matching Hudini's (its examples are copied into the tests). It must never reference the Cosmos
   kernel; `Cosmos.Executable.Lua` is allowed, since it runs on ordinary .NET.
 - `src/Venture.OS.Common.Tests` covers `Venture.OS.Common` with xUnit v3.
