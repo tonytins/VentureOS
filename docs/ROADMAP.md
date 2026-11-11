@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Illini: the Lua prompt) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** major (routes repurposed: Wolverine is the system library, Saluki apps, Borealis a possible GUI; CI and releases are every-stage work) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -28,7 +28,7 @@ blocking`, which makes it a beta item. ARM64 only has to keep building.
 | Inspect and control the system: version, network, reboot, shutdown | yes | `info` and `net` show the system; `halt`, `reboot`, and `shutdown` control it, with reboot and shutdown verified in QEMU (SHELL-4, SHELL-6) | 0 |
 
 **Result: alpha.** Every row passes as of 2026-10-15, with Cascades and
-Hiawatha complete. Beta work starts with tests and CI (Wolverine).
+Hiawatha complete.
 
 Persistent storage is deferred until after alpha by my decision (Blue Water).
 
@@ -36,8 +36,24 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **CI checks** (Wolverine): a headless boot check in CI, and an ARM64
-   build in CI.
+1. **System library** (Wolverine): `/mnt/system/lib` and `require`, then the
+   `venture.args` argument parser.
+2. **Apps, part 1** (Saluki): commands registered at runtime, each with its
+   own undo, owned by whatever registered them.
+3. **Persistent storage** (Blue Water), then **apps, part 2** (Saluki):
+   `.app` bundles that install and uninstall without a reboot.
+
+## Every stage
+
+Not a milestone: each stage carries its own tests, and these land when they
+fit, rather than waiting on a route.
+
+- [ ] CI boots the kernel headless and fails when the serial log shows a
+  panic or never reaches the shell.
+- [ ] CI builds ARM64 as well as x64.
+- [ ] Boot on ARM64 under QEMU with a virtio NIC, and run the CI boot check
+  there.
+- [ ] Publish ISOs from tagged builds.
 
 ## Milestones
 
@@ -48,23 +64,26 @@ In order:
 |---|---|---:|---:|---|
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
-| Wolverine | Tests and CI | 33% | 5–10 | Test project done (186 tests, run in CI). Missing: headless boot check and ARM64 build in CI |
+| Wolverine | System library | 0% | 5–10 | Shared Lua modules in `/mnt/system/lib`, starting with `venture.args` |
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
-| Saluki | ARM64 | 0% | 6–12 | Boot and test on ARM64 |
-| Borealis | Releases | 0% | 3–6 | Publish ISOs |
-| | **Total** | | **≈ 39–78** | |
+| Saluki | Apps | 0% | 16–32 | Runtime commands with undo, then `.app` bundles (installs wait on Blue Water) |
+| Borealis | GUI (possible) | 0% | — | Unscoped: a desktop after the classic Mac OS X look |
+| | **Total** | | **≈ 46–92**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Headless boot check and ARM64 build in CI | Wolverine | 5–10 |
-| 2 | File commands, then mounting a real disk | Blue Water | 15–30 |
-| 3 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | `/mnt/system/lib`, `require`, and `venture.args` | Wolverine | 5–10 |
+| 2 | Commands registered at runtime, with undo | Saluki | 6–12 |
+| 3 | File commands, then mounting a real disk | Blue Water | 15–30 |
+| 4 | `.app` bundles | Saluki | 10–20 |
+| 5 | DNS and network commands | Pere Marquette | 10–20 |
 
-Beta needs ranks 1–2 in substance, about 20–40 hours.
+Beta needs the CI boot check (every stage) and Blue Water in substance,
+about 20–40 hours.
 
 ## Milestone checklists
 
@@ -91,14 +110,19 @@ Beta needs ranks 1–2 in substance, about 20–40 hours.
 - [x] `net`: adapter, MAC, link, and address.
 - [x] `reboot` and `shutdown` beside `halt`.
 
-### Wolverine: Tests and CI
+### Wolverine: System library
 
-- [x] A test project for logic that doesn't need the kernel, starting with
-  the argument parser: `Venture.OS.Common.Tests` covers the shell framework,
-  which moved into the kernel-free `Venture.OS.Common` library.
-- [ ] CI boots the kernel headless and fails when the serial log shows a
-  panic or never reaches the shell.
-- [ ] CI builds ARM64 as well as x64.
+Shared Lua modules that ship with the system, in `/mnt/system/lib`, loaded
+with `require`. Namespaced under `venture.`, so plain names stay free for
+scripts and apps.
+
+- [ ] `/mnt/system/lib` installed with the system files, and `require`
+  pointed at it.
+- [ ] `venture.args`: declare a command's arguments and options, and get
+  parsing, clear errors, and a generated `--help`.
+
+The former Wolverine checklist (the test project, now done, and CI checks)
+became the every-stage list above.
 
 ### Blue Water: Persistent storage
 
@@ -134,33 +158,46 @@ C#, so the shell still works if the scripts don't.
   `files` reserved).
 - [x] Plain `lua` opens an interactive Lua prompt.
 
-### Saluki: ARM64
+### Saluki: Apps
 
-- [ ] Boot on ARM64 under QEMU with a virtio NIC.
-- [ ] Run the CI boot check on ARM64.
+After the ideas in "A Programming Paradigm for Spatiotemporal
+Composability": whatever a component sets up carries its own undo, and
+removing the component runs them, newest first.
 
-### Borealis: Releases
+- [ ] Owners: something that holds an interpreter and the undo list for what
+  it registered, such as `init.lua` (the whole boot) or a `lua` prompt
+  session.
+- [ ] Register a command at runtime, removed again when its owner goes.
+- [ ] Decide whether commands made at the `lua` prompt vanish on `exit`.
+- [ ] `.app` bundles: install and uninstall without a reboot, declaring
+  `-- Needs:` for the whole app. Waits on Blue Water, since an install has
+  to outlive a reboot.
 
-- [ ] Publish ISOs from tagged builds.
+### Borealis: GUI (possible)
+
+Not scoped yet. The idea, from my notes: an experimental desktop after the
+classic Mac OS X look, with `.app` bundles (Saluki) as its applications.
+
+- [ ] Decide whether, and what the first version shows.
 
 ## Critical path
 
-Cascades and Hiawatha, the alpha milestones, are done, and Wolverine's test
-project is in. New kernel-free logic, such as Blue Water's path handling,
-should go into `Venture.OS.Common` with tests. Blue Water's file commands
-build on the shell's registry and arguments, and give Lua scripts somewhere
-to live across boots, beside the read-only `/mnt/system`. Illini is done.
-The long pole is Blue Water.
+Cascades, Hiawatha, and Illini are done. Wolverine's `venture.args` comes
+first because Blue Water's file commands (`ls -l`, `rm -r`) are its first
+real users. Saluki's runtime commands need only Illini, but `.app` installs
+need Blue Water, since an install has to outlive a reboot. Borealis would
+build on Saluki's apps. New kernel-free logic still goes into
+`Venture.OS.Common` with tests. The long poles are Blue Water and Saluki.
 
 ## Risks most likely to push estimates up
 
 - Cosmos renames APIs between releases (3.0.87 to 3.0.94 moved the
   filesystem, timer, network, and storage namespaces), and its docs follow
   the latest release only.
-- Only `Venture.OS.Common` is tested; kernel code is checked by booting by
-  hand until CI boots the kernel (Wolverine).
-- A Lua library may not work under the ahead-of-time compiler, or may need
-  plugs.
+- Only `Venture.OS.Common` and the Lua system files are tested; kernel code
+  is checked by booting by hand until CI boots the kernel (every stage).
+- `Cosmos.Executable.Lua` is young (4.0.1, from 2026-10); a bug there lands
+  in every script.
 - Nothing has run on real hardware, and the Cosmos docs warn against testing
   filesystem code there.
 - The Cosmos TCP stack doesn't retransmit, which limits networking on real
@@ -170,6 +207,7 @@ The long pole is Blue Water.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | major | Routes repurposed: Wolverine is now the system library (`venture.args`), Saluki apps (runtime commands with undo, then `.app` bundles), and Borealis a possible GUI. CI checks, ARM64, and releases became every-stage work. About 46–92 h of milestones remain, plus 14–28 h every-stage. |
 | 2026-11-10 | minor | Illini: plain `lua` opens an interactive Lua prompt for debugging. Undoable changes are next. |
 | 2026-11-10 | minor | Illini: scripts declare `-- Needs:` scopes, after the capability ideas in "A Programming Paradigm for Spatiotemporal Composability". Undoable changes are the planned next step. |
 | 2026-11-10 | minor | Illini: Ctrl+C or Esc now stops running Lua, and `init.lua` has a 10-second limit, closing the endless-loop gap. |

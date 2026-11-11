@@ -34,8 +34,10 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** a CI boot check and ARM64 builds in CI (Wolverine);
-  persistent storage (Blue Water). See the
+- **Not built yet:** the system library and `venture.args` (Wolverine);
+  runtime commands with undo and `.app` bundles (Saluki); persistent storage
+  (Blue Water); a CI boot check, ARM64 builds in CI, and published ISOs
+  (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
 
@@ -565,8 +567,8 @@ is no `io.popen` or `/tmp`.
   run early), then builds x64. The Cosmos CLI, patcher, and toolchain are cached per Cosmos
   version and NuGet packages per project file, so tools are downloaded only
   when the pinned version changes.
-- **Not built yet:** ARM64 builds and a headless boot check in CI
-  (Wolverine), and published ISOs (Borealis).
+- **Not built yet:** ARM64 builds and a headless boot check in CI, and
+  published ISOs (every-stage work on the roadmap).
 
 ---
 
