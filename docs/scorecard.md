@@ -15,10 +15,10 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Boot](#boot) | 8 | 0 | 0 | 6 boot steps: 3 critical, 3 optional |
 | [Storage](#storage) | 4 | 0 | 1 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system`, read-only to file commands |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
-| [Shell](#shell) | 17 | 0 | 0 | 10 built-in commands, plus 10 Lua script commands; apps open and close |
+| [Shell](#shell) | 18 | 0 | 0 | 10 built-in commands, plus 10 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 385 tests, all passing |
-| [Documentation](#documentation) | 3 | 1 | 0 | |
+| [Reliability](#reliability) | 3 | 1 | 1 | 401 tests, all passing |
+| [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 2 open, 3 resolved |
 
@@ -58,6 +58,7 @@ output stays on the console.
 | STOR-3 | Files persist across boots on a real disk | missing | Only the RAM disk is mounted; nothing reads `StorageManager.Partitions` |
 | STOR-4 | The shell can list, read, and write files, and show free space | done | SHELL-16 |
 | SHELL-17 | `.app` bundles open and close as owners, with `open`, `close`, and `apps` | done | `AppManager`, `AppLibrary`, `OpenCommand`, `CloseCommand`, `AppsCommand`; 20 tests, and opening that fails without undoing fails one. Boot test 2026-11-11: a `Hello.app` made with `mkdir` and `write` opened by path (`Hello needs shell.`), its command ran, a second `open` was refused, `help hello` showed `From: Hello`, `apps` listed it as open, and after `close` its command was gone |
+| SHELL-18 | An app ships with the system, and a tested guide shows how to write one | done | `system/apps/Notes.app`, `docs/writing-apps.md`; 16 tests open the shipped Notes and build the guide's Dice example from its code blocks. Boot test 2026-11-11: `apps` listed Notes 1.0; `open notes`, adding, listing, and deleting notes, `cat notes.txt`, and `note --help` worked; after `close notes`, `note` was gone |
 | STOR-5 | The system files built into the kernel are installed to `/mnt/system` at boot | done | `Bootstrap.InstallSystemFiles`, `SystemDirectory.Install` (15 tests). Boot test 2026-11-06: serial shows `Installed 1 system file to /mnt/system.` (2 with the probe), and `lua` read `system/init.lua` back, as well as a temporary `system/commands/long-name-probe.lua` |
 
 ## Network
@@ -118,6 +119,7 @@ output stays on the console.
 | DOC-2 | Coding guidance for C# and for Cosmos | done | `.agents/skills/dotnet-guidelines`, `.agents/skills/cosmos-gen3` |
 | DOC-3 | Every declaration has a documentation comment where its name isn't enough | partial | `KernelPanic`, `BootRamDisk`, the boot steps, and `BuildNumber` have them; `VentureKernel.OnBoot` doesn't |
 | DOC-4 | An architecture overview in `docs/` | done | `docs/architecture.md`, written 2026-10-15 |
+| DOC-5 | A guide to writing apps, whose examples are tested | done | `docs/writing-apps.md`; `WritingAppsTutorialTests` builds and runs its Dice app from the guide's code blocks (2026-11-11) |
 
 ## Distribution
 

@@ -108,13 +108,18 @@ with no explanation. Stability outranks features.
   command that takes options should use `require("venture.args")` rather than
   reading `...` by hand. Shared Lua modules go in `src/Venture.OS/system/lib/`,
   namespaced under `venture.`.
+- Write a command in C# only when it must control the kernel, as a class in
+  `src/Venture.OS/Shell/Commands/` registered in `VentureKernel.CreateShell`;
+  built-in commands win any name clash. `help` is generated from both. C#
+  commands write through `IShellOutput` and ask for power changes through
+  `IShellHost`.
+- Apps are `.app` bundles in `src/Venture.OS/system/apps/`. Follow
+  [docs/writing-apps.md](docs/writing-apps.md) to write one, and keep it
+  accurate: `WritingAppsTutorialTests` builds and runs its Dice example, so
+  change the guide and the code together.
 - Anything Lua code sets up that should outlive a single run goes through a
   `LuaOwner` and registers its undo with `AddUndo`, so ending the owner
-  removes it. Write a command in C# only when it must control the kernel,
-  as a class in `src/Venture.OS/Shell/Commands/` registered in
-  `VentureKernel.CreateShell`; built-in commands win any name clash. `help` is
-  generated from both. C# commands write through `IShellOutput` and ask for
-  power changes through `IShellHost`.
+  removes it.
 - Use `KernelLog.WriteLine` for messages a headless boot should be able to
   check (boot results, the banner, failures). Ordinary command output goes to
   the console only.

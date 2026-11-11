@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (opening and closing apps) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (`Notes.app`, and the app tutorial) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,8 +11,8 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (385 tests, including runs of
-  the shipped scripts and library).
+  for the library, `Venture.OS.Common.Tests` (401 tests, including runs of
+  the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -37,7 +37,7 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** shipped apps (Saluki); keeping files across reboots
+- **Not built yet:** keeping files across reboots
   (Blue Water); a desktop (Borealis); a CI boot check, ARM64 builds in CI, and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
@@ -157,6 +157,7 @@ VentureOS/
 │     │  └─ Commands/              one class per command
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               runs once after boot; prints the help hint
+│     │  ├─ apps/Notes.app/        the sample app: a note command, notes kept in notes.txt
 │     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
 │     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
 │     ├─ Bootloader/limine.conf    Limine boot entry
@@ -558,7 +559,7 @@ scripts do the formatting:
 like an app's permissions, such as `-- Needs: system, network`. Scopes are
 broad, so new functions in an area don't need new names. Every function is in
 the table, but one outside the declared scopes raises
-`venture.net needs "-- Needs: network" in the script's header`. A scope
+`venture.net needs the network scope: add it to a script's -- Needs: line, or an app's needs in Info.xml`. A scope
 VentureOS doesn't know, or one it has reserved but doesn't offer yet
 (`ui`, for the desktop), keeps the script from running at all, with the reason, so a script
 written for a newer VentureOS fails clearly rather than half working.
@@ -702,6 +703,11 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   own `Contents/Lua/`, then the system library. Apps can't replace system
   script commands, and `help` shows their commands as `From:` the app.
 
+`Notes.app` ships as the example: `note <text>`, `note -l`, `note -d <n>`,
+and `note --clear`, keeping notes in `notes.txt` in the folder it opened
+from. [Writing apps](./writing-apps.md) is the step-by-step guide; a test
+builds and runs its example, so it can't drift from what works.
+
 ---
 
 ## 10. Version and build identity
@@ -776,6 +782,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | `Notes.app` ships in `/mnt/system/apps` (§2, §9), with a tested tutorial in `docs/writing-apps.md`. The missing-scope error now names both places a scope is declared. |
 | 2026-11-11 | minor | Apps (§9): `open`, `close`, and `apps`; each app is an owner with its declared `needs`, `venture.app`, and its own modules first for `require`. |
 | 2026-11-11 | minor | Bundles (§1.1, §2, §9): macOS-style `Contents/Info.xml`, read by `Bundle.Read` through `FlatXml`, since `System.Xml` doesn't link under Cosmos 3.0.94. |
 | 2026-11-11 | minor | Files (§2, §9): `venture.files` under the new `files` scope, and `ls`, `cat`, `write`, `mkdir`, `rm`, `df`, and `pwd` as Lua commands; `/mnt/system` is read-only to them. `ui` is now the reserved scope. |

@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Saluki: opening and closing apps) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Saluki: `Notes.app` and the app guide) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,9 +36,7 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Apps** (Saluki): `.app` bundles shipped with the system, opened and
-   closed as owners, text-mode first.
-2. **Desktop** (Borealis): a UIScript reader, drawing and a frame loop, then
+1. **Desktop** (Borealis): a UIScript reader, drawing and a frame loop, then
    windows from `.uix` files and a window manager.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
@@ -69,7 +67,7 @@ fit, rather than waiting on a route.
 | Blue Water | Files | 67% | 8–15 (persistence, later) | File commands on the RAM disk now; an optional save to disk later |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
-| Saluki | Apps | 80% | 2–4 | Runtime commands with undo are done; `.app` bundles shipped with the system, opened and closed as owners |
+| Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 0% | 40–80 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock |
 | | **Total** | | **≈ 66–131**, plus every-stage work (≈ 14–28) | |
 
@@ -77,9 +75,8 @@ fit, rather than waiting on a route.
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | `.app` bundles shipped with the system | Saluki | 8–16 |
-| 2 | A UIScript reader, then drawing and a frame loop | Borealis | 15–30 |
-| 3 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | A UIScript reader, then drawing and a frame loop | Borealis | 15–30 |
+| 2 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
 about 20–40 hours.
@@ -185,8 +182,8 @@ removing the component runs them, newest first.
 - [x] Opening and closing apps: `open`, `close`, and `apps`; each app is an
   owner with one `needs` for the whole app, `venture.app`, and its own
   modules for `require`. One instance per app; any `.app` opens by path.
-- [ ] Apps shipped with the system, in `/mnt/system/apps/`, starting with
-  `Notes.app`.
+- [x] Apps shipped with the system, in `/mnt/system/apps/`, starting with
+  `Notes.app`, and a tested guide to writing apps (`docs/writing-apps.md`).
 - [ ] Later, with persistence: apps installed from outside the system image.
 
 ### Borealis: Desktop
@@ -236,6 +233,7 @@ Borealis.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Saluki 90%: `Notes.app` ships, with a tested guide to writing apps. Only installing apps from outside the system remains, after persistence; Borealis is the current focus. |
 | 2026-11-11 | minor | Saluki 80%: `open`, `close`, and `apps`; apps run as owners with their declared needs. A shipped `Notes.app` is next. |
 | 2026-11-11 | minor | Saluki 67%: the bundle format and its reader. `System.Xml` doesn't link under Cosmos 3.0.94, so XML is read by VentureOS's own flat reader, which Borealis's `.uix` files will share. |
 | 2026-11-11 | minor | Blue Water 67%: `venture.files` and the file commands on the RAM disk. Persistence stays for later; Saluki's `.app` bundles are the current focus. |

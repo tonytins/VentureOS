@@ -66,7 +66,7 @@ public static class VentureLibrary
 
     /// <summary>The error a script gets for calling <paramref name="function"/> without declaring its scope.</summary>
     public static string UndeclaredMessage(string function, ScriptScopes scope) =>
-        $"venture.{function} needs \"-- Needs: {ScriptScopeNames.Name(scope)}\" in the script's header";
+        $"venture.{function} needs the {ScriptScopeNames.Name(scope)} scope: add it to a script's -- Needs: line, or an app's needs in Info.xml";
 
     private static NameFuncPair Gated(
         string name, ScriptScopes scope, ScriptScopes granted, CSharpFunctionDelegate function) =>

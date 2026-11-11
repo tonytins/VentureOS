@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.19
+
+- VentureOS ships its first app, Notes: `open notes`, then `note <text>` to add a note, `note` to list them, `note -d <number>` to delete one, and `note --clear` to start over. Notes are kept in `notes.txt` in the folder you opened it from.
+- New guide: [Writing apps](docs/writing-apps.md).
+- When a script or app uses something it hasn't declared, the message now says where to declare it: a script's `-- Needs:` line, or an app's `needs` in `Info.xml`.
+
 ## 0.2.18
 
 - Apps: `open <app>` opens an `.app` bundle, `close <app>` closes it and removes everything it added, and `apps` lists the apps and which are open. An app opened from outside the system's apps says what it needs first.
