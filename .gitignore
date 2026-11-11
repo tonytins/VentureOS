@@ -123,3 +123,7 @@ output-*/
 # Personal files and notes (see AGENTS.md)
 *.local
 *.local.*
+
+# App bundles such as Notes.app are part of the system. A global ignore for
+# macOS applications (*.app) would otherwise leave them out of the repository.
+!*.app
