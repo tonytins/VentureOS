@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (scripts declare what they need with `-- Needs:`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (plain `lua` opens a Lua prompt) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (174 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (186 tests, including runs of
   the shipped scripts).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -121,6 +121,7 @@ VentureOS/
 │  │     ├─ EmbeddedFile.cs     a file built into the kernel image
 │  │     ├─ SystemDirectory.cs  writes those files to disk, after checking every path
 │  │     ├─ LuaRunner.cs        runs Lua for a command: output to the shell, errors reported
+│  │     ├─ LuaRepl.cs          the interactive Lua prompt behind plain `lua`
 │  │     ├─ ScriptCommands.cs   <name>.lua files as commands
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
 │  │     └─ VentureLibrary.cs   the `venture` table
@@ -442,7 +443,7 @@ flowchart LR
 | `clear` | Clears the screen |
 | `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
 | `info` | Lua script: version and build, commit, Cosmos version, uptime, and free and total memory |
-| `lua <code>` | Runs one chunk of Lua 5.5 in a fresh interpreter |
+| `lua [code]` | Runs one chunk of Lua 5.5 in a fresh interpreter, or with no code, opens a Lua prompt |
 | `net` | Lua script: device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
 | `halt` | Ends the shell loop; the CPU halts and the machine stays on |
 | `reboot` | Restarts through ACPI |
@@ -461,6 +462,19 @@ nothing carries over. `print`, `io.write`, and `io.stderr` go through
 paths in `dofile` and `io.open` start at `/mnt`. Lua errors are reported with
 their traceback, and `os.exit` with a non-zero status as that status; neither
 reaches the shell loop.
+
+**The Lua prompt.** Plain `lua` opens `LuaRepl`, a read–eval–print loop in one
+interpreter, so values carry over between lines until `exit`. It prompts with
+`lua> `, so it can't be mistaken for the shell. A line is tried first as an
+expression, whose value is printed (`1 + 1` prints `2`), then as statements;
+one left unfinished, such as `for i = 1, 3 do`, continues at `...> `. Ctrl+C
+or Esc stops only the running line: `LuaRunner.Create` hands the prompt a way
+to clear the latched stop before each line. Errors show only their message,
+and `os.exit` or the end of the input leaves the prompt. As in the reference
+`lua`, an expression's value is printed even when it's incidental, so
+`io.write('x')` also prints the file it returns. The prompt is written in C#
+rather than with the package's `RunPrompt`, which uses the shell's own `> `
+prompt and has no point between lines to clear the stop.
 
 **The `venture` table** is how scripts reach the kernel, in `lua` and in
 script commands alike. Its functions return plain values or tables, and the
@@ -589,6 +603,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | The Lua prompt (§2, §9): plain `lua` opens `LuaRepl`, where values carry over between lines and Ctrl+C stops only the running line. |
 | 2026-11-10 | minor | Scopes (§9): scripts declare `-- Needs: system` or `network`; the `venture` table refuses undeclared functions, and unknown or reserved scopes keep a script from running. |
 | 2026-11-10 | minor | Stopping Lua (§4, §9): Ctrl+C or Esc stops `lua` and script commands through a count hook, and `init.lua` also stops after 10 seconds. |
 | 2026-11-10 | minor | `init.lua` (§2, §4): runs once after the banner as an optional step, with its output on serial through `KernelLogOutput`; it now prints the help hint. |

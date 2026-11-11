@@ -38,6 +38,10 @@ public static class LuaRunner
             interval = 1
             sethook(hook, "", 1)
             error(reason, 0)
+          elseif interval ~= {{StopCheckInterval}} then
+            -- The stop was cleared, as the REPL does between lines, so go back to the usual pace.
+            interval = {{StopCheckInterval}}
+            sethook(hook, "", interval)
           end
         end
         sethook(hook, "", interval)
@@ -96,11 +100,7 @@ public static class LuaRunner
         ArgumentNullException.ThrowIfNull(run);
 
         using ShellOutputWriter writer = new(output);
-        using LuaInterpreter lua = new() { WorkingDirectory = workingDirectory, Output = writer, Error = writer };
-        if (system is not null)
-            VentureLibrary.Open(lua.State, system, scopes);
-        if (stop is not null)
-            InstallStopHook(lua, stop);
+        using var lua = Create(writer, workingDirectory, system, stop, scopes, out _);
 
         try
         {
@@ -110,7 +110,7 @@ public static class LuaRunner
         catch (LuaException exception)
         {
             // Finish any partial line the code wrote, so the error starts on a line of its own.
-            writer.Dispose();
+            writer.FinishLine();
             output.WriteLine($"Lua error: {exception.Message}");
             if (!string.IsNullOrEmpty(exception.LuaStackTrace))
                 output.WriteLine(exception.LuaStackTrace);
@@ -121,13 +121,37 @@ public static class LuaRunner
             if (exit.ExitCode == 0)
                 return true;
 
-            writer.Dispose();
+            writer.FinishLine();
             output.WriteLine($"Lua exited with status {exit.ExitCode}.");
             return false;
         }
     }
 
-    private static void InstallStopHook(LuaInterpreter lua, Func<string?> stop)
+    /// <summary>
+    /// Makes an interpreter with its output on <paramref name="writer"/>, the <c>venture</c> table, and the stop hook.
+    /// </summary>
+    /// <param name="resetStop">
+    /// Clears a stop that has happened, so the next code can run, as the REPL does between lines. Does nothing
+    /// without <paramref name="stop"/>.
+    /// </param>
+    internal static LuaInterpreter Create(
+        TextWriter writer,
+        string workingDirectory,
+        ISystemInfo? system,
+        Func<string?>? stop,
+        ScriptScopes scopes,
+        out Action resetStop)
+    {
+        LuaInterpreter lua = new() { WorkingDirectory = workingDirectory, Output = writer, Error = writer };
+        if (system is not null)
+            VentureLibrary.Open(lua.State, system, scopes);
+
+        resetStop = stop is null ? () => { } : InstallStopHook(lua, stop);
+        return lua;
+    }
+
+    /// <returns>An action that clears the latched stop.</returns>
+    private static Action InstallStopHook(LuaInterpreter lua, Func<string?> stop)
     {
         // Once a check says stop, keep saying it: a key press is read only once, and the script may catch the
         // first error with pcall.
@@ -143,5 +167,6 @@ public static class LuaRunner
         });
         lua.State.SetGlobal(StopHandoff);
         lua.DoString(StopHookChunk, "=stop-hook");
+        return () => stopped = null;
     }
 }

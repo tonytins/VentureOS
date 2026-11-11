@@ -35,10 +35,19 @@ public sealed class ShellOutputWriter(IShellOutput output) : TextWriter
             Write(character);
     }
 
+    /// <summary>
+    /// Writes any text left without a line break as a line of its own, so what's written next starts on a new line.
+    /// </summary>
+    public void FinishLine()
+    {
+        if (line.Length > 0)
+            EndLine();
+    }
+
     protected override void Dispose(bool disposing)
     {
-        if (disposing && line.Length > 0)
-            EndLine();
+        if (disposing)
+            FinishLine();
 
         base.Dispose(disposing);
     }
