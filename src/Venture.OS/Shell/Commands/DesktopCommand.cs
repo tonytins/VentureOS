@@ -35,6 +35,13 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
 
     public void Execute(ShellContext context, IReadOnlyList<string> arguments)
     {
+        // A shell in a window, such as Terminal's, is already inside the desktop.
+        if (!context.HasConsole)
+        {
+            context.Output.WriteLine("desktop: you're already in the desktop.");
+            return;
+        }
+
         // Read every document first, so a mistake is reported in the shell, where it can be read.
         List<(string Title, UIScript Script)> previews = [];
         foreach (var argument in arguments)

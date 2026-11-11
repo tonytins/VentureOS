@@ -14,6 +14,23 @@ public sealed class WindowManagerTests
     private readonly WindowManager manager = new(800, 600);
 
     [Fact]
+    public void AWindowGetsItsFocusBackWhenItComesToTheFront()
+    {
+        var first = Window("One");
+        manager.Open(first);
+        first.View.Focus("field");
+        manager.Open(Window("Two"));
+        Assert.Null(first.View.FocusedControl);
+
+        // A press on its title bar brings it forward without landing in its content.
+        manager.Update(new DesktopInput(first.X + 100, first.Y + 10, true));
+        manager.Update(new DesktopInput(first.X + 100, first.Y + 10, false));
+
+        Assert.Same(first, manager.Focused);
+        Assert.Equal("field", first.View.FocusedControl);
+    }
+
+    [Fact]
     public void OpensWindowsCenteredAndCascaded()
     {
         var first = Window("One");

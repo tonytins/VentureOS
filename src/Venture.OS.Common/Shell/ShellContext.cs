@@ -15,6 +15,12 @@ public sealed class ShellContext(IShellOutput output, IShellHost host, CommandRe
     /// The folder relative paths start from, such as <c>/mnt</c>, which <c>cd</c> changes. Scripts run from it.
     /// </summary>
     /// <exception cref="ArgumentException">The value isn't a full path.</exception>
+    /// <summary>
+    /// Whether the shell runs on the text console. A shell in a window, such as Terminal's, doesn't, so commands that
+    /// draw on the console or read it directly, such as <c>desktop</c> and the <c>lua</c> prompt, refuse there.
+    /// </summary>
+    public bool HasConsole { get; init; } = true;
+
     public string CurrentDirectory
     {
         get;

@@ -38,6 +38,10 @@ public sealed class LuaOwner : IDisposable
     /// <param name="runShell">
     /// Runs a line as if typed at the shell, for <c>venture.shell</c>, or <see langword="null"/> for none.
     /// </param>
+    /// <param name="openShell">
+    /// Makes a shell of the code's own for <c>venture.openShell</c>, writing to the output given and starting in the
+    /// folder given, or <see langword="null"/> for none.
+    /// </param>
     public LuaOwner(
         string name,
         string lifetime,
@@ -48,7 +52,8 @@ public sealed class LuaOwner : IDisposable
         ScriptScopes scopes = ScriptScopes.None,
         string? libraryDirectory = null,
         RuntimeCommands? commands = null,
-        Action<string>? runShell = null)
+        Action<string>? runShell = null,
+        Func<IShellOutput, string, ShellContext>? openShell = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         ArgumentException.ThrowIfNullOrEmpty(lifetime);
@@ -63,7 +68,7 @@ public sealed class LuaOwner : IDisposable
             writer, workingDirectory, system, () => currentStop?.Invoke(), scopes, libraryDirectory, out resetStop);
 
         if (commands is not null)
-            ShellLibrary.Open(Interpreter.State, this, commands, scopes, runShell);
+            ShellLibrary.Open(Interpreter.State, this, commands, scopes, runShell, openShell);
     }
 
     /// <summary>Who the owner is, such as <c>init.lua</c>.</summary>
@@ -194,6 +199,31 @@ public sealed class LuaOwner : IDisposable
             Interpreter.Output = previousOutput;
             Interpreter.Error = previousError;
             Interpreter.WorkingDirectory = previousDirectory;
+        }
+    }
+
+    /// <summary>
+    /// How long code has to finish after a shell command it ran returns, when it was running under a stop.
+    /// </summary>
+    internal static readonly TimeSpan AfterShellAllowance = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// Runs a shell command for the code, such as Terminal's, outside the code's own stop: the command is limited the
+    /// way any command is, by Ctrl+C or Esc, and its time doesn't count against the code. The code then has
+    /// <see cref="AfterShellAllowance"/> to finish, if it was running under a stop at all.
+    /// </summary>
+    internal void WithoutStop(Action work)
+    {
+        var paused = currentStop;
+        currentStop = null;
+        try
+        {
+            work();
+        }
+        finally
+        {
+            currentStop = paused is null ? null : ScriptStop.After(AfterShellAllowance);
+            resetStop();
         }
     }
 

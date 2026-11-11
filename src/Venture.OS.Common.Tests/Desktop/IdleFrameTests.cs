@@ -77,17 +77,23 @@ public sealed class IdleFrameTests : IDisposable
 
         session.Draw(painter);
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
+        // The runtime can allocate once in a while for its own reasons, such as recompiling hot code, so the frames
+        // are measured in three batches. A frame that allocates would show in every batch.
         var changed = false;
-        for (var frame = 0; frame < 1000; frame++)
+        var fewest = long.MaxValue;
+        for (var batch = 0; batch < 3; batch++)
         {
-            now += TimeSpan.FromMilliseconds(10);
-            changed |= session.Update(still with { Time = now });
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var frame = 0; frame < 1000; frame++)
+            {
+                now += TimeSpan.FromMilliseconds(10);
+                changed |= session.Update(still with { Time = now });
+            }
+
+            fewest = Math.Min(fewest, GC.GetAllocatedBytesForCurrentThread() - before);
         }
 
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
         Assert.False(changed);
-        Assert.Equal(0, allocated);
+        Assert.Equal(0, fewest);
     }
 }

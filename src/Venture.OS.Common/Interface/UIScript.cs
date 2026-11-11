@@ -27,6 +27,18 @@ public enum UITextAlignment
     Right,
 }
 
+/// <summary>
+/// The kind of typeface a style asks for. The host picks the font itself; VentureOS uses Open Sans and Fira Code.
+/// </summary>
+public enum UIFont
+{
+    /// <summary>The host's interface font, which text uses without a style saying otherwise.</summary>
+    Interface,
+
+    /// <summary>A fixed-width font, for code and a terminal.</summary>
+    Monospace,
+}
+
 /// <summary>Which way a slider runs. Without one, it runs along its longer side.</summary>
 public enum UIOrientation
 {
@@ -72,7 +84,8 @@ public sealed record UIStyle(
     UIColor? BackgroundColor,
     UIColor? BorderColor,
     UIColor? FillColor,
-    int? FontSize);
+    int? FontSize,
+    UIFont? Font = null);
 
 /// <summary>Text that's either written in the document or names a <c>&lt;String&gt;</c>.</summary>
 public sealed record UIText(string Value, bool IsReference)
@@ -109,7 +122,8 @@ public sealed record UIControl(
     bool IsSelectable = false,
     UITextAlignment Alignment = UITextAlignment.Left,
     (float Minimum, float Maximum)? ValueRange = null,
-    UIOrientation? Orientation = null);
+    UIOrientation? Orientation = null,
+    bool Follows = false);
 
 /// <summary>A drop-down menu in the global menu bar (the <c>menus</c> feature).</summary>
 public sealed record UIMenu(string Name, string Title, char? Hotkey, IReadOnlyList<UIMenuEntry> Entries, int Line);
@@ -338,7 +352,8 @@ public sealed class UIScript
                         reader.Color("backgroundColor"),
                         reader.Color("borderColor"),
                         reader.Color("fillColor"),
-                        reader.Integer("fontSize"));
+                        reader.Integer("fontSize"),
+                        reader.Enum("font", ParseFont));
                     break;
                 }
 
@@ -494,7 +509,8 @@ public sealed class UIScript
             IsSelectable: reader.Boolean("selectable") ?? false,
             Alignment: reader.Enum("alignment", ParseAlignment) ?? UITextAlignment.Left,
             ValueRange: range,
-            Orientation: reader.Enum("orientation", ParseOrientation));
+            Orientation: reader.Enum("orientation", ParseOrientation),
+            Follows: reader.Boolean("follows") ?? false);
     }
 
     private static IReadOnlyList<UIMenu> BuildMenus(
@@ -616,6 +632,8 @@ public sealed class UIScript
             throw OnlyFor(name, "secure", "a TextField", line);
         if (control.IsSelectable && type != UIControlType.List)
             throw OnlyFor(name, "selectable", "a List", line);
+        if (control.Follows && type != UIControlType.TextArea)
+            throw OnlyFor(name, "follows", "a TextArea", line);
 
         if (control.Scrolls is { } binding)
         {
@@ -691,6 +709,13 @@ public sealed class UIScript
     {
         "up" => UIScrollDirection.Up,
         "down" => UIScrollDirection.Down,
+        _ => null,
+    };
+
+    private static UIFont? ParseFont(string value) => value switch
+    {
+        "interface" => UIFont.Interface,
+        "monospace" => UIFont.Monospace,
         _ => null,
     };
 

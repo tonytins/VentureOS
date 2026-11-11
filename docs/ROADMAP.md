@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone phase 5: `<TextArea>` and TextEdit) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone complete: Terminal.app) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,8 +36,8 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Desktop apps** (Keystone): Files and user apps are done; timers and
-   System Monitor are next.
+1. **Desktop apps** (Keystone): complete, with Terminal.app. The next route
+   is my call.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
@@ -69,15 +69,14 @@ fit, rather than waiting on a route.
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
-| Keystone | Desktop apps | 83% | 6–12 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| | **Total** | | **≈ 24–47**, plus every-stage work (≈ 14–28) | |
+| Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
+| | **Total** | | **≈ 18–35**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Terminal.app: the shell in a window | Keystone | 6–12 |
-| 2 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
 about 20–40 hours.
@@ -253,7 +252,7 @@ changed. Lua drawing in regions and images wait for a later route.
 - [x] Phase 5, multi-line text: a `<TextArea>` element in UIScript's core,
   written up for Hudini's rolling spec; and TextEdit (user), which opens,
   edits, and saves text files.
-- [ ] Phase 6, Terminal.app (system): the shell in a read-only
+- [x] Phase 6, Terminal.app (system): the shell in a read-only
   `<TextArea>` that follows its newest text, in Fira Code.
 
 ## Critical path
@@ -285,6 +284,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Keystone complete: phase 6, Terminal.app, with shells of their own for apps, a monospace font in styles, and text areas that follow their newest text. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 83%: phase 5, `<TextArea>` and TextEdit, which Files opens text files in. Terminal.app is the last phase. About 24–47 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 67%: phase 4, `window:every` timers and System Monitor. About 30–59 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 50%: an intermediate phase 3, the unified title bar and minimize from the new design, with Files' address field and bookmarks and Notes in the user's apps; timers, `<TextArea>`, and Terminal.app become phases 4 to 6. |

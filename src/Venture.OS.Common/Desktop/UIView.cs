@@ -86,8 +86,11 @@ public sealed class UIView
     // Reused every frame, since the desktop updates views without pause; see Update.
     private readonly List<UIEvent> frameEvents = [];
 
-    // The painter last drawn with, which measures text for clicks in a text area between draws.
-    private IPainter? measurer;
+    // The field that had focus before its window left the front; see RestoreFocus.
+    private string? setAside;
+
+    // Draws and measures in the monospace font, for controls whose style asks for it; kept while the painter is.
+    private MonospacePainter? monospace;
 
     /// <summary>The most characters a text area takes without a <c>maximumLength</c>.</summary>
     public const int TextAreaLength = 65536;
@@ -262,8 +265,28 @@ public sealed class UIView
         }
     }
 
-    /// <summary>Takes keyboard focus away, such as when another window comes forward.</summary>
-    public void ClearFocus() => focused = null;
+    /// <summary>
+    /// Takes keyboard focus away, such as when another window comes forward, remembering where it was so
+    /// <see cref="RestoreFocus"/> can put it back.
+    /// </summary>
+    public void ClearFocus()
+    {
+        if (focused is not null)
+            setAside = focused;
+        focused = null;
+    }
+
+    /// <summary>
+    /// Gives focus back to the field that had it before <see cref="ClearFocus"/>, as when its window comes to the front
+    /// again, so typing goes where it went before. Nothing happens if something else has focus, or the field can't
+    /// take it now.
+    /// </summary>
+    public void RestoreFocus()
+    {
+        if (focused is null && setAside is { } name)
+            Focus(name);
+        setAside = null;
+    }
 
     /// <summary>
     /// Handles a frame's input with the view's corner at (<paramref name="originX"/>, <paramref name="originY"/>).
@@ -331,25 +354,26 @@ public sealed class UIView
                 continue;
 
             var bounds = Offset(Place(control.Frame, control.Image is not null), originX, originY);
+            var target = PainterFor(control, painter);
             switch (control.Type)
             {
                 case UIControlType.Text:
-                    DrawLabel(painter, control, state, bounds);
+                    DrawLabel(target, control, state, bounds);
                     break;
                 case UIControlType.FormattedText:
-                    DrawFormatted(painter, control, state, bounds);
+                    DrawFormatted(target, control, state, bounds);
                     break;
                 case UIControlType.Button:
-                    DrawButton(painter, control, state, bounds);
+                    DrawButton(target, control, state, bounds);
                     break;
                 case UIControlType.TextField:
-                    DrawField(painter, control, state, bounds);
+                    DrawField(target, control, state, bounds);
                     break;
                 case UIControlType.TextArea:
-                    DrawArea(painter, control, state, bounds);
+                    DrawArea(target, control, state, bounds);
                     break;
                 case UIControlType.List:
-                    DrawList(painter, control, state, bounds);
+                    DrawList(target, control, state, bounds);
                     break;
                 case UIControlType.Slider:
                     DrawSlider(painter, control, state, bounds);
@@ -632,7 +656,7 @@ public sealed class UIView
 
     private void DrawArea(IPainter painter, UIControl control, State state, UIRect bounds)
     {
-        measurer = painter;
+        state.Measurer = painter;
         var (x, y, width, height) = Ints(bounds);
         var style = Style(control);
         var isFocused = focused == control.Name;
@@ -647,8 +671,14 @@ public sealed class UIView
             return;
         }
 
-        var lines = Layout(painter, control, state, width - (2 * Inset));
+        // An area that follows, as Terminal's does, stays at its newest line when text arrives while it's at the end.
         var visible = VisibleLines(control);
+        var wasAtEnd = state.Lines is null || state.FirstLine >= Math.Max(0, state.Lines.Count - visible);
+        var textChanged = !ReferenceEquals(state.LinesText, state.Text);
+        var lines = Layout(painter, control, state, width - (2 * Inset));
+        if (control.Follows && textChanged && wasAtEnd)
+            state.FirstLine = Math.Max(0, lines.Count - visible);
+
         var caretLine = LineOf(lines, Math.Clamp(state.Caret, 0, state.Text.Length));
         if (state.RevealCaret)
         {
@@ -765,7 +795,7 @@ public sealed class UIView
     /// <summary>Where a click in a text area puts the caret: the character nearest the point, on the line it's on.</summary>
     private int CaretAt(UIControl area, State state, int x, int y)
     {
-        if (measurer is not { } painter || state.Lines is not { } lines || !ReferenceEquals(state.LinesText, state.Text))
+        if (state.Measurer is not { } painter || state.Lines is not { } lines || !ReferenceEquals(state.LinesText, state.Text))
             return state.Text.Length;
 
         var bounds = Place(area.Frame, false);
@@ -1115,5 +1145,39 @@ public sealed class UIView
         public int LinesWidth { get; set; }
         public int FirstLine { get; set; }
         public bool RevealCaret { get; set; }
+
+        // The painter a text area was last drawn with, which measures text for clicks between draws.
+        public IPainter? Measurer { get; set; }
+    }
+
+    /// <summary>The painter to draw a control with: one in the monospace font when its style asks for it.</summary>
+    private IPainter PainterFor(UIControl control, IPainter painter)
+    {
+        if (Style(control)?.Font != UIFont.Monospace)
+            return painter;
+
+        if (monospace is null || !ReferenceEquals(monospace.Inner, painter))
+            monospace = new MonospacePainter(painter);
+        return monospace;
+    }
+
+    /// <summary>Passes drawing on, with all text in the monospace font.</summary>
+    private sealed class MonospacePainter(IPainter inner) : IPainter
+    {
+        public IPainter Inner => inner;
+
+        public int Width => inner.Width;
+
+        public int Height => inner.Height;
+
+        public void DrawPixels(int[] pixels, int x, int y, int width, int height) => inner.DrawPixels(pixels, x, y, width, height);
+
+        public void FillRectangle(int x, int y, int width, int height, UIColor color) => inner.FillRectangle(x, y, width, height, color);
+
+        public void DrawText(string text, int x, int y, UIColor color, int size, DesktopFont font = DesktopFont.Interface) =>
+            inner.DrawText(text, x, y, color, size, DesktopFont.Monospace);
+
+        public int MeasureText(string text, int size, DesktopFont font = DesktopFont.Interface) =>
+            inner.MeasureText(text, size, DesktopFont.Monospace);
     }
 }

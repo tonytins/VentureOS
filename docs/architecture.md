@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (`<TextArea>`, TextEdit, and opening files with apps) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Terminal.app and shells for apps) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (665 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (680 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -167,6 +167,7 @@ VentureOS/
 │     │  ├─ init.lua               runs once after boot; prints the help hint
 │     │  ├─ apps/Files.app/        the desktop's own app: browses folders, opens apps, Quick Look
 │     │  ├─ apps/SystemMonitor.app/  version, uptime, memory, and network, kept current
+│     │  ├─ apps/Terminal.app/     the shell in a window, in Fira Code
 │     │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
 │     │  ├─ interfaces/about.uix   the About VentureOS window
 │     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
@@ -871,6 +872,24 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   caret by those lines, a click places it, and the area scrolls by the wheel
   or a bound slider (`scrolls`) and to keep the caret in view. Clicks are
   measured with the painter last drawn with. No selection or clipboard yet.
+- **Shells for apps** (`venture.openShell()`, under `shell`). An app gets a
+  shell of its own, with its own current folder, that writes to a caught
+  output rather than the console: `session:run(line)` returns what the
+  command printed and whether it cleared the screen, and a command's
+  exception is reported there, since no shell loop sits under it. Its
+  `ShellContext.HasConsole` is false, so `desktop` and the `lua` prompt,
+  which use the console directly, refuse with a reason. A command's time
+  doesn't count against the app's event limit (`LuaOwner.WithoutStop`):
+  Ctrl+C or Esc stops scripts as anywhere, and the app gets 5 more seconds
+  once it returns. Terminal.app is the shell in a window this way, with up
+  to 500 lines kept, `exit` to close, and Shell ▸ Clear.
+- **Fonts and following.** A `<Style>` may ask for `font="monospace"`, which
+  the view draws through a painter that uses Fira Code. A `<TextArea>` with
+  `follows="true"` jumps to its newest line when its text changes while it
+  was scrolled to the end, as a log list does.
+- **Focus comes back.** A window that leaves the front remembers its focused
+  field, and gets it back when it comes forward again (`UIView.RestoreFocus`),
+  unless the click that brought it forward landed elsewhere in it.
 - **Opening files with apps.** `venture.ui.onOpenFile(fn)` says how an app
   opens a file, and `venture.ui.launch(app, file)` (by path or by name,
   such as `"TextEdit"`) starts the app if it isn't open, then hands it the
@@ -964,6 +983,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Terminal (§2, §9): `venture.openShell` gives apps shells of their own without the console; Terminal.app ships; styles take `font`, text areas `follows`; windows get their focus back when they come forward. |
 | 2026-11-11 | minor | Text (§2, §9): `<TextArea>`; TextEdit ships with the user's apps; Files opens text files in it through `venture.ui.launch(app, file)` and `onOpenFile`. |
 | 2026-11-11 | minor | Frame loop (§9): idle frames allocate nothing, which stopped memory churning between about 50 and 430 MiB (BUG-6). |
 | 2026-11-11 | minor | Timers (§2, §9): `window:every` runs code on a schedule while the desktop shows; System Monitor ships. |

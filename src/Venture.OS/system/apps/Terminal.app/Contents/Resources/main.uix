@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A Terminal window: what the shell printed, and a line to type the next command. -->
+<UIScript version="1" requires="menus">
+  <Window width="640" height="400"/>
+
+  <Menu name="shellMenu" title="Shell" hotkey="S"/>
+  <MenuItem menu="shellMenu" name="clearItem" title="Clear" hotkey="C" shortcut="Ctrl+K"/>
+  <MenuSeparator menu="shellMenu"/>
+  <MenuItem menu="shellMenu" name="closeWindow" title="Close Window" hotkey="W" shortcut="Ctrl+W"/>
+
+  <Style name="mono" font="monospace"/>
+  <Style name="prompt" font="monospace" textColor="#6E747E"/>
+
+  <TextArea name="output" x="8" y="8" width="610" height="350" readOnly="true" follows="true" style="mono"/>
+  <Slider name="outputScroll" x="622" y="8" width="10" height="350" scrolls="output"/>
+  <Text name="prompt" x="8" y="369" width="160" height="20" alignment="right" style="prompt"/>
+  <TextField name="command" x="172" y="366" width="460" height="26" maximumLength="1024" style="mono"/>
+</UIScript>

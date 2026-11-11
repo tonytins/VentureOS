@@ -303,6 +303,14 @@ public sealed class UiLibraryTests : IDisposable
     }
 
     [Fact]
+    public void OpenShellIsOnlyThereWhenTheSystemOffersIt()
+    {
+        Open("""print(venture.openShell)""");
+
+        Assert.Equal(["nil"], output.Lines);
+    }
+
+    [Fact]
     public void NeedsTheUiScope()
     {
         Write("""venture.ui.open("main.uix")""", needs: "files");

@@ -23,6 +23,7 @@ namespace Venture.OS.Bundles;
 /// Makes the stop for an app's <c>main</c> script when it opens, such as Ctrl+C or a time limit; called once per open.
 /// </param>
 /// <param name="windows">Where apps' windows go, for <c>venture.ui</c>, or <see langword="null"/> without a desktop.</param>
+/// <param name="openShell">Makes a shell of an app's own, for <c>venture.openShell</c>, or <see langword="null"/>.</param>
 /// <param name="userAppsDirectory">
 /// Where the user's apps are, such as <c>/mnt/user/apps</c>, or <see langword="null"/> for none. They open by name like
 /// the system's, after them.
@@ -35,7 +36,8 @@ public sealed class AppManager(
     Action<string>? runShell = null,
     Func<Func<string?>>? startupStop = null,
     AppWindows? windows = null,
-    string? userAppsDirectory = null)
+    string? userAppsDirectory = null,
+    Func<IShellOutput, string, ShellContext>? openShell = null)
 {
     private readonly string? userAppsDirectory = userAppsDirectory?.TrimEnd('/');
     private readonly string appsDirectory = appsDirectory?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(appsDirectory));
@@ -162,7 +164,8 @@ public sealed class AppManager(
             bundle.Needs,
             library,
             commands,
-            runShell);
+            runShell,
+            openShell);
         AppLibrary.Open(owner.Interpreter.State, bundle);
         UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
 

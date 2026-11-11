@@ -39,6 +39,13 @@ internal sealed class LuaCommand(ISystemInfo system, Func<RuntimeCommands?> comm
     {
         if (arguments.Count == 0)
         {
+            // The prompt reads the console's keyboard directly, which a shell in a window doesn't have.
+            if (!context.HasConsole)
+            {
+                context.Output.WriteLine("lua: the interactive prompt needs the text console; run a line with lua \"<code>\" instead.");
+                return;
+            }
+
             LuaRepl.Run(
                 context.Output,
                 ReadLine,

@@ -249,6 +249,9 @@ new number. `roll` still works in the shell, since both live in the same app.
   item reports `pressed` with its name, like a button. See
   [UIScript menus](./uiscript-menus.md).
 - Anything a handler prints shows in a message window on the desktop.
+- **A shell of its own:** `local shell = venture.openShell()` (with `shell` in
+  `needs`), then `shell:run("ls")` returns what the command printed, and
+  `shell:directory()` its current folder. Terminal is built on it.
 - **Longer text:** `<TextArea>` is a text field with several lines: Enter
   adds a line, and it reports `changed` as you type. TextEdit uses one.
 - **Opening files:** `venture.ui.onOpenFile(function(path) ... end)` lets

@@ -299,6 +299,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         Unfocus(Focused);
         windows.Remove(window);
         windows.Add(window);
+        window.View.RestoreFocus();
     }
 
     /// <summary>Takes the keyboard from a window that's leaving the front.</summary>

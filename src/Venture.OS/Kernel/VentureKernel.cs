@@ -133,7 +133,8 @@ public class VentureKernel : Sys.Kernel, IShellHost
             RunShellLine,
             () => ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(Bootstrap.AppStartupLimit)),
             new AppWindows(windows, desktopOutput, () => ScriptStop.After(Bootstrap.UiEventLimit)),
-            Bootstrap.UserAppsDirectoryPath);
+            Bootstrap.UserAppsDirectoryPath,
+            (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false });
 
         shellContext = new ShellContext(new ConsoleShellOutput(), this, commands)
         {

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Terminal: the shell in a window. -->
+<App version="1">
+  <Info identifier="dev.tonytins.ventureos.terminal" name="Terminal" version="1.0" needs="shell ui"/>
+</App>

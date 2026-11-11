@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.7
+
+- New app: Terminal, the shell in a window, in Fira Code. Each window has its own current folder; `exit` closes it, and Shell ▸ Clear (Ctrl+K) empties it. `desktop` and the interactive `lua` prompt only work on the text console, and say so.
+- A window gets its typing back where it was when you bring it forward again.
+
 ## 0.3.6
 
 - New app: TextEdit, in your apps. Type a path in its title bar and press Enter to open a file, or Save (Ctrl+S) to create one.
