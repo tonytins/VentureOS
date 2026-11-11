@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (bundles and the flat XML reader) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (opening and closing apps) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (365 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (385 tests, including runs of
   the shipped scripts and library).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -23,9 +23,10 @@ the code wins and this page is out of date.
   optional (system files, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
-- **Shell:** a command registry with seven built-in commands (`help`,
-  `clear`, `cd`, `lua`, `halt`, `reboot`, `shutdown`), a current folder the
-  prompt shows, plus Lua script commands
+- **Shell:** a command registry with ten built-in commands (`help`,
+  `clear`, `cd`, `lua`, `open`, `close`, `apps`, `halt`, `reboot`,
+  `shutdown`), a current folder the prompt shows, `.app` bundles that open
+  and close as owners, plus Lua script commands
   from `/mnt/system/commands` (`echo`, `info`, `net`, and the file commands
   `ls`, `cat`, `write`, `mkdir`, `rm`, `df`, `pwd`) that reach the kernel
   through the `venture` table, and input split into a command and arguments
@@ -36,8 +37,8 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** file commands (Blue Water); `.app` bundles (Saluki); a
-  desktop (Borealis); a CI boot check, ARM64 builds in CI, and published ISOs
+- **Not built yet:** shipped apps (Saluki); keeping files across reboots
+  (Blue Water); a desktop (Borealis); a CI boot check, ARM64 builds in CI, and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -135,7 +136,7 @@ VentureOS/
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
 │  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
-│  └─ Bundles/Bundle.cs      Venture.OS.Bundles: reads a bundle's Contents/Info.xml
+│  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
 │  │     └─ VentureLibrary.cs   the `venture` table
 │  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
@@ -465,6 +466,9 @@ flowchart LR
 | `help [command]` | Lists the commands, or shows one's summary and usage |
 | `clear` | Clears the screen |
 | `cd [folder]` | Changes the current folder, or with none, goes back to `/mnt` |
+| `open <app>` | Opens an app from `/mnt/system/apps` by name, or any `.app` by path |
+| `close <app>` | Closes an open app, undoing what it set up |
+| `apps` | Lists the system's apps, and which are open |
 | `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
 | `ls [-l] [folder...]` | Lua script: lists a folder, folders marked with `/`; `-l` adds type and size |
 | `cat <file...>` | Lua script: prints files |
@@ -681,6 +685,23 @@ nothing else, the five standard entities, and numeric character references.
 A `DOCTYPE`, text, deeper nesting, CDATA, or an unknown entity is refused
 with its line.
 
+**Apps.** `AppManager` opens, closes, and lists `.app` bundles. Opening one
+reads its bundle, makes an owner named after the app with the app's `needs`,
+and runs its `main` script from the current folder, stopped by Ctrl+C, Esc,
+or a 10-second limit. If that fails, its undos run at once. Closing ends the
+owner, so its commands vanish; an app can't be closed while its own code is
+running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
+
+- **Finding an app:** by folder or `Info.xml` name in `/mnt/system/apps`,
+  ignoring case, or by path. An app opened from elsewhere says what it needs
+  first, such as `Hello needs shell.`, since nothing reviewed it.
+- **One instance:** an app already open, by identifier, isn't opened again.
+- **What its code gets:** the `venture` table through its `needs`, as any
+  script; `venture.app` (`name`, `identifier`, `version`, `path`, and
+  `resource(path)` for `Contents/Resources/`); and `require` searching its
+  own `Contents/Lua/`, then the system library. Apps can't replace system
+  script commands, and `help` shows their commands as `From:` the app.
+
 ---
 
 ## 10. Version and build identity
@@ -755,6 +776,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Apps (§9): `open`, `close`, and `apps`; each app is an owner with its declared `needs`, `venture.app`, and its own modules first for `require`. |
 | 2026-11-11 | minor | Bundles (§1.1, §2, §9): macOS-style `Contents/Info.xml`, read by `Bundle.Read` through `FlatXml`, since `System.Xml` doesn't link under Cosmos 3.0.94. |
 | 2026-11-11 | minor | Files (§2, §9): `venture.files` under the new `files` scope, and `ls`, `cat`, `write`, `mkdir`, `rm`, `df`, and `pwd` as Lua commands; `/mnt/system` is read-only to them. `ui` is now the reserved scope. |
 | 2026-11-10 | minor | The current folder (§9): the shell keeps one, the prompt shows it, `cd` changes it, and Lua runs from it. |

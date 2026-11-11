@@ -15,9 +15,9 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Boot](#boot) | 8 | 0 | 0 | 6 boot steps: 3 critical, 3 optional |
 | [Storage](#storage) | 4 | 0 | 1 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system`, read-only to file commands |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
-| [Shell](#shell) | 16 | 0 | 0 | 7 built-in commands, plus 10 Lua script commands |
+| [Shell](#shell) | 17 | 0 | 0 | 10 built-in commands, plus 10 Lua script commands; apps open and close |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 365 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 385 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 2 open, 3 resolved |
@@ -57,6 +57,7 @@ output stays on the console.
 | STOR-2 | The RAM disk validates its size and range-checks every read and write, throwing as `IBlockDevice` requires | done | `BootRamDisk` constructor and `GetByteRange` |
 | STOR-3 | Files persist across boots on a real disk | missing | Only the RAM disk is mounted; nothing reads `StorageManager.Partitions` |
 | STOR-4 | The shell can list, read, and write files, and show free space | done | SHELL-16 |
+| SHELL-17 | `.app` bundles open and close as owners, with `open`, `close`, and `apps` | done | `AppManager`, `AppLibrary`, `OpenCommand`, `CloseCommand`, `AppsCommand`; 20 tests, and opening that fails without undoing fails one. Boot test 2026-11-11: a `Hello.app` made with `mkdir` and `write` opened by path (`Hello needs shell.`), its command ran, a second `open` was refused, `help hello` showed `From: Hello`, `apps` listed it as open, and after `close` its command was gone |
 | STOR-5 | The system files built into the kernel are installed to `/mnt/system` at boot | done | `Bootstrap.InstallSystemFiles`, `SystemDirectory.Install` (15 tests). Boot test 2026-11-06: serial shows `Installed 1 system file to /mnt/system.` (2 with the probe), and `lua` read `system/init.lua` back, as well as a temporary `system/commands/long-name-probe.lua` |
 
 ## Network

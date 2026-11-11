@@ -87,8 +87,8 @@ public static class LuaRunner
     /// What the code may reach through the <c>venture</c> table besides the version; see <see cref="ScriptScopes"/>.
     /// </param>
     /// <param name="libraryDirectory">
-    /// Where <c>require</c> finds the system library, such as <c>/mnt/system/lib</c>, or <see langword="null"/> to
-    /// leave Lua's default search path.
+    /// Where <c>require</c> finds modules, such as <c>/mnt/system/lib</c>, or several folders separated by <c>;</c>,
+    /// searched in order; <see langword="null"/> leaves Lua's default search path.
     /// </param>
     /// <returns><see langword="true"/> if the code finished without an error, a stop, or a non-zero exit.</returns>
     public static bool Run(
@@ -176,11 +176,19 @@ public static class LuaRunner
     /// Points <c>require</c> at <paramref name="directory"/> only, so <c>require("venture.args")</c> loads
     /// <c>venture/args.lua</c> there, and no native modules load.
     /// </summary>
+    /// <param name="directory">One folder, or several separated by <c>;</c>, searched in order.</param>
     private static void SetLibraryDirectory(ILuaState state, string directory)
     {
-        var root = directory.TrimEnd('/');
+        List<string> patterns = [];
+        foreach (var folder in directory.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var root = folder.TrimEnd('/');
+            patterns.Add($"{root}/?.lua");
+            patterns.Add($"{root}/?/init.lua");
+        }
+
         state.GetGlobal("package");
-        state.PushString(LuaText.Encode($"{root}/?.lua;{root}/?/init.lua"));
+        state.PushString(LuaText.Encode(string.Join(';', patterns)));
         state.SetField(-2, "path");
         state.PushString("");
         state.SetField(-2, "cpath");

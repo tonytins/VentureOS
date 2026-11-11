@@ -17,6 +17,12 @@ internal static class Bootstrap
     /// <summary>Where <c>require</c> finds the system library, such as <c>venture/args.lua</c>.</summary>
     public const string LibraryDirectoryPath = SystemDirectoryPath + "/lib";
 
+    /// <summary>Where the system's apps are: <c>Name.app</c> bundles that <c>open</c> finds by name.</summary>
+    public const string AppsDirectoryPath = SystemDirectoryPath + "/apps";
+
+    /// <summary>How long an app's main script may run when it opens, as for <c>init.lua</c>.</summary>
+    public static readonly TimeSpan AppStartupLimit = TimeSpan.FromSeconds(10);
+
     /// <summary>The script that runs once, after boot finishes.</summary>
     public const string InitScriptPath = SystemDirectoryPath + "/init.lua";
 

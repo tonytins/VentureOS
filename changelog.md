@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.18
+
+- Apps: `open <app>` opens an `.app` bundle, `close <app>` closes it and removes everything it added, and `apps` lists the apps and which are open. An app opened from outside the system's apps says what it needs first.
+
 ## 0.2.17
 
 - File commands: `ls` (with `-l`), `cat`, `write` (with `-a` to add to the end), `mkdir` (with `-p`), `rm` (with `-r`), `df`, and `pwd`. `--help` explains each one's options.

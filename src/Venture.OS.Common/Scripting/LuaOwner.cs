@@ -78,6 +78,15 @@ public sealed class LuaOwner : IDisposable
     /// <summary>Whether it has ended, its undos run and its interpreter gone.</summary>
     public bool IsDisposed { get; private set; }
 
+    /// <summary>
+    /// Whether its code is running right now, such as one of its commands. It mustn't be disposed then: its
+    /// interpreter would vanish under the running code.
+    /// </summary>
+    public bool IsRunning => depth > 0;
+
+    // How many runs are under way, counting calls back into this owner from its own code.
+    private int depth;
+
     /// <summary>The owner's interpreter.</summary>
     public LuaInterpreter Interpreter { get; }
 
@@ -119,10 +128,13 @@ public sealed class LuaOwner : IDisposable
     /// <summary>
     /// Undoes everything the code set up, newest first, then disposes the interpreter.
     /// </summary>
+    /// <exception cref="InvalidOperationException">Its code is running; see <see cref="IsRunning"/>.</exception>
     public void Dispose()
     {
         if (IsDisposed)
             return;
+        if (IsRunning)
+            throw new InvalidOperationException($"{Name} can't end while its own code is running.");
 
         for (var index = undos.Count - 1; index >= 0; index--)
             undos[index].Run();
@@ -173,12 +185,14 @@ public sealed class LuaOwner : IDisposable
         var previousStop = currentStop;
         currentStop = stop;
         resetStop();
+        depth++;
         try
         {
             return run();
         }
         finally
         {
+            depth--;
             currentStop = previousStop;
         }
     }

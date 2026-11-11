@@ -1,3 +1,4 @@
+using Venture.OS.Bundles;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Shell.Commands;
@@ -23,6 +24,9 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
     // Commands registered while the system runs, such as by init.lua; set up with the shell.
     private RuntimeCommands? runtimeCommands;
+
+    // Opens, closes, and lists apps; set up with the shell.
+    private AppManager? appManager;
 
     // init.lua's interpreter and what it set up, kept for the whole boot so its commands keep working.
     private LuaOwner? initOwner;
@@ -97,6 +101,9 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new ShutdownCommand());
         commands.Register(new LuaCommand(system, () => runtimeCommands, RunShellLine));
         commands.Register(new CdCommand());
+        commands.Register(new OpenCommand(() => appManager));
+        commands.Register(new CloseCommand(() => appManager));
+        commands.Register(new AppsCommand(() => appManager));
 
         ScriptCommands scripts = new(
             Bootstrap.CommandsDirectoryPath,
@@ -108,6 +115,14 @@ public class VentureKernel : Sys.Kernel, IShellHost
         runtimeCommands = new RuntimeCommands(commands.IsBuiltIn, scripts, KeyboardStop.Check);
         commands.AddSource(runtimeCommands);
         commands.AddSource(scripts);
+
+        appManager = new AppManager(
+            Bootstrap.AppsDirectoryPath,
+            runtimeCommands,
+            system,
+            Bootstrap.LibraryDirectoryPath,
+            RunShellLine,
+            () => ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(Bootstrap.AppStartupLimit)));
 
         shellContext = new ShellContext(new ConsoleShellOutput(), this, commands)
         {
