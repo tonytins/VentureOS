@@ -25,6 +25,8 @@ internal sealed class HelpCommand : IShellCommand
 
             context.Output.WriteLine(command.Summary);
             context.Output.WriteLine($"Usage: {command.Usage}");
+            if (command is IRuntimeCommand runtime)
+                context.Output.WriteLine($"From: {runtime.From}");
             if (command is IScriptCommand script)
                 context.Output.WriteLine(script.HeaderError is { } error
                     ? $"Needs: {error}"

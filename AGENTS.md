@@ -100,13 +100,16 @@ with no explanation. Stability outranks features.
   in their own folder and namespace under `Venture.OS`.
 - Prefer writing a new command in Lua, as `src/Venture.OS/system/commands/<name>.lua`:
   its first `--` comment is its summary, a `-- Usage:` comment its usage, a
-  `-- Needs:` comment the scopes it uses (`system`, `network`), and it gets its
+  `-- Needs:` comment the scopes it uses (`system`, `network`, `shell`), and it gets its
   arguments as `...`. It reaches the kernel through the `venture` table
   (`VentureLibrary`, backed by `ISystemInfo`); extend that table when a script
   needs more, and put each new function under a scope (`ScriptScopes`). A
   command that takes options should use `require("venture.args")` rather than
   reading `...` by hand. Shared Lua modules go in `src/Venture.OS/system/lib/`,
-  namespaced under `venture.`. Write a command in C# only when it must control the kernel,
+  namespaced under `venture.`.
+- Anything Lua code sets up that should outlive a single run goes through a
+  `LuaOwner` and registers its undo with `AddUndo`, so ending the owner
+  removes it. Write a command in C# only when it must control the kernel,
   as a class in `src/Venture.OS/Shell/Commands/` registered in
   `VentureKernel.CreateShell`; built-in commands win any name clash. `help` is
   generated from both. C# commands write through `IShellOutput` and ask for

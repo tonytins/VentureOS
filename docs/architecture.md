@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the system library and `venture.args`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (owners and `venture.command`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (222 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (242 tests, including runs of
   the shipped scripts and library).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -34,7 +34,7 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** runtime commands with undo and `.app` bundles (Saluki); persistent storage
+- **Not built yet:** commands registered at the `lua` prompt, and `.app` bundles (Saluki); persistent storage
   (Blue Water); a CI boot check, ARM64 builds in CI, and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
@@ -124,6 +124,9 @@ VentureOS/
 │  │     ├─ LuaRunner.cs        runs Lua for a command: output to the shell, errors reported
 │  │     ├─ LuaRepl.cs          the interactive Lua prompt behind plain `lua`
 │  │     ├─ ScriptCommands.cs   <name>.lua files as commands
+│  │     ├─ LuaOwner.cs         lasting Lua code and the undo list for what it set up
+│  │     ├─ RuntimeCommands.cs  commands registered with venture.command, and who may take which name
+│  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
 │  │     └─ VentureLibrary.cs   the `venture` table
 │  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
@@ -516,6 +519,7 @@ scripts do the formatting:
 | `venture.version()` | *(always)* | `{ name, version, build, commit, cosmos, display }` |
 | `venture.uptime()` | `system` | Whole seconds since the CPU started counting, or `nil` |
 | `venture.memory()` | `system` | `{ free, total }` in bytes, or `nil` |
+| `venture.command{...}` | `shell` | Registers a command for as long as its owner lasts; see **Owners** below |
 | `venture.net()` | `network` | `nil` without an adapter, else `{ device, mac, link_up, ready, address, subnet, gateway }`; the last three are `nil` until IPv4 is configured |
 
 **Scopes.** A script declares what it reaches with `-- Needs:` in its header,
@@ -530,6 +534,33 @@ written for a newer VentureOS fails clearly rather than half working.
 `lua` gets every scope, since it's the user typing. Scopes cover only the
 `venture` table: Lua's own `io` still reaches the RAM disk, until `files`
 replaces it (Blue Water).
+
+**Owners and undo.** After the ideas in "A Programming Paradigm for
+Spatiotemporal Composability", lasting Lua code runs as a `LuaOwner`: one
+interpreter that outlives a single run, and a list of ways to undo what the
+code set up. Ending the owner runs those undos newest first, then disposes
+the interpreter, so nothing it set up outlives it. `init.lua` is the first
+owner, kept for the whole boot; if it fails partway, its undos run at once,
+so no half-registered commands are left. One-shot code (`lua "code"` and
+script commands) has no lasting owner, so `venture.command` there explains
+that it only works in `init.lua` and at the `lua` prompt.
+
+`venture.command { name, summary, usage, run }` registers a command through
+`RuntimeCommands`, the first command source, so it wins a lookup. Its undo
+unregisters it and releases its `run` function; the handle it returns can run
+that undo early with `:remove()`. A runtime command runs in its owner's
+interpreter, so state carries over between calls, with its output going to
+whoever ran it and its own Ctrl+C stop (`init.lua`'s 10-second limit covers
+only its startup). `help <command>` shows `From:` its owner. Who may take a
+name:
+
+- No one can take a built-in command's name.
+- A name another owner registered is taken until that owner ends or removes
+  it; the same owner registering it again replaces its earlier command.
+- Only code the user types (the `lua` prompt, from the next change) may
+  replace a system script command, and it says so: `echo now replaces the
+  echo script until you exit.` `init.lua` and, later, apps can't, so nothing
+  installed can quietly take over a system command.
 
 `VentureLibrary` builds the table from an `ISystemInfo`, which
 `KernelSystemInfo` implements by reading Cosmos on every call, so scripts see
@@ -634,6 +665,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | Owners and `venture.command` (§9): `init.lua` runs as a `LuaOwner` and can register commands under the new `shell` scope; they're undone if it fails, and only user-typed code may replace system scripts. |
 | 2026-11-10 | minor | The system library (§2, §9): `require` loads from `/mnt/system/lib`, and `venture.args` parses a command's arguments and options with a generated `--help`. |
 | 2026-11-10 | minor | The Lua prompt (§2, §9): plain `lua` opens `LuaRepl`, where values carry over between lines and Ctrl+C stops only the running line. |
 | 2026-11-10 | minor | Scopes (§9): scripts declare `-- Needs: system` or `network`; the `venture` table refuses undeclared functions, and unknown or reserved scopes keep a script from running. |

@@ -106,10 +106,20 @@ public static class LuaRunner
 
         using ShellOutputWriter writer = new(output);
         using var lua = Create(writer, workingDirectory, system, stop, scopes, libraryDirectory, out _);
+        return Report(output, writer, () => run(lua));
+    }
 
+    /// <summary>
+    /// Runs <paramref name="action"/>, reporting a Lua error or a non-zero <c>os.exit</c> on
+    /// <paramref name="output"/> instead of throwing.
+    /// </summary>
+    /// <param name="writer">The interpreter's writer, finished before an error so the error starts its own line.</param>
+    /// <returns><see langword="true"/> if it finished without an error, a stop, or a non-zero exit.</returns>
+    internal static bool Report(IShellOutput output, ShellOutputWriter writer, Action action)
+    {
         try
         {
-            run(lua);
+            action();
             return true;
         }
         catch (LuaException exception)

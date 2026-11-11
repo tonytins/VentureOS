@@ -33,7 +33,7 @@ public sealed class ScriptHeaderTests
     [Fact]
     public void AddsUpSeveralNeedsLines()
     {
-        Assert.Equal(ScriptScopes.All, Parse("-- Needs: system", "-- Needs: network").Needs);
+        Assert.Equal(ScriptScopes.All, Parse("-- Needs: system", "-- Needs: network, shell").Needs);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class ScriptHeaderTests
     {
         Assert.Equal("none", ScriptScopeNames.Describe(ScriptScopes.None));
         Assert.Equal("network", ScriptScopeNames.Describe(ScriptScopes.Network));
-        Assert.Equal("system, network", ScriptScopeNames.Describe(ScriptScopes.All));
+        Assert.Equal("system, network, shell", ScriptScopeNames.Describe(ScriptScopes.All));
     }
 
     [Fact]

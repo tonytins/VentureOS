@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Wolverine complete: the system library and `venture.args`) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Saluki: owners and `venture.command`) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -66,15 +66,15 @@ fit, rather than waiting on a route.
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
-| Saluki | Apps | 0% | 16–32 | Runtime commands with undo, then `.app` bundles (installs wait on Blue Water) |
+| Saluki | Apps | 50% | 13–26 | Runtime commands with undo, then `.app` bundles (installs wait on Blue Water) |
 | Borealis | GUI (possible) | 0% | — | Unscoped: a desktop after the classic Mac OS X look |
-| | **Total** | | **≈ 41–82**, plus every-stage work (≈ 14–28) | |
+| | **Total** | | **≈ 38–76**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Commands registered at runtime, with undo | Saluki | 6–12 |
+| 1 | The `lua` prompt as an owner, with `venture.shell` and `!` | Saluki | 3–6 |
 | 2 | File commands, then mounting a real disk | Blue Water | 15–30 |
 | 3 | `.app` bundles | Saluki | 10–20 |
 | 4 | DNS and network commands | Pere Marquette | 10–20 |
@@ -161,11 +161,14 @@ After the ideas in "A Programming Paradigm for Spatiotemporal
 Composability": whatever a component sets up carries its own undo, and
 removing the component runs them, newest first.
 
-- [ ] Owners: something that holds an interpreter and the undo list for what
-  it registered, such as `init.lua` (the whole boot) or a `lua` prompt
-  session.
-- [ ] Register a command at runtime, removed again when its owner goes.
-- [ ] Decide whether commands made at the `lua` prompt vanish on `exit`.
+- [x] Owners: something that holds an interpreter and the undo list for what
+  it registered, starting with `init.lua` (the whole boot).
+- [x] Register a command at runtime, removed again when its owner goes:
+  `venture.command`, under the `shell` scope.
+- [x] Decide whether commands made at the `lua` prompt vanish on `exit`: they
+  do. Only code the user types may replace a system script command.
+- [ ] The `lua` prompt as an owner, and running shell commands from it
+  (`venture.shell` and `!`).
 - [ ] `.app` bundles: install and uninstall without a reboot, declaring
   `-- Needs:` for the whole app. Waits on Blue Water, since an install has
   to outlive a reboot.
@@ -204,6 +207,7 @@ build on Saluki's apps. New kernel-free logic still goes into
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | Saluki 50%: owners with undo, and `venture.command` for `init.lua`. The `lua` prompt as an owner is next. |
 | 2026-11-10 | minor | Wolverine complete: the system library in `/mnt/system/lib` and `venture.args`. Saluki's runtime commands are the current focus; about 41–82 h of milestones remain. |
 | 2026-11-10 | major | Routes repurposed: Wolverine is now the system library (`venture.args`), Saluki apps (runtime commands with undo, then `.app` bundles), and Borealis a possible GUI. CI checks, ARM64, and releases became every-stage work. About 46–92 h of milestones remain, plus 14–28 h every-stage. |
 | 2026-11-10 | minor | Illini: plain `lua` opens an interactive Lua prompt for debugging. Undoable changes are next. |

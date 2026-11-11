@@ -77,32 +77,44 @@ internal static class Bootstrap
     /// It's optional: a missing script or a Lua error is reported, and the shell starts anyway. Nobody may be at the
     /// keyboard during boot, so besides Ctrl+C and Esc, it stops after <see cref="InitScriptLimit"/>. Like any script,
     /// it reaches the <c>venture</c> table only through the scopes its <c>-- Needs:</c> line declares.
+    /// <para>It runs as a <see cref="LuaOwner"/>, so commands it registers with <c>venture.command</c> (with
+    /// <c>-- Needs: shell</c>) last until shutdown. If it fails, everything it registered is undone.</para>
     /// </remarks>
-    public static void RunInitScript(ISystemInfo system)
+    /// <returns>The owner to keep for the whole boot, or <see langword="null"/> if it didn't run or failed.</returns>
+    public static LuaOwner? RunInitScript(ISystemInfo system, RuntimeCommands? commands)
     {
         if (!File.Exists(InitScriptPath))
         {
             KernelLog.WriteLine($"No {InitScriptPath}; skipping it.");
-            return;
+            return null;
         }
 
         var header = ScriptHeader.Read(InitScriptPath);
         if (header.Error is { } error)
         {
             KernelLog.WriteLine($"{InitScriptPath} can't run. Its -- Needs: line: {error} The shell still works.");
-            return;
+            return null;
         }
 
+        LuaOwner owner = new(
+            "init.lua",
+            "shutdown",
+            mayReplaceScripts: false,
+            new KernelLogOutput(),
+            RamMountPoint,
+            system,
+            header.Needs,
+            LibraryDirectoryPath,
+            commands);
+
         var stop = ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(InitScriptLimit));
-        if (!LuaRunner.Run(
-                new KernelLogOutput(),
-                RamMountPoint,
-                lua => lua.DoFile(InitScriptPath),
-                system,
-                stop,
-                header.Needs,
-                LibraryDirectoryPath))
-            KernelLog.WriteLine($"{InitScriptPath} failed; see the error above. The shell still works.");
+        if (owner.Run(lua => lua.DoFile(InitScriptPath), stop))
+            return owner;
+
+        // A script that failed partway undoes what it set up, so no half-registered commands are left behind.
+        owner.Dispose();
+        KernelLog.WriteLine($"{InitScriptPath} failed; see the error above. The shell still works.");
+        return null;
     }
 
     /// <summary>

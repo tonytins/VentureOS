@@ -19,8 +19,11 @@ public enum ScriptScopes
     /// <summary><c>network</c>: <c>venture.net()</c>.</summary>
     Network = 1 << 1,
 
+    /// <summary><c>shell</c>: <c>venture.command</c>, which adds commands to the shell.</summary>
+    Shell = 1 << 2,
+
     /// <summary>Everything, for code the user types, such as the <c>lua</c> command.</summary>
-    All = System | Network,
+    All = System | Network | Shell,
 }
 
 /// <summary>
@@ -37,6 +40,7 @@ public static class ScriptScopeNames
     {
         ScriptScopes.System => "system",
         ScriptScopes.Network => "network",
+        ScriptScopes.Shell => "shell",
         _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "Not a single scope."),
     };
 
@@ -46,7 +50,7 @@ public static class ScriptScopeNames
     public static string Describe(ScriptScopes scopes)
     {
         List<string> names = [];
-        foreach (var scope in (ReadOnlySpan<ScriptScopes>)[ScriptScopes.System, ScriptScopes.Network])
+        foreach (var scope in (ReadOnlySpan<ScriptScopes>)[ScriptScopes.System, ScriptScopes.Network, ScriptScopes.Shell])
         {
             if ((scopes & scope) != 0)
                 names.Add(Name(scope));
@@ -69,6 +73,7 @@ public static class ScriptScopeNames
         {
             "system" => ScriptScopes.System,
             "network" => ScriptScopes.Network,
+            "shell" => ScriptScopes.Shell,
             _ => ScriptScopes.None,
         };
 
@@ -80,7 +85,7 @@ public static class ScriptScopeNames
 
         error = Reserved.Contains(name.ToLowerInvariant())
             ? $"\"{name}\" isn't available yet."
-            : $"\"{name}\" isn't a known scope; use system or network.";
+            : $"\"{name}\" isn't a known scope; use system, network, or shell.";
         return false;
     }
 }

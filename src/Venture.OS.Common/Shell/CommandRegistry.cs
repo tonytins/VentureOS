@@ -55,6 +55,15 @@ public sealed class CommandRegistry
     }
 
     /// <summary>
+    /// Whether a built-in command, one registered here rather than found through a source, has this name.
+    /// </summary>
+    public bool IsBuiltIn(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return commands.ContainsKey(name.ToLowerInvariant());
+    }
+
+    /// <summary>
     /// Adds a place to look for commands that aren't registered, such as Lua scripts. Sources are asked in the
     /// order they were added, and only for names no registered command has.
     /// </summary>

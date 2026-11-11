@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.14
+
+- `init.lua` can add commands to the shell with `venture.command`, after declaring `-- Needs: shell`. They last until shutdown, and if `init.lua` fails, the commands it added are removed again.
+- `help <command>` shows who added a command, such as `From: init.lua`.
+
 ## 0.2.13
 
 - VentureOS ships a Lua library in `/mnt/system/lib` that scripts load with `require`. Its first module, `venture.args`, lets a command declare its arguments and options (`--loud`, `-l`, `--times 3`) and handles the rest: clear messages for mistakes, and a generated `--help`.

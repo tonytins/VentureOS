@@ -43,9 +43,20 @@ public static class VentureLibrary
             Gated("uptime", ScriptScopes.System, scopes, lua => PushUptime(lua, system)),
             Gated("memory", ScriptScopes.System, scopes, lua => PushMemory(lua, system)),
             Gated("net", ScriptScopes.Network, scopes, lua => PushNetwork(lua, system)),
+
+            // Replaced by ShellLibrary where the code has a lasting owner; elsewhere it explains why it can't work.
+            Gated("command", ScriptScopes.Shell, scopes, lua =>
+            {
+                lua.PushString(LuaText.Encode(NotOwnedMessage));
+                return lua.Error();
+            }),
         ]);
         state.SetGlobal(GlobalName);
     }
+
+    /// <summary>The error for <c>venture.command</c> in code that ends when it finishes, such as a script command.</summary>
+    public const string NotOwnedMessage =
+        "venture.command only works in init.lua and at the lua prompt, where commands can outlive the code that registers them";
 
     /// <summary>The error a script gets for calling <paramref name="function"/> without declaring its scope.</summary>
     public static string UndeclaredMessage(string function, ScriptScopes scope) =>

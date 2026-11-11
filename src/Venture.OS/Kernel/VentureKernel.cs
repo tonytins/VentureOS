@@ -18,6 +18,12 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
     private CommandShell? shell;
 
+    // Commands registered while the system runs, such as by init.lua; set up with the shell.
+    private RuntimeCommands? runtimeCommands;
+
+    // init.lua's interpreter and what it set up, kept for the whole boot so its commands keep working.
+    private LuaOwner? initOwner;
+
     protected override void BeforeRun()
     {
         KernelLog.WriteLine($"Starting {HostInfo.DisplayVersion}...");
@@ -35,7 +41,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
         KernelLog.WriteLine($"{HostInfo.DisplayVersion} booted successfully!");
 
         // After the banner, so the screen clear above doesn't hide what the script prints.
-        RunOptionalStep("init script", () => Bootstrap.RunInitScript(system));
+        RunOptionalStep("init script", () => initOwner = Bootstrap.RunInitScript(system, runtimeCommands));
     }
 
     // Early initialization
@@ -87,12 +93,18 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new RebootCommand());
         commands.Register(new ShutdownCommand());
         commands.Register(new LuaCommand(system));
-        commands.AddSource(new ScriptCommands(
+
+        ScriptCommands scripts = new(
             Bootstrap.CommandsDirectoryPath,
             Bootstrap.RamMountPoint,
             system,
             KeyboardStop.Check,
-            Bootstrap.LibraryDirectoryPath));
+            Bootstrap.LibraryDirectoryPath);
+
+        // Runtime commands come before the scripts, so the lua prompt can replace one until it exits.
+        runtimeCommands = new RuntimeCommands(commands.IsBuiltIn, scripts, KeyboardStop.Check);
+        commands.AddSource(runtimeCommands);
+        commands.AddSource(scripts);
 
         shell = new CommandShell(new ShellContext(new ConsoleShellOutput(), this, commands));
         return true;
