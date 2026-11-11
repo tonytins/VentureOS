@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.4
+
+- Windows have a new title bar: close and minimize on the left, the title, and the window's own buttons on the right. Minimize sends a window to the dock; click its tile, or its app's icon, to bring it back.
+- Files has an address bar: type a folder and press Enter or Go. Bookmarks down the left go to Home, User, Apps, and System.
+- Notes moved to your apps, in `/mnt/user/apps`. Add and Remove are in its title bar.
+- Apps no longer say what they need when they open from the desktop or from your apps.
+
 ## 0.3.3
 
 - New app: Calculator, for adding, subtracting, multiplying, and dividing.

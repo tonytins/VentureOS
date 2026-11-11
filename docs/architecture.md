@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (user apps in `/mnt/user`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the unified title bar and minimize) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (613 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (634 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -166,13 +166,13 @@ VentureOS/
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               runs once after boot; prints the help hint
 │     │  ├─ apps/Files.app/        the desktop's own app: browses folders, opens apps, Quick Look
-│     │  ├─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
 │     │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
 │     │  ├─ interfaces/about.uix   the About VentureOS window
 │     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
 │     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
 │     ├─ user/                     the user's files, built into the kernel and installed to /mnt/user
-│     │  └─ apps/Calculator.app/   the first user app
+│     │  ├─ apps/Calculator.app/   the first user app
+│     │  └─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
 │     ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
 │     ├─ Bootloader/limine.conf    Limine boot entry; asks for a 1024x768 framebuffer
 │     ├─ GitInfo.txt               base version
@@ -725,7 +725,21 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
 - **Windows.** `WindowManager` keeps the windows back to front. Pressing a
   window brings it to the front and focuses it; its title bar drags it,
   kept on screen far enough to grab again; its close button closes it on
-  release. Keys go to the focused window, the wheel to the window under the
+  release.
+- **The unified title bar** (`DesktopWindow`), after CityLimits' window
+  frame: one 28 px band with a red close button and an orange minimize
+  button on the left, then the title, then the document's toolbar items
+  (`<ToolbarItem>`) along the right end, which report `pressed` on release.
+  A `<TitleField>` makes the title an editable field, as Files' address bar
+  is: a click starts an edit, Enter submits it under the field's name, and
+  Esc or a click elsewhere puts the old text back; a click on the same
+  window's toolbar keeps the edit, so Go acts on what was typed. Item
+  widths come from the font, so they're laid out when drawn.
+- **Minimize.** The orange button sends a window to the dock: it stays in
+  the window list but isn't drawn, takes no input, and can't be in front.
+  The dock shows each minimized window as a pale tile after the apps, past
+  a divider; clicking the tile, or the app's icon when the app has no
+  window showing, restores it. Keys go to the focused window, the wheel to the window under the
   pointer. Each window shows a `UIView`, which places a `.uix` document's
   controls as Hudini does, draws them, and turns input into Hudini's events
   (pressed, submitted, changed, selected), which the window's owner handles.
@@ -816,10 +830,11 @@ owner, so its commands vanish; an app can't be closed while its own code is
 running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
 
 - **Finding an app:** by folder or `Info.xml` name in `/mnt/system/apps`,
-  then `/mnt/user/apps`, ignoring case, or by path. Any app outside the
-  system's apps, including the user's, says what it needs first, such as
-  `Calculator needs ui.`, since the user may have changed it. `apps` marks
-  each app `system` or `user`.
+  then `/mnt/user/apps`, ignoring case, or by path. A bundle opened by path
+  from outside both folders says what it needs first, such as
+  `Hello needs shell.`, as a note for developers; only `open` in the shell
+  shows it, since people using the desktop needn't read about scopes, which
+  are enforced either way. `apps` marks each app `system` or `user`.
 - **One instance:** an app already open, by identifier, isn't opened again.
 - **What its code gets:** the `venture` table through its `needs`, as any
   script; `venture.app` (`name`, `identifier`, `version`, `path`, and
@@ -919,6 +934,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | The unified title bar (§2, §9): close, minimize, toolbar items, and an editable title field in one bar; minimized windows go to the dock; Files gets an address field and bookmarks; Notes moves to the user's apps; the desktop no longer shows what apps need. |
 | 2026-11-11 | minor | User apps (§2, §4, §7, §9): `user/` installs to `/mnt/user`, which the user may change, in a new optional boot step; apps open from either folder, the system's first; the dock divides them; Calculator ships. |
 | 2026-11-11 | minor | Double-click (§9): a selectable list reports `submitted` for a double-clicked item, and Files opens with it. |
 | 2026-11-11 | minor | Files (§2, §9): the desktop's fallback app, started first and restarted with growing waits; Quick Look; `venture.ui.preview`, `launch`, and `onNewWindow`; About moves to the VentureOS menu only. |

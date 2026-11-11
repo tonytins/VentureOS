@@ -54,8 +54,8 @@ public readonly record struct MenuChoice(BarMenu Menu, UIMenuEntry Item);
 /// </remarks>
 public sealed class MenuBar
 {
-    /// <summary>The bar's height, the same as a window's title bar.</summary>
-    public const int Height = DesktopTheme.TitleBarHeight;
+    /// <summary>The bar's height.</summary>
+    public const int Height = 22;
 
     private const int FirstTitleX = 10;
     private const int TitlePadding = 9;

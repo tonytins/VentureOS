@@ -2,15 +2,21 @@ using Venture.OS.Interface;
 
 namespace Venture.OS.Desktop;
 
-/// <summary>An app in the dock.</summary>
-/// <param name="Name">The name it shows, from its <c>Info.xml</c>.</param>
-/// <param name="Target">What opens it, such as its name in the apps folder.</param>
-/// <param name="IsOpen">Whether it's open, which puts a dot under its icon.</param>
+/// <summary>An app in the dock, or a minimized window.</summary>
+/// <param name="Name">The name it shows: an app's from its <c>Info.xml</c>, or a window's title.</param>
+/// <param name="Target">What opens an app, such as its name in the apps folder; empty for a window.</param>
+/// <param name="IsOpen">Whether the app is open, which puts a dot under its icon.</param>
 /// <param name="IsUser">Whether it's one of the user's apps, which sit after the system's, past a divider.</param>
-public sealed record DockItem(string Name, string Target, bool IsOpen, bool IsUser = false);
+/// <param name="Window">The minimized window this tile restores, after the apps, past another divider.</param>
+public sealed record DockItem(string Name, string Target, bool IsOpen, bool IsUser = false, DesktopWindow? Window = null)
+{
+    /// <summary>Which group it's in, left to right: the system's apps, the user's, then minimized windows.</summary>
+    public int Group => Window is not null ? 2 : IsUser ? 1 : 0;
+}
 
 /// <summary>
-/// The dock: a glassy shelf along the bottom of the screen with an icon for each of the system's apps.
+/// The dock: a glassy shelf along the bottom of the screen with an icon for each app, the system's then the user's,
+/// then a tile for each minimized window, with a divider between the groups.
 /// </summary>
 /// <remarks>
 /// <para>Clicking an icon reports its item, so the desktop can open the app; a press that leaves the icon before the
@@ -28,7 +34,7 @@ public sealed class Dock(int screenWidth, int screenHeight)
     private const int Padding = 8;
     private const int DotRoom = 8;
 
-    // The extra room the divider between system and user apps takes, on top of the usual gap.
+    // The extra room each divider between groups takes, on top of the usual gap.
     private const int DividerRoom = 12;
     private const int LabelSize = DesktopTheme.TextSize;
 
@@ -60,7 +66,7 @@ public sealed class Dock(int screenWidth, int screenHeight)
             if (items.Count == 0)
                 return default;
 
-            var width = (items.Count * IconSize) + ((items.Count - 1) * Gap) + (2 * Padding) + (FirstUser > 0 ? DividerRoom : 0);
+            var width = (items.Count * IconSize) + ((items.Count - 1) * Gap) + (2 * Padding) + (DividersBefore(items.Count) * DividerRoom);
             return new UIRect((screenWidth - width) / 2, screenHeight - Height, width, Height);
         }
     }
@@ -83,23 +89,21 @@ public sealed class Dock(int screenWidth, int screenHeight)
     public UIRect IconBounds(int index)
     {
         var shelf = Bounds;
-        var divider = FirstUser > 0 && index >= FirstUser ? DividerRoom : 0;
+        var divider = DividersBefore(index + 1) * DividerRoom;
         return new UIRect(shelf.X + Padding + (index * (IconSize + Gap)) + divider, shelf.Y + Padding, IconSize, IconSize);
     }
 
-    /// <summary>The first user app's position, when there are system apps before it to divide it from; else -1.</summary>
-    private int FirstUser
+    /// <summary>How many dividers come before the item at <paramref name="end"/>: one at each change of group.</summary>
+    private int DividersBefore(int end)
     {
-        get
+        var count = 0;
+        for (var index = 1; index < Math.Min(end, items.Count); index++)
         {
-            for (var index = 0; index < items.Count; index++)
-            {
-                if (items[index].IsUser)
-                    return index;
-            }
-
-            return -1;
+            if (items[index].Group != items[index - 1].Group)
+                count++;
         }
+
+        return count;
     }
 
     /// <summary>Handles the pointer for a frame.</summary>
@@ -137,9 +141,12 @@ public sealed class Dock(int screenWidth, int screenHeight)
         for (var index = 0; index < items.Count; index++)
             DrawIcon(painter, index);
 
-        if (FirstUser > 0)
+        for (var index = 1; index < items.Count; index++)
         {
-            var x = (int)IconBounds(FirstUser).X - ((Gap + DividerRoom) / 2);
+            if (items[index].Group == items[index - 1].Group)
+                continue;
+
+            var x = (int)IconBounds(index).X - ((Gap + DividerRoom) / 2);
             painter.FillRectangle(x, shelfY + Padding, 1, IconSize, DesktopTheme.DockEdge);
         }
 
@@ -152,7 +159,8 @@ public sealed class Dock(int screenWidth, int screenHeight)
         var item = items[index];
         var icon = IconBounds(index);
         var (x, y) = ((int)icon.X, (int)icon.Y);
-        var color = ColorFor(item.Name);
+        // A minimized window is a pale tile, so it reads as a window rather than an app.
+        var color = item.Window is not null ? DesktopTheme.TitleBarBottom : ColorFor(item.Name);
         var light = DesktopTheme.Blend(color, new UIColor(255, 255, 255), 0.45f);
 
         DesktopTheme.FillRoundedGradient(painter, x, y + 2, IconSize, IconSize, 10, DesktopTheme.Shadow, DesktopTheme.Shadow);
@@ -163,8 +171,11 @@ public sealed class Dock(int screenWidth, int screenHeight)
         var initial = item.Name.Length > 0 ? char.ToUpperInvariant(item.Name[0]).ToString() : "?";
         var initialX = x + ((IconSize - painter.MeasureText(initial, InitialSize)) / 2);
         var initialY = y + ((IconSize - (int)MathF.Ceiling(InitialSize * 1.35f)) / 2);
-        painter.DrawText(initial, initialX, initialY, DesktopTheme.HighlightedText, InitialSize);
-        painter.DrawText(initial, initialX + 1, initialY, DesktopTheme.HighlightedText, InitialSize);
+        var ink = item.Window is not null ? DesktopTheme.Text : DesktopTheme.HighlightedText;
+        painter.DrawText(initial, initialX, initialY, ink, InitialSize);
+        painter.DrawText(initial, initialX + 1, initialY, ink, InitialSize);
+        if (item.Window is not null)
+            DesktopTheme.Outline(painter, x + 4, y + 4, IconSize - 8, IconSize - 8, DesktopTheme.Border);
 
         if (index == pressed && index == hovered)
             DesktopTheme.FillRoundedGradient(painter, x, y, IconSize, IconSize, 10, DesktopTheme.IconPressed, DesktopTheme.IconPressed);

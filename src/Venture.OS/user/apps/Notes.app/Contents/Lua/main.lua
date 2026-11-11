@@ -36,9 +36,8 @@ local function refresh(selected)
   local notes = load()
   window:setItems("notes", notes)
   if selected then window:select("notes", selected) end
-  window:setText("count", #notes == 1 and "1 note" or (#notes .. " notes"))
   local nothingSelected = window:selected("notes") == nil
-  window:setDisabled("delete", nothingSelected)
+  window:setDisabled("remove", nothingSelected)
   window:setDisabled("deleteNote", nothingSelected)
   window:setDisabled("clearAll", #notes == 0)
 end
@@ -57,7 +56,7 @@ local function add()
   window:focus("text")
 end
 
-local function delete()
+local function remove()
   local number = window:selected("notes")
   if not number then return end
   local notes = load()
@@ -71,8 +70,8 @@ window:on("text", function(event)
   if event.kind == "submitted" then add() end
 end)
 window:on("notes", function() refresh() end)
-window:on("delete", delete)
-window:on("deleteNote", delete)
+window:on("remove", remove)
+window:on("deleteNote", remove)
 window:on("newNote", function() window:focus("text") end)
 window:on("clearAll", function()
   if save({}) then refresh() end

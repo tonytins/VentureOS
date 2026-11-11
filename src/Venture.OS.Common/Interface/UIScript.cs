@@ -125,6 +125,18 @@ public sealed record UIShortcut(bool Control, bool Shift, bool Alt, char Key)
         $"{(Control ? "Ctrl+" : "")}{(Alt ? "Alt+" : "")}{(Shift ? "Shift+" : "")}{Key}";
 }
 
+/// <summary>
+/// A button in the window's unified title bar, such as Add, or a tab when one is shown as selected. The host draws
+/// the bar; items run along its right end in document order.
+/// </summary>
+public sealed record UIToolbarItem(string Name, string Title, int Line);
+
+/// <summary>
+/// Makes the window's title editable in place, as an address bar is: the host draws it as a field in the title bar,
+/// and Enter submits it under this name.
+/// </summary>
+public sealed record UITitleField(string Name, string? Placeholder, int Line);
+
 /// <summary>An attribute the reader didn't know and skipped, which may be a typo.</summary>
 public sealed record UIIgnoredAttribute(string Element, string Attribute, int Line);
 
@@ -188,6 +200,12 @@ public sealed class UIScript
 
     /// <summary>Menus in document order, with the <c>menus</c> feature.</summary>
     public IReadOnlyList<UIMenu> Menus { get; private init; } = [];
+
+    /// <summary>The title bar's buttons, in document order, which is left to right.</summary>
+    public IReadOnlyList<UIToolbarItem> ToolbarItems { get; private init; } = [];
+
+    /// <summary>The editable title, or <see langword="null"/> for a plain one.</summary>
+    public UITitleField? TitleField { get; private init; }
 
     /// <summary>Attributes the reader didn't know and skipped. Log them while developing, to catch typos.</summary>
     public IReadOnlyList<UIIgnoredAttribute> IgnoredAttributes { get; private init; } = [];
@@ -269,6 +287,8 @@ public sealed class UIScript
         List<UIControl> controls = [];
         List<(string Name, string Title, char? Hotkey, int Line)> menus = [];
         List<(string Menu, UIMenuEntry Entry)> entries = [];
+        List<UIToolbarItem> toolbar = [];
+        UITitleField? titleField = null;
 
         foreach (var element in document.Children)
         {
@@ -338,6 +358,16 @@ public sealed class UIScript
                         element.Line)));
                     break;
 
+                case "ToolbarItem":
+                    toolbar.Add(new UIToolbarItem(reader.RequiredString("name"), reader.RequiredString("title"), element.Line));
+                    break;
+
+                case "TitleField":
+                    if (titleField is not null)
+                        throw new UIScriptException("There's more than one <TitleField>; a window has one title.", element.Line);
+                    titleField = new UITitleField(reader.RequiredString("name"), reader.String("placeholder"), element.Line);
+                    break;
+
                 case "MenuSeparator" when hasMenus:
                     entries.Add((reader.RequiredString("menu"), new UIMenuEntry(null, null, null, null, element.Line)));
                     break;
@@ -372,6 +402,8 @@ public sealed class UIScript
             Visuals = visuals,
             Controls = controls,
             Menus = BuildMenus(menus, entries),
+            ToolbarItems = toolbar,
+            TitleField = titleField,
             IgnoredAttributes = ignored,
         };
         script.Validate();
@@ -523,8 +555,13 @@ public sealed class UIScript
                 throw new UIScriptException($"The image \"{image.Name}\" has stateCount {image.StateCount}; use 1, 4, or 6.");
         }
 
-        // Controls, visuals, and menu items share names, since events and the host refer to them by name.
+        // Controls, visuals, menu items, toolbar items, and the title field share names, since events and the host
+        // refer to them by name.
         HashSet<string> names = [];
+        foreach (var item in ToolbarItems)
+            Unique(names, item.Name, item.Line);
+        if (TitleField is { } title)
+            Unique(names, title.Name, title.Line);
         foreach (var visual in Visuals)
             Unique(names, visual.Name, visual.Line);
         foreach (var control in Controls)

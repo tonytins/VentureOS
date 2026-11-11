@@ -8,7 +8,8 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Bundles;
 
 /// <summary>
-/// Opens the shipped <c>Notes.app</c> from <c>src/Venture.OS/system/apps</c>, copied next to the tests.
+/// Opens the shipped <c>Notes.app</c>, one of the user's apps, from <c>src/Venture.OS/user/apps</c>, copied next to the
+/// tests.
 /// </summary>
 public sealed class NotesAppTests : IDisposable
 {
@@ -34,7 +35,8 @@ public sealed class NotesAppTests : IDisposable
             new FakeSystemInfo(),
             Path.Combine(SystemFiles, "lib"),
             shell.Execute,
-            windows: new AppWindows(windows, events));
+            windows: new AppWindows(windows, events),
+            userAppsDirectory: Path.Combine(AppContext.BaseDirectory, "user", "apps"));
     }
 
     public void Dispose()
@@ -133,8 +135,7 @@ public sealed class NotesAppTests : IDisposable
         var window = Assert.Single(windows.Windows);
         Assert.Equal("Notes", window.Title);
         Assert.Equal(["buy milk"], window.View.List("notes")!.Items);
-        Assert.Equal("1 note", window.View.Text("count"));
-        Assert.True(window.View.IsDisabled("delete"));
+        Assert.True(window.View.IsDisabled("remove"));
         Assert.Equal("text", window.View.FocusedControl);
 
         window.View.SetText("text", "  call the office  ");
@@ -143,7 +144,7 @@ public sealed class NotesAppTests : IDisposable
         Assert.Equal("buy milk\ncall the office\n", File.ReadAllText(Path.Combine(root, "notes.txt")));
         Assert.Equal("", window.View.Text("text"));
         Assert.Equal(1, window.View.List("notes")!.SelectedIndex);
-        Assert.False(window.View.IsDisabled("delete"));
+        Assert.False(window.View.IsDisabled("remove"));
         Assert.Empty(events.Lines);
     }
 

@@ -118,6 +118,13 @@ public sealed class UIView
         foreach (var visual in script.Visuals)
             states[visual.Name] = new State();
 
+        // The title bar's parts share the namespace too: toolbar items are disabled and selected by name, and the
+        // title field's text is read and set like a text field's.
+        foreach (var item in script.ToolbarItems)
+            states[item.Name] = new State();
+        if (script.TitleField is { } titleField)
+            states[titleField.Name] = new State { Placeholder = titleField.Placeholder };
+
         // Menu items share the namespace, so they're disabled and checked by name like controls.
         foreach (var menu in script.Menus)
         {

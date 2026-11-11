@@ -69,8 +69,10 @@ public sealed class DesktopSession
     private TimeSpan nextFallbackStart;
     private string? lastFallbackProblem;
 
-    // How many apps were open when the dock was last filled, so it's filled again only when that changes.
+    // How many apps were open, and which windows were minimized, when the dock was last filled, so it's filled again
+    // only when one of those changes.
     private int dockedRunning = -1;
+    private readonly List<DesktopWindow> dockedWindows = [];
 
     private enum PointerOwner
     {
@@ -231,7 +233,7 @@ public sealed class DesktopSession
 
         QuitAppsWithoutWindows(happened);
         var restarted = KeepFallbackRunning();
-        if (apps is not null && apps.Running.Count != dockedRunning)
+        if ((apps is not null && apps.Running.Count != dockedRunning) || MinimizedChanged())
             RefreshDock();
         ShowMessages(ActiveApp ?? "VentureOS", ActiveApp);
 
@@ -348,6 +350,13 @@ public sealed class DesktopSession
 
     private void OpenFromDock(DockItem item)
     {
+        // A minimized window's tile restores it.
+        if (item.Window is { } window)
+        {
+            Windows.Open(window);
+            return;
+        }
+
         if (apps is null)
             return;
 
@@ -374,7 +383,7 @@ public sealed class DesktopSession
             return;
         }
 
-        if (apps.OpenApp(item.Target, workingDirectory, appOutput))
+        if (apps.OpenApp(item.Target, workingDirectory, appOutput, explainNeeds: false))
             ActiveApp = item.Name;
 
         ShowMessages(item.Name, ActiveApp);
@@ -446,14 +455,27 @@ public sealed class DesktopSession
         return false;
     }
 
+    /// <summary>Whether the minimized windows differ from those the dock shows.</summary>
+    private bool MinimizedChanged()
+    {
+        var count = 0;
+        foreach (var window in Windows.Windows)
+        {
+            if (!window.IsMinimized)
+                continue;
+            if (count >= dockedWindows.Count || dockedWindows[count] != window)
+                return true;
+            count++;
+        }
+
+        return count != dockedWindows.Count;
+    }
+
     private void RefreshDock()
     {
-        if (apps is null)
-            return;
-
-        dockedRunning = apps.Running.Count;
         List<DockItem> items = [];
-        foreach (var listing in apps.Available())
+        dockedRunning = apps?.Running.Count ?? 0;
+        foreach (var listing in apps?.Available() ?? [])
         {
             // An app that can't be read stays out of the dock; `apps` in the shell says why.
             if (listing.Bundle is not { } bundle)
@@ -464,11 +486,22 @@ public sealed class DesktopSession
             var target = listing.IsUser ? listing.Path
                 : listing.Folder.EndsWith(extension, StringComparison.OrdinalIgnoreCase) ? listing.Folder[..^extension.Length]
                 : listing.Folder;
-            DockItem item = new(bundle.Name, target, apps.IsOpen(bundle.Identifier), listing.IsUser);
+            DockItem item = new(bundle.Name, target, apps!.IsOpen(bundle.Identifier), listing.IsUser);
             if (bundle.Name == FallbackApp)
                 items.Insert(0, item);
             else
                 items.Add(item);
+        }
+
+        // Minimized windows, oldest first, after the apps.
+        dockedWindows.Clear();
+        foreach (var window in Windows.Windows)
+        {
+            if (window.IsMinimized)
+            {
+                dockedWindows.Add(window);
+                items.Add(new DockItem(window.Title, "", IsOpen: false, Window: window));
+            }
         }
 
         Dock.SetItems(items);

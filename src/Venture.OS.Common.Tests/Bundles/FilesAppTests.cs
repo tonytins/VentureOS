@@ -56,11 +56,13 @@ public sealed class FilesAppTests : IDisposable
     public void OpensAWindowOnTheFolderItStartedIn()
     {
         Assert.Equal(Path.GetFileName(root), Window.Title);
-        Assert.Equal(root, Window.View.Text("path"));
+        Assert.Equal(root, Window.View.Text("address"));
         Assert.Equal(["Dice.app", "notes.txt", "photos/"], Window.View.List("entries")!.Items);
         Assert.Equal("3 items", Window.View.Text("status"));
-        Assert.True(Window.View.IsDisabled("open"));
+        Assert.True(Window.View.IsDisabled("openItem"));
         Assert.True(Window.View.IsDisabled("lookItem"));
+        Assert.Equal(["Home", "User", "Apps", "System"], Window.View.List("bookmarks")!.Items);
+        Assert.Equal(-1, Window.View.List("bookmarks")!.SelectedIndex);
         Assert.Empty(events.Lines);
     }
 
@@ -68,15 +70,15 @@ public sealed class FilesAppTests : IDisposable
     public void OpensAFolderAndGoesBackUp()
     {
         Select(2);
-        Assert.False(Window.View.IsDisabled("open"));
+        Assert.False(Window.View.IsDisabled("openItem"));
 
-        Send(new UIEvent(UIEventKind.Pressed, "open"));
+        Send(new UIEvent(UIEventKind.Pressed, "openItem"));
         Assert.Equal(["beach.txt"], Window.View.List("entries")!.Items);
         Assert.Equal("photos", Window.Title);
         Assert.Equal("1 item", Window.View.Text("status"));
 
         Send(new UIEvent(UIEventKind.Pressed, "enclosing"));
-        Assert.Equal(root, Window.View.Text("path"));
+        Assert.Equal(root, Window.View.Text("address"));
         Assert.Empty(events.Lines);
     }
 
@@ -88,6 +90,31 @@ public sealed class FilesAppTests : IDisposable
         Send(new UIEvent(UIEventKind.Submitted, "entries", "photos/", Index: 2));
 
         Assert.Equal("photos", Window.Title);
+    }
+
+    [Fact]
+    public void TheAddressFieldGoesToATypedFolder()
+    {
+        Window.View.SetText("address", "photos");
+        Send(new UIEvent(UIEventKind.Submitted, "address", "photos"));
+        Assert.Equal(Path.Combine(root, "photos"), Window.View.Text("address"));
+
+        Window.View.SetText("address", root);
+        Send(new UIEvent(UIEventKind.Pressed, "go"));
+        Assert.Equal(root, Window.View.Text("address"));
+        Assert.Equal("3 items", Window.View.Text("status"));
+    }
+
+    [Fact]
+    public void AMissingFolderSaysWhyAndKeepsTheCurrentOne()
+    {
+        Window.View.SetText("address", "nowhere");
+
+        Send(new UIEvent(UIEventKind.Submitted, "address", "nowhere"));
+
+        Assert.Equal(root, Window.View.Text("address"));
+        Assert.Contains("nowhere", Window.View.Text("status"));
+        Assert.Equal(3, Window.View.List("entries")!.Items.Count);
     }
 
     [Fact]
@@ -112,11 +139,11 @@ public sealed class FilesAppTests : IDisposable
 
         Send(new UIEvent(UIEventKind.Pressed, "openItem"));
         Assert.True(manager.IsOpen("dev.example.dice"));
-        Assert.Equal(["Dice needs nothing extra."], events.Lines);
 
         // Opening it again brings it forward instead of a second "already open".
         Send(new UIEvent(UIEventKind.Pressed, "openItem"));
-        Assert.Single(events.Lines);
+        Assert.Equal(2, manager.Running.Count);
+        Assert.Empty(events.Lines);
     }
 
     [Fact]

@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone phase 2: user apps) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone phase 3: the unified title bar) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -69,7 +69,7 @@ fit, rather than waiting on a route.
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
-| Keystone | Desktop apps | 40% | 15–30 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
+| Keystone | Desktop apps | 50% | 15–30 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
 | | **Total** | | **≈ 33–65**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
@@ -241,12 +241,19 @@ changed. Lua drawing in regions and images wait for a later route.
 - [x] Phase 2, user apps: `/mnt/user/apps`, shipped with VentureOS from
   `src/Venture.OS/user/apps/`; the dock shows system apps, then user apps.
   Calculator (user) is the first.
-- [ ] Phase 3, timers: `window:every(seconds, fn)`, and System Monitor
+- [x] Phase 3, the unified title bar (an intermediate phase, after the
+  design in `docs/design/interface.figcraft`): close, minimize, the title,
+  and toolbar items in one bar, with `<ToolbarItem>` and `<TitleField>` in
+  UIScript; minimized windows in the dock; Files with an address field, Go,
+  and bookmarks for Home, User, Apps, and System; Notes, moved to the
+  user's apps, with Add and Remove in its toolbar. The desktop stops
+  showing what apps need.
+- [ ] Phase 4, timers: `window:every(seconds, fn)`, and System Monitor
   (system): version, uptime, memory, and network, kept current.
-- [ ] Phase 4, multi-line text: a `<TextArea>` element in UIScript's core,
+- [ ] Phase 5, multi-line text: a `<TextArea>` element in UIScript's core,
   written up for Hudini's rolling spec; and TextEdit (user), which opens,
   edits, and saves text files.
-- [ ] Phase 5, Terminal.app (system): the shell in a read-only
+- [ ] Phase 6, Terminal.app (system): the shell in a read-only
   `<TextArea>` that follows its newest text, in Fira Code.
 
 ## Critical path
@@ -278,6 +285,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Keystone 50%: an intermediate phase 3, the unified title bar and minimize from the new design, with Files' address field and bookmarks and Notes in the user's apps; timers, `<TextArea>`, and Terminal.app become phases 4 to 6. |
 | 2026-11-11 | minor | Keystone 40%: phase 2, user apps in `/mnt/user/apps`, divided from the system's in the dock, and Calculator; list items open with a double-click. About 33–65 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 20%: phase 1, Files, the desktop's fallback app, with Quick Look; the desktop restarts it if it stops. About 36–71 h of milestones remain. |
 | 2026-11-11 | major | Keystone planned in five phases: Files as the desktop's fallback, user apps in `/mnt/user/apps`, timers and System Monitor, `<TextArea>` and TextEdit, and Terminal.app, moved from Borealis. Borealis is complete. About 44–86 h of milestones remain. |

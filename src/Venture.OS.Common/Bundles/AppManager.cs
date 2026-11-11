@@ -25,7 +25,7 @@ namespace Venture.OS.Bundles;
 /// <param name="windows">Where apps' windows go, for <c>venture.ui</c>, or <see langword="null"/> without a desktop.</param>
 /// <param name="userAppsDirectory">
 /// Where the user's apps are, such as <c>/mnt/user/apps</c>, or <see langword="null"/> for none. They open by name like
-/// the system's, after them, and say what they need first, since the user may have changed them.
+/// the system's, after them.
 /// </param>
 public sealed class AppManager(
     string appsDirectory,
@@ -100,8 +100,13 @@ public sealed class AppManager(
     /// </summary>
     /// <param name="currentDirectory">Where a relative path starts, and where the app's code runs from.</param>
     /// <param name="output">Where the app's messages, and any problem, go.</param>
+    /// <param name="explainNeeds">
+    /// Whether an app from outside both apps folders says what it needs first, a note for developers opening a bundle
+    /// by path from the shell. The desktop leaves it out: scopes are still enforced, and people using apps needn't
+    /// read about them.
+    /// </param>
     /// <returns><see langword="true"/> if it opened.</returns>
-    public bool OpenApp(string target, string currentDirectory, IShellOutput output)
+    public bool OpenApp(string target, string currentDirectory, IShellOutput output, bool explainNeeds = true)
     {
         ArgumentException.ThrowIfNullOrEmpty(target);
         ArgumentNullException.ThrowIfNull(currentDirectory);
@@ -130,7 +135,8 @@ public sealed class AppManager(
             return false;
         }
 
-        if (!ShellPaths.IsWithin(bundle.Path, appsDirectory))
+        if (explainNeeds && !ShellPaths.IsWithin(bundle.Path, appsDirectory)
+            && (userAppsDirectory is null || !ShellPaths.IsWithin(bundle.Path, userAppsDirectory)))
             output.WriteLine($"{bundle.Name} needs {DescribeNeeds(bundle.Needs)}.");
 
         var library = libraryDirectory is null

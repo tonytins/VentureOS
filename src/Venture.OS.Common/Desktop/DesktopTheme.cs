@@ -44,6 +44,12 @@ public static class DesktopTheme
     /// <inheritdoc cref="CloseButton"/>
     public static readonly UIColor CloseMark = new(90, 20, 16);
 
+    /// <summary>The minimize button's fill.</summary>
+    public static readonly UIColor MinimizeButton = new(245, 178, 50);
+
+    /// <summary>The minimize button's rim.</summary>
+    public static readonly UIColor MinimizeMark = new(120, 82, 12);
+
     /// <summary>A button while the pointer is down on it.</summary>
     public static readonly UIColor ButtonPressed = new(170, 196, 228);
 
@@ -84,7 +90,7 @@ public static class DesktopTheme
     public static readonly UIColor IconPressed = new(0, 0, 0, 60);
 
     /// <summary>The height of a window's title bar, in pixels.</summary>
-    public const int TitleBarHeight = 22;
+    public const int TitleBarHeight = 28;
 
     /// <summary>The size of title and body text, in pixels.</summary>
     public const int TextSize = 13;

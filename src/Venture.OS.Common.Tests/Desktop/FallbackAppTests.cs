@@ -144,6 +144,46 @@ public sealed class FallbackAppTests : IDisposable
     }
 
     [Fact]
+    public void MinimizedWindowsGoToTheDockAndComeBack()
+    {
+        session.StartFallbackApp();
+        Frame();
+        var window = Assert.Single(windows.Windows);
+        var minimize = window.MinimizeButton;
+
+        Frame((int)minimize.X + 6, (int)minimize.Y + 6, down: true);
+        Frame((int)minimize.X + 6, (int)minimize.Y + 6);
+
+        Assert.True(window.IsMinimized);
+        var tile = session.Dock.Items[^1];
+        Assert.Same(window, tile.Window);
+        Assert.Equal(2, tile.Group);
+
+        var icon = session.Dock.IconBounds(session.Dock.Items.Count - 1);
+        Frame((int)icon.X + 10, (int)icon.Y + 10, down: true);
+        Frame((int)icon.X + 10, (int)icon.Y + 10);
+
+        Assert.False(window.IsMinimized);
+        Assert.Null(session.Dock.Items[^1].Window);
+    }
+
+    [Fact]
+    public void TheAppsIconRestoresItsMinimizedWindow()
+    {
+        session.StartFallbackApp();
+        var window = Assert.Single(windows.Windows);
+        windows.Minimize(window);
+        Frame();
+
+        var icon = session.Dock.IconBounds(0);
+        Frame((int)icon.X + 10, (int)icon.Y + 10, down: true);
+        Frame((int)icon.X + 10, (int)icon.Y + 10);
+
+        Assert.False(window.IsMinimized);
+        Assert.Single(windows.Windows);
+    }
+
+    [Fact]
     public void StartsAgainWhenSomethingClosesIt()
     {
         session.StartFallbackApp();

@@ -22,9 +22,9 @@ the same shape.
 An app's files live in the repository under `src/Venture.OS/system/apps/`
 or `src/Venture.OS/user/apps/`. Everything there is built into VentureOS and
 appears in `/mnt/system/apps` or `/mnt/user/apps` when it boots. System apps
-can't be changed or deleted on the running system; user apps can, and say
-what they need each time they open. Put an app the system relies on, such as
-Files, in `system/`, and anything else in `user/`. Create this layout:
+can't be changed or deleted on the running system; user apps can. Put an app
+the system relies on, such as Files, in `system/`, and anything else in
+`user/`. Create this layout:
 
 ```text
 src/Venture.OS/system/apps/Dice.app/
@@ -239,6 +239,11 @@ new number. `roll` still works in the shell, since both live in the same app.
   items), `select` (a list's selection), `setDisabled`, `setHidden`,
   `setChecked`, `focus`, `setTitle`, and `close`, with readers `text`,
   `value`, `items`, and `selected`. Use a colon: `window:setText(...)`.
+- **The title bar:** `<ToolbarItem name="add" title="Add"/>` puts a button
+  in the window's title bar, which reports `pressed` like any button, and
+  `<TitleField name="address"/>` makes the title an editable field that
+  reports `submitted` on Enter, as Files' address bar does. Notes uses
+  toolbar items for Add and Remove.
 - **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen
   item reports `pressed` with its name, like a button. See
@@ -267,8 +272,9 @@ Test the cases a user can get wrong too, such as `roll 0` or `roll -s 1`.
 ## Open an app from somewhere else
 
 `open` also takes the path to an `.app` anywhere, such as `open ./Dice.app`.
-An app opened this way says what it needs before it starts, such as
-`Dice needs shell.`, because it isn't one of the system's apps.
+An app opened this way from the shell says what it needs before it starts,
+such as `Dice needs shell.`, because it isn't in either apps folder. The
+desktop doesn't show this; the scopes are enforced either way.
 
 ## When an app won't open
 

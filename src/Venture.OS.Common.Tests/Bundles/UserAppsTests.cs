@@ -60,11 +60,24 @@ public sealed class UserAppsTests : IDisposable
     }
 
     [Fact]
-    public void UserAppsSayWhatTheyNeed()
+    public void UserAppsOpenQuietly()
     {
         Assert.True(manager.OpenApp("weather", root, output));
 
-        Assert.Equal(["Weather needs shell."], output.Lines);
+        Assert.Empty(output.Lines);
+    }
+
+    [Fact]
+    public void OnlyTheShellExplainsABundleFromElsewhere()
+    {
+        Write("elsewhere", "Radio", "dev.example.radio", "shell");
+        var path = Path.Combine(root, "elsewhere", "Radio.app");
+
+        Assert.True(manager.OpenApp(path, root, output));
+        manager.CloseApp("Radio", new RecordingOutput());
+        Assert.True(manager.OpenApp(path, root, output, explainNeeds: false));
+
+        Assert.Equal(["Radio needs shell."], output.Lines);
     }
 
     [Fact]

@@ -21,7 +21,7 @@ public sealed class WindowManagerTests
         manager.Open(first);
         manager.Open(second);
 
-        Assert.Equal(((800 - 200) / 2, ((600 - 122) / 2) - 24), (first.X, first.Y));
+        Assert.Equal(((800 - 200) / 2, ((600 - 128) / 2) - 24), (first.X, first.Y));
         Assert.Equal((first.X + 24, first.Y + 24), (second.X, second.Y));
         Assert.Same(second, manager.Focused);
     }

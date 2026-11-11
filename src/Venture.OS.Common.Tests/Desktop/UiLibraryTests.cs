@@ -22,6 +22,8 @@ public sealed class UiLibraryTests : IDisposable
           <List name="items" x="10" y="60" width="100" height="40" selectable="true"/>
           <Slider name="volume" x="120" y="10" width="60" height="12" minValue="0" maxValue="10"/>
           <Button name="ok" x="120" y="90" width="60" height="20" text="OK"/>
+          <ToolbarItem name="refresh" title="Refresh"/>
+          <TitleField name="address"/>
         </UIScript>
         """;
 
@@ -122,6 +124,31 @@ public sealed class UiLibraryTests : IDisposable
                 "pressed\tsave\tnil\tnil\tnil",
             ],
             events.Lines);
+    }
+
+    [Fact]
+    public void ReachesTheTitleBarsPartsByName()
+    {
+        Open("""
+            window = venture.ui.open("main.uix")
+            window:setText("address", "/mnt")
+            window:setDisabled("refresh", true)
+            window:setChecked("refresh", true)
+            window:on("refresh", function(event) print(event.kind, event.control) end)
+            window:on("address", function(event) print(event.kind, event.text) end)
+            window:focus("address")
+            print(window:text("address"))
+            """);
+        var window = Assert.Single(windows.Windows);
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "refresh"));
+        Send(window, new UIEvent(UIEventKind.Submitted, "address", Text: "/mnt/user"));
+
+        Assert.Equal(["/mnt"], output.Lines);
+        Assert.True(window.IsEditingTitle);
+        Assert.True(window.View.IsDisabled("refresh"));
+        Assert.True(window.View.IsSelected("refresh"));
+        Assert.Equal(["pressed\trefresh", "submitted\t/mnt/user"], events.Lines);
     }
 
     [Fact]

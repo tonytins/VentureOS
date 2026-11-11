@@ -37,13 +37,13 @@ public sealed class CalculatorAppTests : IDisposable
     private DesktopWindow Window => Assert.Single(windows.Windows);
 
     [Fact]
-    public void IsAUserAppThatSaysWhatItNeeds()
+    public void IsAUserAppThatOpensQuietly()
     {
         var listing = Assert.Single(manager.Available(), listing => listing.Folder == "Calculator.app");
 
         Assert.True(listing.IsUser);
         Assert.Equal(ScriptScopes.Ui, listing.Bundle!.Needs);
-        Assert.Equal(["Calculator needs ui."], output.Lines);
+        Assert.Empty(output.Lines);
         Assert.Equal("0", Window.View.Text("display"));
     }
 

@@ -50,18 +50,22 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     }
 
     /// <summary>
-    /// Brings an app forward, as clicking it in the dock does: its front window, or a new window when it has none.
+    /// Brings an app forward, as clicking it in the dock does: its front window, or failing that its newest minimized
+    /// one, or a new window when it has none.
     /// </summary>
     public void Activate(string app)
     {
         ArgumentNullException.ThrowIfNull(app);
-        for (var index = Windows.Windows.Count - 1; index >= 0; index--)
+        foreach (var minimized in (ReadOnlySpan<bool>)[false, true])
         {
-            var window = Windows.Windows[index];
-            if (window.OpenedByApp && window.App == app)
+            for (var index = Windows.Windows.Count - 1; index >= 0; index--)
             {
-                Windows.Open(window);
-                return;
+                var window = Windows.Windows[index];
+                if (window.OpenedByApp && window.App == app && window.IsMinimized == minimized)
+                {
+                    Windows.Open(window);
+                    return;
+                }
             }
         }
 
@@ -107,7 +111,11 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
 /// <c>select(name, index)</c>: a list's items and its selection, counting from 1, or <c>nil</c> for none.</description></item>
 /// <item><description><c>setHidden</c>, <c>setDisabled</c>, <c>setChecked(name, on)</c>: hide, disable, or check a
 /// control or menu item.</description></item>
-/// <item><description><c>focus(name)</c>, <c>setTitle(text)</c>, <c>close()</c>.</description></item>
+/// <item><description><c>focus(name)</c>, <c>setTitle(text)</c>, <c>close()</c>. Focusing the title field starts an
+/// edit of it.</description></item>
+/// <item><description>Toolbar items report <c>pressed</c> like buttons, and take <c>setDisabled</c> and
+/// <c>setChecked</c> (shown held down, as a tab). The title field reports <c>submitted</c> on Enter, and takes
+/// <c>text</c> and <c>setText</c>.</description></item>
 /// </list>
 /// </remarks>
 public static class UiLibrary
@@ -218,7 +226,7 @@ public static class UiLibrary
         }
 
         // What the app says while it opens, including why it didn't, goes to the desktop's messages.
-        if (apps.OpenApp(path, owner.Interpreter.WorkingDirectory ?? "/", host.Output))
+        if (apps.OpenApp(path, owner.Interpreter.WorkingDirectory ?? "/", host.Output, explainNeeds: false))
         {
             lua.PushBoolean(true);
             return 1;
@@ -377,7 +385,11 @@ public static class UiLibrary
         });
         Method(lua, "focus", handle, (state, h) =>
         {
-            h.View.Focus(Name(state, h, "focus"));
+            var name = Name(state, h, "focus");
+            if (h.View.Script.TitleField?.Name == name)
+                h.Window!.BeginTitleEdit();
+            else
+                h.View.Focus(name);
             return 0;
         });
         Method(lua, "setTitle", handle, (state, h) =>
@@ -501,6 +513,10 @@ public static class UiLibrary
                 Names.Add(control.Name);
             foreach (var visual in view.Script.Visuals)
                 Names.Add(visual.Name);
+            foreach (var item in view.Script.ToolbarItems)
+                Names.Add(item.Name);
+            if (view.Script.TitleField is { } title)
+                Names.Add(title.Name);
             foreach (var menu in view.Script.Menus)
             {
                 foreach (var entry in menu.Entries)

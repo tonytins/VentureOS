@@ -118,7 +118,8 @@ with no explanation. Stability outranks features.
   built-in commands win any name clash. `help` is generated from both. C#
   commands write through `IShellOutput` and ask for power changes through
   `IShellHost`.
-- Apps are `.app` bundles in `src/Venture.OS/system/apps/`. Follow
+- Apps are `.app` bundles in `src/Venture.OS/system/apps/` (apps the system
+  relies on, such as Files) or `src/Venture.OS/user/apps/` (the rest). Follow
   [docs/writing-apps.md](docs/writing-apps.md) to write one, and keep it
   accurate: `WritingAppsTutorialTests` builds and runs its Dice example, so
   change the guide and the code together.

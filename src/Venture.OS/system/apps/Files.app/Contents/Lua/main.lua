@@ -7,8 +7,13 @@
 
 local files = venture.files
 
-local HOME = "/mnt"
-local SYSTEM = "/mnt/system"
+-- The folders down the left of every window.
+local BOOKMARKS = {
+  { name = "Home", path = "/mnt" },
+  { name = "User", path = "/mnt/user" },
+  { name = "Apps", path = "/mnt/user/apps" },
+  { name = "System", path = "/mnt/system" },
+}
 
 -- New windows open where Files started: the folder the desktop opened from.
 local START = files.resolve()
@@ -35,6 +40,10 @@ local function openWindow(start)
   local folder = start
   local entries = {}
 
+  local names = {}
+  for number, bookmark in ipairs(BOOKMARKS) do names[number] = bookmark.name end
+  window:setItems("bookmarks", names)
+
   local function selected()
     local number = window:selected("entries")
     return number and entries[number]
@@ -43,15 +52,16 @@ local function openWindow(start)
   -- Open and Quick Look need something selected.
   local function update()
     local nothing = selected() == nil
-    for _, name in ipairs({ "open", "openItem", "look", "lookItem" }) do
-      window:setDisabled(name, nothing)
-    end
+    window:setDisabled("openItem", nothing)
+    window:setDisabled("lookItem", nothing)
   end
 
+  -- Shows a folder, or says why it can't and keeps the one it was showing.
   local function show(path)
     local list, problem = files.list(path)
     if not list then
       window:setText("status", problem)
+      window:setText("address", folder)
       return
     end
 
@@ -64,12 +74,27 @@ local function openWindow(start)
 
     window:setItems("entries", items)
     window:select("entries", nil)
+    window:setText("address", path)
     window:setTitle(path == "/" and "/" or path:match("[^/]+$"))
-    window:setText("path", path)
     window:setText("status", #list == 1 and "1 item" or (#list .. " items"))
-    window:setDisabled("up", parent(path) == nil)
     window:setDisabled("enclosing", parent(path) == nil)
+
+    -- The bookmark for this folder, if there is one, stays selected.
+    window:select("bookmarks", nil)
+    for number, bookmark in ipairs(BOOKMARKS) do
+      if bookmark.path == path then window:select("bookmarks", number) end
+    end
     update()
+  end
+
+  -- Goes to what's typed in the address field, from the current folder when it's relative.
+  local function goTo()
+    local typed = window:text("address"):match("^%s*(.-)%s*$")
+    if typed == "" then
+      window:setText("address", folder)
+      return
+    end
+    show(files.resolve(typed:sub(1, 1) == "/" and typed or join(folder, typed)))
   end
 
   local function quickLook()
@@ -94,23 +119,22 @@ local function openWindow(start)
     end
   end
 
-  local function goUp()
-    local up = parent(folder)
-    if up then show(up) end
-  end
-
   -- A double-click opens what it lands on.
   window:on("entries", function(event)
     if event.kind == "submitted" then open() else update() end
   end)
-  window:on("open", open)
+  window:on("bookmarks", function(event)
+    if event.kind == "selected" then show(BOOKMARKS[event.index].path) end
+  end)
+  window:on("address", goTo)
+  window:on("go", goTo)
+  window:on("goToFolder", function() window:focus("address") end)
   window:on("openItem", open)
-  window:on("look", quickLook)
   window:on("lookItem", quickLook)
-  window:on("up", goUp)
-  window:on("enclosing", goUp)
-  window:on("home", function() show(HOME) end)
-  window:on("system", function() show(SYSTEM) end)
+  window:on("enclosing", function()
+    local up = parent(folder)
+    if up then show(up) end
+  end)
   window:on("closeWindow", function() window:close() end)
 
   show(start)
