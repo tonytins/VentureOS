@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Saluki: `Notes.app` and the app guide) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the desktop will be version 0.3) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -205,6 +205,9 @@ which here is an app's Lua code.
 - [ ] A window manager, the menu bar, and the dock.
 - [ ] Terminal.app: the shell in a window.
 
+When the desktop is up and running, VentureOS moves to version 0.3 (a new
+base in `GitInfo.txt`), by my decision.
+
 ## Critical path
 
 Cascades, Hiawatha, Illini, and Wolverine are done, and so are Saluki's
@@ -233,6 +236,7 @@ Borealis.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | The desktop (Borealis) will mark version 0.3. |
 | 2026-11-11 | minor | Saluki 90%: `Notes.app` ships, with a tested guide to writing apps. Only installing apps from outside the system remains, after persistence; Borealis is the current focus. |
 | 2026-11-11 | minor | Saluki 80%: `open`, `close`, and `apps`; apps run as owners with their declared needs. A shipped `Notes.app` is next. |
 | 2026-11-11 | minor | Saluki 67%: the bundle format and its reader. `System.Xml` doesn't link under Cosmos 3.0.94, so XML is read by VentureOS's own flat reader, which Borealis's `.uix` files will share. |
