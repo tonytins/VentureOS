@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Downeaster planned; phase 1, centred titles) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Downeaster phase 2, `<Sidebar>` in UIScript) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -70,14 +70,14 @@ fit, rather than waiting on a route.
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
 | Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| Downeaster | Desktop refinement | 20% | 10–20 | Centred titles and an address that edits on click are done; sidebars and resizable windows are next |
-| | **Total** | | **≈ 28–55**, plus every-stage work (≈ 14–28) | |
+| Downeaster | Desktop refinement | 40% | 8–16 | Centred titles, an address that edits on click, and `<Sidebar>` in UIScript are done; drawing sidebars and resizable windows are next |
+| | **Total** | | **≈ 26–51**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Sidebars and resizable windows | Downeaster | 10–20 |
+| 1 | Sidebars and resizable windows | Downeaster | 8–16 |
 | 2 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
@@ -268,8 +268,9 @@ with the close and minimize buttons on top, as Big Sur's Finder does.
   `<TitleField>` reads as a plain title until it's clicked or given focus,
   then becomes a field across the room. Files drops Go for Enter, and its
   address shows the full path, keeping its end when cut.
-- [ ] Phase 2, `<Sidebar>` in UIScript: a flat list down the window's left,
-  which Lua treats as a `<List>`, behind `requires="sidebar"`.
+- [x] Phase 2, `<Sidebar>` in UIScript: a flat list down the window's left,
+  with a name and a width and no position, behind `requires="sidebar"`, and
+  drafted for Hudini in [uiscript-sidebar.md](./uiscript-sidebar.md).
 - [ ] Phase 3, the sidebar in the frame: drawn the window's full height in
   its own shade, with the buttons on top and the title bar over the
   content only. Files' bookmarks move into one.
@@ -310,6 +311,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Downeaster 40%: phase 2, `<Sidebar>` in UIScript behind the `sidebar` feature, drafted for Hudini. About 26–51 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster planned in five phases, after Tony Bark's idea: centred titles and an address that edits on click, sidebars like Nautilus in GNOME 45, and resizable windows with anchors. Phase 1, the title, is done (20%). About 28–55 h of milestones remain. |
 | 2026-11-11 | minor | Keystone complete: phase 6, Terminal.app, with shells of their own for apps, a monospace font in styles, and text areas that follow their newest text. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 83%: phase 5, `<TextArea>` and TextEdit, which Files opens text files in. Terminal.app is the last phase. About 24–47 h of milestones remain. |

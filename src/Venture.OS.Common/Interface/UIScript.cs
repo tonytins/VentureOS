@@ -154,6 +154,13 @@ public sealed record UIToolbarItem(string Name, string Title, int Line);
 /// </summary>
 public sealed record UITitleField(string Name, string? Placeholder, int Line);
 
+/// <summary>
+/// A list of places down the window's left, as Nautilus and Finder have, with the <c>sidebar</c> feature. The host
+/// draws it the window's full height, beside the content rather than in it, so it has a width and no position, and
+/// the window's own size is the content's. Code treats it as a selectable <c>&lt;List&gt;</c> of this name.
+/// </summary>
+public sealed record UISidebar(string Name, float Width, int Line);
+
 /// <summary>An attribute the reader didn't know and skipped, which may be a typo.</summary>
 public sealed record UIIgnoredAttribute(string Element, string Attribute, int Line);
 
@@ -166,8 +173,8 @@ public sealed class UIScriptException(string message, int? line = null)
 }
 
 /// <summary>
-/// A UIScript document (<c>.uix</c>): one interface's window size, resources, styles, decorative images, controls,
-/// and, with the <c>menus</c> feature, its menus.
+/// A UIScript document (<c>.uix</c>): one interface's window size, resources, styles, decorative images, and
+/// controls, plus its menus with the <c>menus</c> feature and its sidebar with the <c>sidebar</c> feature.
 /// </summary>
 /// <remarks>
 /// <para>This reads the format Hudini defines (Draft, version 1; see docs/uiscript-menus.md for VentureOS's
@@ -186,10 +193,16 @@ public sealed class UIScript
     public const int SupportedVersion = 1;
 
     /// <summary>The <c>requires</c> features this reader understands.</summary>
-    public static readonly IReadOnlyList<string> SupportedFeatures = [MenusFeature];
+    public static readonly IReadOnlyList<string> SupportedFeatures = [MenusFeature, SidebarFeature];
 
     /// <summary>The feature that adds <c>&lt;Menu&gt;</c>, <c>&lt;MenuItem&gt;</c>, and <c>&lt;MenuSeparator&gt;</c>.</summary>
     public const string MenusFeature = "menus";
+
+    /// <summary>
+    /// The feature that adds <c>&lt;Sidebar&gt;</c>. A reader that skipped a sidebar would lose the window's way
+    /// around, so it's a feature older readers refuse rather than an element they could ignore.
+    /// </summary>
+    public const string SidebarFeature = "sidebar";
 
     private UIScript()
     {
@@ -223,6 +236,9 @@ public sealed class UIScript
 
     /// <summary>The editable title, or <see langword="null"/> for a plain one.</summary>
     public UITitleField? TitleField { get; private init; }
+
+    /// <summary>The sidebar, with the <c>sidebar</c> feature, or <see langword="null"/>.</summary>
+    public UISidebar? Sidebar { get; private init; }
 
     /// <summary>Attributes the reader didn't know and skipped. Log them while developing, to catch typos.</summary>
     public IReadOnlyList<UIIgnoredAttribute> IgnoredAttributes { get; private init; } = [];
@@ -285,10 +301,13 @@ public sealed class UIScript
         var features = (rootReader.String("requires") ?? "").Split([' ', '\t', '\n', '\r'],
             StringSplitOptions.RemoveEmptyEntries);
         var hasMenus = false;
+        var hasSidebar = false;
         foreach (var feature in features)
         {
             if (feature == MenusFeature)
                 hasMenus = true;
+            else if (feature == SidebarFeature)
+                hasSidebar = true;
             else
                 throw new UIScriptException(
                     $"This document requires \"{feature}\", which this reader doesn't support; it needs a newer VentureOS.");
@@ -306,6 +325,7 @@ public sealed class UIScript
         List<(string Menu, UIMenuEntry Entry)> entries = [];
         List<UIToolbarItem> toolbar = [];
         UITitleField? titleField = null;
+        UISidebar? sidebar = null;
 
         foreach (var element in document.Children)
         {
@@ -386,6 +406,12 @@ public sealed class UIScript
                     titleField = new UITitleField(reader.RequiredString("name"), reader.String("placeholder"), element.Line);
                     break;
 
+                case "Sidebar" when hasSidebar:
+                    if (sidebar is not null)
+                        throw new UIScriptException("There's more than one <Sidebar>; a window has one.", element.Line);
+                    sidebar = new UISidebar(reader.RequiredString("name"), reader.RequiredNumber("width"), element.Line);
+                    break;
+
                 case "MenuSeparator" when hasMenus:
                     entries.Add((reader.RequiredString("menu"), new UIMenuEntry(null, null, null, null, element.Line)));
                     break;
@@ -393,9 +419,12 @@ public sealed class UIScript
                 default:
                     if (ControlType(element.Name) is not { } type)
                     {
-                        var hint = element.Name is "Menu" or "MenuItem" or "MenuSeparator"
-                            ? $" Add requires=\"{MenusFeature}\" to <UIScript> to use menus."
-                            : "";
+                        var hint = element.Name switch
+                        {
+                            "Menu" or "MenuItem" or "MenuSeparator" => $" Add requires=\"{MenusFeature}\" to <UIScript> to use menus.",
+                            "Sidebar" => $" Add requires=\"{SidebarFeature}\" to <UIScript> to use a sidebar.",
+                            _ => "",
+                        };
                         throw new UIScriptException($"<{element.Name}> isn't a UIScript element.{hint}", element.Line);
                     }
 
@@ -422,6 +451,7 @@ public sealed class UIScript
             Menus = BuildMenus(menus, entries),
             ToolbarItems = toolbar,
             TitleField = titleField,
+            Sidebar = sidebar,
             IgnoredAttributes = ignored,
         };
         script.Validate();
@@ -575,9 +605,14 @@ public sealed class UIScript
                 throw new UIScriptException($"The image \"{image.Name}\" has stateCount {image.StateCount}; use 1, 4, or 6.");
         }
 
-        // Controls, visuals, menu items, toolbar items, and the title field share names, since events and the host
-        // refer to them by name.
+        if (Sidebar is { Width: <= 0 } narrow)
+            throw new UIScriptException($"The sidebar \"{narrow.Name}\" needs a positive width.", narrow.Line);
+
+        // Controls, visuals, menu items, toolbar items, the title field, and the sidebar share names, since events
+        // and the host refer to them by name.
         HashSet<string> names = [];
+        if (Sidebar is { } side)
+            Unique(names, side.Name, side.Line);
         foreach (var item in ToolbarItems)
             Unique(names, item.Name, item.Line);
         if (TitleField is { } title)

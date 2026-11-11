@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (centred titles, a title field that edits on click) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the `sidebar` UIScript feature) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (686 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (699 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -830,10 +830,12 @@ version and `requires` are checked first; unknown elements refuse the
 document and unknown attributes are listed; references, sizes, and
 per-control attributes are validated, so a document reads completely or not
 at all. It's tested against Hudini's five example documents, copied into the
-tests with Hudini's license. VentureOS adds one feature, `menus`
-(`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with hotkeys and Ctrl or Alt
-shortcuts), drafted in [uiscript-menus.md](./uiscript-menus.md) for Hudini
-to take up. `UIView` draws documents in desktop windows.
+tests with Hudini's license. VentureOS adds two features, drafted for
+Hudini to take up: `menus` (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with
+hotkeys and Ctrl or Alt shortcuts), in [uiscript-menus.md](./uiscript-menus.md),
+and `sidebar` (`<Sidebar>`, a list of places beside the content), in
+[uiscript-sidebar.md](./uiscript-sidebar.md), which the reader takes but the
+desktop doesn't draw yet. `UIView` draws documents in desktop windows.
 
 **Apps.** `AppManager` opens, closes, and lists `.app` bundles. Opening one
 reads its bundle, makes an owner named after the app with the app's `needs`,
@@ -988,6 +990,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Interfaces (§9): the `sidebar` feature and `<Sidebar>` in UIScript, drafted for Hudini; the desktop doesn't draw it yet. |
 | 2026-11-11 | minor | Title bar (§9): titles are centred; a `<TitleField>` reads as a plain title until it's clicked, and only its text takes clicks; Files drops Go for Enter. |
 | 2026-11-11 | minor | Terminal (§2, §9): `venture.openShell` gives apps shells of their own without the console; Terminal.app ships; styles take `font`, text areas `follows`; windows get their focus back when they come forward. |
 | 2026-11-11 | minor | Text (§2, §9): `<TextArea>`; TextEdit ships with the user's apps; Files opens text files in it through `venture.ui.launch(app, file)` and `onOpenFile`. |
