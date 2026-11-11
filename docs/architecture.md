@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (sidebars in windows) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (resizable windows) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (705 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (715 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -743,6 +743,14 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   click elsewhere puts the old text back; a click on the same window's
   toolbar keeps the edit, so an item can act on what was typed. Item and
   title widths come from the font, so they're laid out when drawn.
+- **Resizing.** A document with `resizable="true"` on `<Window>` (a
+  VentureOS attribute, which other readers skip and show a fixed window)
+  gets a grip of dots in its bottom-right corner. Dragging it calls
+  `UIView.SetWindowSize`, as Hudini's `setWindowSize`, with the content's
+  new size: never below `minWidth` and `minHeight` (or the document's size
+  without them), and kept on the screen. Controls follow their edge
+  offsets, which measure from that size; a sidebar keeps its width. Apps
+  get no event when their window resizes.
 - **Sidebars.** A `<Sidebar>` runs down the window's left, its full height,
   in its own shade, as Nautilus has it in GNOME 45: the buttons sit on its
   top, and the title bar spans only the content, whose corner moves right
@@ -996,6 +1004,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Resizing (§9): `resizable` on `<Window>`, a grip, and `UIView.SetWindowSize`, with controls following Hudini's edge offsets; Files and TextEdit resize. |
 | 2026-11-11 | minor | Sidebars (§9): windows draw a `<Sidebar>` down their left, full height, with the buttons on top; the view keeps it as a list; Files' bookmarks move into one. |
 | 2026-11-11 | minor | Interfaces (§9): the `sidebar` feature and `<Sidebar>` in UIScript, drafted for Hudini; the desktop doesn't draw it yet. |
 | 2026-11-11 | minor | Title bar (§9): titles are centred; a `<TitleField>` reads as a plain title until it's clicked, and only its text takes clicks; Files drops Go for Enter. |

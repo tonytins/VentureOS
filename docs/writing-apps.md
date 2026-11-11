@@ -255,6 +255,13 @@ new number. `roll` still works in the shell, since both live in the same app.
   a selectable list: `setItems`, `select`, `selected`, and a `selected`
   event. It sits beside the content, so the window's size and your
   controls' positions don't change. See [UIScript sidebar](./uiscript-sidebar.md).
+- **Resizing:** `resizable="true"` on `<Window>` puts a grip in the window's
+  bottom-right corner. The window starts at its `width` and `height` and
+  shrinks no further than `minWidth` and `minHeight` (or its starting size,
+  without them). Give a control edge offsets to keep it to the window's
+  edges: `edgeOffsetRight` alone pins it to the right, and `edgeOffsetLeft`
+  with `edgeOffsetRight` stretches it, as Files' list does. Leave the bottom
+  right 16 pixels clear for the grip.
 - Anything a handler prints shows in a message window on the desktop.
 - **A shell of its own:** `local shell = venture.openShell()` (with `shell` in
   `needs`), then `shell:run("ls")` returns what the command printed, and

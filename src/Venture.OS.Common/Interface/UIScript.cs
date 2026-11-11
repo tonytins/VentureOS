@@ -65,8 +65,12 @@ public sealed record UIEdgeOffsets(float? Left, float? Right, float? Top, float?
 /// <summary>Where something sits in the window. A size can be left out where an image provides it.</summary>
 public sealed record UIFrame(float X, float Y, float? Width, float? Height, UIEdgeOffsets? EdgeOffsets);
 
-/// <summary>The interface's size, and the smallest size it lays out at.</summary>
-public sealed record UIWindow(UISize Size, UISize? MinimumSize);
+/// <summary>
+/// The interface's size, the smallest size it lays out at, and whether the desktop lets people resize it, which
+/// VentureOS adds. A reader that skips <c>resizable</c> shows a fixed window that still lays out correctly, so it
+/// isn't a required feature.
+/// </summary>
+public sealed record UIWindow(UISize Size, UISize? MinimumSize, bool IsResizable = false);
 
 /// <summary>An image the host loads, by path, asset ID, or both, with 1, 4, or 6 equal-width states.</summary>
 public sealed record UIImageResource(string Name, string? Path, string? AssetId, int StateCount);
@@ -477,10 +481,11 @@ public sealed class UIScript
         UISize size = new(reader.RequiredNumber("width"), reader.RequiredNumber("height"));
         var minimumWidth = reader.Number("minWidth");
         var minimumHeight = reader.Number("minHeight");
+        var resizable = reader.Boolean("resizable") ?? false;
         return (minimumWidth, minimumHeight) switch
         {
-            (null, null) => new UIWindow(size, null),
-            ({ } width, { } height) => new UIWindow(size, new UISize(width, height)),
+            (null, null) => new UIWindow(size, null, resizable),
+            ({ } width, { } height) => new UIWindow(size, new UISize(width, height), resizable),
             (null, _) => throw reader.Missing("minWidth"),
             _ => throw reader.Missing("minHeight"),
         };

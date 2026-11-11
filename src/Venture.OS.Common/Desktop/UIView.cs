@@ -118,6 +118,7 @@ public sealed class UIView
         ArgumentNullException.ThrowIfNull(script);
         this.script = script;
         this.drawRegion = drawRegion;
+        WindowSize = script.Window.Size;
 
         foreach (var control in script.Controls)
         {
@@ -174,8 +175,26 @@ public sealed class UIView
         MissingImages = images;
     }
 
-    /// <summary>The document's window size, which edge offsets measure from: the content's, without the sidebar.</summary>
-    public UISize WindowSize => script.Window.Size;
+    /// <summary>
+    /// The size the view lays out at, which edge offsets measure from: the content's, without the sidebar. It starts
+    /// at the document's size; see <see cref="SetWindowSize"/>.
+    /// </summary>
+    public UISize WindowSize { get; private set; }
+
+    /// <summary>The smallest size the view lays out at: the document's minimum, or its size when it gives none.</summary>
+    public UISize MinimumWindowSize => script.Window.MinimumSize ?? script.Window.Size;
+
+    /// <summary>
+    /// Lays the view out at a new size, as Hudini's <c>setWindowSize</c> does, such as when its window is resized:
+    /// controls with edge offsets move or stretch with it. It's never smaller than <see cref="MinimumWindowSize"/>.
+    /// </summary>
+    public void SetWindowSize(UISize size)
+    {
+        var minimum = MinimumWindowSize;
+        WindowSize = new UISize(
+            float.IsFinite(size.Width) ? Math.Max(size.Width, minimum.Width) : minimum.Width,
+            float.IsFinite(size.Height) ? Math.Max(size.Height, minimum.Height) : minimum.Height);
+    }
 
     /// <summary>How wide the sidebar is, in whole pixels, or 0 without one.</summary>
     public int SidebarWidth { get; }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.10
+
+- Files and TextEdit windows can be resized: drag the dots in the bottom-right corner.
+- App authors: `resizable="true"` on `<Window>` makes a window resizable, no smaller than its `minWidth` and `minHeight`; controls follow the edges their edge offsets name.
+
 ## 0.3.9
 
 - Files has a sidebar: Home, User, Apps, and System run down the window's left, its full height, with the close and minimize buttons on top.

@@ -33,6 +33,9 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     private (DesktopWindow Window, FramePart Part, int Index)? armed;
     private (DesktopWindow Window, int OffsetX, int OffsetY)? drag;
 
+    // A window being resized by its grip: where the press started, and the frame's size then.
+    private (DesktopWindow Window, int StartX, int StartY, int Width, int Height)? resizing;
+
     /// <summary>The windows from back to front, minimized ones included.</summary>
     public IReadOnlyList<DesktopWindow> Windows => windows;
 
@@ -137,6 +140,15 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             moving.Window.Y = Math.Clamp(y - moving.OffsetY, TopInset, screenHeight - DesktopTheme.TitleBarHeight);
         }
 
+        // Resizing keeps the frame on the screen; the window keeps itself no smaller than its document allows.
+        if (resizing is { } sizing && input.PointerDown)
+        {
+            var window = sizing.Window;
+            window.Resize(
+                Math.Min(sizing.Width + x - sizing.StartX, screenWidth - window.X),
+                Math.Min(sizing.Height + y - sizing.StartY, screenHeight - window.Y));
+        }
+
         if (released && armed is { } button)
         {
             armed = null;
@@ -174,6 +186,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         {
             captured = null;
             drag = null;
+            resizing = null;
         }
 
         happened.AddRange(CloseRequested());
@@ -261,6 +274,9 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             case FramePart.Bar:
                 drag = (target, x - target.X, y - target.Y);
                 break;
+            case FramePart.Grip:
+                resizing = (target, x, y, target.Width, target.Height);
+                break;
             default:
                 captured = target;
                 break;
@@ -318,5 +334,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             armed = null;
         if (drag?.Window == window)
             drag = null;
+        if (resizing?.Window == window)
+            resizing = null;
     }
 }

@@ -22,6 +22,9 @@ public enum FramePart
 
     /// <summary>The editable title, when the document has a <c>&lt;TitleField&gt;</c>.</summary>
     TitleField,
+
+    /// <summary>The dots in a resizable window's bottom-right corner, which resize it.</summary>
+    Grip,
 }
 
 /// <summary>
@@ -39,6 +42,8 @@ public enum FramePart
 /// <para>A document with a <c>&lt;Sidebar&gt;</c> gets it down the window's left, its full height, in its own shade,
 /// as Nautilus has it in GNOME 45: the buttons sit on its top, and the title bar, title, and toolbar span only the
 /// content beside it. The view draws and handles its rows.</para>
+/// <para>A resizable window (<c>resizable="true"</c> on <c>&lt;Window&gt;</c>) has a grip of dots in its bottom-right
+/// corner, over its content; dragging it resizes the content, and controls follow their edge offsets.</para>
 /// <para>Toolbar items and the idle title are laid out when the bar is drawn, since their widths come from the font,
 /// so the pointer hits what was last on screen.</para>
 /// </remarks>
@@ -56,6 +61,9 @@ public sealed class DesktopWindow
     private const int ItemPadding = 10;
     private const int ItemGap = 6;
     private const int Margin = 8;
+
+    /// <summary>The grip's size, in each direction, from the window's bottom-right corner.</summary>
+    public const int GripSize = 16;
 
     // An idle title field is padded on each side, and never narrower than this, so an empty one can still be clicked.
     private const int TitlePadding = 5;
@@ -140,6 +148,22 @@ public sealed class DesktopWindow
     /// <summary>Called with each of the view's events, and the bar's; set by whoever opened the window.</summary>
     public Action<DesktopWindow, UIEvent>? EventHandler { get; set; }
 
+    /// <summary>Whether the document lets the window be resized, by its grip.</summary>
+    public bool IsResizable => View.Script.Window.IsResizable;
+
+    /// <summary>The grip in the bottom-right corner, which resizes a resizable window.</summary>
+    public UIRect ResizeGrip => new(X + Width - GripSize, Y + Height - GripSize, GripSize, GripSize);
+
+    /// <summary>
+    /// Resizes a resizable window's frame, keeping its top-left corner. The sidebar keeps its width and the content
+    /// takes the rest; the content never gets smaller than its document's minimum. A fixed window ignores this.
+    /// </summary>
+    public void Resize(int width, int height)
+    {
+        if (IsResizable)
+            View.SetWindowSize(new UISize(width - View.SidebarWidth, height - DesktopTheme.TitleBarHeight));
+    }
+
     /// <summary>The whole frame.</summary>
     public UIRect Bounds => new(X, Y, Width, Height);
 
@@ -188,6 +212,8 @@ public sealed class DesktopWindow
     /// <summary>The part of the frame a point is on, and for a toolbar item, which one.</summary>
     public (FramePart Part, int Index) Hit(int x, int y)
     {
+        if (IsResizable && ResizeGrip.Contains(x, y))
+            return (FramePart.Grip, -1);
         if (!TitleBar.Contains(x, y))
             return (FramePart.None, -1);
         if (IsClosable && Grown(CloseButton).Contains(x, y))
@@ -320,6 +346,8 @@ public sealed class DesktopWindow
         var (contentX, contentY) = ContentOrigin;
         painter.FillRectangle(contentX, contentY, Width - side, Height - Bar, DesktopTheme.Panel);
         View.Draw(painter, contentX, contentY);
+        if (IsResizable)
+            DrawGrip(painter);
 
         DesktopTheme.Outline(painter, X, Y, Width, Height, DesktopTheme.Border);
 
@@ -458,6 +486,22 @@ public sealed class DesktopWindow
 
         static string Piece(string text, int length, bool keepEnd) =>
             keepEnd ? Ellipsis + text[^length..] : text[..length] + Ellipsis;
+    }
+
+    /// <summary>Six dots in a triangle against the bottom-right corner, as a resizable window's grip.</summary>
+    private void DrawGrip(IPainter painter)
+    {
+        const int Dot = 2;
+        const int Spacing = 4;
+        var (left, top) = (X + Width - 14, Y + Height - 14);
+        for (var row = 0; row < 3; row++)
+        {
+            for (var column = 0; column < 3; column++)
+            {
+                if (row + column >= 2)
+                    painter.FillRectangle(left + (column * Spacing), top + (row * Spacing), Dot, Dot, DesktopTheme.SecondaryText);
+            }
+        }
     }
 
     // The buttons are small, so a press a little outside still counts.
