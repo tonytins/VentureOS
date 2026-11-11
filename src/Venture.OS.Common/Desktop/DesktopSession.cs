@@ -1,32 +1,80 @@
+using Venture.OS.Bundles;
 using Venture.OS.Interface;
 
 namespace Venture.OS.Desktop;
 
 /// <summary>
-/// The desktop while it's open: the sky, the windows, and the pointer, and what each frame's input does to them.
+/// The desktop while it's open: the sky, the menu bar, the dock, the windows, and the pointer, and what each frame's
+/// input does to them.
 /// </summary>
 /// <remarks>
-/// The kernel's frame loop reads the input, hands it to <see cref="Update"/>, and draws only when that says
-/// something changed, so an idle desktop doesn't redraw. Esc closes the desktop, back to the shell, until the menu
-/// bar offers a way out.
+/// <para>The kernel's frame loop reads the input, hands it to <see cref="Update"/>, and draws only when that says
+/// something changed, so an idle desktop doesn't redraw.</para>
+/// <para>Input goes to the open menu first, then to menu shortcuts, then to the bar, the dock, and the windows. A
+/// press belongs to whatever it landed on until the button comes up, so dragging a window over the dock still drags
+/// the window.</para>
+/// <para>The bar shows the VentureOS menu, then the active app's menu, then the focused window's own menus. The
+/// active app is the one whose window was last brought to the front, or that was last opened from the dock.
+/// VentureOS ▸ Return to Shell, or Ctrl+Shift+Q, closes the desktop.</para>
 /// </remarks>
 public sealed class DesktopSession
 {
-    /// <summary>What the desktop says while there's no menu bar to leave from.</summary>
-    public const string LeaveHint = "Press Esc to go back to the shell.";
+    /// <summary>The VentureOS menu's items, by name.</summary>
+    public const string AboutItem = "about";
+
+    /// <summary>The item that closes the desktop.</summary>
+    public const string ReturnToShellItem = "returnToShell";
+
+    /// <summary>The app menu's item that closes the app.</summary>
+    public const string QuitItem = "quit";
+
+    private static readonly BarMenu SystemMenu = new(
+        new UIMenu("venture", "VentureOS", null,
+        [
+            new UIMenuEntry(AboutItem, "About VentureOS", 'A', null, 0),
+            new UIMenuEntry(null, null, null, null, 0),
+            new UIMenuEntry(ReturnToShellItem, "Return to Shell", 'R', new UIShortcut(Control: true, Shift: true, Alt: false, 'Q'), 0),
+        ], 0),
+        MenuGroup.System);
 
     private readonly int[] background;
+    private readonly AppManager? apps;
+    private readonly string workingDirectory;
+    private readonly HeldOutput appOutput;
+    private readonly Dictionary<string, BarMenu> appMenus = [];
     private DesktopInput last;
     private bool drawn;
+    private PointerOwner owner;
+    private DesktopWindow? about;
+
+    private enum PointerOwner
+    {
+        None,
+        Bar,
+        Dock,
+        Windows,
+    }
 
     /// <summary>Opens the desktop on a screen of this size.</summary>
-    public DesktopSession(int width, int height)
+    /// <param name="width">The screen's width.</param>
+    /// <param name="height">The screen's height.</param>
+    /// <param name="apps">The system's apps, for the dock, or <see langword="null"/> for a desktop without one.</param>
+    /// <param name="workingDirectory">Where apps opened from the dock run from.</param>
+    /// <param name="appOutput">Where apps opened from the dock write; what they write shows in a window.</param>
+    public DesktopSession(int width, int height, AppManager? apps = null, string workingDirectory = "/", HeldOutput? appOutput = null)
     {
+        ArgumentNullException.ThrowIfNull(workingDirectory);
         Width = width;
         Height = height;
+        this.apps = apps;
+        this.workingDirectory = workingDirectory;
+        this.appOutput = appOutput ?? new HeldOutput();
         background = DesktopBackground.Render(width, height);
         last = new DesktopInput(width / 2, height / 2, false);
-        Windows = new WindowManager(width, height) { TopInset = 48 };
+        Windows = new WindowManager(width, height) { TopInset = MenuBar.Height + 4 };
+        Dock = new Dock(width, height);
+        RefreshDock();
+        RefreshMenus();
     }
 
     public int Width { get; }
@@ -36,58 +84,258 @@ public sealed class DesktopSession
     /// <summary>The desktop's windows.</summary>
     public WindowManager Windows { get; }
 
+    /// <summary>The menu bar along the top.</summary>
+    public MenuBar MenuBar { get; } = new();
+
+    /// <summary>The dock along the bottom.</summary>
+    public Dock Dock { get; }
+
+    /// <summary>Makes the About VentureOS window, or <see langword="null"/> when it can't.</summary>
+    public Func<DesktopWindow?>? AboutWindow { get; init; }
+
+    /// <summary>The app whose menu the bar shows, by name, or <see langword="null"/>.</summary>
+    public string? ActiveApp { get; private set; }
+
     /// <summary>Whether the user has left the desktop.</summary>
     public bool IsFinished { get; private set; }
 
     /// <summary>The pointer's position, kept on the screen.</summary>
     public (int X, int Y) PointerPosition => (last.PointerX, last.PointerY);
 
-    /// <summary>What happened to windows in the last update.</summary>
+    /// <summary>What happened to windows in the last update, including menu items their menus chose.</summary>
     public IReadOnlyList<WindowEvent> LastEvents { get; private set; } = [];
+
+    /// <summary>Opens About VentureOS, or brings it to the front if it's open.</summary>
+    public void ShowAbout()
+    {
+        if (about is null || !Windows.Windows.Contains(about))
+            about = AboutWindow?.Invoke();
+        if (about is not null)
+            Windows.Open(about);
+    }
 
     /// <summary>Takes a frame's input.</summary>
     /// <returns>Whether the desktop needs drawing again.</returns>
     public bool Update(DesktopInput input)
     {
+        var (x, y) = (Math.Clamp(input.PointerX, 0, Width - 1), Math.Clamp(input.PointerY, 0, Height - 1));
+        var pressed = input.PointerDown && !last.PointerDown;
+        var released = !input.PointerDown && last.PointerDown;
+        var focusedBefore = Windows.Focused;
+        List<WindowEvent> happened = [];
+
+        // Keys: the open menu takes them all; otherwise shortcuts and menu hotkeys come before the windows.
+        List<KeyPress> forWindows = [];
         foreach (var key in input.KeysPressed)
         {
-            if (key.Key == DesktopKey.Escape)
+            if (MenuBar.IsOpen)
             {
-                IsFinished = true;
-                return false;
+                if (MenuBar.UpdateKey(key) is { } chosen)
+                    Choose(chosen, happened);
+            }
+            else if (MenuBar.FindShortcut(key) is { } shortcut)
+            {
+                Choose(shortcut, happened);
+            }
+            else if (!(key is { Key: DesktopKey.Character, Alt: true, Control: false } && MenuBar.OpenByHotkey(key.Character)))
+            {
+                forWindows.Add(key);
             }
         }
 
-        var clamped = input with
+        if (IsFinished)
+            return false;
+
+        // The pointer: a press belongs to what it lands on until it's released.
+        if (pressed)
         {
-            PointerX = Math.Clamp(input.PointerX, 0, Width - 1),
-            PointerY = Math.Clamp(input.PointerY, 0, Height - 1),
-        };
+            owner = MenuBar.IsOpen || MenuBar.Contains(x, y) ? PointerOwner.Bar
+                : Dock.Contains(x, y) ? PointerOwner.Dock
+                : PointerOwner.Windows;
+        }
 
-        LastEvents = Windows.Update(clamped);
+        if (owner == PointerOwner.Bar || MenuBar.IsOpen)
+        {
+            var mine = owner == PointerOwner.Bar;
+            if (MenuBar.UpdatePointer(x, y, pressed && mine, released && mine) is { } chosen)
+                Choose(chosen, happened);
+        }
 
-        var changed = !drawn || clamped.HasEvents || LastEvents.Count > 0
-            || clamped.PointerX != last.PointerX || clamped.PointerY != last.PointerY
-            || clamped.PointerDown != last.PointerDown;
-        last = clamped with { Keys = null, Scroll = 0 };
+        var dockOwned = !MenuBar.IsOpen && (input.PointerDown || released ? owner == PointerOwner.Dock : true);
+        if (Dock.Update(x, y, dockOwned, pressed, released && owner == PointerOwner.Dock) is { } clicked)
+            OpenFromDock(clicked);
+
+        var overWindows = !MenuBar.IsOpen && !MenuBar.Contains(x, y) && !Dock.Contains(x, y);
+        DesktopInput windowInput = new(
+            x,
+            y,
+            input.PointerDown && owner == PointerOwner.Windows,
+            overWindows ? input.Scroll : 0,
+            [.. forWindows]);
+        happened.AddRange(Windows.Update(windowInput));
+
+        if (Windows.Focused != focusedBefore && Windows.Focused is { } focused)
+            ActiveApp = focused.App;
+
+        LastEvents = happened;
+        RefreshMenus();
+
+        var changed = !drawn || input.HasEvents || happened.Count > 0
+            || x != last.PointerX || y != last.PointerY || input.PointerDown != last.PointerDown;
+        last = new DesktopInput(x, y, input.PointerDown);
+        if (released)
+            owner = PointerOwner.None;
         return changed;
     }
 
-    /// <summary>Draws the whole desktop: the sky, the hint, the windows, then the pointer on top.</summary>
+    /// <summary>Draws the whole desktop: the sky, the windows, the dock, the menu bar, then the pointer on top.</summary>
     public void Draw(IPainter painter)
     {
         ArgumentNullException.ThrowIfNull(painter);
 
         painter.DrawPixels(background, 0, 0, Width, Height);
-
-        const int HintSize = 16;
-        var hintWidth = painter.MeasureText(LeaveHint, HintSize);
-        var (hintX, hintY) = ((Width - hintWidth) / 2, 18);
-        painter.DrawText(LeaveHint, hintX + 1, hintY + 1, new UIColor(0, 0, 0, 255), HintSize);
-        painter.DrawText(LeaveHint, hintX, hintY, new UIColor(255, 255, 255), HintSize);
-
         Windows.Draw(painter);
+        Dock.Draw(painter);
+        MenuBar.Draw(painter);
         Pointer.Draw(painter, last.PointerX, last.PointerY);
         drawn = true;
+    }
+
+    private void Choose(MenuChoice choice, List<WindowEvent> happened)
+    {
+        var item = choice.Item.Name!;
+        switch (choice.Menu.Group)
+        {
+            case MenuGroup.System when item == AboutItem:
+                ShowAbout();
+                break;
+            case MenuGroup.System when item == ReturnToShellItem:
+                IsFinished = true;
+                break;
+            case MenuGroup.App when item == QuitItem && ActiveApp is { } app:
+                Quit(app);
+                break;
+            case MenuGroup.Window:
+                // A chosen item reports like a pressed button, by its name, to the window whose menu it's in.
+                foreach (var window in Windows.Windows)
+                {
+                    if (window.View != choice.Menu.View)
+                        continue;
+
+                    UIEvent chosen = new(UIEventKind.Pressed, item);
+                    happened.Add(new WindowEvent(window, chosen));
+                    window.EventHandler?.Invoke(window, chosen);
+                    break;
+                }
+
+                happened.AddRange(Windows.CloseRequested());
+                break;
+        }
+    }
+
+    private void OpenFromDock(DockItem item)
+    {
+        if (apps is null)
+            return;
+
+        if (item.IsOpen)
+        {
+            // Bring the app forward: its menu, and its front window.
+            ActiveApp = item.Name;
+            for (var index = Windows.Windows.Count - 1; index >= 0; index--)
+            {
+                if (Windows.Windows[index].App == item.Name)
+                {
+                    Windows.Open(Windows.Windows[index]);
+                    break;
+                }
+            }
+
+            return;
+        }
+
+        if (apps.OpenApp(item.Target, workingDirectory, appOutput))
+            ActiveApp = item.Name;
+
+        ShowMessages(item.Name, ActiveApp);
+        RefreshDock();
+    }
+
+    private void Quit(string app)
+    {
+        apps?.CloseApp(app, appOutput);
+
+        // Its windows go with it.
+        foreach (var window in (DesktopWindow[])[.. Windows.Windows])
+        {
+            if (window.App == app)
+                Windows.Close(window);
+        }
+
+        ActiveApp = null;
+        ShowMessages(app, null);
+        RefreshDock();
+    }
+
+    /// <summary>Shows what apps wrote, in a window titled for the app, so nothing they said is lost.</summary>
+    private void ShowMessages(string title, string? app)
+    {
+        if (appOutput.HasLines)
+            Windows.Open(DesktopAlert.Create(title, string.Join('\n', appOutput.Take()), app));
+    }
+
+    private void RefreshDock()
+    {
+        if (apps is null)
+            return;
+
+        List<DockItem> items = [];
+        foreach (var listing in apps.Available())
+        {
+            // An app that can't be read stays out of the dock; `apps` in the shell says why.
+            if (listing.Bundle is not { } bundle)
+                continue;
+
+            var extension = Bundle.Extension(BundleKind.App);
+            var target = listing.Folder.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
+                ? listing.Folder[..^extension.Length]
+                : listing.Folder;
+            items.Add(new DockItem(bundle.Name, target, apps.IsOpen(bundle.Identifier)));
+        }
+
+        Dock.SetItems(items);
+    }
+
+    private void RefreshMenus()
+    {
+        List<BarMenu> menus = [SystemMenu];
+        if (ActiveApp is { } app)
+            menus.Add(AppMenu(app));
+
+        if (Windows.Focused is { } focused && focused.App == ActiveApp)
+        {
+            foreach (var menu in focused.View.Script.Menus)
+                menus.Add(new BarMenu(menu, MenuGroup.Window, focused.View));
+        }
+
+        MenuBar.SetMenus(menus);
+    }
+
+    /// <summary>The app's menu, kept per app so the bar sees the same menu from frame to frame.</summary>
+    private BarMenu AppMenu(string app)
+    {
+        if (!appMenus.TryGetValue(app, out var menu))
+        {
+            menu = new BarMenu(
+                new UIMenu("app", app, null,
+                [
+                    new UIMenuEntry(QuitItem, $"Quit {app}", 'Q', new UIShortcut(Control: true, Shift: false, Alt: false, 'Q'), 0),
+                ], 0),
+                MenuGroup.App,
+                Emphasized: true);
+            appMenus[app] = menu;
+        }
+
+        return menu;
     }
 }

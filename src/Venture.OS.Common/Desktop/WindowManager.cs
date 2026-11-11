@@ -39,6 +39,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     public void Open(DesktopWindow window)
     {
         ArgumentNullException.ThrowIfNull(window);
+        window.ClearCloseRequest();
         if (windows.Contains(window))
         {
             BringToFront(window);
@@ -130,7 +131,23 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             drag = null;
         }
 
+        happened.AddRange(CloseRequested());
         return happened;
+    }
+
+    /// <summary>Closes the windows that asked to close.</summary>
+    /// <returns>A closing event for each.</returns>
+    public IReadOnlyList<WindowEvent> CloseRequested()
+    {
+        List<WindowEvent> closed = [];
+        for (var index = windows.Count - 1; index >= 0; index--)
+        {
+            var window = windows[index];
+            if (window.IsCloseRequested && Close(window))
+                closed.Add(new WindowEvent(window, null, Closed: true));
+        }
+
+        return closed;
     }
 
     /// <summary>Draws the windows from back to front; only the front one draws as active.</summary>

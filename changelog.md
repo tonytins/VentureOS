@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.22
+
+- The desktop has a menu bar and a dock. The dock shows the system's apps: click one to open it, and a dot marks the open ones. The app's menu has Quit (Ctrl+Q).
+- An interface's own menus appear in the menu bar while its window is in front. Alt and the underlined letter open a menu; shortcuts such as Ctrl+N work from anywhere.
+- To leave the desktop, choose VentureOS ▸ Return to Shell, or press Ctrl+Shift+Q. Esc no longer leaves; it closes an open menu.
+- Messages from an app you open in the desktop show in a window.
+
 ## 0.2.21
 
 - The desktop has windows. It opens with About VentureOS; drag a window by its title bar, click one to bring it to the front, and click its red button to close it.

@@ -53,7 +53,7 @@ public sealed class DesktopTests
     }
 
     [Fact]
-    public void DrawsTheSkyTheHintAndThePointer()
+    public void DrawsTheSkyTheMenuBarAndThePointer()
     {
         DesktopSession session = new(400, 300);
         RecordingPainter painter = new(400, 300);
@@ -61,11 +61,11 @@ public sealed class DesktopTests
         Assert.True(session.Update(new DesktopInput(50, 60, false)));
         session.Draw(painter);
 
-        Assert.Equal(DesktopBackground.Pack(32, 86, 140), painter.At(399, 0));
+        var barTop = DesktopTheme.TitleBarTop;
+        Assert.Equal(DesktopBackground.Pack(barTop.Red, barTop.Green, barTop.Blue), painter.At(399, 0));
+        Assert.Equal(DesktopBackground.Render(400, 300)[(MenuBar.Height * 400) + 399], painter.At(399, MenuBar.Height));
         Assert.Equal(Black, painter.At(50, 60));
-        var hint = painter.Texts[^1];
-        Assert.Equal(DesktopSession.LeaveHint, hint.Text);
-        Assert.Equal((400 - (DesktopSession.LeaveHint.Length * 8)) / 2, hint.X);
+        Assert.Contains(painter.Texts, text => text.Text == "VentureOS" && text.Y < MenuBar.Height);
     }
 
     [Fact]
@@ -103,11 +103,15 @@ public sealed class DesktopTests
     }
 
     [Fact]
-    public void EscapeLeavesTheDesktop()
+    public void ReturnToShellLeavesTheDesktop()
     {
         DesktopSession session = new(100, 100);
+        KeyPress shortcut = new(DesktopKey.Character, 'q', Control: true, Shift: true);
 
-        Assert.False(session.Update(new DesktopInput(1, 1, false, Keys: [new KeyPress(DesktopKey.Escape)])));
+        session.Update(new DesktopInput(1, 1, false, Keys: [new KeyPress(DesktopKey.Escape)]));
+        Assert.False(session.IsFinished);
+
+        Assert.False(session.Update(new DesktopInput(1, 1, false, Keys: [shortcut])));
         Assert.True(session.IsFinished);
     }
 

@@ -1,3 +1,4 @@
+using Venture.OS.Bundles;
 using Venture.OS.Desktop;
 using Venture.OS.Interface;
 using Venture.OS.Startup;
@@ -9,16 +10,21 @@ namespace Venture.OS.Shell.Commands;
 /// </summary>
 /// <remarks>
 /// <para>It opens with the About VentureOS window. Any <c>.uix</c> files named on the command line open as windows
-/// too, which previews an interface while it's being written.</para>
+/// too, which previews an interface while it's being written. The dock opens the system's apps; what they write while
+/// the desktop is showing is held and shown in a window, since the console would draw over the desktop, and goes to
+/// the shell again once the desktop closes.</para>
 /// <para>The text console draws on the same canvas, so the desktop draws over it, and leaving clears the console,
 /// which redraws the shell. Earlier shell output isn't kept. Whatever happens inside, the console is restored before
 /// this returns, so a failure in the desktop never leaves the screen in graphics with no way back. The frame loop
 /// redraws only when the input changed.</para>
 /// </remarks>
-internal sealed class DesktopCommand : IShellCommand
+internal sealed class DesktopCommand(Func<AppManager?> apps) : IShellCommand
 {
+    /// <summary>The output apps opened from the dock keep, shared by every visit to the desktop.</summary>
+    private static readonly HeldOutput AppOutput = new();
+
     public string Name => "desktop";
-    public string Summary => "Open the desktop, with any .uix files as windows.";
+    public string Summary => "Open the desktop, with any .uix files as windows. Ctrl+Shift+Q comes back.";
     public string Usage => "desktop [interface.uix...]";
     public int MinArguments => 0;
     public int MaxArguments => int.MaxValue;
@@ -56,12 +62,16 @@ internal sealed class DesktopCommand : IShellCommand
         }
 
         var frames = 0;
+        AppOutput.PassTo = null;
         try
         {
             var opening = Stopwatch.GetTimestamp();
-            DesktopSession session = new(canvas.Width, canvas.Height);
+            DesktopSession session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, AppOutput)
+            {
+                AboutWindow = MakeAbout,
+            };
             CanvasPainter painter = new(canvas, interfaceFont, monospaceFont);
-            OpenAbout(session);
+            session.ShowAbout();
             foreach (var (title, script) in previews)
                 session.Windows.Open(new DesktopWindow(title, new UIView(script)));
 
@@ -91,15 +101,25 @@ internal sealed class DesktopCommand : IShellCommand
             // Back to text first, so the report can be read.
             Console.Clear();
             KernelLog.WriteLine($"The desktop stopped ({exception.GetType().Name}): {exception.Message}");
+            PassAppOutputTo(context.Output);
             return;
         }
 
         Console.Clear();
         KernelLog.WriteSerialLine($"Desktop closed after {frames} frames.");
+        PassAppOutputTo(context.Output);
     }
 
-    /// <summary>Opens About VentureOS, with the version filled in; its OK button closes it.</summary>
-    private static void OpenAbout(DesktopSession session)
+    /// <summary>Shows anything apps said that the desktop didn't, and sends what they say next to the shell.</summary>
+    private static void PassAppOutputTo(IShellOutput output)
+    {
+        foreach (var line in AppOutput.Take())
+            output.WriteLine(line);
+        AppOutput.PassTo = output;
+    }
+
+    /// <summary>Makes About VentureOS, with the version filled in; its OK button closes it.</summary>
+    private static DesktopWindow? MakeAbout()
     {
         UIScript script;
         try
@@ -110,20 +130,19 @@ internal sealed class DesktopCommand : IShellCommand
         {
             // The desktop works without it; say why it's missing on serial, since the screen is in graphics.
             KernelLog.WriteSerialLine($"About VentureOS couldn't open: {exception.Message}");
-            return;
+            return null;
         }
 
         UIView view = new(script);
         view.SetText("version", $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})");
-        DesktopWindow window = new("About VentureOS", view)
+        return new DesktopWindow("About VentureOS", view)
         {
             EventHandler = (about, uiEvent) =>
             {
                 if (uiEvent is { Kind: UIEventKind.Pressed, Control: "ok" })
-                    session.Windows.Close(about);
+                    about.RequestClose();
             },
         };
-        session.Windows.Open(window);
     }
 
     /// <summary>Takes every waiting key, as the desktop sees them.</summary>
@@ -156,12 +175,29 @@ internal sealed class DesktopCommand : IShellCommand
 
             if (special != DesktopKey.Character)
                 keys.Add(new KeyPress(special, '\0', control, shift, alt));
+            else if ((control || alt) && Letter(key.Key) is { } letter)
+                keys.Add(new KeyPress(DesktopKey.Character, letter, control, shift, alt)); // For shortcuts and hotkeys.
             else if (key.KeyChar != '\0')
                 keys.Add(new KeyPress(DesktopKey.Character, key.KeyChar, control, shift, alt));
         }
 
         return [.. keys];
     }
+
+    /// <summary>
+    /// The letter or digit a key is labeled with. With Ctrl or Alt held, the character a key types may be a control
+    /// code or a symbol, so shortcuts and menu hotkeys go by the key itself.
+    /// </summary>
+    private static char? Letter(Key key) => key switch
+    {
+        Key.A => 'a', Key.B => 'b', Key.C => 'c', Key.D => 'd', Key.E => 'e', Key.F => 'f', Key.G => 'g',
+        Key.H => 'h', Key.I => 'i', Key.J => 'j', Key.K => 'k', Key.L => 'l', Key.M => 'm', Key.N => 'n',
+        Key.O => 'o', Key.P => 'p', Key.Q => 'q', Key.R => 'r', Key.S => 's', Key.T => 't', Key.U => 'u',
+        Key.V => 'v', Key.W => 'w', Key.X => 'x', Key.Y => 'y', Key.Z => 'z',
+        Key.D0 => '0', Key.D1 => '1', Key.D2 => '2', Key.D3 => '3', Key.D4 => '4',
+        Key.D5 => '5', Key.D6 => '6', Key.D7 => '7', Key.D8 => '8', Key.D9 => '9',
+        _ => null,
+    };
 
     private static bool TryLoadFonts(IShellOutput output, out TrueTypeFont interfaceFont, out TrueTypeFont monospaceFont)
     {

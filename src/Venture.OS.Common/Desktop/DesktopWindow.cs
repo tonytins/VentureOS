@@ -34,6 +34,24 @@ public sealed class DesktopWindow
 
     public bool IsClosable { get; }
 
+    /// <summary>
+    /// The name of the app the window belongs to, or <see langword="null"/> for the desktop's own windows. The menu
+    /// bar shows that app's menu while the window is in front.
+    /// </summary>
+    public string? App { get; init; }
+
+    /// <summary>Whether the window asked to close; the window manager closes it at the end of the frame.</summary>
+    public bool IsCloseRequested { get; private set; }
+
+    /// <summary>
+    /// Asks for the window to close, such as from its OK button's handler, which can't close it directly while the
+    /// window manager is going through its events.
+    /// </summary>
+    public void RequestClose() => IsCloseRequested = true;
+
+    /// <summary>Forgets a request to close, when the window opens again.</summary>
+    internal void ClearCloseRequest() => IsCloseRequested = false;
+
     /// <summary>The frame's left edge, on the screen.</summary>
     public int X { get; set; }
 

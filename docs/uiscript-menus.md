@@ -75,3 +75,9 @@ menu in document order, and menus appear in the bar in document order.
   greys an item out, and `setSelected(_:named:)` marks it, such as for a
   choice that's on.
 - Draw `hotkey` and `shortcut` in the menu so people can learn them.
+- A host may keep shortcuts for its own menus, such as Ctrl+Q to quit. Those
+  win over a document's, so a host should list the ones it keeps.
+
+VentureOS's desktop keeps Ctrl+Q (quit the app) and Ctrl+Shift+Q (return to
+the shell). Its own menus have no `hotkey`, so every letter is free for a
+document's menus.

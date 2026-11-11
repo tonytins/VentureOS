@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Borealis phase 2: the `desktop` command) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Borealis phase 4: the menu bar and dock) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -68,7 +68,7 @@ fit, rather than waiting on a route.
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
-| Borealis | Desktop | 60% | 15–35 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock |
+| Borealis | Desktop | 80% | 8–20 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock |
 | | **Total** | | **≈ 66–131**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
@@ -209,7 +209,7 @@ phases:
 - [x] Phase 3, windows: Tiger-style frames (title bar, close dot, dragging,
   focus, stacking) and a UIScript view that lays out, draws, and handles
   input.
-- [ ] Phase 4, the menu bar and dock: the VentureOS menu, the app's menu,
+- [x] Phase 4, the menu bar and dock: the VentureOS menu, the app's menu,
   then the focused window's menus, with Alt and Ctrl shortcuts; a dock that
   opens apps and marks the open ones.
 - [ ] Phase 5, apps with windows: `venture.ui` and the `ui` scope; an app
@@ -248,6 +248,7 @@ Borealis.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Borealis 80%: phase 4, the menu bar (VentureOS, the app's, and the window's menus, with Alt hotkeys and Ctrl shortcuts) and a dock that opens the system's apps. |
 | 2026-11-11 | minor | Borealis 60%: phase 3, windows show `.uix` interfaces, drag, focus, and close; About VentureOS opens with the desktop, and `desktop` previews `.uix` files. |
 | 2026-11-11 | minor | Borealis 40%: phase 2, `desktop` draws the sky and pointer at 1024x768 and returns to the shell on Esc. |
 | 2026-11-11 | major | Borealis planned in five phases to 0.3 (a `desktop` command, 1024×768, Open Sans and Fira Code), with Terminal.app right after; menus join UIScript as a `menus` feature. Phase 1, the UIScript reader, is done. |

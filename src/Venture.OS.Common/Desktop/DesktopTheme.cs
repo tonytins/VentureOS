@@ -56,6 +56,33 @@ public static class DesktopTheme
     /// <summary>White laid over a window that isn't in front, as early Aqua faded background windows.</summary>
     public static readonly UIColor InactiveFade = new(255, 255, 255, 90);
 
+    /// <summary>The bottom of the menu bar's gradient, which starts from <see cref="TitleBarTop"/>.</summary>
+    public static readonly UIColor MenuBarBottom = new(222, 228, 236);
+
+    /// <summary>A menu's background.</summary>
+    public static readonly UIColor MenuBackground = new(250, 251, 253);
+
+    /// <summary>Text on the accent color, such as a highlighted menu item.</summary>
+    public static readonly UIColor HighlightedText = new(255, 255, 255);
+
+    /// <summary>The line between groups of menu items.</summary>
+    public static readonly UIColor Separator = new(214, 218, 224);
+
+    /// <summary>The dock's glassy shelf, laid over the sky.</summary>
+    public static readonly UIColor DockShelf = new(255, 255, 255, 70);
+
+    /// <summary>The dock shelf's bright edge.</summary>
+    public static readonly UIColor DockEdge = new(255, 255, 255, 150);
+
+    /// <summary>The dot under an open app's icon.</summary>
+    public static readonly UIColor OpenAppDot = new(24, 28, 36);
+
+    /// <summary>The label that names the icon under the pointer.</summary>
+    public static readonly UIColor DockLabel = new(0, 0, 0, 150);
+
+    /// <summary>The shade over an icon while it's pressed.</summary>
+    public static readonly UIColor IconPressed = new(0, 0, 0, 60);
+
     /// <summary>The height of a window's title bar, in pixels.</summary>
     public const int TitleBarHeight = 22;
 
@@ -90,6 +117,34 @@ public static class DesktopTheme
         painter.FillRectangle(x, y, 1, height, color);
         painter.FillRectangle(x + width - 1, y, 1, height, color);
     }
+
+    /// <summary>
+    /// A gradient with rounded corners, row by row, since the canvas has no shapes of its own beyond rectangles.
+    /// </summary>
+    public static void FillRoundedGradient(IPainter painter, int x, int y, int width, int height, int radius, UIColor top, UIColor bottom)
+    {
+        ArgumentNullException.ThrowIfNull(painter);
+        if (width <= 0 || height <= 0)
+            return;
+
+        radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
+        for (var row = 0; row < height; row++)
+        {
+            var inset = 0;
+            var fromEdge = Math.Min(row, height - 1 - row);
+            if (fromEdge < radius)
+            {
+                var dy = radius - fromEdge - 0.5f;
+                inset = (int)MathF.Round(radius - MathF.Sqrt(Math.Max(0, (radius * radius) - (dy * dy))));
+            }
+
+            var along = height == 1 ? 0 : (float)row / (height - 1);
+            painter.FillRectangle(x + inset, y + row, width - (2 * inset), 1, Mix(top, bottom, along));
+        }
+    }
+
+    /// <summary>A color part of the way from one color to another.</summary>
+    public static UIColor Blend(UIColor from, UIColor to, float along) => Mix(from, to, Math.Clamp(along, 0, 1));
 
     private static UIColor Mix(UIColor from, UIColor to, float along) => new(
         (byte)MathF.Round(from.Red + ((to.Red - from.Red) * along)),

@@ -141,6 +141,11 @@ From: Dice
 Your numbers will differ. After `close dice`, `roll` is no longer a command.
 `apps` lists every app and marks the ones that are open.
 
+Dice also appears in the desktop's dock. Type `desktop` and click its icon to
+open it; anything it prints when it opens shows in a window, and Dice ▸ Quit
+Dice (Ctrl+Q) closes it. Ctrl+Shift+Q goes back to the shell, where `roll`
+still works until you close Dice.
+
 To change the app, edit its files, then build and boot again.
 
 ## Keep things in files

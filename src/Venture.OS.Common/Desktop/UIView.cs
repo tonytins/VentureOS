@@ -112,6 +112,16 @@ public sealed class UIView
         foreach (var visual in script.Visuals)
             states[visual.Name] = new State();
 
+        // Menu items share the namespace, so they're disabled and checked by name like controls.
+        foreach (var menu in script.Menus)
+        {
+            foreach (var entry in menu.Entries)
+            {
+                if (entry.Name is { } item)
+                    states[item] = new State();
+            }
+        }
+
         List<string> images = [.. script.Images.Keys];
         images.Sort(StringComparer.Ordinal);
         MissingImages = images;
@@ -189,7 +199,7 @@ public sealed class UIView
         }
     }
 
-    /// <summary>Turns a control off or on. A disabled control draws dimmed and takes no input.</summary>
+    /// <summary>Turns a control or menu item off or on. A disabled one draws dimmed and takes no input.</summary>
     public void SetDisabled(bool disabled, string name)
     {
         if (Find(name) is { } state)
@@ -200,12 +210,21 @@ public sealed class UIView
         }
     }
 
-    /// <summary>Marks a button as chosen, such as a toggle that's on, drawn as if held down.</summary>
+    /// <summary>
+    /// Marks a button or menu item as chosen, such as a toggle that's on: a button draws as if held down, and a menu
+    /// item gets a check mark.
+    /// </summary>
     public void SetSelected(bool selected, string name)
     {
         if (Find(name) is { } state)
             state.Selected = selected;
     }
+
+    /// <summary>Whether a control or menu item is disabled.</summary>
+    public bool IsDisabled(string name) => Find(name)?.Disabled ?? false;
+
+    /// <summary>Whether a button or menu item is marked as chosen.</summary>
+    public bool IsSelected(string name) => Find(name)?.Selected ?? false;
 
     /// <summary>Whether a control or visual is hidden.</summary>
     public bool IsHidden(string name) => Find(name)?.Hidden ?? false;

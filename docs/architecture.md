@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (desktop windows showing `.uix` interfaces) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the desktop's menu bar and dock) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (520 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (544 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -38,10 +38,11 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Desktop:** `desktop` opens a graphical desktop with movable windows
-  that show `.uix` interfaces, starting with About VentureOS.
+- **Desktop:** `desktop` opens a graphical desktop with a menu bar, a dock
+  that opens the system's apps, and movable windows that show `.uix`
+  interfaces, starting with About VentureOS.
 - **Not built yet:** keeping files across reboots
-  (Blue Water); the desktop's menu bar, dock, and apps in windows (Borealis); CI (removed for now: the kernel doesn't build like a typical .NET project), and published ISOs
+  (Blue Water); apps with windows (Borealis); CI (removed for now: the kernel doesn't build like a typical .NET project), and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -139,7 +140,7 @@ VentureOS/
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
 │  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
-│  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, UIView, windows, and DesktopSession
+│  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, UIView, windows, the menu bar, the dock, and DesktopSession
 │  └─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with the menus feature
 │  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
@@ -477,7 +478,7 @@ flowchart LR
 | `open <app>` | Opens an app from `/mnt/system/apps` by name, or any `.app` by path |
 | `close <app>` | Closes an open app, undoing what it set up |
 | `apps` | Lists the system's apps, and which are open |
-| `desktop [interface.uix...]` | Opens the desktop, with any `.uix` files as windows; Esc goes back to the shell |
+| `desktop [interface.uix...]` | Opens the desktop, with any `.uix` files as windows; Ctrl+Shift+Q goes back to the shell |
 | `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
 | `ls [-l] [folder...]` | Lua script: lists a folder, folders marked with `/`; `-l` adds type and size |
 | `cat <file...>` | Lua script: prints files |
@@ -694,7 +695,8 @@ nothing else, the five standard entities, and numeric character references.
 A `DOCTYPE`, text, deeper nesting, CDATA, or an unknown entity is refused
 with its line.
 
-**The desktop.** `desktop` switches the screen to graphics until Esc. The
+**The desktop.** `desktop` switches the screen to graphics until VentureOS ▸
+Return to Shell (Ctrl+Shift+Q). The
 layout and drawing live in `Venture.OS.Desktop` and draw through `IPainter`,
 so they're tested against a painter that records pixels; the kernel's
 `CanvasPainter` draws on Cosmos's full-screen canvas, with Open Sans for the
@@ -716,6 +718,30 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   pointer. Each window shows a `UIView`, which places a `.uix` document's
   controls as Hudini does, draws them, and turns input into Hudini's events
   (pressed, submitted, changed, selected), which the window's owner handles.
+- **Menu bar.** `MenuBar` shows the VentureOS menu (About VentureOS, Return
+  to Shell), then the active app's menu (Quit, Ctrl+Q), then the focused
+  window's own `.uix` menus. The active app is the app of the window last
+  brought forward, or the app last opened from the dock. Clicking or
+  press-drag-release chooses; Alt and a menu's hotkey opens it; the arrows,
+  Enter, item hotkeys, and Esc work while a menu is open, and an open menu
+  takes every key and the click that closes it. Shortcuts match from
+  anywhere, the desktop's own first. A chosen window item reaches the window
+  as a pressed event with the item's name, and items are disabled and
+  checked by name through the window's `UIView`. Titles and items are laid
+  out when drawn, so the pointer hits what was last on screen.
+- **Dock.** `Dock` shows the system's apps (`AppManager.Available`) as
+  colored tiles with their initial, since images aren't drawn yet, with a
+  dot under open ones and the name over the one under the pointer. A click
+  opens the app from the current folder, or brings an open one forward.
+- **App output.** An app keeps the output it opened with, and the console
+  would draw over the desktop, so apps opened from the dock write to a
+  `HeldOutput`. What they say while opening or quitting shows in a
+  `DesktopAlert` window; when the desktop closes, anything left is printed
+  and later lines go straight to the shell.
+- **Input order.** The open menu, then shortcuts and menu hotkeys, then the
+  bar, the dock, and the windows. A press belongs to what it landed on until
+  release. Windows ask to close with `RequestClose`, and the window manager
+  closes them at the end of the frame.
 - **Opening.** `desktop` opens About VentureOS, from
   `/mnt/system/interfaces/about.uix` with the version filled in, and each
   `.uix` named on the command line, which previews an interface while it's
@@ -835,6 +861,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | The menu bar and dock (§2, §9): the VentureOS menu, the active app's menu, and the focused window's `.uix` menus with hotkeys and shortcuts; a dock that opens the system's apps; app output held while the desktop shows. Ctrl+Shift+Q, not Esc, returns to the shell. |
 | 2026-11-11 | minor | CI removed for now (§2, §11, §12): the kernel doesn't build like a typical .NET project. The desktop's sky loses its bubbles. |
 | 2026-11-11 | minor | Desktop windows (§2, §9, §11): windows show `.uix` interfaces through `UIView`, About VentureOS opens with the desktop, `desktop` previews `.uix` files, and translucent fills blend. CI moved to `dotnet.yml`, which builds the solution and runs the tests. |
 | 2026-11-11 | minor | The desktop (§2, §9): `desktop` draws the sky and pointer through `IPainter` with the system fonts, at 1024x768, and Esc returns to the shell. |
