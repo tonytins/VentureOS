@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the `lua` prompt as an owner, `venture.shell`, and `!`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (RAM-first goals; the desktop direction) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -34,8 +34,8 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** `.app` bundles (Saluki); persistent storage
-  (Blue Water); a CI boot check, ARM64 builds in CI, and published ISOs
+- **Not built yet:** file commands (Blue Water); `.app` bundles (Saluki); a
+  desktop (Borealis); a CI boot check, ARM64 builds in CI, and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -51,8 +51,11 @@ the code wins and this page is out of date.
   standards because I use it myself.
 - First a usable shell OS (the alpha gate): reliable boot, a shell with
   arguments, and commands to inspect and control the system.
-- Later: persistent files, networking, Lua scripting, ARM64, and published
-  ISOs.
+- Then: a system that runs from RAM, extended in Lua: script commands, a
+  system library, and apps that open and close cleanly as owners.
+- Later: a Tiger-style desktop with `.uix` (UIScript) interfaces, files,
+  networking, ARM64, and published ISOs. Keeping changes across reboots is
+  optional.
 
 **Principles**
 
@@ -375,9 +378,10 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
   the kernel, and edits made on the running system are lost at reboot.
   Cosmos's FAT16 keeps long file names (a 23-character name was read back in
   a boot test) and ignores case when looking names up.
-- **Not built yet:** mounting a real disk, and file commands (Blue Water,
-  after alpha). Whether VentureOS formats blank disks itself is an open
-  decision (§13).
+- **Not built yet:** file commands (Blue Water). VentureOS runs from RAM, as
+  many small systems do; keeping changes on a disk is later and optional,
+  and whether VentureOS formats blank disks itself is an open decision
+  (§13). `cosmos run --disk <image>` attaches a disk when that work starts.
 
 ---
 
@@ -680,6 +684,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | Direction (§1, §7): VentureOS runs from RAM, with persistence later and optional; the desktop will use `.uix` (UIScript) interfaces. |
 | 2026-11-10 | minor | The `lua` prompt as an owner (§9): its commands vanish on `exit`; `!` and `venture.shell` run shell commands, nested at most 8 deep. |
 | 2026-11-10 | minor | Owners and `venture.command` (§9): `init.lua` runs as a `LuaOwner` and can register commands under the new `shell` scope; they're undone if it fails, and only user-typed code may replace system scripts. |
 | 2026-11-10 | minor | The system library (§2, §9): `require` loads from `/mnt/system/lib`, and `venture.args` parses a command's arguments and options with a generated `--help`. |

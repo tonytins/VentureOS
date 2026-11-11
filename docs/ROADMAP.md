@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Saluki: the `lua` prompt as an owner) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** major (RAM-first: Blue Water is files, persistence later; apps ship with the system; Borealis scoped as a UIScript desktop) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,8 +36,15 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Persistent storage** (Blue Water), then **apps, part 2** (Saluki):
-   `.app` bundles that install and uninstall without a reboot.
+1. **Files** (Blue Water): file commands on the RAM disk, the first users of
+   `venture.args`.
+2. **Apps** (Saluki): `.app` bundles shipped with the system, opened and
+   closed as owners, text-mode first.
+3. **Desktop** (Borealis): a UIScript reader, drawing and a frame loop, then
+   windows from `.uix` files and a window manager.
+
+VentureOS runs from RAM, as many small systems do; keeping changes across
+reboots is later, optional work (Blue Water).
 
 ## Every stage
 
@@ -61,20 +68,21 @@ fit, rather than waiting on a route.
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
 | Wolverine | System library | 100% | 0 | Shared Lua modules in `/mnt/system/lib`, loaded with `require`; `venture.args` parses arguments and options with a generated `--help` |
-| Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
+| Blue Water | Files | 0% | 8–15 | File commands on the RAM disk now; an optional save to disk later |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
-| Saluki | Apps | 60% | 10–20 | Runtime commands with undo, then `.app` bundles (installs wait on Blue Water) |
-| Borealis | GUI (possible) | 0% | — | Unscoped: a desktop after the classic Mac OS X look |
-| | **Total** | | **≈ 35–70**, plus every-stage work (≈ 14–28) | |
+| Saluki | Apps | 60% | 8–16 | Runtime commands with undo are done; `.app` bundles shipped with the system, opened and closed as owners |
+| Borealis | Desktop | 0% | 40–80 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock |
+| | **Total** | | **≈ 66–131**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | File commands, then mounting a real disk | Blue Water | 15–30 |
-| 2 | `.app` bundles | Saluki | 10–20 |
-| 3 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | File commands on the RAM disk | Blue Water | 6–10 |
+| 2 | `.app` bundles shipped with the system | Saluki | 8–16 |
+| 3 | A UIScript reader, then drawing and a frame loop | Borealis | 15–30 |
+| 4 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
 about 20–40 hours.
@@ -118,12 +126,17 @@ scripts and apps.
 The former Wolverine checklist (the test project, now done, and CI checks)
 became the every-stage list above.
 
-### Blue Water: Persistent storage
+### Blue Water: Files
+
+VentureOS runs from RAM, as Tiny Core, Puppy Linux, and most live CDs do.
+Files come first; keeping them across reboots is later and optional.
 
 - [ ] File commands on the RAM disk: `ls`, `cat`, `write`, `mkdir`, `rm`,
-  `cd`, `pwd`, and `df`.
-- [ ] Mount a FAT partition from a real disk at boot, as an optional step.
-- [ ] Decide whether VentureOS formats blank disks itself.
+  `cd`, `pwd`, and `df`, with options through `venture.args`.
+- [ ] The `files` scope, so scripts declare file access with `-- Needs:`.
+- [ ] Later: keep changes on a disk when one is attached, as a save file
+  beside the RAM system; `cosmos run --disk <image>` attaches one.
+- [ ] Later: decide whether VentureOS formats blank disks itself.
 
 ### Pere Marquette: Networking
 
@@ -166,25 +179,39 @@ removing the component runs them, newest first.
   do. Only code the user types may replace a system script command.
 - [x] The `lua` prompt as an owner, and running shell commands from it
   (`venture.shell` and `!`).
-- [ ] `.app` bundles: install and uninstall without a reboot, declaring
-  `-- Needs:` for the whole app. Waits on Blue Water, since an install has
-  to outlive a reboot.
+- [ ] `.app` bundles shipped with the system, in `/mnt/system/apps/`:
+  opening one makes it an owner, closing it runs its undos. One
+  `-- Needs:` for the whole app. Text-mode apps first.
+- [ ] Later, with persistence: apps installed from outside the system image.
 
-### Borealis: GUI (possible)
+### Borealis: Desktop
 
-Not scoped yet. The idea, from my notes: an experimental desktop after the
-classic Mac OS X look, with `.app` bundles (Saluki) as its applications.
+An experimental desktop after the classic Mac OS X Tiger look: a glossy menu
+bar, a blue desktop, pale gradient title bars with a red close button, and a
+dock with a dot under each running app. Distro Tycoon 2's interface is the
+reference. Interfaces are written in UIScript, the format from Hudini, in
+`.uix` files; its spec is a Draft and lives in Hudini, and both readers test
+against the same examples. In UIScript the host owns data, actions, and text,
+which here is an app's Lua code.
 
-- [ ] Decide whether, and what the first version shows.
+- [ ] A UIScript reader in `Venture.OS.Common`, tested against Hudini's
+  examples (`System.Xml` if Cosmos supports it, otherwise a reader for its
+  flat subset).
+- [ ] Drawing on Cosmos's `Canvas`, with a frame loop beside the text shell.
+- [ ] Windows from `.uix` files, driven from Lua (`venture.ui`), each an
+  owner effect that closes with its app.
+- [ ] A window manager, the menu bar, and the dock.
+- [ ] Terminal.app: the shell in a window.
 
 ## Critical path
 
-Cascades, Hiawatha, and Illini are done. Wolverine's `venture.args` comes
-first because Blue Water's file commands (`ls -l`, `rm -r`) are its first
-real users. Saluki's runtime commands need only Illini, but `.app` installs
-need Blue Water, since an install has to outlive a reboot. Borealis would
-build on Saluki's apps. New kernel-free logic still goes into
-`Venture.OS.Common` with tests. The long poles are Blue Water and Saluki.
+Cascades, Hiawatha, Illini, and Wolverine are done, and so are Saluki's
+runtime commands. Blue Water's file commands come next, as the first real
+users of `venture.args`. Because VentureOS runs from RAM, `.app` bundles ship
+with the system and don't wait on persistence. Borealis builds on Saluki's
+apps, which become its windows. New kernel-free logic, such as the UIScript
+reader, still goes into `Venture.OS.Common` with tests. The long pole is
+Borealis.
 
 ## Risks most likely to push estimates up
 
@@ -204,6 +231,7 @@ build on Saluki's apps. New kernel-free logic still goes into
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | major | RAM-first: Blue Water is now files, with persistence later and optional; `.app` bundles ship with the system, so they no longer wait on it; Borealis is scoped as a Tiger-style desktop with `.uix` (UIScript) interfaces, after Distro Tycoon 2. About 66–131 h of milestones remain, plus 14–28 h every-stage. |
 | 2026-11-10 | minor | Saluki 60%: the `lua` prompt is an owner, with `!` and `venture.shell`. Runtime commands are done; `.app` bundles wait on Blue Water, which is now the current focus. |
 | 2026-11-10 | minor | Saluki 50%: owners with undo, and `venture.command` for `init.lua`. The `lua` prompt as an owner is next. |
 | 2026-11-10 | minor | Wolverine complete: the system library in `/mnt/system/lib` and `venture.args`. Saluki's runtime commands are the current focus; about 41–82 h of milestones remain. |
