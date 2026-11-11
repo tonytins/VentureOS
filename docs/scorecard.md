@@ -17,8 +17,9 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 18 | 0 | 0 | 10 built-in commands, plus 10 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 401 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 480 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
+| [Desktop](#desktop) | 1 | 0 | 4 | Phase 1 of 5 toward 0.3 |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 2 open, 3 resolved |
 
@@ -120,6 +121,16 @@ output stays on the console.
 | DOC-3 | Every declaration has a documentation comment where its name isn't enough | partial | `KernelPanic`, `BootRamDisk`, the boot steps, and `BuildNumber` have them; `VentureKernel.OnBoot` doesn't |
 | DOC-4 | An architecture overview in `docs/` | done | `docs/architecture.md`, written 2026-10-15 |
 | DOC-5 | A guide to writing apps, whose examples are tested | done | `docs/writing-apps.md`; `WritingAppsTutorialTests` builds and runs its Dice app from the guide's code blocks (2026-11-11) |
+
+## Desktop
+
+| Id | Target | Status | Evidence |
+|---|---|---|---|
+| DESK-1 | `.uix` (UIScript) documents are read with Hudini's rules, plus the `menus` feature | done | `Interface/UIScript.cs`; 79 tests, including Hudini's five examples; removing the button-only image rule fails one. A boot probe 2026-11-11 read a document with menus, a fractional window size, a style, a slider binding, and an unknown attribute, and refused a control without a size |
+| DESK-2 | `desktop` switches to graphics and back | missing | Phase 2 |
+| DESK-3 | Tiger-style windows show `.uix` interfaces and handle input | missing | Phase 3 |
+| DESK-4 | A global menu bar and a dock | missing | Phase 4 |
+| DESK-5 | Apps open windows through `venture.ui`, and quit when their last one closes | missing | Phase 5 |
 
 ## Distribution
 

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- An original options panel. The demo host owns what these settings mean. -->
+<UIScript version="1">
+  <Window width="1024" height="160"/>
+
+  <String name="title" table="DemoText:3" index="1"/>
+  <String name="musicText" table="DemoText:3" index="2"/>
+  <String name="soundText" table="DemoText:3" index="3"/>
+  <String name="volumeTip" table="DemoText:3" index="4"/>
+  <String name="moveLotText" table="DemoText:3" index="5"/>
+  <String name="accentText" table="DemoText:3" index="6"/>
+  <String name="accentTip" table="DemoText:3" index="7"/>
+
+  <Style name="heading" textColor="#FFF99D" fontSize="14"/>
+  <Style name="label" textColor="#FFF99D" fontSize="12"/>
+
+  <Text name="titleLabel" x="180" y="14" width="300" height="18" style="heading" string="title"/>
+
+  <Text name="musicLabel" x="180" y="50" width="100" height="14" style="label" string="musicText"/>
+  <Slider name="music" x="290" y="50" width="260" height="14" maxValue="100" tooltip="volumeTip"/>
+  <Text name="musicValue" x="562" y="50" width="60" height="14" style="label"/>
+
+  <Text name="soundLabel" x="180" y="80" width="100" height="14" style="label" string="soundText"/>
+  <Slider name="sound" x="290" y="80" width="260" height="14" maxValue="100" tooltip="volumeTip"/>
+  <Text name="soundValue" x="562" y="80" width="60" height="14" style="label"/>
+
+  <Button name="moveLot" x="660" y="50" width="120" height="24" string="moveLotText"/>
+  <Button name="accent" x="660" y="80" width="120" height="24" string="accentText" tooltip="accentTip"/>
+</UIScript>

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (`Notes.app`, and the app tutorial) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the UIScript reader, with menus) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -136,6 +136,7 @@ VentureOS/
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
 │  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
+│  └─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with the menus feature
 │  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
 │  │     └─ VentureLibrary.cs   the `venture` table
@@ -686,6 +687,17 @@ nothing else, the five standard entities, and numeric character references.
 A `DOCTYPE`, text, deeper nesting, CDATA, or an unknown entity is refused
 with its line.
 
+**Interfaces.** `UIScript` reads `.uix` documents in the format Hudini
+defines (a Draft, version 1), with the same rules as Hudini's reader:
+version and `requires` are checked first; unknown elements refuse the
+document and unknown attributes are listed; references, sizes, and
+per-control attributes are validated, so a document reads completely or not
+at all. It's tested against Hudini's five example documents, copied into the
+tests with Hudini's license. VentureOS adds one feature, `menus`
+(`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with hotkeys and Ctrl or Alt
+shortcuts), drafted in [uiscript-menus.md](./uiscript-menus.md) for Hudini
+to take up. Nothing draws documents yet (Borealis).
+
 **Apps.** `AppManager` opens, closes, and lists `.app` bundles. Opening one
 reads its bundle, makes an owner named after the app with the app's `needs`,
 and runs its `main` script from the current folder, stopped by Ctrl+C, Esc,
@@ -782,6 +794,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Interfaces (§2, §9): a UIScript reader matching Hudini's, tested on its examples, with a `menus` feature drafted for Hudini. |
 | 2026-11-11 | minor | `Notes.app` ships in `/mnt/system/apps` (§2, §9), with a tested tutorial in `docs/writing-apps.md`. The missing-scope error now names both places a scope is declared. |
 | 2026-11-11 | minor | Apps (§9): `open`, `close`, and `apps`; each app is an owner with its declared `needs`, `venture.app`, and its own modules first for `require`. |
 | 2026-11-11 | minor | Bundles (§1.1, §2, §9): macOS-style `Contents/Info.xml`, read by `Bundle.Read` through `FlatXml`, since `System.Xml` doesn't link under Cosmos 3.0.94. |

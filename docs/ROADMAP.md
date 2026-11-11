@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the desktop will be version 0.3) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** major (Borealis planned in phases; phase 1, the UIScript reader, done) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -68,7 +68,7 @@ fit, rather than waiting on a route.
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
-| Borealis | Desktop | 0% | 40–80 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock |
+| Borealis | Desktop | 20% | 35–70 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock |
 | | **Total** | | **≈ 66–131**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
@@ -196,17 +196,29 @@ reference. Interfaces are written in UIScript, the format from Hudini, in
 against the same examples. In UIScript the host owns data, actions, and text,
 which here is an app's Lua code.
 
-- [ ] A UIScript reader in `Venture.OS.Common`, tested against Hudini's
-  examples (`System.Xml` if Cosmos supports it, otherwise a reader for its
-  flat subset).
-- [ ] Drawing on Cosmos's `Canvas`, with a frame loop beside the text shell.
-- [ ] Windows from `.uix` files, driven from Lua (`venture.ui`), each an
-  owner effect that closes with its app.
-- [ ] A window manager, the menu bar, and the dock.
-- [ ] Terminal.app: the shell in a window.
+Version 0.3 is a complete desktop that can launch an `.app`, reached from
+the shell with a `desktop` command, at 1024×768. Its text is set in Open Sans,
+and Terminal.app's in Fira Code, both shipped with their own licenses. In
+phases:
+
+- [x] Phase 1, the UIScript reader: `.uix` files read with Hudini's rules,
+  tested against Hudini's examples, plus a `menus` feature
+  ([draft](./uiscript-menus.md)) for the global menu bar.
+- [ ] Phase 2, drawing and `desktop`: graphics mode, a frame loop, the blue
+  desktop and pointer, and a way back to the shell.
+- [ ] Phase 3, windows: Tiger-style frames (title bar, close dot, dragging,
+  focus, stacking) and a UIScript view that lays out, draws, and handles
+  input.
+- [ ] Phase 4, the menu bar and dock: the VentureOS menu, the app's menu,
+  then the focused window's menus, with Alt and Ctrl shortcuts; a dock that
+  opens apps and marks the open ones.
+- [ ] Phase 5, apps with windows: `venture.ui` and the `ui` scope; an app
+  quits when its last window closes; Notes gets a window.
 
 When the desktop is up and running, VentureOS moves to version 0.3 (a new
-base in `GitInfo.txt`), by my decision.
+base in `GitInfo.txt`), by my decision. Right after it:
+
+- [ ] Terminal.app: the shell in a window.
 
 ## Critical path
 
@@ -236,6 +248,7 @@ Borealis.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | major | Borealis planned in five phases to 0.3 (a `desktop` command, 1024×768, Open Sans and Fira Code), with Terminal.app right after; menus join UIScript as a `menus` feature. Phase 1, the UIScript reader, is done. |
 | 2026-11-11 | minor | The desktop (Borealis) will mark version 0.3. |
 | 2026-11-11 | minor | Saluki 90%: `Notes.app` ships, with a tested guide to writing apps. Only installing apps from outside the system remains, after persistence; Borealis is the current focus. |
 | 2026-11-11 | minor | Saluki 80%: `open`, `close`, and `apps`; apps run as owners with their declared needs. A shipped `Notes.app` is next. |

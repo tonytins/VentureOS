@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- An original window for moving to another lot, drawn in a WindowFrame with no close button.
+     The demo host owns the lots and what the key means. -->
+<UIScript version="1">
+  <Window width="300" height="190"/>
+
+  <String name="pickText" table="DemoText:6" index="2"/>
+  <String name="keyText" table="DemoText:6" index="3"/>
+  <String name="cancelText" table="DemoText:6" index="4"/>
+  <String name="moveText" table="DemoText:6" index="5"/>
+  <String name="keyTip" table="DemoText:6" index="6"/>
+
+  <Style name="label" textColor="#FFF99D" fontSize="12"/>
+
+  <Text name="pickLabel" x="12" y="10" width="200" height="14" style="label" string="pickText"/>
+  <List name="lotChoices" x="12" y="28" width="258" height="88" selectable="true"/>
+  <Slider name="lotScroll" x="272" y="28" width="14" height="88" scrolls="lotChoices"/>
+
+  <Text name="keyLabel" x="12" y="128" width="40" height="14" style="label" string="keyText"/>
+  <TextField name="lotKey" x="60" y="124" width="226" height="22" secure="true"
+             maximumLength="24" tooltip="keyTip"/>
+
+  <Button name="moveCancel" x="96" y="156" width="90" height="24" string="cancelText"/>
+  <Button name="moveConfirm" x="196" y="156" width="90" height="24" string="moveText"/>
+</UIScript>

@@ -10,6 +10,7 @@ system written in C# and based on the [Cosmos](https://github.com/CosmosOS/Cosmo
 - [Roadmap](./ROADMAP.md): the alpha gate, current focus, milestones with estimates, ranked work, and risks.
 - [Scorecard](./scorecard.md): verified status of every area, with the evidence for each row, and known issues.
 - [Writing apps](./writing-apps.md): make an `.app` that adds commands to the shell, step by step.
+- [UIScript menus](./uiscript-menus.md): the draft `menus` feature for `.uix` documents.
 
 ## AI Disclaimer
 

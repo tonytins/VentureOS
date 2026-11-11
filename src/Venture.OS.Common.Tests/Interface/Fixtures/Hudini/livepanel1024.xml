@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  A live mode panel based on the positions in TSO's live panel UIScript.
+  The demo host owns the needs, people, and images, and generates placeholder art
+  for each image path here. Buttons and visuals without a size take it from their
+  image.
+-->
+<UIScript version="1">
+  <!-- The reference declares no window size. This is the smallest that holds the controls. -->
+  <Window width="1024" height="160"/>
+
+  <Image name="moodPositive" path="demo/moodPositive"/>
+  <Image name="moodNegative" path="demo/moodNegative"/>
+  <Image name="moodPanel" path="demo/moodPanel" stateCount="4"/>
+  <Image name="previousPage" path="demo/previousPage" stateCount="4"/>
+  <Image name="nextPage" path="demo/nextPage" stateCount="4"/>
+  <Image name="peopleListBackground" path="demo/peopleListBackground"/>
+  <Image name="divider" path="demo/divider"/>
+  <Image name="eodHelp" path="demo/eodHelp" stateCount="4"/>
+  <Image name="eodClose" path="demo/eodClose" stateCount="4"/>
+  <Image name="eodExpand" path="demo/eodExpand" stateCount="4"/>
+  <Image name="eodContract" path="demo/eodContract" stateCount="4"/>
+
+  <String name="previousPageTooltip" table="DemoText:1" index="1"/>
+  <String name="nextPageTooltip" table="DemoText:1" index="2"/>
+  <String name="needs" table="DemoText:1" index="3"/>
+  <String name="eodHelpTooltip" table="DemoText:1" index="4"/>
+  <String name="eodCloseTooltip" table="DemoText:1" index="5"/>
+  <String name="eodTimerTip" table="DemoText:1" index="6"/>
+  <String name="eodExpandTooltip" table="DemoText:1" index="8"/>
+  <String name="eodContractTooltip" table="DemoText:1" index="9"/>
+  <String name="statusBarTimerTooltip" table="DemoText:1" index="10"/>
+
+  <Style name="markedButton" textColor="#FFFFFF" fontSize="14"/>
+  <Style name="panelText" textColor="#FFF99D" fontSize="12"/>
+  <Style name="timerEntry" textColor="#FFF99D" backgroundColor="#000000" borderColor="#F7D025" fontSize="10"/>
+  <Style name="messageWindow" textColor="#FFF99D" backgroundColor="#17212A" fontSize="12"/>
+  <Style name="statusBarMessage" textColor="#FFF99D" backgroundColor="#17212A" fontSize="10"/>
+
+  <Visual name="moodPositiveImage" image="moodPositive" x="69" y="11"/>
+  <Visual name="moodNegativeImage" image="moodNegative" x="31" y="11"/>
+  <Visual name="dividerImage" image="divider" x="140" y="49"/>
+  <Visual name="peopleListBackgroundImage" image="peopleListBackground" x="375" y="38"/>
+
+  <!-- Needs -->
+  <Text name="needsLabel" legacyID="11" x="163" y="42" width="160" height="16" style="panelText" string="needs"/>
+  <Button name="moodPanel" x="31" y="63" image="moodPanel"/>
+  <Region name="motives" x="165" y="59" width="205" height="100"/>
+
+  <!-- People -->
+  <Button name="previousPage" legacyID="12" x="386" y="63" image="previousPage" tooltip="previousPageTooltip"/>
+  <Button name="nextPage" legacyID="13" x="828" y="63" image="nextPage" tooltip="nextPageTooltip"/>
+  <Region name="peopleList" x="409" y="51" width="441" height="34"/>
+
+  <!-- Controls for an object's interface, which overlap the status bar. The host shows one set at a time. -->
+  <Button name="eodHelp" legacyID="14" x="596" y="87" image="eodHelp" tooltip="eodHelpTooltip" text="?" style="markedButton"/>
+  <Button name="eodClose" legacyID="15" x="589" y="0" image="eodClose" tooltip="eodCloseTooltip" text="X" style="markedButton"/>
+  <Button name="eodExpand" legacyID="17" x="150" y="-1" image="eodExpand" tooltip="eodExpandTooltip" text="^" style="markedButton"/>
+  <Button name="eodContract" legacyID="18" x="150" y="-1" image="eodContract" tooltip="eodContractTooltip"/>
+  <TextField name="timerEntry" legacyID="100" x="526" y="13" width="50" height="15"
+             style="timerEntry" tooltip="eodTimerTip" maximumLength="8" readOnly="true"/>
+  <List name="messageWindow" legacyID="102" x="190" y="7" width="317" height="20" style="messageWindow"/>
+
+  <!-- Status bar -->
+  <TextField name="statusBarTimerEntry" legacyID="101" x="752" y="12" width="50" height="15"
+             style="timerEntry" tooltip="statusBarTimerTooltip" maximumLength="8" readOnly="true"/>
+  <List name="statusBarMessageWindow" legacyID="103" x="410" y="9" width="315" height="18" style="statusBarMessage"/>
+</UIScript>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- An original property statistics panel. The demo host supplies each score. -->
+<UIScript version="1">
+  <Window width="1024" height="160"/>
+
+  <String name="title" table="DemoText:2" index="1"/>
+  <String name="gardenText" table="DemoText:2" index="2"/>
+  <String name="kitchenText" table="DemoText:2" index="3"/>
+  <String name="livingRoomText" table="DemoText:2" index="4"/>
+  <String name="bedroomText" table="DemoText:2" index="5"/>
+  <String name="scoreTip" table="DemoText:2" index="6"/>
+
+  <Style name="heading" textColor="#FFF99D" fontSize="14"/>
+  <Style name="label" textColor="#FFF99D" fontSize="12"/>
+  <Style name="score" backgroundColor="#17212A" borderColor="#3A5068" fillColor="#4CAF60"/>
+
+  <Text name="titleLabel" x="180" y="14" width="300" height="18" style="heading" string="title"/>
+
+  <Text name="gardenLabel" x="180" y="42" width="100" height="14" style="label" string="gardenText"/>
+  <ProgressBar name="garden" x="290" y="42" width="260" height="14" style="score" maxValue="100" tooltip="scoreTip"/>
+  <Text name="kitchenLabel" x="180" y="68" width="100" height="14" style="label" string="kitchenText"/>
+  <ProgressBar name="kitchen" x="290" y="68" width="260" height="14" style="score" maxValue="100" tooltip="scoreTip"/>
+  <Text name="livingRoomLabel" x="180" y="94" width="100" height="14" style="label" string="livingRoomText"/>
+  <ProgressBar name="livingRoom" x="290" y="94" width="260" height="14" style="score" maxValue="100" tooltip="scoreTip"/>
+  <Text name="bedroomLabel" x="180" y="120" width="100" height="14" style="label" string="bedroomText"/>
+  <ProgressBar name="bedroom" x="290" y="120" width="260" height="14" style="score" maxValue="100" tooltip="scoreTip"/>
+</UIScript>

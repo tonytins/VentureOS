@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A property chat window. The demo host owns the conversation. -->
+<UIScript version="1">
+  <Window width="400" height="255" minWidth="350" minHeight="196"/>
+
+  <Style name="history" textColor="#FFF99D" backgroundColor="#101820" fontSize="14"/>
+  <Style name="entry" textColor="#FFF99D" backgroundColor="#000000" borderColor="#FAD31C" fontSize="14"/>
+  <Style name="scrollButton" textColor="#FFF99D" highlightedTextColor="#FFFFFF" selectedTextColor="#00F3F7"
+         backgroundColor="#37485A" borderColor="#778899" fontSize="12"/>
+  <Style name="scrollTrack" backgroundColor="#17212A" borderColor="#778899"/>
+
+  <List name="chatHistory" legacyID="1" x="40" y="45" width="310" height="150" style="history"/>
+
+  <Slider name="chatHistorySlider" legacyID="2" x="366" y="52" width="10" height="138"
+          style="scrollTrack" scrolls="chatHistory"/>
+
+  <Button name="scrollUp" legacyID="3" x="362" y="30" width="18" height="18"
+          style="scrollButton" text="^" scrolls="chatHistory" direction="up"/>
+  <Button name="scrollDown" legacyID="4" x="362" y="194" width="18" height="18"
+          style="scrollButton" text="v" scrolls="chatHistory" direction="down"/>
+
+  <TextField name="chatEntry" legacyID="5" x="52" y="216" width="299" height="22"
+             style="entry" placeholder="Type a message..." maximumLength="120"/>
+</UIScript>
