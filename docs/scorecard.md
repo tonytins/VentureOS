@@ -17,10 +17,10 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 16 | 0 | 0 | 7 built-in commands, plus 10 Lua script commands |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 309 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 365 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
-| [Known issues](#known-issues) | | | | 1 open, 3 resolved |
+| [Known issues](#known-issues) | | | | 2 open, 3 resolved |
 
 Kernel-free code in `Venture.OS.Common` is covered by tests
 (`dotnet test --project src/Venture.OS.Common.Tests`). Everything else is
@@ -136,3 +136,4 @@ output stays on the console.
 | BUG-2 | VentureOS's console output doesn't reach the serial log | resolved | System messages go through `KernelLog` to serial and the console (BOOT-7); command output stays console-only by design |
 | BUG-3 | `DhcpClient.SendDiscoverPacket()` returning `-1` for a timeout was an assumption | resolved | Confirmed by the Cosmos network docs |
 | BUG-4 | A boot occasionally faults inside Cosmos's APIC setup, before any VentureOS code runs | open | Seen twice in about 40 x64 boots under QEMU on 2026-11-06 and 2026-11-10 (Cosmos 3.0.94): `[INT] FATAL: Exception 13` right after `[LegacyPIC] Remapping and disabling 8259 PIC...`. Not reproduced on demand: 8 of 8 boots of the same build succeeded straight after. Outside VentureOS's control; worth reporting to Cosmos if it recurs |
+| BUG-5 | Non-ASCII text is garbled in the serial log | open | Seen 2026-11-11: a boot probe logged `café` as `caf�` through `KernelLog`, though the text itself was right. Likely how characters reach the serial port; console output is unaffected. Only matters for reading headless logs |

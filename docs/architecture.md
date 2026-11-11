@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (`venture.files` and the file commands) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (bundles and the flat XML reader) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (309 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (365 tests, including runs of
   the shipped scripts and library).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -100,6 +100,7 @@ grow):
 | **Version pins** | `Cosmos.Sdk` and the `Cosmos.*` packages move together, in a change of their own, with a build and a headless boot. | `Venture.OS.csproj` |
 | **Docs drift** | Check an API exists in the pinned version before using it; the build is the quickest check. | [cosmos-gen3 skill](../.agents/skills/cosmos-gen3/SKILL.md) |
 | **Experimental APIs** | Each one needs an explicit `<NoWarn>` and a deliberate decision from me, so a seam can't creep in unnoticed. | `Venture.OS.csproj` |
+| **Missing runtime pieces** | Not all of .NET links under Cosmos. `System.Xml` doesn't in 3.0.94 (it needs `RhGetMaxGcGeneration`, which Cosmos's runtime lacks), so VentureOS reads XML with its own `FlatXml`. Prefer explicit code over reflection-backed helpers such as `Enum.GetValues`. The kernel build, not `Venture.OS.Common`'s analyzers, is what finds these. | `Venture.OS.Common/Xml/` |
 
 The test: **a Cosmos upgrade should touch `GlobalUsings.cs`, `Startup/`,
 and the project file, and nothing in the shell.**
@@ -133,6 +134,8 @@ VentureOS/
 │  │     ├─ RuntimeCommands.cs  commands registered with venture.command, and who may take which name
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
+│  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
+│  └─ Bundles/Bundle.cs      Venture.OS.Bundles: reads a bundle's Contents/Info.xml
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
 │  │     └─ VentureLibrary.cs   the `venture` table
 │  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
@@ -650,6 +653,34 @@ Keys typed while a script runs are read by the check and discarded.
 Cosmos's limits apply: local time is UTC, `os.getenv` returns nil, and there
 is no `io.popen` or `/tmp`.
 
+**Bundles.** Like macOS, VentureOS treats some folders as one thing, with the
+same shape for every kind:
+
+```text
+Notes.app/
+└── Contents/
+    ├── Info.xml      <App version="1"><Info identifier=... name=... /></App>
+    ├── Lua/          code; main.lua runs when an app opens
+    └── Resources/    images, .uix interfaces, and so on
+```
+
+The root element names the kind: `<App>` (`.app`), and later `<Theme>`
+(`.theme`) and `<Library>` (`.library`). `Bundle.Read` checks the kind, so
+handing a theme to something expecting an app says so. `<Info>` takes
+`identifier` (required, reverse-DNS), `name` (required), `version`, `needs`
+(scopes for all the bundle's code), `main` (an app's first script, by
+default `Contents/Lua/main.lua`), and `icon`. Paths stay inside the bundle.
+`Info.xml` follows UIScript's compatibility rules: a newer `version`, an
+unknown `requires` feature, or an unknown element refuses the bundle with the
+reason, and an unknown attribute is skipped and listed, to catch typos.
+
+Both `Info.xml` and `.uix` files are read by `FlatXml`, because Cosmos can't
+link `System.Xml` (§1.1). It reads exactly the flat subset they use: an
+optional declaration, comments, one root whose elements hold attributes and
+nothing else, the five standard entities, and numeric character references.
+A `DOCTYPE`, text, deeper nesting, CDATA, or an unknown entity is refused
+with its line.
+
 ---
 
 ## 10. Version and build identity
@@ -724,6 +755,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Bundles (§1.1, §2, §9): macOS-style `Contents/Info.xml`, read by `Bundle.Read` through `FlatXml`, since `System.Xml` doesn't link under Cosmos 3.0.94. |
 | 2026-11-11 | minor | Files (§2, §9): `venture.files` under the new `files` scope, and `ls`, `cat`, `write`, `mkdir`, `rm`, `df`, and `pwd` as Lua commands; `/mnt/system` is read-only to them. `ui` is now the reserved scope. |
 | 2026-11-10 | minor | The current folder (§9): the shell keeps one, the prompt shows it, `cd` changes it, and Lua runs from it. |
 | 2026-11-10 | minor | Direction (§1, §7): VentureOS runs from RAM, with persistence later and optional; the desktop will use `.uix` (UIScript) interfaces. |

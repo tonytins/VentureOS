@@ -20,7 +20,8 @@ Every .NET project lives in its own folder under `src/` and is listed in
   in `Venture.OS.csproj`.
 - `src/Venture.OS.Common` is kernel-free code: the shell framework
   (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and
-  Lua system support (`Scripting/`). It must never reference the Cosmos
+  Lua system support (`Scripting/`), the flat XML reader (`Xml/`), and bundles
+  (`Bundles/`). It must never reference the Cosmos
   kernel; `Cosmos.Executable.Lua` is allowed, since it runs on ordinary .NET.
 - `src/Venture.OS.Common.Tests` covers `Venture.OS.Common` with xUnit v3.
 
