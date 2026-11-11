@@ -20,7 +20,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Reliability](#reliability) | 3 | 1 | 1 | 520 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 3 | 0 | 2 | Phase 3 of 5 toward 0.3; opens in 72 ms at 1024x768 |
-| [Distribution](#distribution) | 1 | 1 | 3 | CI builds the solution with the .NET SDK and runs the tests |
+| [Distribution](#distribution) | 0 | 0 | 5 | No CI for now; tests and builds run locally |
 | [Known issues](#known-issues) | | | | 2 open, 3 resolved |
 
 Kernel-free code in `Venture.OS.Common` is covered by tests
@@ -127,7 +127,7 @@ output stays on the console.
 | Id | Target | Status | Evidence |
 |---|---|---|---|
 | DESK-1 | `.uix` (UIScript) documents are read with Hudini's rules, plus the `menus` feature | done | `Interface/UIScript.cs`; 79 tests, including Hudini's five examples; removing the button-only image rule fails one. A boot probe 2026-11-11 read a document with menus, a fractional window size, a style, a slider binding, and an unknown attribute, and refused a control without a size |
-| DESK-2 | `desktop` switches to graphics and back | done | `DesktopCommand`, `CanvasPainter`, `DesktopSession`, `DesktopBackground`, `Pointer`; 9 tests against a recording painter. Boot test 2026-11-11: the sky, glow, bubbles, and an Open Sans hint at 1024x768, opened in 85 ms; the PS/2 pointer moved, ten moves gave ten redraws and none while still; Esc returned to a working shell |
+| DESK-2 | `desktop` switches to graphics and back | done | `DesktopCommand`, `CanvasPainter`, `DesktopSession`, `DesktopBackground`, `Pointer`; 9 tests against a recording painter. Boot test 2026-11-11: the sky, glow, and an Open Sans hint at 1024x768, opened in 85 ms; the PS/2 pointer moved, ten moves gave ten redraws and none while still; Esc returned to a working shell |
 | DESK-3 | Tiger-style windows show `.uix` interfaces and handle input | done | `UIView`, `DesktopWindow`, `WindowManager`, `about.uix`; tests for placement, drawing, events, focus, dragging, closing, and the shipped interfaces. Boot test 2026-11-11: `desktop t.uix` opened About VentureOS and the preview in 72 ms with shadows and the inactive fade; a click focused the text field and typing showed; the title bar dragged; a click raised About; OK and the close button closed their windows; Esc returned to the shell; a missing file was reported in the shell |
 | DESK-4 | A global menu bar and a dock | missing | Phase 4 |
 | DESK-5 | Apps open windows through `venture.ui`, and quit when their last one closes | missing | Phase 5 |
@@ -136,9 +136,9 @@ output stays on the console.
 
 | Id | Target | Status | Evidence |
 |---|---|---|---|
-| DIST-1 | CI builds x64 on every push and pull request | partial | `.github/workflows/dotnet.yml` builds `src/Venture.slnx` with the .NET SDK and no Cosmos tools; whether the kernel builds there hasn't been confirmed |
-| DIST-5 | CI runs the tests on every push and pull request | done | `.github/workflows/dotnet.yml`, "Test" step; the same commands pass locally |
-| DIST-2 | CI also builds ARM64 | missing | The workflow builds the default architecture only |
+| DIST-1 | CI builds x64 on every push and pull request | missing | The workflow was removed on 2026-11-11 (owner decision): the kernel doesn't build like a typical .NET project |
+| DIST-5 | CI runs the tests on every push and pull request | missing | Removed with the workflow; the tests run locally |
+| DIST-2 | CI also builds ARM64 | missing | No CI |
 | DIST-3 | CI boots the kernel headless and checks it reaches the shell | missing | |
 | DIST-4 | Release ISOs are published | missing | No release workflow |
 

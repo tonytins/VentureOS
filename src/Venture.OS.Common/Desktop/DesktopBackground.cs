@@ -3,11 +3,10 @@ using Venture.OS.Interface;
 namespace Venture.OS.Desktop;
 
 /// <summary>
-/// The desktop's sky: a blue gradient, a soft glow rising from the bottom, and a few glassy bubbles, after Distro
-/// Tycoon 2's desktop and early Aqua.
+/// The desktop's sky: a blue gradient with a soft glow rising from the bottom, after early Aqua.
 /// </summary>
 /// <remarks>
-/// Cosmos's canvas doesn't blend, and the glow and bubbles are translucent, so the whole picture is worked out
+/// Cosmos's canvas doesn't blend, and the glow is translucent, so the whole picture is worked out
 /// once, as pixels, and copied to the screen on every frame.
 /// </remarks>
 public static class DesktopBackground
@@ -17,13 +16,6 @@ public static class DesktopBackground
 
     /// <summary>The bottom of the sky, a pale blue.</summary>
     public static readonly UIColor Bottom = new(180, 211, 242);
-
-    // Where each bubble sits and how big it is, as fractions of the screen's width and height.
-    private static readonly (float X, float Y, float Radius)[] Bubbles =
-    [
-        (0.08f, 0.78f, 0.07f), (0.17f, 0.90f, 0.035f), (0.30f, 0.70f, 0.02f),
-        (0.72f, 0.84f, 0.05f), (0.84f, 0.66f, 0.09f), (0.93f, 0.90f, 0.03f),
-    ];
 
     /// <summary>Works out the sky for a screen, as 0xAARRGGBB pixels row by row.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A size isn't positive.</exception>
@@ -51,22 +43,6 @@ public static class DesktopBackground
                 // A white glow that fades out from below the bottom edge.
                 var glow = Fade(Distance(x, y, glowX, glowY) / glowRadius, 0.55f, 0f);
                 (red, green, blue) = Over(red, green, blue, glow);
-
-                foreach (var (bubbleX, bubbleY, bubbleRadius) in Bubbles)
-                {
-                    var centerX = width * bubbleX;
-                    var centerY = height * bubbleY;
-                    var radius = width * bubbleRadius;
-
-                    // Clear in the middle and whiter at the rim, with a small shine up and to the left.
-                    var body = Distance(x, y, centerX, centerY) / radius;
-                    if (body <= 1)
-                        (red, green, blue) = Over(red, green, blue, Fade(body, 0.04f, 0.28f));
-
-                    var shine = Distance(x, y, centerX - (radius * 0.35f), centerY - (radius * 0.4f)) / (radius * 0.4f);
-                    if (shine <= 1)
-                        (red, green, blue) = Over(red, green, blue, Fade(shine, 0.6f, 0f));
-                }
 
                 pixels[(y * width) + x] = Pack(red, green, blue);
             }

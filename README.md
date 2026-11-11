@@ -6,7 +6,6 @@
 <hr>
 <p align="center">
   <a href="https://github.com/tonytins/VentureOS/blob/main/UNLICENSE"><img src="https://img.shields.io/github/license/tonytins/VentureOS" alt="GitHub license"></a>
-  <a href="https://github.com/tonytins/VentureOS/actions/workflows/dotnet.yml"><img src="https://img.shields.io/github/actions/workflow/status/tonytins/VentureOS/dotnet.yml" alt="GitHub Workflow Status"></a>
   <img src="https://img.shields.io/github/commit-activity/w/tonytins/VentureOS" alt="GitHub commit activity">
 </p>
 

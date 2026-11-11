@@ -13,7 +13,7 @@ public sealed class DesktopTests
     {
         var pixels = DesktopBackground.Render(200, 100);
 
-        // The top corner is untouched by the glow and the bubbles.
+        // The top corner is untouched by the glow.
         Assert.Equal(DesktopBackground.Pack(32, 86, 140), pixels[0]);
         var (topBlue, bottomBlue) = (pixels[100] & 0xFF, pixels[(99 * 200) + 100] & 0xFF);
         Assert.True(bottomBlue > topBlue, "The bottom should be paler than the top.");

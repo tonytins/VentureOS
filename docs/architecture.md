@@ -41,7 +41,7 @@ the code wins and this page is out of date.
 - **Desktop:** `desktop` opens a graphical desktop with movable windows
   that show `.uix` interfaces, starting with About VentureOS.
 - **Not built yet:** keeping files across reboots
-  (Blue Water); the desktop's menu bar, dock, and apps in windows (Borealis); a CI boot check, ARM64 builds in CI, and published ISOs
+  (Blue Water); the desktop's menu bar, dock, and apps in windows (Borealis); CI (removed for now: the kernel doesn't build like a typical .NET project), and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -174,7 +174,6 @@ VentureOS/
 ├─ global.json                  opts dotnet test into Microsoft.Testing.Platform
 ├─ docs/                        architecture, roadmap, scorecard
 ├─ .agents/skills/              C# and Cosmos guidance for agents
-├─ .github/workflows/dotnet.yml CI: build the solution and run the tests
 ├─ changelog.md                 user-facing history
 └─ run.sh                       check, build, and run x64 locally (--headless for serial only)
 ```
@@ -703,7 +702,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
 
 - **Screen.** Limine is asked for 1024x768 in `limine.conf`; without it,
   QEMU's framebuffer is 1280x800. The text console uses the same screen.
-- **Drawing.** The canvas doesn't blend, and the sky's glow and bubbles are
+- **Drawing.** The canvas doesn't blend, and the sky's glow is
   translucent, so `DesktopBackground` works the whole sky out once, as
   pixels (85 ms at 1024x768 under QEMU), and each frame copies it, then draws
   on top. `Canvas.Display` shows the finished frame at once.
@@ -771,8 +770,8 @@ builds and runs its example, so it can't drift from what works.
 - **Version:** [GitInfo](https://github.com/devlooped/GitInfo) reads
   `GitInfo.txt` (base `major.minor.patch`) and adds the number of commits
   that changed the `src/Venture.OS/` folder since that file changed. Commits
-  that only touch docs or CI don't change the version. CI checks out full
-  history for this.
+  that only touch docs don't change the version, and a build needs the full
+  history.
 - **Moving `GitInfo.txt` resets the count.** GitInfo finds the file's last
   change with `git log` without following renames, so a move looks like a
   new base. Set a new base version in the same commit as any move: moving
@@ -788,19 +787,18 @@ builds and runs its example, so it can't drift from what works.
 
 ---
 
-## 11. Build, run, and CI
+## 11. Build and run
 
 - **Locally:** `dotnet test --project src/Venture.OS.Common.Tests`, then
   `cosmos check` (always first before building: tool status and CLI updates),
   `cosmos build -p src/Venture.OS`, then `./run.sh` (add `--headless`
   for serial only) or `cosmos run -p src/Venture.OS --headless`. `--nic none`
   boots without a network card.
-- **CI** (`.github/workflows/dotnet.yml`): on every push and pull request to
-  `main`, restores and builds `src/Venture.slnx` with the .NET 10 SDK, then
-  runs the tests. It installs no Cosmos tools, so whether the kernel project
-  builds there hasn't been confirmed.
-- **Not built yet:** ARM64 builds and a headless boot check in CI, and
-  published ISOs (every-stage work on the roadmap).
+- **CI:** none for now. The kernel needs Cosmos's toolchain and doesn't build
+  like a typical .NET project, so the workflow was removed (2026-11-11).
+  Tests and builds run locally.
+- **Not built yet:** CI, a headless boot check, and published ISOs
+  (every-stage work on the roadmap).
 
 ---
 
@@ -808,10 +806,10 @@ builds and runs its example, so it can't drift from what works.
 
 | Kind | Today | Planned |
 |---|---|---|
-| Build | x64 with no warnings, locally and in CI; ARM64 locally | ARM64 in CI |
+| Build | x64 and ARM64 with no warnings, locally | CI, when it returns |
 | Boot | Headless boots by hand, read through `[Venture]` serial lines | CI boots headless and fails on a panic or a missing banner |
 | Failure paths | A forced panic and a no-NIC boot, verified by hand | Kept as repeatable checks |
-| Logic | 59 xUnit v3 tests for `Venture.OS.Common`: parsing, the registry, and dispatch. Run locally and in CI | Each new kernel-free type comes with tests |
+| Logic | xUnit v3 tests for `Venture.OS.Common`, run locally | Each new kernel-free type comes with tests |
 
 xUnit v3 runs on Microsoft.Testing.Platform, which the .NET 10 SDK's
 `dotnet test` only uses when `global.json` opts in; without it, `dotnet
@@ -837,6 +835,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | CI removed for now (§2, §11, §12): the kernel doesn't build like a typical .NET project. The desktop's sky loses its bubbles. |
 | 2026-11-11 | minor | Desktop windows (§2, §9, §11): windows show `.uix` interfaces through `UIView`, About VentureOS opens with the desktop, `desktop` previews `.uix` files, and translucent fills blend. CI moved to `dotnet.yml`, which builds the solution and runs the tests. |
 | 2026-11-11 | minor | The desktop (§2, §9): `desktop` draws the sky and pointer through `IPainter` with the system fonts, at 1024x768, and Esc returns to the shell. |
 | 2026-11-11 | minor | Interfaces (§2, §9): a UIScript reader matching Hudini's, tested on its examples, with a `menus` feature drafted for Hudini. |
