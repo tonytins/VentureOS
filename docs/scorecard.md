@@ -20,6 +20,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Reliability](#reliability) | 3 | 1 | 1 | 569 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 5 | 0 | 0 | Version 0.3; opens in 48 ms at 1024x768 |
+| [Desktop apps](#desktop-apps) | 0 | 0 | 5 | Keystone; Notes is the only app with a window so far |
 | [Distribution](#distribution) | 0 | 0 | 5 | No CI for now; tests and builds run locally |
 | [Known issues](#known-issues) | | | | 2 open, 3 resolved |
 
@@ -131,6 +132,16 @@ output stays on the console.
 | DESK-3 | Tiger-style windows show `.uix` interfaces and handle input | done | `UIView`, `DesktopWindow`, `WindowManager`, `about.uix`; tests for placement, drawing, events, focus, dragging, closing, and the shipped interfaces. Boot test 2026-11-11: `desktop t.uix` opened About VentureOS and the preview in 72 ms with shadows and the inactive fade; a click focused the text field and typing showed; the title bar dragged; a click raised About; OK and the close button closed their windows; Esc returned to the shell; a missing file was reported in the shell |
 | DESK-4 | A global menu bar and a dock | done | `MenuBar`, `Dock`, `DesktopSession`, `HeldOutput`, `DesktopAlert`; tests for clicking, dragging, the keyboard, shortcuts, disabled and checked items, the dock, opening and quitting an app, and held output. Boot test 2026-11-11: the VentureOS menu opened by click, the arrows moved its highlight, and Esc closed it; a preview's File and Edit menus opened with Alt+F and Right; clicking Notes in the dock opened it with its message in a window, a dot, and a bold Notes menu; Ctrl+Q quit it; Ctrl+Shift+Q returned to the shell, where `note` worked for an app opened from the dock; a document with a bad shortcut was reported in the shell |
 | DESK-5 | Apps open windows through `venture.ui`, and quit when their last one closes | done | `UiLibrary`, `DesktopSession`, `Notes.app`; tests for every method, events, mistakes, the scope, quitting, the last-window rule, windows outlasting the desktop, Notes' window, and the guide's window step. Boot test 2026-11-11: `open notes` and `note buy milk` in the shell, then `desktop` showed Notes' window with the note; typing and Enter added and selected a second note; Alt+N opened the Note menu; Ctrl+D deleted the selection; the close button quit Notes, removing its dot and `note`, and `notes.txt` kept the rest |
+
+## Desktop apps
+
+| Id | Target | Status | Evidence |
+|---|---|---|---|
+| APP-1 | Files is the desktop's fallback app: always running, it browses folders, opens apps, previews `.uix` files, and opens text files | missing | Keystone phase 1 |
+| APP-2 | User apps ship in `/mnt/user/apps`, which the user can change, and say what they need when they open; Calculator is one | missing | Keystone phase 2 |
+| APP-3 | Windows can run code on a timer, and System Monitor shows the system as it changes | missing | Keystone phase 3 |
+| APP-4 | `.uix` interfaces have a multi-line `<TextArea>`, and TextEdit edits and saves text files | missing | Keystone phase 4 |
+| APP-5 | Terminal.app runs the shell in a window | missing | Keystone phase 5 |
 
 ## Distribution
 
