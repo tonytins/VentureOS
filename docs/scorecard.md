@@ -17,9 +17,9 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 10 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 544 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 569 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
-| [Desktop](#desktop) | 4 | 0 | 1 | Phase 4 of 5 toward 0.3; opens in 48 ms at 1024x768 |
+| [Desktop](#desktop) | 5 | 0 | 0 | All five phases toward 0.3; opens in 48 ms at 1024x768 |
 | [Distribution](#distribution) | 0 | 0 | 5 | No CI for now; tests and builds run locally |
 | [Known issues](#known-issues) | | | | 2 open, 3 resolved |
 
@@ -130,7 +130,7 @@ output stays on the console.
 | DESK-2 | `desktop` switches to graphics and back | done | `DesktopCommand`, `CanvasPainter`, `DesktopSession`, `DesktopBackground`, `Pointer`; 9 tests against a recording painter. Boot test 2026-11-11: the sky, glow, and an Open Sans hint at 1024x768, opened in 85 ms; the PS/2 pointer moved, ten moves gave ten redraws and none while still; Esc returned to a working shell |
 | DESK-3 | Tiger-style windows show `.uix` interfaces and handle input | done | `UIView`, `DesktopWindow`, `WindowManager`, `about.uix`; tests for placement, drawing, events, focus, dragging, closing, and the shipped interfaces. Boot test 2026-11-11: `desktop t.uix` opened About VentureOS and the preview in 72 ms with shadows and the inactive fade; a click focused the text field and typing showed; the title bar dragged; a click raised About; OK and the close button closed their windows; Esc returned to the shell; a missing file was reported in the shell |
 | DESK-4 | A global menu bar and a dock | done | `MenuBar`, `Dock`, `DesktopSession`, `HeldOutput`, `DesktopAlert`; tests for clicking, dragging, the keyboard, shortcuts, disabled and checked items, the dock, opening and quitting an app, and held output. Boot test 2026-11-11: the VentureOS menu opened by click, the arrows moved its highlight, and Esc closed it; a preview's File and Edit menus opened with Alt+F and Right; clicking Notes in the dock opened it with its message in a window, a dot, and a bold Notes menu; Ctrl+Q quit it; Ctrl+Shift+Q returned to the shell, where `note` worked for an app opened from the dock; a document with a bad shortcut was reported in the shell |
-| DESK-5 | Apps open windows through `venture.ui`, and quit when their last one closes | missing | Phase 5 |
+| DESK-5 | Apps open windows through `venture.ui`, and quit when their last one closes | done | `UiLibrary`, `DesktopSession`, `Notes.app`; tests for every method, events, mistakes, the scope, quitting, the last-window rule, windows outlasting the desktop, Notes' window, and the guide's window step. Boot test 2026-11-11: `open notes` and `note buy milk` in the shell, then `desktop` showed Notes' window with the note; typing and Enter added and selected a second note; Alt+N opened the Note menu; Ctrl+D deleted the selection; the close button quit Notes, removing its dot and `note`, and `notes.txt` kept the rest |
 
 ## Distribution
 

@@ -35,6 +35,19 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     /// <summary>The top of the area windows may use, below anything along the screen's top edge.</summary>
     public int TopInset { get; set; }
 
+    /// <summary>
+    /// Changes the screen the windows are on. Windows outlive a visit to the desktop, since apps open them from the
+    /// shell too, so the screen is only known once the desktop shows; windows already open stay where they are.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">A size isn't positive.</exception>
+    public void SetScreenSize(int width, int height)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        screenWidth = width;
+        screenHeight = height;
+    }
+
     /// <summary>Opens a window in front, centered, a little down and right of the last one opened.</summary>
     public void Open(DesktopWindow window)
     {

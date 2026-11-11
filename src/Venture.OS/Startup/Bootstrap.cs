@@ -35,6 +35,12 @@ internal static class Bootstrap
     /// <summary>How long an app's main script may run when it opens, as for <c>init.lua</c>.</summary>
     public static readonly TimeSpan AppStartupLimit = TimeSpan.FromSeconds(10);
 
+    /// <summary>
+    /// How long an app's handler for one window event may run. The desktop waits for it, so a stuck handler would
+    /// freeze the screen; the keyboard belongs to the desktop then, so only the time limit can stop it.
+    /// </summary>
+    public static readonly TimeSpan UiEventLimit = TimeSpan.FromSeconds(5);
+
     /// <summary>The script that runs once, after boot finishes.</summary>
     public const string InitScriptPath = SystemDirectoryPath + "/init.lua";
 

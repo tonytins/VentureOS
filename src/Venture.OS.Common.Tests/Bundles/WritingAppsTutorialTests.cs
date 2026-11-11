@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Venture.OS.Bundles;
+using Venture.OS.Desktop;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Tests.Scripting;
@@ -21,6 +22,7 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
     private readonly CommandRegistry registry = new();
     private readonly CommandShell shell;
     private readonly AppManager manager;
+    private readonly WindowManager windows = new(1024, 768);
 
     public WritingAppsTutorialTests()
     {
@@ -31,7 +33,12 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
         registry.AddSource(runtime);
         shell = new CommandShell(new ShellContext(output, new RecordingHost(), registry) { CurrentDirectory = root });
         manager = new AppManager(
-            apps, runtime, new FakeSystemInfo(), Path.Combine(AppContext.BaseDirectory, "system", "lib"), shell.Execute);
+            apps,
+            runtime,
+            new FakeSystemInfo(),
+            Path.Combine(AppContext.BaseDirectory, "system", "lib"),
+            shell.Execute,
+            windows: new AppWindows(windows, output));
     }
 
     public void Dispose()
@@ -114,6 +121,28 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
 
         Assert.Contains(output.Lines, line => line.Contains("venture.command needs the shell scope: "));
         Assert.Contains("`venture.command needs the shell scope: ...`", Guide);
+    }
+
+    [Fact]
+    public void TheWindowStepRollsFromAButton()
+    {
+        // The third XML block replaces the Info line, the fourth is main.uix, and the fourth Lua block goes at the end.
+        var info = Block("xml", 0).Replace(InfoLine(Block("xml", 0)), Block("xml", 2).Trim());
+        Build(info, Block("lua", 0) + "\n" + Block("lua", 3));
+        var resources = Path.Combine(apps, "Dice.app", "Contents", "Resources");
+        Directory.CreateDirectory(resources);
+        File.WriteAllText(Path.Combine(resources, "main.uix"), Block("xml", 3));
+
+        Assert.True(manager.OpenApp("dice", root, output), string.Join('\n', output.Lines));
+        var window = Assert.Single(windows.Windows);
+        Assert.Equal("Press Roll.", window.View.Text("result"));
+
+        window.EventHandler!(window, new UIEvent(UIEventKind.Pressed, "roll"));
+
+        Assert.Matches(@"^You rolled [1-6]\.$", window.View.Text("result"));
+        Assert.Empty(output.Lines);
+        shell.Execute("roll 1");
+        Assert.Matches(@"^[1-6] = [1-6]$", output.Lines[0]);
     }
 
     private void Build(string info, string main)

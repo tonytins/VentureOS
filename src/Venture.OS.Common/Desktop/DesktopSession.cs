@@ -16,6 +16,9 @@ namespace Venture.OS.Desktop;
 /// <para>The bar shows the VentureOS menu, then the active app's menu, then the focused window's own menus. The
 /// active app is the one whose window was last brought to the front, or that was last opened from the dock.
 /// VentureOS ▸ Return to Shell, or Ctrl+Shift+Q, closes the desktop.</para>
+/// <para>Apps' windows outlast the desktop, in a <see cref="WindowManager"/> the system keeps, so an app opened from
+/// the shell shows its window the next time the desktop does. An app quits when the last window it opened closes.
+/// What apps write while the desktop shows appears in a message window.</para>
 /// </remarks>
 public sealed class DesktopSession
 {
@@ -47,6 +50,10 @@ public sealed class DesktopSession
     private PointerOwner owner;
     private DesktopWindow? about;
 
+    // The window in front when focus was last checked, so a window opened between frames, such as About when the
+    // desktop opens, still makes its app the active one.
+    private DesktopWindow? lastFocused;
+
     private enum PointerOwner
     {
         None,
@@ -61,7 +68,14 @@ public sealed class DesktopSession
     /// <param name="apps">The system's apps, for the dock, or <see langword="null"/> for a desktop without one.</param>
     /// <param name="workingDirectory">Where apps opened from the dock run from.</param>
     /// <param name="appOutput">Where apps opened from the dock write; what they write shows in a window.</param>
-    public DesktopSession(int width, int height, AppManager? apps = null, string workingDirectory = "/", HeldOutput? appOutput = null)
+    /// <param name="windows">The system's windows, which last between visits, or <see langword="null"/> for new ones.</param>
+    public DesktopSession(
+        int width,
+        int height,
+        AppManager? apps = null,
+        string workingDirectory = "/",
+        HeldOutput? appOutput = null,
+        WindowManager? windows = null)
     {
         ArgumentNullException.ThrowIfNull(workingDirectory);
         Width = width;
@@ -71,7 +85,11 @@ public sealed class DesktopSession
         this.appOutput = appOutput ?? new HeldOutput();
         background = DesktopBackground.Render(width, height);
         last = new DesktopInput(width / 2, height / 2, false);
-        Windows = new WindowManager(width, height) { TopInset = MenuBar.Height + 4 };
+        Windows = windows ?? new WindowManager(width, height);
+        Windows.SetScreenSize(width, height);
+        Windows.TopInset = MenuBar.Height + 4;
+        ActiveApp = Windows.Focused?.App;
+        lastFocused = Windows.Focused;
         Dock = new Dock(width, height);
         RefreshDock();
         RefreshMenus();
@@ -121,7 +139,6 @@ public sealed class DesktopSession
         var (x, y) = (Math.Clamp(input.PointerX, 0, Width - 1), Math.Clamp(input.PointerY, 0, Height - 1));
         var pressed = input.PointerDown && !last.PointerDown;
         var released = !input.PointerDown && last.PointerDown;
-        var focusedBefore = Windows.Focused;
         List<WindowEvent> happened = [];
 
         // Keys: the open menu takes them all; otherwise shortcuts and menu hotkeys come before the windows.
@@ -174,8 +191,15 @@ public sealed class DesktopSession
             [.. forWindows]);
         happened.AddRange(Windows.Update(windowInput));
 
-        if (Windows.Focused != focusedBefore && Windows.Focused is { } focused)
-            ActiveApp = focused.App;
+        QuitAppsWithoutWindows(happened);
+        ShowMessages(ActiveApp ?? "VentureOS", ActiveApp);
+
+        if (Windows.Focused != lastFocused)
+        {
+            lastFocused = Windows.Focused;
+            if (lastFocused is not null)
+                ActiveApp = lastFocused.App;
+        }
 
         LastEvents = happened;
         RefreshMenus();
@@ -231,6 +255,49 @@ public sealed class DesktopSession
                 happened.AddRange(Windows.CloseRequested());
                 break;
         }
+    }
+
+    /// <summary>
+    /// Closes the desktop's own windows, such as About and messages, when it closes. Apps' windows stay for next time.
+    /// </summary>
+    public void CloseDesktopWindows()
+    {
+        foreach (var window in (DesktopWindow[])[.. Windows.Windows])
+        {
+            if (!window.OpenedByApp)
+                Windows.Close(window);
+        }
+    }
+
+    /// <summary>Quits each app whose last own window closed this frame.</summary>
+    private void QuitAppsWithoutWindows(List<WindowEvent> happened)
+    {
+        foreach (var closed in happened)
+        {
+            if (!closed.Closed || !closed.Window.OpenedByApp || closed.Window.App is not { } app)
+                continue;
+
+            var hasAnother = false;
+            foreach (var window in Windows.Windows)
+                hasAnother |= window.OpenedByApp && window.App == app;
+
+            if (!hasAnother && IsAppOpen(app))
+                Quit(app);
+        }
+    }
+
+    private bool IsAppOpen(string name)
+    {
+        if (apps is null)
+            return false;
+
+        foreach (var running in apps.Running)
+        {
+            if (running.Bundle.Name == name)
+                return true;
+        }
+
+        return false;
     }
 
     private void OpenFromDock(DockItem item)

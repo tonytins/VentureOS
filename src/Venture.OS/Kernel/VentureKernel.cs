@@ -1,4 +1,5 @@
 using Venture.OS.Bundles;
+using Venture.OS.Desktop;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Shell.Commands;
@@ -27,6 +28,12 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
     // Opens, closes, and lists apps; set up with the shell.
     private AppManager? appManager;
+
+    // The desktop's windows, kept for the whole boot, so apps opened from the shell show theirs in the desktop.
+    private readonly WindowManager windows = new(1024, 768);
+
+    // Where apps write while the desktop shows, and their event handlers always; passed to the shell otherwise.
+    private readonly HeldOutput desktopOutput = new();
 
     // init.lua's interpreter and what it set up, kept for the whole boot so its commands keep working.
     private LuaOwner? initOwner;
@@ -104,7 +111,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new OpenCommand(() => appManager));
         commands.Register(new CloseCommand(() => appManager));
         commands.Register(new AppsCommand(() => appManager));
-        commands.Register(new DesktopCommand(() => appManager));
+        commands.Register(new DesktopCommand(() => appManager, windows, desktopOutput));
 
         ScriptCommands scripts = new(
             Bootstrap.CommandsDirectoryPath,
@@ -123,13 +130,15 @@ public class VentureKernel : Sys.Kernel, IShellHost
             system,
             Bootstrap.LibraryDirectoryPath,
             RunShellLine,
-            () => ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(Bootstrap.AppStartupLimit)));
+            () => ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(Bootstrap.AppStartupLimit)),
+            new AppWindows(windows, desktopOutput, () => ScriptStop.After(Bootstrap.UiEventLimit)));
 
         shellContext = new ShellContext(new ConsoleShellOutput(), this, commands)
         {
             CurrentDirectory = Bootstrap.RamMountPoint,
         };
         shell = new CommandShell(shellContext);
+        desktopOutput.PassTo = shellContext.Output;
         return true;
     }
 

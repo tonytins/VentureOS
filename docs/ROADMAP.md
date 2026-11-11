@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Borealis phase 4: the menu bar and dock) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Borealis phase 5: apps with windows) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,8 +36,8 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Desktop** (Borealis): a UIScript reader, drawing and a frame loop, then
-   windows from `.uix` files and a window manager.
+1. **Desktop** (Borealis): the five phases to 0.3 are done; Terminal.app is
+   next.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
@@ -68,14 +68,14 @@ fit, rather than waiting on a route.
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
-| Borealis | Desktop | 80% | 8–20 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock |
+| Borealis | Desktop | 95% | 5–10 (Terminal.app) | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock |
 | | **Total** | | **≈ 66–131**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | A UIScript reader, then drawing and a frame loop | Borealis | 15–30 |
+| 1 | Terminal.app: the shell in a window | Borealis | 5–10 |
 | 2 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
@@ -212,7 +212,7 @@ phases:
 - [x] Phase 4, the menu bar and dock: the VentureOS menu, the app's menu,
   then the focused window's menus, with Alt and Ctrl shortcuts; a dock that
   opens apps and marks the open ones.
-- [ ] Phase 5, apps with windows: `venture.ui` and the `ui` scope; an app
+- [x] Phase 5, apps with windows: `venture.ui` and the `ui` scope; an app
   quits when its last window closes; Notes gets a window.
 
 When the desktop is up and running, VentureOS moves to version 0.3 (a new
@@ -248,6 +248,7 @@ Borealis.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Borealis 95%: phase 5, apps open windows through `venture.ui` and quit with their last window, and Notes has one. The desktop is ready for 0.3; Terminal.app is next. |
 | 2026-11-11 | minor | Borealis 80%: phase 4, the menu bar (VentureOS, the app's, and the window's menus, with Alt hotkeys and Ctrl shortcuts) and a dock that opens the system's apps. |
 | 2026-11-11 | minor | Borealis 60%: phase 3, windows show `.uix` interfaces, drag, focus, and close; About VentureOS opens with the desktop, and `desktop` previews `.uix` files. |
 | 2026-11-11 | minor | Borealis 40%: phase 2, `desktop` draws the sky and pointer at 1024x768 and returns to the shell on Esc. |

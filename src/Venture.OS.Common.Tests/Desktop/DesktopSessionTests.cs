@@ -9,7 +9,8 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Desktop;
 
 /// <summary>
-/// The desktop with its bar, dock, and apps from a temporary apps folder: Chatty, which says hello when it opens.
+/// The desktop with its bar, dock, and apps from a temporary apps folder: Chatty, which says hello when it opens,
+/// and Viewer, which opens a window whose OK button prints.
 /// </summary>
 public sealed class DesktopSessionTests : IDisposable
 {
@@ -26,6 +27,7 @@ public sealed class DesktopSessionTests : IDisposable
     private readonly RuntimeCommands runtime;
     private readonly AppManager apps;
     private readonly HeldOutput held = new();
+    private readonly WindowManager windows = new(1024, 768);
     private readonly DesktopSession session;
     private readonly RecordingPainter painter = new(800, 600);
 
@@ -38,10 +40,24 @@ public sealed class DesktopSessionTests : IDisposable
             """);
         File.WriteAllText(Path.Combine(contents, "Lua", "main.lua"), "print(\"Hello from Chatty\")\n");
 
+        var viewer = Path.Combine(root, "apps", "Viewer.app", "Contents");
+        Directory.CreateDirectory(Path.Combine(viewer, "Lua"));
+        Directory.CreateDirectory(Path.Combine(viewer, "Resources"));
+        File.WriteAllText(Path.Combine(viewer, "Info.xml"), """
+            <App version="1"><Info identifier="dev.example.viewer" name="Viewer" needs="ui"/></App>
+            """);
+        File.WriteAllText(Path.Combine(viewer, "Resources", "main.uix"), """
+            <UIScript><Window width="200" height="100"/><Button name="ok" x="10" y="10" width="60" height="20" text="OK"/></UIScript>
+            """);
+        File.WriteAllText(Path.Combine(viewer, "Lua", "main.lua"), """
+            local window = venture.ui.open("main.uix")
+            window:on("ok", function() print("OK pressed") end)
+            """);
+
         CommandRegistry registry = new();
         runtime = new RuntimeCommands(registry.IsBuiltIn);
-        apps = new AppManager(Path.Combine(root, "apps"), runtime, new FakeSystemInfo());
-        session = new DesktopSession(800, 600, apps, root, held)
+        apps = new AppManager(Path.Combine(root, "apps"), runtime, new FakeSystemInfo(), windows: new AppWindows(windows, held));
+        session = new DesktopSession(800, 600, apps, root, held, windows)
         {
             AboutWindow = () => new DesktopWindow("About VentureOS", new UIView(UIScript.Parse(
                 """<UIScript><Window width="100" height="50"/></UIScript>"""))),
@@ -53,13 +69,15 @@ public sealed class DesktopSessionTests : IDisposable
     {
         if (apps.IsOpen("dev.example.chatty"))
             apps.CloseApp("Chatty", new RecordingOutput());
+        if (apps.IsOpen("dev.example.viewer"))
+            apps.CloseApp("Viewer", new RecordingOutput());
         Directory.Delete(root, recursive: true);
     }
 
     [Fact]
     public void TheDockShowsTheSystemsApps()
     {
-        Assert.Equal([new DockItem("Chatty", "Chatty", IsOpen: false)], session.Dock.Items);
+        Assert.Equal([new DockItem("Chatty", "Chatty", IsOpen: false), new DockItem("Viewer", "Viewer", IsOpen: false)], session.Dock.Items);
         Assert.Equal(["VentureOS"], Titles());
     }
 
@@ -150,6 +168,70 @@ public sealed class DesktopSessionTests : IDisposable
 
         Assert.False(session.MenuBar.IsOpen);
         Assert.Same(other, session.Windows.Focused);
+    }
+
+    [Fact]
+    public void ClosingAnAppsLastWindowQuitsIt()
+    {
+        ClickIcon(1);
+        var window = Assert.Single(session.Windows.Windows);
+        Assert.Equal("Viewer", session.ActiveApp);
+        Assert.True(session.Dock.Items[1].IsOpen);
+
+        var close = window.CloseButton;
+        Frame((int)close.X + 6, (int)close.Y + 6, down: true);
+        Frame((int)close.X + 6, (int)close.Y + 6);
+
+        Assert.False(apps.IsOpen("dev.example.viewer"));
+        Assert.False(session.Dock.Items[1].IsOpen);
+        Assert.Null(session.ActiveApp);
+    }
+
+    [Fact]
+    public void WhatAHandlerPrintsShowsInAMessage()
+    {
+        ClickIcon(1);
+        var window = Assert.Single(session.Windows.Windows);
+        var ok = window.View.Bounds("ok")!.Value;
+        var (x, y) = (window.ContentOrigin.X + (int)ok.X + 5, window.ContentOrigin.Y + (int)ok.Y + 5);
+
+        Frame(x, y, down: true);
+        Frame(x, y);
+
+        var message = session.Windows.Focused!;
+        Assert.NotSame(window, message);
+        Assert.Equal("OK pressed", message.View.Text("message"));
+
+        // Closing the message isn't closing Viewer's window, so Viewer stays open.
+        message.RequestClose();
+        Frame(x, y);
+        Assert.True(apps.IsOpen("dev.example.viewer"));
+    }
+
+    [Fact]
+    public void AppsWindowsOutlastTheDesktopAndItsOwnDont()
+    {
+        ClickIcon(1);
+        session.ShowAbout();
+
+        session.CloseDesktopWindows();
+
+        var left = Assert.Single(windows.Windows);
+        Assert.Equal("Viewer", left.App);
+
+        DesktopSession next = new(800, 600, apps, root, held, windows)
+        {
+            AboutWindow = () => new DesktopWindow("About VentureOS", new UIView(UIScript.Parse(
+                """<UIScript><Window width="100" height="50"/></UIScript>"""))),
+        };
+        Assert.Same(left, next.Windows.Focused);
+        Assert.Equal("Viewer", next.ActiveApp);
+
+        // About opening in front, before the first frame, still takes the bar from Viewer.
+        next.ShowAbout();
+        next.Update(new DesktopInput(400, 300, false));
+        Assert.Null(next.ActiveApp);
+        Assert.Single(next.MenuBar.Menus);
     }
 
     [Fact]

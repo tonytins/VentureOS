@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Notes' window. main.lua fills the list and handles the events. -->
+<UIScript version="1" requires="menus">
+  <Window width="360" height="308"/>
+
+  <Menu name="noteMenu" title="Note" hotkey="N"/>
+  <MenuItem menu="noteMenu" name="newNote" title="New Note" hotkey="N" shortcut="Ctrl+N"/>
+  <MenuItem menu="noteMenu" name="deleteNote" title="Delete Note" hotkey="D" shortcut="Ctrl+D"/>
+  <MenuSeparator menu="noteMenu"/>
+  <MenuItem menu="noteMenu" name="clearAll" title="Clear All Notes" hotkey="C"/>
+
+  <Style name="quiet" textColor="#6E747E" backgroundColor="#F0F3F7"/>
+
+  <TextField name="text" x="12" y="12" width="256" height="24" placeholder="Write a note, then press Enter"/>
+  <Button name="add" x="276" y="12" width="72" height="24" text="Add"/>
+  <List name="notes" x="12" y="46" width="336" height="214" selectable="true"/>
+  <Button name="delete" x="12" y="272" width="90" height="24" text="Delete"/>
+  <Text name="count" x="110" y="274" width="238" height="20" alignment="right" style="quiet"/>
+</UIScript>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.23
+
+- Apps can have windows. Notes opens one: type a note and press Enter to add it, select one and press Delete (or Ctrl+D) to remove it, and use the Note menu. The `note` command still works, on the same notes.
+- Closing an app's last window quits the app.
+- An app's windows stay open when you leave the desktop and come back, and an app opened with `open` shows its window the next time you type `desktop`.
+- App authors: `venture.ui` opens windows from `.uix` files, under the new `ui` scope. See [Writing apps](docs/writing-apps.md).
+
 ## 0.2.22
 
 - The desktop has a menu bar and a dock. The dock shows the system's apps: click one to open it, and a dot marks the open ones. The app's menu has Quit (Ctrl+Q).

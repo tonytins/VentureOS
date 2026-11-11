@@ -1,4 +1,5 @@
 using Venture.OS.Bundles;
+using Venture.OS.Desktop;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Tests.Scripting;
@@ -17,6 +18,8 @@ public sealed class NotesAppTests : IDisposable
     private readonly RecordingOutput output = new();
     private readonly CommandShell shell;
     private readonly AppManager manager;
+    private readonly WindowManager windows = new(1024, 768);
+    private readonly RecordingOutput events = new();
 
     public NotesAppTests()
     {
@@ -30,7 +33,8 @@ public sealed class NotesAppTests : IDisposable
             runtime,
             new FakeSystemInfo(),
             Path.Combine(SystemFiles, "lib"),
-            shell.Execute);
+            shell.Execute,
+            windows: new AppWindows(windows, events));
     }
 
     public void Dispose()
@@ -46,7 +50,7 @@ public sealed class NotesAppTests : IDisposable
 
         Assert.NotNull(listing.Bundle);
         Assert.Equal("dev.tonytins.ventureos.notes", listing.Bundle.Identifier);
-        Assert.Equal(ScriptScopes.Shell | ScriptScopes.Files, listing.Bundle.Needs);
+        Assert.Equal(ScriptScopes.Shell | ScriptScopes.Files | ScriptScopes.Ui, listing.Bundle.Needs);
         Assert.Empty(listing.Bundle.IgnoredAttributes);
     }
 
@@ -66,7 +70,6 @@ public sealed class NotesAppTests : IDisposable
 
         Assert.Equal(
             [
-                "Notes is open. Type \"note --help\" to use it.",
                 "No notes yet. Add one with \"note <text>\".",
                 "Noted (1).",
                 "Noted (2).",
@@ -120,6 +123,60 @@ public sealed class NotesAppTests : IDisposable
 
         Assert.Equal("\"note\" is not a command. Type \"help\" for a list of commands.", output.Lines[^1]);
     }
+
+    [Fact]
+    public void OpensAWindowThatSharesTheNotesWithTheCommand()
+    {
+        Open();
+        shell.Execute("note buy milk");
+
+        var window = Assert.Single(windows.Windows);
+        Assert.Equal("Notes", window.Title);
+        Assert.Equal(["buy milk"], window.View.List("notes")!.Items);
+        Assert.Equal("1 note", window.View.Text("count"));
+        Assert.True(window.View.IsDisabled("delete"));
+        Assert.Equal("text", window.View.FocusedControl);
+
+        window.View.SetText("text", "  call the office  ");
+        Send(window, new UIEvent(UIEventKind.Submitted, "text", Text: "  call the office  "));
+
+        Assert.Equal("buy milk\ncall the office\n", File.ReadAllText(Path.Combine(root, "notes.txt")));
+        Assert.Equal("", window.View.Text("text"));
+        Assert.Equal(1, window.View.List("notes")!.SelectedIndex);
+        Assert.False(window.View.IsDisabled("delete"));
+        Assert.Empty(events.Lines);
+    }
+
+    [Fact]
+    public void DeletesAndClearsFromTheWindow()
+    {
+        Open();
+        shell.Execute("note one");
+        shell.Execute("note two");
+        var window = Assert.Single(windows.Windows);
+
+        window.View.List("notes")!.SelectedIndex = 0;
+        Send(window, new UIEvent(UIEventKind.Pressed, "deleteNote"));
+        Assert.Equal("two\n", File.ReadAllText(Path.Combine(root, "notes.txt")));
+        Assert.Equal(-1, window.View.List("notes")!.SelectedIndex);
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "clearAll"));
+        Assert.Empty(window.View.List("notes")!.Items);
+        Assert.True(window.View.IsDisabled("clearAll"));
+        Assert.Empty(events.Lines);
+    }
+
+    [Fact]
+    public void ClosingNotesClosesItsWindow()
+    {
+        Open();
+
+        manager.CloseApp("Notes", output);
+
+        Assert.Empty(windows.Windows);
+    }
+
+    private static void Send(DesktopWindow window, UIEvent uiEvent) => window.EventHandler!(window, uiEvent);
 
     private void Open() => Assert.True(manager.OpenApp("Notes", root, output), string.Join('\n', output.Lines));
 }

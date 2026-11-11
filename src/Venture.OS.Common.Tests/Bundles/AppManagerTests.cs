@@ -233,7 +233,7 @@ public sealed class AppManagerTests : IDisposable
     [InlineData(ScriptScopes.None, "nothing extra")]
     [InlineData(ScriptScopes.Files, "files")]
     [InlineData(ScriptScopes.Files | ScriptScopes.Shell, "shell and files")]
-    [InlineData(ScriptScopes.All, "system, network, shell and files")]
+    [InlineData(ScriptScopes.All, "system, network, shell, files and ui")]
     public void DescribesNeeds(ScriptScopes needs, string expected) =>
         Assert.Equal(expected, AppManager.DescribeNeeds(needs));
 

@@ -61,6 +61,7 @@ The scopes for `needs`:
 | `files` | `venture.files` to list, read, and change files |
 | `system` | `venture.uptime()` and `venture.memory()` |
 | `network` | `venture.net()` |
+| `ui` | `venture.ui` to open windows on the desktop |
 
 Dice adds a command, so it needs `shell`. Ask for only what the app uses.
 
@@ -190,6 +191,58 @@ To split the app's code into several files, put modules in `Contents/Lua/`.
 `require("dice-rules")` loads `Contents/Lua/dice-rules.lua`, and
 `require("venture.args")` still finds the system library.
 
+## Give the app a window
+
+An app can open windows on the desktop. Each window's layout is a `.uix`
+file, in the [UIScript format](https://github.com/tonytins/Hudini/blob/main/doc/UISCRIPT.md),
+in `Contents/Resources/`. Add `ui` to `needs` in `Info.xml`:
+
+```xml
+  <Info identifier="dev.example.dice" name="Dice" version="1.0" needs="shell ui"/>
+```
+
+Save this as `Contents/Resources/main.uix`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<UIScript version="1">
+  <Window width="240" height="100"/>
+  <Text name="result" x="12" y="12" width="216" height="40" alignment="center" text="Press Roll."/>
+  <Button name="roll" x="84" y="62" width="72" height="26" text="Roll"/>
+</UIScript>
+```
+
+Then open it at the end of `main.lua`, and handle the button:
+
+```lua
+local window = venture.ui.open("main.uix")
+
+window:on("roll", function()
+  window:setText("result", "You rolled " .. math.random(1, 6) .. ".")
+end)
+```
+
+Open Dice, type `desktop`, and its window is there; clicking **Roll** shows a
+new number. `roll` still works in the shell, since both live in the same app.
+
+- **Closing the window quits Dice.** An app quits when the last window it
+  opened closes, and quitting closes its windows and removes its commands.
+- **Events** call the function you gave `window:on` for that control, with a
+  table: `kind` (`pressed`, `submitted`, `changed`, or `selected`),
+  `control`, and, where they apply, `text`, `value`, and `index` (from 1). A
+  text field reports `submitted` when you press Enter.
+- **Changing the window:** `setText`, `setValue`, `setItems` (a list's
+  items), `select` (a list's selection), `setDisabled`, `setHidden`,
+  `setChecked`, `focus`, `setTitle`, and `close`, with readers `text`,
+  `value`, `items`, and `selected`. Use a colon: `window:setText(...)`.
+- **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
+  and they appear in the menu bar while the window is in front. A chosen
+  item reports `pressed` with its name, like a button. See
+  [UIScript menus](./uiscript-menus.md).
+- Anything a handler prints shows in a message window on the desktop.
+
+`Notes.app` has a fuller window: a text field, a list, and a menu.
+
 ## Test your app
 
 The tests in `src/Venture.OS.Common.Tests` run on ordinary .NET, without
@@ -228,6 +281,8 @@ And when it opens but something's off:
 | Message | What to do |
 |---|---|
 | `venture.command needs the shell scope: ...` | Add the scope to `needs` in `Info.xml`. Each `venture` function names the scope it needs. |
+| `main.uix has no control or menu item called "reslut"` | The name in `window:setText` or `window:on` doesn't match the `.uix` file. Names are case-sensitive. |
+| `venture.ui.open: main.uix: Line 4: ...` | The `.uix` file isn't valid; the message says where. |
 | `"echo" is a system command, and Dice can't replace it.` | Pick another name. Apps can't take over the system's commands. |
 | `"roll" is already registered by Games.` | Another open app uses the name. Close it, or pick another name. |
 | `close: Dice can't close while its own code is running.` | An app's command tried to close the app. Close it from the prompt. |

@@ -1,3 +1,4 @@
+using Venture.OS.Desktop;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 
@@ -21,13 +22,15 @@ namespace Venture.OS.Bundles;
 /// <param name="startupStop">
 /// Makes the stop for an app's <c>main</c> script when it opens, such as Ctrl+C or a time limit; called once per open.
 /// </param>
+/// <param name="windows">Where apps' windows go, for <c>venture.ui</c>, or <see langword="null"/> without a desktop.</param>
 public sealed class AppManager(
     string appsDirectory,
     RuntimeCommands commands,
     ISystemInfo? system = null,
     string? libraryDirectory = null,
     Action<string>? runShell = null,
-    Func<Func<string?>>? startupStop = null)
+    Func<Func<string?>>? startupStop = null,
+    AppWindows? windows = null)
 {
     private readonly string appsDirectory = appsDirectory?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(appsDirectory));
     private readonly RuntimeCommands commands = commands ?? throw new ArgumentNullException(nameof(commands));
@@ -122,6 +125,7 @@ public sealed class AppManager(
             commands,
             runShell);
         AppLibrary.Open(owner.Interpreter.State, bundle);
+        UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows);
 
         if (!owner.Run(lua => lua.DoFile(bundle.Main!), startupStop?.Invoke()))
         {

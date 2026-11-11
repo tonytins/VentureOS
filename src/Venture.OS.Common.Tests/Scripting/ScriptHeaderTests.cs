@@ -33,7 +33,7 @@ public sealed class ScriptHeaderTests
     [Fact]
     public void AddsUpSeveralNeedsLines()
     {
-        Assert.Equal(ScriptScopes.All, Parse("-- Needs: system", "-- Needs: network, shell files").Needs);
+        Assert.Equal(ScriptScopes.All, Parse("-- Needs: system", "-- Needs: network, shell files ui").Needs);
     }
 
     [Fact]
@@ -62,11 +62,12 @@ public sealed class ScriptHeaderTests
     }
 
     [Fact]
-    public void ReportsAReservedScopeAsNotAvailableYet()
+    public void ReadsTheUiScope()
     {
-        var header = Parse("-- Needs: ui");
+        var header = Parse("-- Needs: ui files");
 
-        Assert.Contains("\"ui\" isn't available yet", header.Error);
+        Assert.Null(header.Error);
+        Assert.Equal(ScriptScopes.Ui | ScriptScopes.Files, header.Needs);
     }
 
     [Fact]
@@ -80,7 +81,7 @@ public sealed class ScriptHeaderTests
     {
         Assert.Equal("none", ScriptScopeNames.Describe(ScriptScopes.None));
         Assert.Equal("network", ScriptScopeNames.Describe(ScriptScopes.Network));
-        Assert.Equal("system, network, shell, files", ScriptScopeNames.Describe(ScriptScopes.All));
+        Assert.Equal("system, network, shell, files, ui", ScriptScopeNames.Describe(ScriptScopes.All));
     }
 
     [Fact]

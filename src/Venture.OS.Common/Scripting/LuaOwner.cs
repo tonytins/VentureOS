@@ -155,6 +155,23 @@ public sealed class LuaOwner : IDisposable
         IReadOnlyList<string> arguments,
         IShellOutput output,
         string workingDirectory,
+        Func<string?>? stop) =>
+        Call(reference, state =>
+        {
+            foreach (var argument in arguments)
+                state.PushString(LuaText.Encode(argument));
+            return arguments.Count;
+        }, output, workingDirectory, stop);
+
+    /// <summary>
+    /// Calls a Lua function the code left in the registry with whatever <paramref name="pushArguments"/> pushes,
+    /// such as an event table; it returns how many values it pushed.
+    /// </summary>
+    internal bool Call(
+        int reference,
+        Func<ILuaState, int> pushArguments,
+        IShellOutput output,
+        string workingDirectory,
         Func<string?>? stop)
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -170,7 +187,7 @@ public sealed class LuaOwner : IDisposable
         Interpreter.Error = callWriter;
         try
         {
-            return WithStop(stop, () => LuaRunner.Report(output, callWriter, () => CallReference(reference, arguments)));
+            return WithStop(stop, () => LuaRunner.Report(output, callWriter, () => CallReference(reference, pushArguments)));
         }
         finally
         {
@@ -197,17 +214,16 @@ public sealed class LuaOwner : IDisposable
         }
     }
 
-    private void CallReference(int reference, IReadOnlyList<string> arguments)
+    private void CallReference(int reference, Func<ILuaState, int> pushArguments)
     {
         var state = Interpreter.State;
         var top = state.GetTop();
         try
         {
             state.RawGetI(LuaDef.LUA_REGISTRYINDEX, reference);
-            foreach (var argument in arguments)
-                state.PushString(LuaText.Encode(argument));
+            var count = pushArguments(state);
 
-            if (state.PCall(arguments.Count, 0, 0) != ThreadStatus.LUA_OK)
+            if (state.PCall(count, 0, 0) != ThreadStatus.LUA_OK)
             {
                 var message = state.ToString(-1);
                 throw new LuaException(message is null ? "(error object is not a string)" : LuaText.Decode(message));

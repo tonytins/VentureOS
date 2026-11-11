@@ -40,6 +40,12 @@ public sealed class DesktopWindow
     /// </summary>
     public string? App { get; init; }
 
+    /// <summary>
+    /// Whether the app opened it through <c>venture.ui</c>, rather than the desktop opening it for the app, such as
+    /// a message. An app quits when the last window it opened closes, and only its own windows outlast the desktop.
+    /// </summary>
+    public bool OpenedByApp { get; init; }
+
     /// <summary>Whether the window asked to close; the window manager closes it at the end of the frame.</summary>
     public bool IsCloseRequested { get; private set; }
 

@@ -18,11 +18,11 @@ namespace Venture.OS.Shell.Commands;
 /// this returns, so a failure in the desktop never leaves the screen in graphics with no way back. The frame loop
 /// redraws only when the input changed.</para>
 /// </remarks>
-internal sealed class DesktopCommand(Func<AppManager?> apps) : IShellCommand
+/// <param name="apps">The system's apps, for the dock.</param>
+/// <param name="windows">The system's windows, which apps' windows stay in between visits.</param>
+/// <param name="appOutput">Where apps write while the desktop shows; held then, and passed to the shell after.</param>
+internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windows, HeldOutput appOutput) : IShellCommand
 {
-    /// <summary>The output apps opened from the dock keep, shared by every visit to the desktop.</summary>
-    private static readonly HeldOutput AppOutput = new();
-
     public string Name => "desktop";
     public string Summary => "Open the desktop, with any .uix files as windows. Ctrl+Shift+Q comes back.";
     public string Usage => "desktop [interface.uix...]";
@@ -62,11 +62,12 @@ internal sealed class DesktopCommand(Func<AppManager?> apps) : IShellCommand
         }
 
         var frames = 0;
-        AppOutput.PassTo = null;
+        appOutput.PassTo = null;
+        DesktopSession? session = null;
         try
         {
             var opening = Stopwatch.GetTimestamp();
-            DesktopSession session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, AppOutput)
+            session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, appOutput, windows)
             {
                 AboutWindow = MakeAbout,
             };
@@ -101,21 +102,25 @@ internal sealed class DesktopCommand(Func<AppManager?> apps) : IShellCommand
             // Back to text first, so the report can be read.
             Console.Clear();
             KernelLog.WriteLine($"The desktop stopped ({exception.GetType().Name}): {exception.Message}");
-            PassAppOutputTo(context.Output);
+            Leave(session, context.Output);
             return;
         }
 
         Console.Clear();
         KernelLog.WriteSerialLine($"Desktop closed after {frames} frames.");
-        PassAppOutputTo(context.Output);
+        Leave(session, context.Output);
     }
 
-    /// <summary>Shows anything apps said that the desktop didn't, and sends what they say next to the shell.</summary>
-    private static void PassAppOutputTo(IShellOutput output)
+    /// <summary>
+    /// Closes the desktop's own windows, keeping apps' for next time, shows anything apps said that the desktop
+    /// didn't, and sends what they say next to the shell.
+    /// </summary>
+    private void Leave(DesktopSession? session, IShellOutput output)
     {
-        foreach (var line in AppOutput.Take())
+        session?.CloseDesktopWindows();
+        foreach (var line in appOutput.Take())
             output.WriteLine(line);
-        AppOutput.PassTo = output;
+        appOutput.PassTo = output;
     }
 
     /// <summary>Makes About VentureOS, with the version filled in; its OK button closes it.</summary>

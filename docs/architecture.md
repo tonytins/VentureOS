@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the desktop's menu bar and dock) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (apps with windows: `venture.ui`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (544 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (569 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -40,9 +40,9 @@ the code wins and this page is out of date.
   network after boot.
 - **Desktop:** `desktop` opens a graphical desktop with a menu bar, a dock
   that opens the system's apps, and movable windows that show `.uix`
-  interfaces, starting with About VentureOS.
+  interfaces. Apps open windows through `venture.ui`; `Notes.app` has one.
 - **Not built yet:** keeping files across reboots
-  (Blue Water); apps with windows (Borealis); CI (removed for now: the kernel doesn't build like a typical .NET project), and published ISOs
+  (Blue Water); Terminal.app (Borealis); CI (removed for now: the kernel doesn't build like a typical .NET project), and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -140,7 +140,7 @@ VentureOS/
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
 │  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
-│  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, UIView, windows, the menu bar, the dock, and DesktopSession
+│  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, UIView, windows, the menu bar, the dock, DesktopSession, and UiLibrary (venture.ui)
 │  └─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with the menus feature
 │  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
@@ -163,7 +163,7 @@ VentureOS/
 │     │  └─ Commands/              one class per command
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               runs once after boot; prints the help hint
-│     │  ├─ apps/Notes.app/        the sample app: a note command, notes kept in notes.txt
+│     │  ├─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
 │     │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
 │     │  ├─ interfaces/about.uix   the About VentureOS window
 │     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
@@ -569,8 +569,7 @@ like an app's permissions, such as `-- Needs: system, network`. Scopes are
 broad, so new functions in an area don't need new names. Every function is in
 the table, but one outside the declared scopes raises
 `venture.net needs the network scope: add it to a script's -- Needs: line, or an app's needs in Info.xml`. A scope
-VentureOS doesn't know, or one it has reserved but doesn't offer yet
-(`ui`, for the desktop), keeps the script from running at all, with the reason, so a script
+VentureOS doesn't know keeps the script from running at all, with the reason, so a script
 written for a newer VentureOS fails clearly rather than half working.
 `help <command>` shows a script's needs. `init.lua` follows the same rule;
 `lua` gets every scope, since it's the user typing. Scopes cover only the
@@ -734,10 +733,19 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   dot under open ones and the name over the one under the pointer. A click
   opens the app from the current folder, or brings an open one forward.
 - **App output.** An app keeps the output it opened with, and the console
-  would draw over the desktop, so apps opened from the dock write to a
-  `HeldOutput`. What they say while opening or quitting shows in a
-  `DesktopAlert` window; when the desktop closes, anything left is printed
-  and later lines go straight to the shell.
+  would draw over the desktop, so apps opened from the dock, and every
+  window event handler, write to one `HeldOutput` the kernel keeps. What
+  they say while the desktop shows appears in a `DesktopAlert` window; when
+  the desktop closes, anything left is printed and later lines go straight
+  to the shell.
+- **Windows that last.** The kernel keeps one `WindowManager` for the whole
+  boot, so an app opened from the shell has its window waiting in the
+  desktop. Leaving the desktop closes its own windows (About, messages,
+  previews) and keeps apps' (`DesktopWindow.OpenedByApp`).
+- **Apps quit with their last window.** When a window an app opened closes
+  and the app has no other, the app quits, which closes its messages and
+  removes its commands. Messages don't count, so closing one never quits
+  its app.
 - **Input order.** The open menu, then shortcuts and menu hotkeys, then the
   bar, the dock, and the windows. A press belongs to what it landed on until
   release. Windows ask to close with `RequestClose`, and the window manager
@@ -765,7 +773,7 @@ at all. It's tested against Hudini's five example documents, copied into the
 tests with Hudini's license. VentureOS adds one feature, `menus`
 (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with hotkeys and Ctrl or Alt
 shortcuts), drafted in [uiscript-menus.md](./uiscript-menus.md) for Hudini
-to take up. Nothing draws documents yet (Borealis).
+to take up. `UIView` draws documents in desktop windows.
 
 **Apps.** `AppManager` opens, closes, and lists `.app` bundles. Opening one
 reads its bundle, makes an owner named after the app with the app's `needs`,
@@ -783,9 +791,19 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   `resource(path)` for `Contents/Resources/`); and `require` searching its
   own `Contents/Lua/`, then the system library. Apps can't replace system
   script commands, and `help` shows their commands as `From:` the app.
+- **Windows** (`venture.ui`, `UiLibrary`, the `ui` scope):
+  `venture.ui.open("main.uix", { title = ... })` opens a window from the
+  app's `Contents/Resources/` and registers its undo, so quitting closes it.
+  `window:on(name, fn)` keeps `fn` in the Lua registry and calls it through
+  the owner for that control's or menu item's events, with an event table,
+  writing to the held output and stopped after 5 seconds, since the desktop
+  holds the keyboard. Methods (`setText`, `setItems`, `select`,
+  `setDisabled`, and the rest) refuse names the document doesn't have.
+  Code that isn't an app's gets an error saying only apps have windows.
 
-`Notes.app` ships as the example: `note <text>`, `note -l`, `note -d <n>`,
-and `note --clear`, keeping notes in `notes.txt` in the folder it opened
+`Notes.app` ships as the example: a window with a text field, the list of
+notes, Delete, and a Note menu, plus `note <text>`, `note -l`, `note -d <n>`,
+and `note --clear`, both working on `notes.txt` in the folder it opened
 from. [Writing apps](./writing-apps.md) is the step-by-step guide; a test
 builds and runs its example, so it can't drift from what works.
 
@@ -861,6 +879,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Apps with windows (§2, §9): `venture.ui` under the `ui` scope; windows last for the whole boot; an app quits when its last own window closes; event handlers write to the held output with a 5-second limit; Notes has a window. |
 | 2026-11-11 | minor | The menu bar and dock (§2, §9): the VentureOS menu, the active app's menu, and the focused window's `.uix` menus with hotkeys and shortcuts; a dock that opens the system's apps; app output held while the desktop shows. Ctrl+Shift+Q, not Esc, returns to the shell. |
 | 2026-11-11 | minor | CI removed for now (§2, §11, §12): the kernel doesn't build like a typical .NET project. The desktop's sky loses its bubbles. |
 | 2026-11-11 | minor | Desktop windows (§2, §9, §11): windows show `.uix` interfaces through `UIView`, About VentureOS opens with the desktop, `desktop` previews `.uix` files, and translucent fills blend. CI moved to `dotnet.yml`, which builds the solution and runs the tests. |

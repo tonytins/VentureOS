@@ -48,6 +48,16 @@ public static class VentureLibrary
             Gated("command", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "command")),
             Gated("shell", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "shell")),
         ]);
+
+        // Replaced by UiLibrary for apps; elsewhere it explains that only apps have windows.
+        state.NewTable();
+        state.PushCSharpFunction(lua =>
+        {
+            lua.PushString(LuaText.Encode(NotAppMessage));
+            return lua.Error();
+        });
+        state.SetField(-2, "open");
+        state.SetField(-2, "ui");
         state.SetGlobal(GlobalName);
     }
 
@@ -57,6 +67,10 @@ public static class VentureLibrary
     /// </summary>
     public static string NotOwnedMessage(string function) =>
         $"venture.{function} only works in init.lua and at the lua prompt, which last beyond a single run";
+
+    /// <summary>The error for <c>venture.ui</c> in code that isn't an app's.</summary>
+    public const string NotAppMessage =
+        "venture.ui.open only works in apps, whose windows close when the app quits; see docs/writing-apps.md";
 
     private static int NotOwned(ILuaState lua, string function)
     {

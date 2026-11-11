@@ -1,7 +1,8 @@
 -- Notes: keeps short notes in notes.txt, in the folder Notes was opened from.
 --
--- This runs once, when Notes opens. It registers the `note` command, which
--- lasts until Notes closes. Everything here is undone when it does.
+-- This runs once, when Notes opens. It opens Notes' window and registers the
+-- `note` command; both work on the same notes, and both last until Notes
+-- quits. Closing the window quits Notes, and everything here is undone.
 
 local args = require("venture.args")
 local files = venture.files
@@ -26,6 +27,56 @@ local function save(notes)
   if not ok then print("note: " .. problem) end
   return ok
 end
+
+local window = venture.ui.open("main.uix")
+
+-- Shows the notes as they are in the file, so the window and `note` agree,
+-- selecting the note numbered `selected` when it's given.
+local function refresh(selected)
+  local notes = load()
+  window:setItems("notes", notes)
+  if selected then window:select("notes", selected) end
+  window:setText("count", #notes == 1 and "1 note" or (#notes .. " notes"))
+  local nothingSelected = window:selected("notes") == nil
+  window:setDisabled("delete", nothingSelected)
+  window:setDisabled("deleteNote", nothingSelected)
+  window:setDisabled("clearAll", #notes == 0)
+end
+
+local function add()
+  local text = window:text("text"):match("^%s*(.-)%s*$")
+  if text ~= "" then
+    local notes = load()
+    notes[#notes + 1] = text
+    if save(notes) then
+      window:setText("text", "")
+      refresh(#notes)
+    end
+  end
+  refresh()
+  window:focus("text")
+end
+
+local function delete()
+  local number = window:selected("notes")
+  if not number then return end
+  local notes = load()
+  table.remove(notes, number)
+  if save(notes) then window:select("notes", nil) end
+  refresh()
+end
+
+window:on("add", add)
+window:on("text", function(event)
+  if event.kind == "submitted" then add() end
+end)
+window:on("notes", function() refresh() end)
+window:on("delete", delete)
+window:on("deleteNote", delete)
+window:on("newNote", function() window:focus("text") end)
+window:on("clearAll", function()
+  if save({}) then refresh() end
+end)
 
 local spec = {
   name = "note",
@@ -66,6 +117,8 @@ local function note(...)
       print(string.format("%3d  %s", number, text))
     end
   end
+
+  refresh()
 end
 
 venture.command {
@@ -75,4 +128,5 @@ venture.command {
   run = note,
 }
 
-print(venture.app.name .. " is open. Type \"note --help\" to use it.")
+refresh()
+window:focus("text")
