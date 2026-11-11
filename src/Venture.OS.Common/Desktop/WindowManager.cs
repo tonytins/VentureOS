@@ -129,7 +129,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             var scroll = WindowAt(x, y) == receiver ? input.Scroll : 0;
             var viewPressed = pressed && captured == receiver;
             var (originX, originY) = receiver.ContentOrigin;
-            UIViewInput viewInput = new(x, y, captured == receiver && input.PointerDown, viewPressed, released && captured == receiver, scroll, keys);
+            UIViewInput viewInput = new(x, y, captured == receiver && input.PointerDown, viewPressed, released && captured == receiver, scroll, keys, input.Time);
 
             foreach (var uiEvent in receiver.View.Update(viewInput, originX, originY))
             {

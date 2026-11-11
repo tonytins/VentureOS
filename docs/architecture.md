@@ -719,6 +719,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   pointer. Each window shows a `UIView`, which places a `.uix` document's
   controls as Hudini does, draws them, and turns input into Hudini's events
   (pressed, submitted, changed, selected), which the window's owner handles.
+  A double-click (two presses on one item within 500 ms, timed by
+  `DesktopInput.Time`) in a selectable list reports `submitted` with the
+  item, a VentureOS addition proposed for Hudini's spec.
 - **Menu bar.** `MenuBar` shows the VentureOS menu (About VentureOS, Return
   to Shell), then the active app's menu (Quit, Ctrl+Q), then the focused
   window's own `.uix` menus. The active app is the app of the window last
@@ -901,6 +904,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Double-click (§9): a selectable list reports `submitted` for a double-clicked item, and Files opens with it. |
 | 2026-11-11 | minor | Files (§2, §9): the desktop's fallback app, started first and restarted with growing waits; Quick Look; `venture.ui.preview`, `launch`, and `onNewWindow`; About moves to the VentureOS menu only. |
 | 2026-11-11 | minor | Version 0.3.0 (§10): a new base in `GitInfo.txt` for the desktop. |
 | 2026-11-11 | minor | Apps with windows (§2, §9): `venture.ui` under the `ui` scope; windows last for the whole boot; an app quits when its last own window closes; event handlers write to the held output with a 5-second limit; Notes has a window. |

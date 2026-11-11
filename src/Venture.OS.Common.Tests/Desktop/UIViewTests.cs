@@ -132,11 +132,51 @@ public sealed class UIViewTests
 
         var first = Click(180, 12 + 19, down: true);
         Click(180, 31, down: false);
-        var again = Click(180, 31, down: true);
+        var again = Click(180, 31, down: true, seconds: 2);
 
         Assert.Equal([new UIEvent(UIEventKind.Selected, "picks", Index: 1)], first);
         Assert.Empty(again);
         Assert.Equal(1, picks.SelectedIndex);
+    }
+
+    [Fact]
+    public void ADoubleClickOnAnItemSubmitsIt()
+    {
+        view.List("picks")!.Items.AddRange(["Apples", "Pears", "Plums"]);
+
+        var first = Click(180, 31, down: true);
+        Click(180, 31, down: false, seconds: 0.1);
+        var second = Click(180, 31, down: true, seconds: 0.3);
+        Click(180, 31, down: false, seconds: 0.35);
+        var third = Click(180, 31, down: true, seconds: 0.45);
+
+        Assert.Equal([new UIEvent(UIEventKind.Selected, "picks", Index: 1)], first);
+        Assert.Equal([new UIEvent(UIEventKind.Submitted, "picks", "Pears", Index: 1)], second);
+        Assert.Empty(third);
+    }
+
+    [Fact]
+    public void SlowClicksOrClicksOnDifferentItemsDontSubmit()
+    {
+        view.List("picks")!.Items.AddRange(["Apples", "Pears", "Plums"]);
+
+        Click(180, 31, down: true);
+        Click(180, 31, down: false, seconds: 0.1);
+        var slow = Click(180, 31, down: true, seconds: 0.7);
+        Click(180, 31, down: false, seconds: 0.8);
+        var other = Click(180, 51, down: true, seconds: 0.9);
+
+        Assert.Empty(slow);
+        Assert.Equal([new UIEvent(UIEventKind.Selected, "picks", Index: 2)], other);
+    }
+
+    [Fact]
+    public void ALogIgnoresDoubleClicks()
+    {
+        Click(180, 85, down: true);
+        Click(180, 85, down: false, seconds: 0.1);
+
+        Assert.Empty(Click(180, 85, down: true, seconds: 0.2));
     }
 
     [Fact]
@@ -266,8 +306,8 @@ public sealed class UIViewTests
         Assert.Equal(DesktopBackground.Pack(220, 30, 30), painter.At(10, 10));
     }
 
-    private IReadOnlyList<UIEvent> Click(int x, int y, bool down) =>
-        view.Update(new UIViewInput(x, y, down, down, !down, 0, []), 0, 0);
+    private IReadOnlyList<UIEvent> Click(int x, int y, bool down, double seconds = 0) =>
+        view.Update(new UIViewInput(x, y, down, down, !down, 0, [], TimeSpan.FromSeconds(seconds)), 0, 0);
 
     private IReadOnlyList<UIEvent> Type(string text) =>
         Type([.. text.Select(KeyPress.Typed)]);

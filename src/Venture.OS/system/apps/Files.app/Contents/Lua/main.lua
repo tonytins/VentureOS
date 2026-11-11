@@ -99,7 +99,10 @@ local function openWindow(start)
     if up then show(up) end
   end
 
-  window:on("entries", update)
+  -- A double-click opens what it lands on.
+  window:on("entries", function(event)
+    if event.kind == "submitted" then open() else update() end
+  end)
   window:on("open", open)
   window:on("openItem", open)
   window:on("look", quickLook)

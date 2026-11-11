@@ -230,7 +230,8 @@ new number. `roll` still works in the shell, since both live in the same app.
 - **Events** call the function you gave `window:on` for that control, with a
   table: `kind` (`pressed`, `submitted`, `changed`, or `selected`),
   `control`, and, where they apply, `text`, `value`, and `index` (from 1). A
-  text field reports `submitted` when you press Enter.
+  text field reports `submitted` when you press Enter, and a selectable list
+  when an item is double-clicked, after `selected` for the first click.
 - **Changing the window:** `setText`, `setValue`, `setItems` (a list's
   items), `select` (a list's selection), `setDisabled`, `setHidden`,
   `setChecked`, `focus`, `setTitle`, and `close`, with readers `text`,

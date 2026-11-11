@@ -225,7 +225,8 @@ public sealed class DesktopSession
             y,
             input.PointerDown && owner == PointerOwner.Windows,
             overWindows ? input.Scroll : 0,
-            [.. forWindows]);
+            [.. forWindows],
+            input.Time);
         happened.AddRange(Windows.Update(windowInput));
 
         QuitAppsWithoutWindows(happened);

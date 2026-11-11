@@ -81,6 +81,16 @@ public sealed class FilesAppTests : IDisposable
     }
 
     [Fact]
+    public void ADoubleClickOpensWhatItLandsOn()
+    {
+        Select(2);
+
+        Send(new UIEvent(UIEventKind.Submitted, "entries", "photos/", Index: 2));
+
+        Assert.Equal("photos", Window.Title);
+    }
+
+    [Fact]
     public void QuickLookShowsAFile()
     {
         var files = Window;

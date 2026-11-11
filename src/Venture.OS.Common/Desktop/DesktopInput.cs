@@ -25,10 +25,12 @@ public readonly record struct KeyPress(DesktopKey Key, char Character = '\0', bo
 }
 
 /// <summary>
-/// One frame's input: where the pointer is, whether its button is down, how far the wheel turned, and the keys
-/// pressed since the last frame.
+/// One frame's input: where the pointer is, whether its button is down, how far the wheel turned, the keys
+/// pressed since the last frame, and when the frame happened.
 /// </summary>
-public readonly record struct DesktopInput(int PointerX, int PointerY, bool PointerDown, int Scroll = 0, KeyPress[]? Keys = null)
+/// <param name="Time">How long the desktop has been running, which tells a double-click from two clicks.</param>
+public readonly record struct DesktopInput(
+    int PointerX, int PointerY, bool PointerDown, int Scroll = 0, KeyPress[]? Keys = null, TimeSpan Time = default)
 {
     /// <summary>The keys pressed this frame, never <see langword="null"/>.</summary>
     public KeyPress[] KeysPressed => Keys ?? [];

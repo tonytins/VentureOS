@@ -30,6 +30,7 @@ public readonly record struct UIRect(float X, float Y, float Width, float Height
 /// <summary>The input a view handles in one frame, in screen coordinates.</summary>
 /// <param name="PointerPressed">The button went down this frame.</param>
 /// <param name="PointerReleased">The button came up this frame.</param>
+/// <param name="Time">When the frame happened, for double-clicks; see <see cref="DesktopInput.Time"/>.</param>
 public readonly record struct UIViewInput(
     int PointerX,
     int PointerY,
@@ -37,7 +38,8 @@ public readonly record struct UIViewInput(
     bool PointerPressed,
     bool PointerReleased,
     int Scroll,
-    KeyPress[] Keys);
+    KeyPress[] Keys,
+    TimeSpan Time = default);
 
 /// <summary>The items a list shows, which its owner fills, and which one is selected.</summary>
 public sealed class UIListState
@@ -79,6 +81,10 @@ public sealed class UIView
     private string? armed;
     private string? dragging;
     private (int X, int Y) pointer;
+    private (string List, int Index, TimeSpan Time)? lastListClick;
+
+    /// <summary>The longest gap between two clicks on a list item that makes them a double-click.</summary>
+    public static readonly TimeSpan DoubleClickInterval = TimeSpan.FromMilliseconds(500);
 
     /// <param name="script">The document.</param>
     /// <param name="resolveString">Supplies the text for a <c>&lt;String&gt;</c>; without it, references show their table and index.</param>
@@ -255,7 +261,7 @@ public sealed class UIView
         FollowLists();
 
         if (input.PointerPressed)
-            Press(x, y, events);
+            Press(x, y, input.Time, events);
 
         if (dragging is not null && input.PointerDown)
             Drag(dragging, x, y, events);
@@ -335,7 +341,7 @@ public sealed class UIView
 
     // ---- Input ----
 
-    private void Press(int x, int y, List<UIEvent> events)
+    private void Press(int x, int y, TimeSpan time, List<UIEvent> events)
     {
         var hit = Hit(x, y);
         if (hit is null || hit.Type != UIControlType.TextField)
@@ -358,10 +364,29 @@ public sealed class UIView
             case UIControlType.List when hit.IsSelectable:
                 var list = state.List!;
                 var index = list.FirstVisible + (int)((y - Place(hit.Frame, false).Y - 1) / RowHeight(hit));
-                if (index >= 0 && index < list.Items.Count && index != list.SelectedIndex)
+                if (index < 0 || index >= list.Items.Count)
+                {
+                    lastListClick = null;
+                    break;
+                }
+
+                if (index != list.SelectedIndex)
                 {
                     list.SelectedIndex = index;
                     events.Add(new UIEvent(UIEventKind.Selected, hit.Name, Index: index));
+                }
+
+                // A second press on the same item soon after opens it, as Enter submits a text field. A third
+                // starts over, so a triple-click doesn't open it twice.
+                if (lastListClick is { } previous && previous.List == hit.Name && previous.Index == index
+                    && time - previous.Time <= DoubleClickInterval)
+                {
+                    events.Add(new UIEvent(UIEventKind.Submitted, hit.Name, list.Items[index], Index: index));
+                    lastListClick = null;
+                }
+                else
+                {
+                    lastListClick = (hit.Name, index, time);
                 }
 
                 break;

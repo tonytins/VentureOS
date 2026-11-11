@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- Double-click a folder, app, or file in Files to open it.
+- App authors: double-clicking an item in a selectable list reports `submitted`.
+
 ## 0.3.1
 
 - New app: Files. The desktop opens with a Files window. Select something and press Open (Ctrl+O): a folder opens in the window, an app starts, and anything else shows in Quick Look (Ctrl+Y). Go ▸ Enclosing Folder (Ctrl+U) goes back up.

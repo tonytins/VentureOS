@@ -93,7 +93,8 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
                 if (scroll != 0)
                     MouseManager.ResetScrollDelta();
 
-                DesktopInput input = new(MouseManager.X, MouseManager.Y, MouseManager.LeftButton, scroll, ReadKeys());
+                DesktopInput input = new(
+                    MouseManager.X, MouseManager.Y, MouseManager.LeftButton, scroll, ReadKeys(), Stopwatch.GetElapsedTime(opening));
                 if (!session.Update(input))
                     continue;
 

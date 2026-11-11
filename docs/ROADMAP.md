@@ -235,8 +235,8 @@ changed. Lua drawing in regions and images wait for a later route.
   other app is in front; the desktop opens with a Files window on `/mnt`,
   and About stays in the VentureOS menu. It browses folders, opens apps,
   previews `.uix` files, and opens text files with an app. Quick Look is a
-  desktop feature any app can use (`venture.ui.preview`). Lists don't
-  report double-clicks yet, so Files opens with Open and Ctrl+O.
+  desktop feature any app can use (`venture.ui.preview`). A double-click
+  opens an item, as Open and Ctrl+O do.
 - [ ] Phase 2, user apps: `/mnt/user/apps`, shipped with VentureOS from
   `src/Venture.OS/user/apps/`; the dock shows system apps, then user apps.
   Calculator (user) is the first.
