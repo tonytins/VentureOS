@@ -20,7 +20,7 @@ public sealed class RuntimeCommandsTests : IDisposable
         File.WriteAllText(Path.Combine(root, "echo.lua"), "-- The echo script.\nprint('script echo')");
 
         registry.Register(new TestCommand("help"));
-        ScriptCommands scripts = new(root, root);
+        ScriptCommands scripts = new(root);
         runtime = new RuntimeCommands(registry.IsBuiltIn, scripts, () => commandStop?.Invoke());
         registry.AddSource(runtime);
         registry.AddSource(scripts);
@@ -87,6 +87,23 @@ public sealed class RuntimeCommandsTests : IDisposable
 
         Assert.Equal(["loading", "owner again"], ownerOutput.Lines);
         Assert.Equal(["from the command"], shellOutput.Lines);
+    }
+
+    [Fact]
+    public void RunsACommandFromTheShellsCurrentFolder()
+    {
+        var folder = Path.Combine(root, "work");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "data.lua"), "return 'from work'");
+        var owner = Owner();
+        owner.Run(lua => lua.DoString("venture.command { name = 'where', run = function() print(dofile('data.lua')) end }"));
+        ShellContext context = new(shellOutput, new RecordingHost(), registry) { CurrentDirectory = folder };
+
+        new CommandShell(context).Execute("where");
+        owner.Run(lua => lua.DoString("print(pcall(dofile, 'data.lua'))"));
+
+        Assert.Equal(["from work"], shellOutput.Lines);
+        Assert.StartsWith("false", ownerOutput.Lines[0]);
     }
 
     [Fact]

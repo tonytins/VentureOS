@@ -62,6 +62,10 @@ public static class LuaRepl
     /// <param name="runShell">
     /// Runs a line as if typed at the shell, for <c>!</c> and <c>venture.shell</c>, or <see langword="null"/> for none.
     /// </param>
+    /// <param name="currentDirectory">
+    /// The shell's folder, read before each line so relative paths follow a <c>!cd</c>, or <see langword="null"/> to
+    /// stay in <paramref name="workingDirectory"/>.
+    /// </param>
     public static void Run(
         IShellOutput output,
         Func<string, string?> readLine,
@@ -70,7 +74,8 @@ public static class LuaRepl
         Func<string?>? stop = null,
         string? libraryDirectory = null,
         RuntimeCommands? commands = null,
-        Action<string>? runShell = null)
+        Action<string>? runShell = null,
+        Func<string>? currentDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(readLine);
@@ -105,6 +110,9 @@ public static class LuaRepl
                 RunShellLine(output, runShell, line.TrimStart()[ShellPrefix.Length..].Trim());
                 continue;
             }
+
+            if (currentDirectory is not null)
+                owner.Interpreter.WorkingDirectory = currentDirectory();
 
             var top = state.GetTop();
             if (!TryCompile(state, line, readLine, out var error))

@@ -115,7 +115,7 @@ public sealed class RuntimeCommands(
                 return;
             }
 
-            Owner.Call(reference, arguments, context.Output, stop);
+            Owner.Call(reference, arguments, context.Output, context.CurrentDirectory, stop);
         }
     }
 }

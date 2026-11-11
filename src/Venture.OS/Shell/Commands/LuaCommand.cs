@@ -9,8 +9,8 @@ namespace Venture.OS.Shell.Commands;
 /// <remarks>
 /// <para><c>lua "code"</c> runs through <see cref="LuaRunner"/>, as script commands do, in a fresh interpreter. Plain
 /// <c>lua</c> opens <see cref="LuaRepl"/>, where values carry over between lines until <c>exit</c>.</para>
-/// <para>Either way, output goes through the shell, relative paths start at the RAM disk (so
-/// <c>dofile('script.lua')</c> runs <c>/mnt/script.lua</c>), Lua errors and <c>os.exit</c> are reported here, and
+/// <para>Either way, output goes through the shell, relative paths start at the shell's current folder (so
+/// <c>dofile('script.lua')</c> in <c>/mnt</c> runs <c>/mnt/script.lua</c>), Lua errors and <c>os.exit</c> are reported here, and
 /// Ctrl+C or Esc stops code that doesn't finish. The code gets every scope of the <c>venture</c> table, since it's
 /// the user typing it.</para>
 /// <para>The prompt is an owner: commands it registers with <c>venture.command</c> can be tried with <c>!name</c>
@@ -42,19 +42,20 @@ internal sealed class LuaCommand(ISystemInfo system, Func<RuntimeCommands?> comm
             LuaRepl.Run(
                 context.Output,
                 ReadLine,
-                Bootstrap.RamMountPoint,
+                context.CurrentDirectory,
                 system,
                 KeyboardStop.Check,
                 Bootstrap.LibraryDirectoryPath,
                 commands(),
-                runShell);
+                runShell,
+                () => context.CurrentDirectory);
             return;
         }
 
         // "=lua" names the chunk in error messages, such as "lua:1: attempt to call a nil value".
         LuaRunner.Run(
             context.Output,
-            Bootstrap.RamMountPoint,
+            context.CurrentDirectory,
             lua => lua.DoString(arguments[0], "=lua"),
             system,
             KeyboardStop.Check,

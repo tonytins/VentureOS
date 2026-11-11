@@ -15,9 +15,9 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Boot](#boot) | 8 | 0 | 0 | 6 boot steps: 3 critical, 3 optional |
 | [Storage](#storage) | 3 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system` |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
-| [Shell](#shell) | 14 | 0 | 0 | 6 built-in commands, plus Lua script commands (`echo`, `info`, `net`) |
+| [Shell](#shell) | 15 | 0 | 0 | 6 built-in commands, plus Lua script commands (`echo`, `info`, `net`) |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 252 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 275 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 1 open, 3 resolved |
@@ -86,6 +86,7 @@ output stays on the console.
 | SHELL-12 | Scripts can `require` the system library, and `venture.args` parses arguments and options | done | `system/lib/venture/args.lua`, `LuaRunner` sets `package.path`; 36 tests run the shipped module through `require`. Boot test 2026-11-10: a `greet.lua` script command using it printed `TONY` for `greet Tony -l`, explained `greet` (missing `<name>`) and `--shout` (unknown option) with the usage, and showed generated `--help`; a headless boot installed 5 system files |
 | SHELL-13 | `init.lua` can register commands with `venture.command`, undone if it fails | done | `LuaOwner`, `RuntimeCommands`, `ShellLibrary`; 20 tests, including undo order and the name rules, and running undos oldest first or letting `init.lua` replace a script fails them. Boot tests 2026-11-10 with a temporary `init.lua`: `hello Tony` ran its command, `help hello` showed `From: init.lua`, replacing `echo` was refused; when it failed after registering `hello`, `hello` was gone |
 | SHELL-14 | Commands made at the `lua` prompt work through `!` and `venture.shell`, and vanish on `exit` | done | `LuaRepl` as a `LuaOwner`, `ShellLibrary.Shell`; 10 tests, including a command that runs itself (stopped at 8 levels) and a nested call keeping the line's stop, which fails if the stop isn't restored. Boot test 2026-11-10: `!hi Tony` ran a prompt-made command, replacing `echo` was announced and worked, `!help hi` showed `From: the lua prompt`, and after `exit`, `hi` was gone and `echo` was the script again |
+| SHELL-15 | The shell has a current folder: the prompt shows it, `cd` changes it, and Lua runs from it | done | `ShellContext.CurrentDirectory`, `ShellPaths`, `CdCommand`; 23 tests. Boot test 2026-11-10: `cd system` changed the prompt to `/mnt/system> ` and Lua opened `init.lua` from there; `cd commands/../..`, `cd /`, and `cd` worked; a missing folder and a file were refused with the reason |
 
 ## Platform
 

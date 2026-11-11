@@ -114,6 +114,22 @@ public sealed class ScriptCommandsTests : IDisposable
     }
 
     [Fact]
+    public void RunsFromTheShellsCurrentFolder()
+    {
+        var folder = Path.Combine(root, "work");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "data.lua"), "return 'found it'");
+        Script("where", "print(dofile('data.lua'))");
+        Source().TryGet("where", out var command);
+        var context = Context();
+        context.CurrentDirectory = folder;
+
+        command!.Execute(context, []);
+
+        Assert.Equal(["found it"], output.Lines);
+    }
+
+    [Fact]
     public void ListsValidScriptsOnly()
     {
         Script("beta", "-- Second.");
@@ -129,7 +145,7 @@ public sealed class ScriptCommandsTests : IDisposable
     [Fact]
     public void HasNoCommandsWhenTheDirectoryIsMissing()
     {
-        ScriptCommands source = new(Path.Combine(root, "missing"), root);
+        ScriptCommands source = new(Path.Combine(root, "missing"));
 
         Assert.Empty(source.Commands);
         Assert.False(source.TryGet("echo", out _));
@@ -173,12 +189,12 @@ public sealed class ScriptCommandsTests : IDisposable
     [Fact]
     public void RejectsInvalidArguments()
     {
-        Assert.Throws<ArgumentNullException>(() => new ScriptCommands(null!, root));
-        Assert.Throws<ArgumentException>(() => new ScriptCommands(commandsDirectory, ""));
+        Assert.Throws<ArgumentNullException>(() => new ScriptCommands(null!));
+        Assert.Throws<ArgumentException>(() => new ScriptCommands(""));
         Assert.Throws<ArgumentNullException>(() => Source().TryGet(null!, out _));
     }
 
-    private ScriptCommands Source(ISystemInfo? system = null) => new(commandsDirectory, root, system);
+    private ScriptCommands Source(ISystemInfo? system = null) => new(commandsDirectory, system);
 
     private ShellContext Context() => new(output, new RecordingHost(), registry);
 

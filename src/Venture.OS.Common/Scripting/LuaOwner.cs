@@ -137,7 +137,13 @@ public sealed class LuaOwner : IDisposable
     /// Calls a Lua function the code left in the registry, such as a command's <c>run</c>, with
     /// <paramref name="arguments"/>, its output on <paramref name="output"/>.
     /// </summary>
-    internal bool Call(int reference, IReadOnlyList<string> arguments, IShellOutput output, Func<string?>? stop)
+    /// <param name="workingDirectory">Where relative paths start during the call, such as the shell's folder.</param>
+    internal bool Call(
+        int reference,
+        IReadOnlyList<string> arguments,
+        IShellOutput output,
+        string workingDirectory,
+        Func<string?>? stop)
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -145,6 +151,8 @@ public sealed class LuaOwner : IDisposable
         // owner's commands through venture.shell, so the caller's output and stop are put back afterwards.
         var previousOutput = Interpreter.Output;
         var previousError = Interpreter.Error;
+        var previousDirectory = Interpreter.WorkingDirectory;
+        Interpreter.WorkingDirectory = workingDirectory;
         using ShellOutputWriter callWriter = new(output);
         Interpreter.Output = callWriter;
         Interpreter.Error = callWriter;
@@ -156,6 +164,7 @@ public sealed class LuaOwner : IDisposable
         {
             Interpreter.Output = previousOutput;
             Interpreter.Error = previousError;
+            Interpreter.WorkingDirectory = previousDirectory;
         }
     }
 

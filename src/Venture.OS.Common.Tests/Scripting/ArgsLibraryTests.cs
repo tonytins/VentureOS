@@ -216,7 +216,7 @@ public sealed class ArgsLibraryTests
                 if not options then return end
                 print(options.loud and ("HELLO, " .. options.name:upper() .. "!") or ("Hello, " .. options.name .. "."))
                 """);
-            ScriptCommands commands = new(root, root, libraryDirectory: LibraryDirectory);
+            ScriptCommands commands = new(root, libraryDirectory: LibraryDirectory);
             commands.TryGet("greet", out var greet);
 
             greet!.Execute(new(output, new RecordingHost(), new()), ["Tony", "-l"]);

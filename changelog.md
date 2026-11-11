@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.16
+
+- The shell has a current folder, shown in the prompt (`/mnt> `). `cd <folder>` changes it, `cd ..` goes up, and `cd` on its own goes back to `/mnt`.
+- Scripts and Lua code run from the current folder, so relative paths such as `dofile('notes.lua')` start there.
+
 ## 0.2.15
 
 - Commands made at the `lua` prompt with `venture.command` can be tried right there: a line starting with `!` runs a shell command, such as `!greet Tony`. They vanish when you `exit`.

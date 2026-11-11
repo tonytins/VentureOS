@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** major (RAM-first: Blue Water is files, persistence later; apps ship with the system; Borealis scoped as a UIScript desktop) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Blue Water: the current folder and `cd`) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -68,7 +68,7 @@ fit, rather than waiting on a route.
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
 | Wolverine | System library | 100% | 0 | Shared Lua modules in `/mnt/system/lib`, loaded with `require`; `venture.args` parses arguments and options with a generated `--help` |
-| Blue Water | Files | 0% | 8–15 | File commands on the RAM disk now; an optional save to disk later |
+| Blue Water | Files | 25% | 6–12 | File commands on the RAM disk now; an optional save to disk later |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 60% | 8–16 | Runtime commands with undo are done; `.app` bundles shipped with the system, opened and closed as owners |
@@ -131,8 +131,11 @@ became the every-stage list above.
 VentureOS runs from RAM, as Tiny Core, Puppy Linux, and most live CDs do.
 Files come first; keeping them across reboots is later and optional.
 
+- [x] A current folder for the shell: `cd`, shown in the prompt, and Lua runs
+  from it.
 - [ ] File commands on the RAM disk: `ls`, `cat`, `write`, `mkdir`, `rm`,
-  `cd`, `pwd`, and `df`, with options through `venture.args`.
+  `pwd`, and `df`, in Lua, with options through `venture.args`.
+  `/mnt/system` is read-only to them.
 - [ ] The `files` scope, so scripts declare file access with `-- Needs:`.
 - [ ] Later: keep changes on a disk when one is attached, as a save file
   beside the RAM system; `cosmos run --disk <image>` attaches one.
@@ -231,6 +234,7 @@ Borealis.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | Blue Water 25%: the shell's current folder and `cd`. |
 | 2026-11-10 | major | RAM-first: Blue Water is now files, with persistence later and optional; `.app` bundles ship with the system, so they no longer wait on it; Borealis is scoped as a Tiger-style desktop with `.uix` (UIScript) interfaces, after Distro Tycoon 2. About 66–131 h of milestones remain, plus 14–28 h every-stage. |
 | 2026-11-10 | minor | Saluki 60%: the `lua` prompt is an owner, with `!` and `venture.shell`. Runtime commands are done; `.app` bundles wait on Blue Water, which is now the current focus. |
 | 2026-11-10 | minor | Saluki 50%: owners with undo, and `venture.command` for `init.lua`. The `lua` prompt as an owner is next. |

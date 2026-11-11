@@ -18,6 +18,9 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
     private CommandShell? shell;
 
+    // The shell's state, including its current folder, which the prompt shows.
+    private ShellContext? shellContext;
+
     // Commands registered while the system runs, such as by init.lua; set up with the shell.
     private RuntimeCommands? runtimeCommands;
 
@@ -59,7 +62,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
     {
         try
         {
-            Console.Write("> ");
+            Console.Write($"{shellContext?.CurrentDirectory}> ");
             var input = Console.ReadLine();
 
             if (string.IsNullOrEmpty(input))
@@ -93,10 +96,10 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new RebootCommand());
         commands.Register(new ShutdownCommand());
         commands.Register(new LuaCommand(system, () => runtimeCommands, RunShellLine));
+        commands.Register(new CdCommand());
 
         ScriptCommands scripts = new(
             Bootstrap.CommandsDirectoryPath,
-            Bootstrap.RamMountPoint,
             system,
             KeyboardStop.Check,
             Bootstrap.LibraryDirectoryPath);
@@ -106,7 +109,11 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.AddSource(runtimeCommands);
         commands.AddSource(scripts);
 
-        shell = new CommandShell(new ShellContext(new ConsoleShellOutput(), this, commands));
+        shellContext = new ShellContext(new ConsoleShellOutput(), this, commands)
+        {
+            CurrentDirectory = Bootstrap.RamMountPoint,
+        };
+        shell = new CommandShell(shellContext);
         return true;
     }
 

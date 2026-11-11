@@ -21,7 +21,7 @@ public sealed class PromptOwnerTests : IDisposable
         File.WriteAllText(Path.Combine(root, "echo.lua"), "-- The echo script.\nprint('script: ' .. table.concat({...}, ' '))");
 
         registry.Register(new TestCommand("help"));
-        ScriptCommands scripts = new(root, root);
+        ScriptCommands scripts = new(root);
         runtime = new RuntimeCommands(registry.IsBuiltIn, scripts);
         registry.AddSource(runtime);
         registry.AddSource(scripts);

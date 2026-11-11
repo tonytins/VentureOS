@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (RAM-first goals; the desktop direction) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the shell's current folder and `cd`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (252 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (275 tests, including runs of
   the shipped scripts and library).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -23,8 +23,9 @@ the code wins and this page is out of date.
   optional (system files, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
-- **Shell:** a command registry with six built-in commands (`help`,
-  `clear`, `lua`, `halt`, `reboot`, `shutdown`), plus Lua script commands
+- **Shell:** a command registry with seven built-in commands (`help`,
+  `clear`, `cd`, `lua`, `halt`, `reboot`, `shutdown`), a current folder the
+  prompt shows, plus Lua script commands
   from `/mnt/system/commands` (`echo`, `info`, `net`) that reach the kernel
   through the `venture` table, and input split into a command and arguments
   with quoting. A failing command reports its error and
@@ -405,6 +406,14 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
 (Cosmos provides line editing), and passes it to `CommandShell.Execute`.
 Cosmos calls `Run` again as soon as it returns, so it never loops itself.
 
+**The current folder.** `ShellContext.CurrentDirectory` starts at `/mnt`, and
+the prompt shows it, as `/mnt> `. `cd [folder]` changes it (with no folder it
+goes back to `/mnt`), and is built in because it changes the shell itself.
+`ShellPaths.Resolve` works out a full path from what was typed: `..` and `.`
+work, `..` at `/` stays there, and empty parts are skipped. Script commands,
+runtime commands, `lua`, and the prompt (before each line, so `!cd` takes
+effect) all run Lua from the current folder.
+
 ```mermaid
 flowchart LR
     Line["input line"] --> Parse["CommandLine.TryParse"]
@@ -450,6 +459,7 @@ flowchart LR
 |---|---|
 | `help [command]` | Lists the commands, or shows one's summary and usage |
 | `clear` | Clears the screen |
+| `cd [folder]` | Changes the current folder, or with none, goes back to `/mnt` |
 | `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
 | `info` | Lua script: version and build, commit, Cosmos version, uptime, and free and total memory |
 | `lua [code]` | Runs one chunk of Lua 5.5 in a fresh interpreter, or with no code, opens a Lua prompt |
@@ -468,7 +478,7 @@ on `Cosmos.Executable.Lua`, a Lua 5.5 interpreter from the CosmosOS
 organization. Each run gets a fresh interpreter, disposed afterwards, so
 nothing carries over. `print`, `io.write`, and `io.stderr` go through
 `IShellOutput` (`ShellOutputWriter` joins pieces into lines), and relative
-paths in `dofile` and `io.open` start at `/mnt`. Lua errors are reported with
+paths in `dofile` and `io.open` start at the shell's current folder. Lua errors are reported with
 their traceback, and `os.exit` with a non-zero status as that status; neither
 reaches the shell loop.
 
@@ -684,6 +694,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | The current folder (§9): the shell keeps one, the prompt shows it, `cd` changes it, and Lua runs from it. |
 | 2026-11-10 | minor | Direction (§1, §7): VentureOS runs from RAM, with persistence later and optional; the desktop will use `.uix` (UIScript) interfaces. |
 | 2026-11-10 | minor | The `lua` prompt as an owner (§9): its commands vanish on `exit`; `!` and `venture.shell` run shell commands, nested at most 8 deep. |
 | 2026-11-10 | minor | Owners and `venture.command` (§9): `init.lua` runs as a `LuaOwner` and can register commands under the new `shell` scope; they're undone if it fails, and only user-typed code may replace system scripts. |

@@ -121,7 +121,7 @@ public sealed class SystemScriptTests
         Assert.Equal(["Type \"help\" for a list of commands."], output.Lines);
     }
 
-    private ScriptCommands Source(ISystemInfo system) => new(CommandsDirectory, Path.GetTempPath(), system);
+    private ScriptCommands Source(ISystemInfo system) => new(CommandsDirectory, system);
 
     private void Run(string name, ISystemInfo system, params string[] arguments)
     {
