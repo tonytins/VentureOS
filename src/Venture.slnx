@@ -5,7 +5,7 @@
       <File Path="../changelog.md" />
       <File Path="../run.sh" />
       <File Path="../.editorconfig" />
-      <File Path="../.github/workflows/cosmos.yml" />
+      <File Path="../.github/workflows/dotnet.yml" />
       <File Path="../global.json" />
   </Folder>
   <Project Path="Venture.OS\Venture.OS.csproj" />

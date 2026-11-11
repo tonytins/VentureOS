@@ -1,0 +1,32 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        # GitInfo counts commits since GitInfo.txt changed, so the kernel's version needs the full history.
+        fetch-depth: 0
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+    # The solution is in src/, not at the repository root.
+    - name: Restore dependencies
+      run: dotnet restore src/Venture.slnx
+    - name: Build
+      run: dotnet build src/Venture.slnx --no-restore
+    - name: Test
+      run: dotnet test --solution src/Venture.slnx --no-build --verbosity normal

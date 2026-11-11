@@ -1,17 +1,18 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the `desktop` command: drawing and the frame loop) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (desktop windows showing `.uix` interfaces) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
-## Current state (2026-11-10)
+## Current state (2026-11-11)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
-- **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
-  scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
-  files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (489 tests, including runs of
+- **Projects:** the kernel, `Venture.OS` (23 C# files, plus Lua system
+  scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
+  files: the shell framework, Lua support, bundles, UIScript, and the
+  desktop's drawing); and an xUnit v3 test project
+  for the library, `Venture.OS.Common.Tests` (520 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -37,8 +38,10 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
+- **Desktop:** `desktop` opens a graphical desktop with movable windows
+  that show `.uix` interfaces, starting with About VentureOS.
 - **Not built yet:** keeping files across reboots
-  (Blue Water); a desktop (Borealis); a CI boot check, ARM64 builds in CI, and published ISOs
+  (Blue Water); the desktop's menu bar, dock, and apps in windows (Borealis); a CI boot check, ARM64 builds in CI, and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -136,7 +139,7 @@ VentureOS/
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
 │  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
-│  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, and DesktopSession
+│  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, UIView, windows, and DesktopSession
 │  └─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with the menus feature
 │  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
@@ -161,6 +164,7 @@ VentureOS/
 │     │  ├─ init.lua               runs once after boot; prints the help hint
 │     │  ├─ apps/Notes.app/        the sample app: a note command, notes kept in notes.txt
 │     │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
+│     │  ├─ interfaces/about.uix   the About VentureOS window
 │     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
 │     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
 │     ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
@@ -170,7 +174,7 @@ VentureOS/
 ├─ global.json                  opts dotnet test into Microsoft.Testing.Platform
 ├─ docs/                        architecture, roadmap, scorecard
 ├─ .agents/skills/              C# and Cosmos guidance for agents
-├─ .github/workflows/cosmos.yml CI: tests, then build with cached Cosmos tools
+├─ .github/workflows/dotnet.yml CI: build the solution and run the tests
 ├─ changelog.md                 user-facing history
 └─ run.sh                       check, build, and run x64 locally (--headless for serial only)
 ```
@@ -474,7 +478,7 @@ flowchart LR
 | `open <app>` | Opens an app from `/mnt/system/apps` by name, or any `.app` by path |
 | `close <app>` | Closes an open app, undoing what it set up |
 | `apps` | Lists the system's apps, and which are open |
-| `desktop` | Opens the desktop; Esc goes back to the shell |
+| `desktop [interface.uix...]` | Opens the desktop, with any `.uix` files as windows; Esc goes back to the shell |
 | `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
 | `ls [-l] [folder...]` | Lua script: lists a folder, folders marked with `/`; `-l` adds type and size |
 | `cat <file...>` | Lua script: prints files |
@@ -703,7 +707,22 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   translucent, so `DesktopBackground` works the whole sky out once, as
   pixels (85 ms at 1024x768 under QEMU), and each frame copies it, then draws
   on top. `Canvas.Display` shows the finished frame at once.
-- **Frame loop.** `DesktopCommand` reads the PS/2 mouse and the keyboard,
+- **Translucency.** The canvas's own drawing doesn't blend, so
+  `CanvasPainter` blends a translucent fill (window shadows, the fade over
+  inactive windows) into the canvas's buffer itself.
+- **Windows.** `WindowManager` keeps the windows back to front. Pressing a
+  window brings it to the front and focuses it; its title bar drags it,
+  kept on screen far enough to grab again; its close button closes it on
+  release. Keys go to the focused window, the wheel to the window under the
+  pointer. Each window shows a `UIView`, which places a `.uix` document's
+  controls as Hudini does, draws them, and turns input into Hudini's events
+  (pressed, submitted, changed, selected), which the window's owner handles.
+- **Opening.** `desktop` opens About VentureOS, from
+  `/mnt/system/interfaces/about.uix` with the version filled in, and each
+  `.uix` named on the command line, which previews an interface while it's
+  written. Those are read before the screen switches, so a broken document
+  is reported in the shell.
+- **Frame loop.** `DesktopCommand` reads the PS/2 mouse, wheel, and keyboard,
   and `DesktopSession` redraws only when they changed. The loop keeps the
   CPU busy while the desktop is open.
 - **Leaving.** The console draws on the same canvas and can't be hidden, so
@@ -776,11 +795,10 @@ builds and runs its example, so it can't drift from what works.
   `cosmos build -p src/Venture.OS`, then `./run.sh` (add `--headless`
   for serial only) or `cosmos run -p src/Venture.OS --headless`. `--nic none`
   boots without a network card.
-- **CI** (`.github/workflows/cosmos.yml`): on every push and pull request,
-  runs the tests (before the Cosmos toolchain, so a failing test stops the
-  run early), then builds x64. The Cosmos CLI, patcher, and toolchain are cached per Cosmos
-  version and NuGet packages per project file, so tools are downloaded only
-  when the pinned version changes.
+- **CI** (`.github/workflows/dotnet.yml`): on every push and pull request to
+  `main`, restores and builds `src/Venture.slnx` with the .NET 10 SDK, then
+  runs the tests. It installs no Cosmos tools, so whether the kernel project
+  builds there hasn't been confirmed.
 - **Not built yet:** ARM64 builds and a headless boot check in CI, and
   published ISOs (every-stage work on the roadmap).
 
@@ -819,6 +837,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Desktop windows (§2, §9, §11): windows show `.uix` interfaces through `UIView`, About VentureOS opens with the desktop, `desktop` previews `.uix` files, and translucent fills blend. CI moved to `dotnet.yml`, which builds the solution and runs the tests. |
 | 2026-11-11 | minor | The desktop (§2, §9): `desktop` draws the sky and pointer through `IPainter` with the system fonts, at 1024x768, and Esc returns to the shell. |
 | 2026-11-11 | minor | Interfaces (§2, §9): a UIScript reader matching Hudini's, tested on its examples, with a `menus` feature drafted for Hudini. |
 | 2026-11-11 | minor | `Notes.app` ships in `/mnt/system/apps` (§2, §9), with a tested tutorial in `docs/writing-apps.md`. The missing-scope error now names both places a scope is declared. |

@@ -27,7 +27,9 @@ public interface IPainter
     /// <summary>Copies a block of pixels, as 0xAARRGGBB values row by row, with no blending.</summary>
     void DrawPixels(int[] pixels, int x, int y, int width, int height);
 
-    /// <summary>Fills a rectangle with a solid color.</summary>
+    /// <summary>
+    /// Fills a rectangle with a color, blending it over what's there when its alpha is below 255, as for shadows.
+    /// </summary>
     void FillRectangle(int x, int y, int width, int height, UIColor color);
 
     /// <summary>Draws one line of text with its top at <paramref name="y"/>.</summary>

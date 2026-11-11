@@ -20,6 +20,9 @@ internal static class Bootstrap
     /// <summary>Where the system's apps are: <c>Name.app</c> bundles that <c>open</c> finds by name.</summary>
     public const string AppsDirectoryPath = SystemDirectoryPath + "/apps";
 
+    /// <summary>The About VentureOS window's interface.</summary>
+    public const string AboutInterfacePath = SystemDirectoryPath + "/interfaces/about.uix";
+
     /// <summary>Where the desktop's fonts are, with their licenses.</summary>
     public const string FontsDirectoryPath = SystemDirectoryPath + "/fonts";
 

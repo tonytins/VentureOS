@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- About VentureOS: opened by the desktop, which fills in the version. -->
+<UIScript version="1">
+  <Window width="340" height="170"/>
+
+  <Style name="heading" fontSize="22"/>
+  <Style name="plain" backgroundColor="#F0F3F7"/>
+
+  <Text name="name" x="20" y="16" width="300" height="30" style="heading" alignment="center" text="VentureOS"/>
+  <Text name="version" x="20" y="48" width="300" height="20" alignment="center" text="Version"/>
+  <FormattedText name="blurb" x="20" y="74" width="300" height="48" style="plain" alignment="center"
+                 text="A hobby operating system written in C# on Cosmos, extended in Lua."/>
+  <Button name="ok" x="250" y="132" width="70" height="24" text="OK"/>
+</UIScript>

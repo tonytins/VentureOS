@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.21
+
+- The desktop has windows. It opens with About VentureOS; drag a window by its title bar, click one to bring it to the front, and click its red button to close it.
+- `desktop <file.uix>` opens a `.uix` interface in a window, to preview it as you write it. A file that can't be read is reported in the shell, and the desktop doesn't open.
+
 ## 0.2.20
 
 - New `desktop` command: a blue desktop with the pointer, drawn at 1024x768. Press Esc to go back to the shell. Windows, the menu bar, and the dock come next.

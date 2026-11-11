@@ -58,7 +58,7 @@ public sealed class DesktopTests
         DesktopSession session = new(400, 300);
         RecordingPainter painter = new(400, 300);
 
-        Assert.True(session.Update(new DesktopInput(50, 60, false, false)));
+        Assert.True(session.Update(new DesktopInput(50, 60, false)));
         session.Draw(painter);
 
         Assert.Equal(DesktopBackground.Pack(32, 86, 140), painter.At(399, 0));
@@ -73,7 +73,7 @@ public sealed class DesktopTests
     {
         DesktopSession session = new(100, 100);
         RecordingPainter painter = new(100, 100);
-        DesktopInput still = new(10, 10, false, false);
+        DesktopInput still = new(10, 10, false);
 
         Assert.True(session.Update(still));
         session.Draw(painter);
@@ -89,7 +89,7 @@ public sealed class DesktopTests
     {
         DesktopSession session = new(100, 100);
 
-        Assert.True(session.Update(new DesktopInput(50, 50, false, false)));
+        Assert.True(session.Update(new DesktopInput(50, 50, false)));
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public sealed class DesktopTests
     {
         DesktopSession session = new(100, 80);
 
-        session.Update(new DesktopInput(-20, 500, false, false));
+        session.Update(new DesktopInput(-20, 500, false));
 
         Assert.Equal((0, 79), session.PointerPosition);
     }
@@ -107,7 +107,7 @@ public sealed class DesktopTests
     {
         DesktopSession session = new(100, 100);
 
-        Assert.False(session.Update(new DesktopInput(1, 1, false, true)));
+        Assert.False(session.Update(new DesktopInput(1, 1, false, Keys: [new KeyPress(DesktopKey.Escape)])));
         Assert.True(session.IsFinished);
     }
 

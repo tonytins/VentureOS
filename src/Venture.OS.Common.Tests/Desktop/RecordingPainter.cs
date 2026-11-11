@@ -31,13 +31,25 @@ internal sealed class RecordingPainter(int width, int height) : IPainter
     public void FillRectangle(int x, int y, int width, int height, UIColor color)
     {
         Calls++;
-        var pixel = DesktopBackground.Pack(color.Red, color.Green, color.Blue);
         for (var row = 0; row < height; row++)
         {
             for (var column = 0; column < width; column++)
-                Set(x + column, y + row, pixel);
+            {
+                var (px, py) = (x + column, y + row);
+                if (px < 0 || py < 0 || px >= Width || py >= Height)
+                    continue;
+
+                var under = Pixels[(py * Width) + px];
+                float alpha = color.Alpha / 255f;
+                Set(px, py, DesktopBackground.Pack(
+                    Blend((under >> 16) & 0xFF, color.Red, alpha),
+                    Blend((under >> 8) & 0xFF, color.Green, alpha),
+                    Blend(under & 0xFF, color.Blue, alpha)));
+            }
         }
     }
+
+    private static float Blend(int under, byte over, float alpha) => under + ((over - under) * alpha);
 
     public void DrawText(string text, int x, int y, UIColor color, int size, DesktopFont font = DesktopFont.Interface)
     {
