@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the `sidebar` UIScript feature) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (sidebars in windows) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (699 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (705 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -743,6 +743,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   click elsewhere puts the old text back; a click on the same window's
   toolbar keeps the edit, so an item can act on what was typed. Item and
   title widths come from the font, so they're laid out when drawn.
+- **Sidebars.** A `<Sidebar>` runs down the window's left, its full height,
+  in its own shade, as Nautilus has it in GNOME 45: the buttons sit on its
+  top, and the title bar spans only the content, whose corner moves right
+  by the sidebar's width. `UIView` keeps it as a selectable list placed left
+  of that corner, so selection, scrolling, and Lua's list calls serve it
+  unchanged; only its drawing differs, with taller rows and no box.
 - **Minimize.** The orange button sends a window to the dock: it stays in
   the window list but isn't drawn, takes no input, and can't be in front.
   The dock shows each minimized window as a pale tile after the apps, past
@@ -834,8 +840,8 @@ tests with Hudini's license. VentureOS adds two features, drafted for
 Hudini to take up: `menus` (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with
 hotkeys and Ctrl or Alt shortcuts), in [uiscript-menus.md](./uiscript-menus.md),
 and `sidebar` (`<Sidebar>`, a list of places beside the content), in
-[uiscript-sidebar.md](./uiscript-sidebar.md), which the reader takes but the
-desktop doesn't draw yet. `UIView` draws documents in desktop windows.
+[uiscript-sidebar.md](./uiscript-sidebar.md). `UIView` draws documents in
+desktop windows.
 
 **Apps.** `AppManager` opens, closes, and lists `.app` bundles. Opening one
 reads its bundle, makes an owner named after the app with the app's `needs`,
@@ -990,6 +996,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Sidebars (§9): windows draw a `<Sidebar>` down their left, full height, with the buttons on top; the view keeps it as a list; Files' bookmarks move into one. |
 | 2026-11-11 | minor | Interfaces (§9): the `sidebar` feature and `<Sidebar>` in UIScript, drafted for Hudini; the desktop doesn't draw it yet. |
 | 2026-11-11 | minor | Title bar (§9): titles are centred; a `<TitleField>` reads as a plain title until it's clicked, and only its text takes clicks; Files drops Go for Enter. |
 | 2026-11-11 | minor | Terminal (§2, §9): `venture.openShell` gives apps shells of their own without the console; Terminal.app ships; styles take `font`, text areas `follows`; windows get their focus back when they come forward. |

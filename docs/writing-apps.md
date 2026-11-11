@@ -249,6 +249,12 @@ new number. `roll` still works in the shell, since both live in the same app.
   and they appear in the menu bar while the window is in front. A chosen
   item reports `pressed` with its name, like a button. See
   [UIScript menus](./uiscript-menus.md).
+- **A sidebar:** add `sidebar` to `requires` and
+  `<Sidebar name="places" width="120"/>`, and the window gets a list of
+  places down its left, its full height, as Files has. Fill and read it like
+  a selectable list: `setItems`, `select`, `selected`, and a `selected`
+  event. It sits beside the content, so the window's size and your
+  controls' positions don't change. See [UIScript sidebar](./uiscript-sidebar.md).
 - Anything a handler prints shows in a message window on the desktop.
 - **A shell of its own:** `local shell = venture.openShell()` (with `shell` in
   `needs`), then `shell:run("ls")` returns what the command printed, and

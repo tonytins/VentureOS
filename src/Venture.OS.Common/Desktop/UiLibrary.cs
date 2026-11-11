@@ -713,6 +713,8 @@ public static class UiLibrary
                 Names.Add(item.Name);
             if (view.Script.TitleField is { } title)
                 Names.Add(title.Name);
+            if (view.Script.Sidebar is { } sidebar)
+                Names.Add(sidebar.Name);
             foreach (var menu in view.Script.Menus)
             {
                 foreach (var entry in menu.Entries)

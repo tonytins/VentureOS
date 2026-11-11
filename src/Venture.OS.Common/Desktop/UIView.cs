@@ -63,6 +63,9 @@ public sealed class UIListState
 /// <para>The view owns the controls and their interaction state: text, values, focus, lists, and what's hidden or
 /// disabled. Its owner fills lists, sets text and values by name, draws into regions, and handles the events
 /// <see cref="Update"/> returns. Positions are relative to the view's corner, which the owner passes in.</para>
+/// <para>A document's <c>&lt;Sidebar&gt;</c> is a selectable list the view keeps and draws to the left of its corner,
+/// <see cref="SidebarWidth"/> wide, so it reads, fills, and reports like a <c>&lt;List&gt;</c> of its name; the
+/// window frame draws the shade behind it.</para>
 /// <para>Images aren't drawn yet: like Hudini when a host can't supply one, a control or visual with an image shows
 /// a red outline, at 24 pixels when it leaves out its size, and the image is listed in
 /// <see cref="MissingImages"/>.</para>
@@ -73,7 +76,16 @@ public sealed class UIView
     private const int Inset = 4;
     private const string Ellipsis = "…";
 
+    // The sidebar's rows start this far below the content's top and end this far above its bottom, are this much
+    // taller than a list's, and have their selection inset this far from its sides.
+    private const int SidebarInset = 6;
+    private const int SidebarRowExtra = 8;
+    private const int SidebarSelectionInset = 6;
+
     private readonly UIScript script;
+
+    // The sidebar as a selectable list left of the view's corner, so list selection, scrolling, and hits serve it.
+    private readonly UIControl? sidebar;
     private readonly Dictionary<string, State> states = [];
     private readonly Action<string, UIRect>? drawRegion;
     private readonly HashSet<string> missingStrings = [];
@@ -130,6 +142,16 @@ public sealed class UIView
         foreach (var visual in script.Visuals)
             states[visual.Name] = new State();
 
+        if (script.Sidebar is { } side)
+        {
+            SidebarWidth = (int)MathF.Ceiling(side.Width);
+            sidebar = new UIControl(
+                side.Name, UIControlType.List,
+                new UIFrame(-SidebarWidth, 0, SidebarWidth, null, new UIEdgeOffsets(null, null, SidebarInset, SidebarInset)),
+                side.Line, IsSelectable: true);
+            states[side.Name] = new State { List = new UIListState() };
+        }
+
         // The title bar's parts share the namespace too: toolbar items are disabled and selected by name, and the
         // title field's text is read and set like a text field's.
         foreach (var item in script.ToolbarItems)
@@ -152,8 +174,11 @@ public sealed class UIView
         MissingImages = images;
     }
 
-    /// <summary>The document's window size, which edge offsets measure from.</summary>
+    /// <summary>The document's window size, which edge offsets measure from: the content's, without the sidebar.</summary>
     public UISize WindowSize => script.Window.Size;
+
+    /// <summary>How wide the sidebar is, in whole pixels, or 0 without one.</summary>
+    public int SidebarWidth { get; }
 
     /// <summary>The document this view shows.</summary>
     public UIScript Script => script;
@@ -386,6 +411,9 @@ public sealed class UIView
                     break;
             }
         }
+
+        if (sidebar is not null && !states[sidebar.Name].Hidden)
+            DrawSidebar(painter, sidebar, states[sidebar.Name], Offset(Place(sidebar.Frame, false), originX, originY));
     }
 
     // ---- Input ----
@@ -826,6 +854,10 @@ public sealed class UIView
                 return control;
         }
 
+        if (sidebar is not null && states[sidebar.Name] is { Hidden: false, Disabled: false }
+            && Place(sidebar.Frame, false).Contains(x, y))
+            return sidebar;
+
         return null;
     }
 
@@ -836,21 +868,26 @@ public sealed class UIView
         var controls = script.Controls;
         for (var index = 0; index < controls.Count; index++)
         {
-            var control = controls[index];
-            if (states[control.Name].List is not { } list)
-                continue;
-
-            var visible = VisibleRows(control);
-            var last = Math.Max(0, list.Items.Count - visible);
-            if (!control.IsSelectable && list.Items.Count != list.LastCount
-                && list.FirstVisible >= Math.Max(0, list.LastCount - visible))
-                list.FirstVisible = last;
-
-            list.FirstVisible = Math.Clamp(list.FirstVisible, 0, last);
-            if (list.SelectedIndex >= list.Items.Count)
-                list.SelectedIndex = -1;
-            list.LastCount = list.Items.Count;
+            if (states[controls[index].Name].List is { } list)
+                FollowList(controls[index], list);
         }
+
+        if (sidebar is not null)
+            FollowList(sidebar, states[sidebar.Name].List!);
+    }
+
+    private void FollowList(UIControl control, UIListState list)
+    {
+        var visible = VisibleRows(control);
+        var last = Math.Max(0, list.Items.Count - visible);
+        if (!control.IsSelectable && list.Items.Count != list.LastCount
+            && list.FirstVisible >= Math.Max(0, list.LastCount - visible))
+            list.FirstVisible = last;
+
+        list.FirstVisible = Math.Clamp(list.FirstVisible, 0, last);
+        if (list.SelectedIndex >= list.Items.Count)
+            list.SelectedIndex = -1;
+        list.LastCount = list.Items.Count;
     }
 
     // ---- Drawing ----
@@ -975,6 +1012,31 @@ public sealed class UIView
         }
     }
 
+    /// <summary>Draws the sidebar's rows, without a box, over the shade the frame drew; the selected row is marked.</summary>
+    private void DrawSidebar(IPainter painter, UIControl control, State state, UIRect bounds)
+    {
+        var (x, y, width, _) = Ints(bounds);
+        var list = state.List!;
+        var size = DesktopTheme.TextSize;
+        var rowHeight = RowHeight(control);
+        var rows = VisibleRows(control);
+        var room = width - (4 * SidebarSelectionInset);
+        for (var row = 0; row < rows && list.FirstVisible + row < list.Items.Count; row++)
+        {
+            var index = list.FirstVisible + row;
+            var rowY = y + 1 + (row * rowHeight);
+            if (index == list.SelectedIndex)
+            {
+                painter.FillRectangle(x + SidebarSelectionInset, rowY, width - (2 * SidebarSelectionInset), rowHeight,
+                    DesktopTheme.SidebarSelection);
+            }
+
+            var text = Fit(painter, list.Items[index], size, room);
+            painter.DrawText(text, x + (2 * SidebarSelectionInset), rowY + ((rowHeight - LineHeight(size)) / 2),
+                state.Disabled ? DesktopTheme.DisabledText : DesktopTheme.Text, size);
+        }
+    }
+
     private void DrawSlider(IPainter painter, UIControl control, State state, UIRect bounds)
     {
         var (x, y, width, height) = Ints(bounds);
@@ -1051,7 +1113,8 @@ public sealed class UIView
 
     private static int LineHeight(int size) => (int)MathF.Ceiling(size * 1.35f);
 
-    private int RowHeight(UIControl control) => LineHeight(TextSize(control)) + 2;
+    private int RowHeight(UIControl control) =>
+        LineHeight(TextSize(control)) + (ReferenceEquals(control, sidebar) ? SidebarRowExtra : 2);
 
     private int VisibleRows(UIControl control) =>
         Math.Max(1, (int)((Place(control.Frame, false).Height - 2) / RowHeight(control)));

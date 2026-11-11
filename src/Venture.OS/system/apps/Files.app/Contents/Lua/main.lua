@@ -7,7 +7,7 @@
 
 local files = venture.files
 
--- The folders down the left of every window.
+-- The folders in every window's sidebar.
 local BOOKMARKS = {
   { name = "Home", path = "/mnt" },
   { name = "User", path = "/mnt/user" },

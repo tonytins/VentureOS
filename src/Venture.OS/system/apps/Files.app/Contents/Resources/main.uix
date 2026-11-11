@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- A Files window. main.lua fills the lists and handles the events. -->
-<UIScript version="1" requires="menus">
-  <Window width="480" height="300"/>
+<UIScript version="1" requires="menus sidebar">
+  <Window width="370" height="300"/>
+  <Sidebar name="bookmarks" width="120"/>
 
   <TitleField name="address" placeholder="Path"/>
 
@@ -17,7 +18,6 @@
 
   <Style name="quiet" textColor="#6E747E"/>
 
-  <List name="bookmarks" x="10" y="10" width="100" height="256" selectable="true"/>
-  <List name="entries" x="118" y="10" width="352" height="256" selectable="true"/>
-  <Text name="status" x="118" y="272" width="352" height="20" alignment="right" style="quiet"/>
+  <List name="entries" x="10" y="10" width="350" height="256" selectable="true"/>
+  <Text name="status" x="10" y="272" width="350" height="20" alignment="right" style="quiet"/>
 </UIScript>

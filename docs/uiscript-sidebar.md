@@ -10,9 +10,6 @@ is a required feature: a document that uses one names `sidebar` in
 `requires`, so a reader without sidebars refuses it rather than showing a
 window that has lost its way around.
 
-VentureOS reads this feature today. Its desktop draws sidebars from
-Downeaster phase 3 onward.
-
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <UIScript version="1" requires="sidebar">

@@ -36,6 +36,9 @@ public enum FramePart
 /// the room. Enter submits it under the field's name, and Esc or a click elsewhere puts the old text back. A title
 /// too long for its room keeps its end, where a path's last folder is. The rest of the bar drags the window. A
 /// window that isn't in front draws faded, as early Aqua did.</para>
+/// <para>A document with a <c>&lt;Sidebar&gt;</c> gets it down the window's left, its full height, in its own shade,
+/// as Nautilus has it in GNOME 45: the buttons sit on its top, and the title bar, title, and toolbar span only the
+/// content beside it. The view draws and handles its rows.</para>
 /// <para>Toolbar items and the idle title are laid out when the bar is drawn, since their widths come from the font,
 /// so the pointer hits what was last on screen.</para>
 /// </remarks>
@@ -129,7 +132,7 @@ public sealed class DesktopWindow
     public int Y { get; set; }
 
     /// <summary>The frame's width, which is the content's.</summary>
-    public int Width => (int)MathF.Ceiling(View.WindowSize.Width);
+    public int Width => View.SidebarWidth + (int)MathF.Ceiling(View.WindowSize.Width);
 
     /// <summary>The frame's height: the title bar and the content.</summary>
     public int Height => DesktopTheme.TitleBarHeight + (int)MathF.Ceiling(View.WindowSize.Height);
@@ -151,7 +154,7 @@ public sealed class DesktopWindow
         new(X + ButtonInset + ButtonSize + ButtonGap, Y + ((DesktopTheme.TitleBarHeight - ButtonSize) / 2), ButtonSize, ButtonSize);
 
     /// <summary>Where the view's corner is.</summary>
-    public (int X, int Y) ContentOrigin => (X, Y + DesktopTheme.TitleBarHeight);
+    public (int X, int Y) ContentOrigin => (X + View.SidebarWidth, Y + DesktopTheme.TitleBarHeight);
 
     /// <summary>Where a toolbar item was last drawn, by its position in the document.</summary>
     public UIRect ToolbarItemBounds(int index) => index >= 0 && index < itemBounds.Count ? itemBounds[index] : default;
@@ -173,10 +176,11 @@ public sealed class DesktopWindow
         }
     }
 
-    // The room the title has: after the buttons, and before the toolbar.
+    // The room the title has: over the content, after the buttons, and before the toolbar.
     private (int Left, int Right) TitleRoom()
     {
-        var left = X + (IsClosable ? ButtonInset + (2 * ButtonSize) + ButtonGap + 12 : Margin);
+        var left = Math.Max(X + (IsClosable ? ButtonInset + (2 * ButtonSize) + ButtonGap + 12 : Margin),
+            X + View.SidebarWidth + Margin);
         var right = itemBounds.Count > 0 ? (int)itemBounds[0].X - Margin : X + Width - Margin;
         return (left, Math.Max(left, right));
     }
@@ -289,8 +293,16 @@ public sealed class DesktopWindow
 
         painter.FillRectangle(X + Shadow, Y + Shadow, Width, Height, DesktopTheme.Shadow);
 
-        DesktopTheme.FillGradient(painter, X, Y, Width, Bar, DesktopTheme.TitleBarTop, DesktopTheme.TitleBarBottom);
-        painter.FillRectangle(X, Y + Bar - 1, Width, 1, DesktopTheme.Border);
+        // A sidebar runs the window's full height, with the buttons on its top, and the title bar spans the content.
+        var side = View.SidebarWidth;
+        if (side > 0)
+        {
+            painter.FillRectangle(X, Y, side, Height, DesktopTheme.SidebarBackground);
+            painter.FillRectangle(X + side - 1, Y, 1, Height, DesktopTheme.Border);
+        }
+
+        DesktopTheme.FillGradient(painter, X + side, Y, Width - side, Bar, DesktopTheme.TitleBarTop, DesktopTheme.TitleBarBottom);
+        painter.FillRectangle(X + side, Y + Bar - 1, Width - side, 1, DesktopTheme.Border);
 
         if (IsClosable)
         {
@@ -306,7 +318,7 @@ public sealed class DesktopWindow
             DrawTitle(painter, View.Script.TitleField);
 
         var (contentX, contentY) = ContentOrigin;
-        painter.FillRectangle(contentX, contentY, Width, Height - Bar, DesktopTheme.Panel);
+        painter.FillRectangle(contentX, contentY, Width - side, Height - Bar, DesktopTheme.Panel);
         View.Draw(painter, contentX, contentY);
 
         DesktopTheme.Outline(painter, X, Y, Width, Height, DesktopTheme.Border);
@@ -409,16 +421,17 @@ public sealed class DesktopWindow
     }
 
     /// <summary>
-    /// Where something of the wanted width goes in the title's room: centred in the window when it fits there clear
-    /// of both ends of the bar, and otherwise centred in the room, no wider than it.
+    /// Where something of the wanted width goes in the title's room: centred over the content, beside any sidebar,
+    /// when it fits there clear of both ends of the bar, and otherwise centred in the room, no wider than it.
     /// </summary>
     private (int Start, int Width) Centre(int wanted, int left, int right)
     {
+        var (paneLeft, paneWidth) = (X + View.SidebarWidth, Width - View.SidebarWidth);
         var room = right - left;
         var width = Math.Clamp(wanted, 0, room);
-        var side = Math.Max(left - X, X + Width - right);
-        return width <= Width - (2 * side)
-            ? (X + ((Width - width) / 2), width)
+        var side = Math.Max(left - paneLeft, paneLeft + paneWidth - right);
+        return width <= paneWidth - (2 * side)
+            ? (paneLeft + ((paneWidth - width) / 2), width)
             : (left + ((room - width) / 2), width);
     }
 

@@ -32,6 +32,12 @@ public static class DesktopTheme
     /// <summary>A selected list item.</summary>
     public static readonly UIColor Selection = new(158, 200, 242);
 
+    /// <summary>A window's sidebar, a shade cooler than its content, from the top of the window to the bottom.</summary>
+    public static readonly UIColor SidebarBackground = new(224, 231, 240);
+
+    /// <summary>The selected place in a sidebar, softer than a list's selection.</summary>
+    public static readonly UIColor SidebarSelection = new(190, 210, 236);
+
     /// <summary>The top and bottom of a title bar, and of a button.</summary>
     public static readonly UIColor TitleBarTop = new(250, 251, 253);
 

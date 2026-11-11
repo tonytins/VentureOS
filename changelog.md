@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.9
+
+- Files has a sidebar: Home, User, Apps, and System run down the window's left, its full height, with the close and minimize buttons on top.
+- App authors: `<Sidebar>`, with `requires="sidebar"`, gives a window a sidebar of its own.
+
 ## 0.3.8
 
 - Window titles sit in the middle of the title bar.
