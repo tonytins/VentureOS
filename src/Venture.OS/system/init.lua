@@ -5,7 +5,7 @@
 -- survive a reboot. Change src/Venture.OS/system/init.lua instead.
 --
 -- Its output goes to the console and, prefixed with [Venture], to serial.
--- An error is reported and the shell starts anyway. It can't be
--- interrupted, so a script that never finishes keeps the shell from starting.
+-- An error is reported and the shell starts anyway. Ctrl+C or Esc stops it,
+-- and it stops on its own after 10 seconds.
 
 print('Type "help" for a list of commands.')

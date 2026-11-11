@@ -17,6 +17,9 @@ internal static class Bootstrap
     /// <summary>The script that runs once, after boot finishes.</summary>
     public const string InitScriptPath = SystemDirectoryPath + "/init.lua";
 
+    /// <summary>How long <c>init.lua</c> may run, so a stuck script can't keep the shell from starting.</summary>
+    public static readonly TimeSpan InitScriptLimit = TimeSpan.FromSeconds(10);
+
     /// <summary>
     /// Formats a 32 MiB RAM disk as FAT16 and mounts it at <c>/mnt</c>, reporting the step that fails.
     /// </summary>
@@ -68,7 +71,8 @@ internal static class Bootstrap
     /// Runs <c>/mnt/system/init.lua</c>, with its output on serial and the console.
     /// </summary>
     /// <remarks>
-    /// It's optional: a missing script or a Lua error is reported, and the shell starts anyway.
+    /// It's optional: a missing script or a Lua error is reported, and the shell starts anyway. Nobody may be at the
+    /// keyboard during boot, so besides Ctrl+C and Esc, it stops after <see cref="InitScriptLimit"/>.
     /// </remarks>
     public static void RunInitScript(ISystemInfo system)
     {
@@ -78,7 +82,8 @@ internal static class Bootstrap
             return;
         }
 
-        if (!LuaRunner.Run(new KernelLogOutput(), RamMountPoint, lua => lua.DoFile(InitScriptPath), system))
+        var stop = ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(InitScriptLimit));
+        if (!LuaRunner.Run(new KernelLogOutput(), RamMountPoint, lua => lua.DoFile(InitScriptPath), system, stop))
             KernelLog.WriteLine($"{InitScriptPath} failed; see the error above. The shell still works.");
     }
 

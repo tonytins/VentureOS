@@ -15,9 +15,9 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Boot](#boot) | 8 | 0 | 0 | 6 boot steps: 3 critical, 3 optional |
 | [Storage](#storage) | 3 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system` |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
-| [Shell](#shell) | 8 | 0 | 0 | 6 built-in commands, plus Lua script commands (`echo`, `info`, `net`) |
+| [Shell](#shell) | 9 | 0 | 0 | 6 built-in commands, plus Lua script commands (`echo`, `info`, `net`) |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 135 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 152 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 0 open, 3 resolved |
@@ -80,6 +80,7 @@ output stays on the console.
 | SHELL-6 | `reboot` and `shutdown` work | done | Boot tests in QEMU without `-no-reboot`/`-no-shutdown`: a build that ran `reboot` at boot rebooted 13 times in 60 s; one that ran `shutdown` powered QEMU off in 4 s. `cosmos run` passes both flags, so there the VM pauses instead |
 | SHELL-7 | Commands can be written in Lua, as `/mnt/system/commands/<name>.lua` | done | `ScriptCommands`, `LuaRunner`, `ShellOutputWriter` (37 tests, running real Lua). Boot test 2026-11-06: `help` listed `echo` from its script, `help echo` showed the script's summary and usage, `ECHO "a  b" c` printed `a  b c`, and a `greet.lua` written through `lua` ran at once as `greet Tony` |
 | SHELL-8 | Lua scripts can read the system through a `venture` table, and `info` and `net` are scripts | done | `VentureLibrary`, `KernelSystemInfo`; tests run the shipped `info.lua` and `net.lua` against a fake `ISystemInfo`. Boot tests 2026-11-06: `info` showed the version, commit, uptime, and 458 of 497 MiB free; `net` showed the e1000e at 10.0.2.15, and `No network device.` with `--nic none` |
+| SHELL-9 | Ctrl+C or Esc stops running Lua, and `init.lua` stops after 10 seconds | done | `LuaRunner`, `ScriptStop`, `KeyboardStop`; 17 tests, including loops inside `pcall` and coroutines with a check that says stop only once. Boot tests 2026-11-10: Ctrl+C and Esc stopped `while true do end`, a `pcall` loop, and a loop in `coroutine.wrap`, `debug.sethook()` was refused, and the shell carried on; a headless boot with an endless `init.lua` logged `Stopped after 10 seconds.` and reached `Calling Run()` |
 
 ## Platform
 

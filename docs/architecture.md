@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (`init.lua` runs after boot) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Ctrl+C and Esc stop Lua; `init.lua` has a time limit) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (135 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (152 tests, including runs of
   the shipped scripts).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -284,9 +284,9 @@ flowchart TD
 The filesystem, time manager, and shell steps are critical
 (`RunCriticalStep`); the system files, network, and init script steps are
 optional (`RunOptionalStep`). `init.lua` prints through `KernelLogOutput`, so
-its output reaches serial too, and it can use the `venture` table. It can't be
-interrupted, so a script that never finishes keeps the shell from starting;
-it's built into the kernel, so only a kernel build can change it.
+its output reaches serial too, and it can use the `venture` table. Ctrl+C or
+Esc stops it, and so does a 10-second limit, so a script that never finishes
+can't keep the shell from starting, even in a headless boot.
 
 | Step | Kind | Succeeds when | On failure |
 |---|---|---|---|
@@ -477,8 +477,27 @@ scripts do the formatting:
 current values. A value that can't be read reliably (an uptime counter with
 no frequency, a page count that would overflow) is `nil`, and an exception
 from a device becomes a Lua error that `pcall` can catch. Tests use a fake
-`ISystemInfo` and run the shipped `info.lua` and `net.lua` against it. A
-chunk can't be interrupted yet, so an endless loop leaves the shell waiting.
+`ISystemInfo` and run the shipped `info.lua` and `net.lua` against it.
+
+**Stopping Lua.** Ctrl+C or Esc stops `lua` and script commands; `init.lua`
+also stops after 10 seconds. `LuaRunner` takes a stop check (`ScriptStop`
+builds time limits and combines checks; `KeyboardStop` reads the keyboard
+without blocking) and installs it with the standard `debug.sethook` as a count
+hook that runs every 1,000 instructions. A reason it returns becomes a Lua
+error with that message, such as `Interrupted.`, reported like any other
+error, with its traceback. Three things keep a script from escaping it:
+
+- The stop latches. A key press is read only once, so once a check says stop,
+  the runner keeps saying it, and the hook then runs on every instruction. The
+  error escapes a `pcall` that catches it almost at once.
+- `debug.sethook` keeps its hook per thread, and a new coroutine would inherit
+  only the count, so `coroutine.create` and `coroutine.wrap` are replaced with
+  versions that hook each new coroutine.
+- `debug.sethook` is then replaced with a function that raises
+  `debug.sethook is reserved by VentureOS`.
+
+Keys typed while a script runs are read by the check and discarded.
+
 Cosmos's limits apply: local time is UTC, `os.getenv` returns nil, and there
 is no `io.popen` or `/tmp`.
 
@@ -556,6 +575,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | Stopping Lua (§4, §9): Ctrl+C or Esc stops `lua` and script commands through a count hook, and `init.lua` also stops after 10 seconds. |
 | 2026-11-10 | minor | `init.lua` (§2, §4): runs once after the banner as an optional step, with its output on serial through `KernelLogOutput`; it now prints the help hint. |
 | 2026-11-06 | minor | The `venture` table (§2, §3, §9): scripts reach the kernel through `ISystemInfo`, and `info` and `net` are now Lua scripts. |
 | 2026-11-06 | minor | Script commands (§2, §9): `/mnt/system/commands/<name>.lua` runs as `name` through a new command source, Lua output goes through `IShellOutput`, and `echo` is now a script. |

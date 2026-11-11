@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.10
+
+- Ctrl+C or Esc stops a Lua script that's running, from `lua` or a script command, with `Interrupted.`, and returns to the prompt. This works even if the script catches errors with `pcall` or runs in a coroutine.
+- `init.lua` also stops on its own after 10 seconds, so a stuck script can't keep the shell from starting.
+- Lua scripts can no longer replace the hook with `debug.sethook`; it reports that it's reserved by VentureOS.
+
 ## 0.2.9
 
 - After boot, VentureOS runs `/mnt/system/init.lua`. If it fails, the error is shown and the shell starts anyway. For now it prints the "Type help" hint, which used to be built into the kernel.
