@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.17
+
+- File commands: `ls` (with `-l`), `cat`, `write` (with `-a` to add to the end), `mkdir` (with `-p`), `rm` (with `-r`), `df`, and `pwd`. `--help` explains each one's options.
+- `/mnt/system`, the system's own folder, can be read but not changed, so `rm -r` there is refused.
+- Lua scripts can work with files through `venture.files`, after declaring `-- Needs: files`.
+
 ## 0.2.16
 
 - The shell has a current folder, shown in the prompt (`/mnt> `). `cd <folder>` changes it, `cd ..` goes up, and `cd` on its own goes back to `/mnt`.

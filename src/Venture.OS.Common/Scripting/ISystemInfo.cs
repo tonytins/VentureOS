@@ -32,7 +32,23 @@ public interface ISystemInfo
 
     /// <summary>The primary network adapter, or <see langword="null"/> when there's none.</summary>
     NetworkInfo? Network { get; }
+
+    /// <summary>
+    /// The system's own folder, such as <c>/mnt/system</c>, which <c>venture.files</c> won't change, or
+    /// <see langword="null"/> for none.
+    /// </summary>
+    /// <remarks>It's rebuilt from the kernel at every boot, so changes there wouldn't last anyway.</remarks>
+    string? SystemDirectory { get; }
+
+    /// <summary>
+    /// The free and total space where <paramref name="path"/> is stored, or <see langword="null"/> if unknown.
+    /// </summary>
+    /// <param name="path">A full path.</param>
+    SpaceInfo? Space(string path);
 }
+
+/// <summary>Free and total space on a file system, in bytes.</summary>
+public sealed record SpaceInfo(ulong FreeBytes, ulong TotalBytes);
 
 /// <summary>Free and total memory, in bytes.</summary>
 public sealed record MemoryInfo(ulong FreeBytes, ulong TotalBytes);

@@ -100,7 +100,7 @@ with no explanation. Stability outranks features.
   in their own folder and namespace under `Venture.OS`.
 - Prefer writing a new command in Lua, as `src/Venture.OS/system/commands/<name>.lua`:
   its first `--` comment is its summary, a `-- Usage:` comment its usage, a
-  `-- Needs:` comment the scopes it uses (`system`, `network`, `shell`), and it gets its
+  `-- Needs:` comment the scopes it uses (`system`, `network`, `shell`, `files`), and it gets its
   arguments as `...`. It reaches the kernel through the `venture` table
   (`VentureLibrary`, backed by `ISystemInfo`); extend that table when a script
   needs more, and put each new function under a scope (`ScriptScopes`). A

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the shell's current folder and `cd`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (`venture.files` and the file commands) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,7 +11,7 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (275 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (309 tests, including runs of
   the shipped scripts and library).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -26,7 +26,8 @@ the code wins and this page is out of date.
 - **Shell:** a command registry with seven built-in commands (`help`,
   `clear`, `cd`, `lua`, `halt`, `reboot`, `shutdown`), a current folder the
   prompt shows, plus Lua script commands
-  from `/mnt/system/commands` (`echo`, `info`, `net`) that reach the kernel
+  from `/mnt/system/commands` (`echo`, `info`, `net`, and the file commands
+  `ls`, `cat`, `write`, `mkdir`, `rm`, `df`, `pwd`) that reach the kernel
   through the `venture` table, and input split into a command and arguments
   with quoting. A failing command reports its error and
   returns to the prompt.
@@ -131,6 +132,7 @@ VentureOS/
 │  │     ├─ LuaOwner.cs         lasting Lua code and the undo list for what it set up
 │  │     ├─ RuntimeCommands.cs  commands registered with venture.command, and who may take which name
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
+│  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
 │  │     └─ VentureLibrary.cs   the `venture` table
 │  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
@@ -151,7 +153,7 @@ VentureOS/
 │     │  └─ Commands/              one class per command
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               runs once after boot; prints the help hint
-│     │  ├─ commands/              Lua command scripts: echo.lua, info.lua, net.lua
+│     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
 │     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
 │     ├─ Bootloader/limine.conf    Limine boot entry
 │     ├─ GitInfo.txt               base version
@@ -461,6 +463,13 @@ flowchart LR
 | `clear` | Clears the screen |
 | `cd [folder]` | Changes the current folder, or with none, goes back to `/mnt` |
 | `echo [text...]` | Lua script: prints its arguments on one line, separated by single spaces |
+| `ls [-l] [folder...]` | Lua script: lists a folder, folders marked with `/`; `-l` adds type and size |
+| `cat <file...>` | Lua script: prints files |
+| `write [-a] <file> [text...]` | Lua script: writes a line to a file, or with `-a` adds it to the end |
+| `mkdir [-p] <folder...>` | Lua script: makes folders; `-p` makes missing ones above too |
+| `rm [-r] <path...>` | Lua script: removes files and empty folders; `-r` removes a folder and everything in it |
+| `df [folder]` | Lua script: free and total space where a folder is stored |
+| `pwd` | Lua script: the current folder |
 | `info` | Lua script: version and build, commit, Cosmos version, uptime, and free and total memory |
 | `lua [code]` | Runs one chunk of Lua 5.5 in a fresh interpreter, or with no code, opens a Lua prompt |
 | `net` | Lua script: device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
@@ -535,6 +544,7 @@ scripts do the formatting:
 | `venture.memory()` | `system` | `{ free, total }` in bytes, or `nil` |
 | `venture.command{...}` | `shell` | Registers a command for as long as its owner lasts; see **Owners** below |
 | `venture.shell(line)` | `shell` | Runs a line as if typed at the shell; in `init.lua` and at the `lua` prompt |
+| `venture.files.*` | `files` | Lists, reads, writes, and changes files; see **Files** below |
 | `venture.net()` | `network` | `nil` without an adapter, else `{ device, mac, link_up, ready, address, subnet, gateway }`; the last three are `nil` until IPv4 is configured |
 
 **Scopes.** A script declares what it reaches with `-- Needs:` in its header,
@@ -543,12 +553,32 @@ broad, so new functions in an area don't need new names. Every function is in
 the table, but one outside the declared scopes raises
 `venture.net needs "-- Needs: network" in the script's header`. A scope
 VentureOS doesn't know, or one it has reserved but doesn't offer yet
-(`files`), keeps the script from running at all, with the reason, so a script
+(`ui`, for the desktop), keeps the script from running at all, with the reason, so a script
 written for a newer VentureOS fails clearly rather than half working.
 `help <command>` shows a script's needs. `init.lua` follows the same rule;
 `lua` gets every scope, since it's the user typing. Scopes cover only the
-`venture` table: Lua's own `io` still reaches the RAM disk, until `files`
-replaces it (Blue Water).
+`venture` table: Lua's own `io` still reaches files without declaring
+anything, until persistence makes that matter (Blue Water).
+
+**Files.** `venture.files` (`FilesLibrary`) lists, reads, and changes files,
+with paths starting from the current folder. Failures a script should expect,
+such as a missing file, return `nil` and a message, as Lua's `io` does, so a
+command prints the reason and carries on; a wrong argument type is an error.
+
+| Function | Does |
+|---|---|
+| `list([path])` | `{ {name, type, size}, ... }`, sorted by name; `type` is `"file"` or `"folder"` |
+| `info(path)` | `{name, path, type, size}` |
+| `read(path)`, `write(path, data, [append])` | Whole files, byte for byte |
+| `mkdir(path, [parents])` | A folder; with `parents`, missing ones above too, and an existing one is fine |
+| `remove(path, [recursive])` | A file or empty folder; with `recursive`, everything in it |
+| `space([path])` | `{free, total}` in bytes, from the mount that holds the path |
+| `resolve([path])` | The full path |
+
+Nothing that changes files works inside `/mnt/system`
+(`ISystemInfo.SystemDirectory`), or removes a folder holding it: it's
+rebuilt at every boot, and a stray `rm -r` mustn't break the running system.
+Reading it is fine.
 
 **Owners and undo.** After the ideas in "A Programming Paradigm for
 Spatiotemporal Composability", lasting Lua code runs as a `LuaOwner`: one
@@ -694,6 +724,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Files (§2, §9): `venture.files` under the new `files` scope, and `ls`, `cat`, `write`, `mkdir`, `rm`, `df`, and `pwd` as Lua commands; `/mnt/system` is read-only to them. `ui` is now the reserved scope. |
 | 2026-11-10 | minor | The current folder (§9): the shell keeps one, the prompt shows it, `cd` changes it, and Lua runs from it. |
 | 2026-11-10 | minor | Direction (§1, §7): VentureOS runs from RAM, with persistence later and optional; the desktop will use `.uix` (UIScript) interfaces. |
 | 2026-11-10 | minor | The `lua` prompt as an owner (§9): its commands vanish on `exit`; `!` and `venture.shell` run shell commands, nested at most 8 deep. |

@@ -18,6 +18,12 @@ internal sealed class FakeSystemInfo : ISystemInfo
     public NetworkInfo? Network { get; init; } =
         new("e1000e", "52:54:00:12:34:56", true, false, "10.0.2.15", "255.255.255.0", "10.0.2.2");
 
+    public string? SystemDirectory { get; init; }
+
+    public SpaceInfo? DiskSpace { get; init; } = new(30UL * 1024 * 1024, 32UL * 1024 * 1024);
+
+    public SpaceInfo? Space(string path) => DiskSpace;
+
     /// <summary>When set, reading <see cref="Uptime"/> throws it, as a failing device might.</summary>
     public Exception? UptimeFailure { get; init; }
 

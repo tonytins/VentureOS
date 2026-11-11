@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Blue Water: the current folder and `cd`) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Blue Water: file commands) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,11 +36,9 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Files** (Blue Water): file commands on the RAM disk, the first users of
-   `venture.args`.
-2. **Apps** (Saluki): `.app` bundles shipped with the system, opened and
+1. **Apps** (Saluki): `.app` bundles shipped with the system, opened and
    closed as owners, text-mode first.
-3. **Desktop** (Borealis): a UIScript reader, drawing and a frame loop, then
+2. **Desktop** (Borealis): a UIScript reader, drawing and a frame loop, then
    windows from `.uix` files and a window manager.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
@@ -68,7 +66,7 @@ fit, rather than waiting on a route.
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
 | Wolverine | System library | 100% | 0 | Shared Lua modules in `/mnt/system/lib`, loaded with `require`; `venture.args` parses arguments and options with a generated `--help` |
-| Blue Water | Files | 25% | 6–12 | File commands on the RAM disk now; an optional save to disk later |
+| Blue Water | Files | 67% | 8–15 (persistence, later) | File commands on the RAM disk now; an optional save to disk later |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 60% | 8–16 | Runtime commands with undo are done; `.app` bundles shipped with the system, opened and closed as owners |
@@ -79,10 +77,9 @@ fit, rather than waiting on a route.
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | File commands on the RAM disk | Blue Water | 6–10 |
-| 2 | `.app` bundles shipped with the system | Saluki | 8–16 |
-| 3 | A UIScript reader, then drawing and a frame loop | Borealis | 15–30 |
-| 4 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | `.app` bundles shipped with the system | Saluki | 8–16 |
+| 2 | A UIScript reader, then drawing and a frame loop | Borealis | 15–30 |
+| 3 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
 about 20–40 hours.
@@ -133,10 +130,10 @@ Files come first; keeping them across reboots is later and optional.
 
 - [x] A current folder for the shell: `cd`, shown in the prompt, and Lua runs
   from it.
-- [ ] File commands on the RAM disk: `ls`, `cat`, `write`, `mkdir`, `rm`,
+- [x] File commands on the RAM disk: `ls`, `cat`, `write`, `mkdir`, `rm`,
   `pwd`, and `df`, in Lua, with options through `venture.args`.
   `/mnt/system` is read-only to them.
-- [ ] The `files` scope, so scripts declare file access with `-- Needs:`.
+- [x] The `files` scope, so scripts declare file access with `-- Needs:`.
 - [ ] Later: keep changes on a disk when one is attached, as a save file
   beside the RAM system; `cosmos run --disk <image>` attaches one.
 - [ ] Later: decide whether VentureOS formats blank disks itself.
@@ -234,6 +231,7 @@ Borealis.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Blue Water 67%: `venture.files` and the file commands on the RAM disk. Persistence stays for later; Saluki's `.app` bundles are the current focus. |
 | 2026-11-10 | minor | Blue Water 25%: the shell's current folder and `cd`. |
 | 2026-11-10 | major | RAM-first: Blue Water is now files, with persistence later and optional; `.app` bundles ship with the system, so they no longer wait on it; Borealis is scoped as a Tiger-style desktop with `.uix` (UIScript) interfaces, after Distro Tycoon 2. About 66–131 h of milestones remain, plus 14–28 h every-stage. |
 | 2026-11-10 | minor | Saluki 60%: the `lua` prompt is an owner, with `!` and `venture.shell`. Runtime commands are done; `.app` bundles wait on Blue Water, which is now the current focus. |

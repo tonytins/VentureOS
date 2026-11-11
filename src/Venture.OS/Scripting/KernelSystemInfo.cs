@@ -1,3 +1,5 @@
+using Venture.OS.Shell;
+
 namespace Venture.OS.Scripting;
 
 /// <summary>
@@ -45,6 +47,32 @@ internal sealed class KernelSystemInfo : ISystemInfo
 
             return new MemoryInfo(free * pageSize, total * pageSize);
         }
+    }
+
+    public string? SystemDirectory => Startup.Bootstrap.SystemDirectoryPath;
+
+    /// <summary>
+    /// The space on the file system mounted closest above <paramref name="path"/>, from <c>VfsManager.TryStatFs</c>.
+    /// </summary>
+    public SpaceInfo? Space(string path)
+    {
+        string? mountPoint = null;
+        foreach (var mount in VfsManager.Mounts)
+        {
+            if (ShellPaths.IsWithin(path, mount.MountPoint)
+                && (mountPoint is null || mount.MountPoint.Length > mountPoint.Length))
+                mountPoint = mount.MountPoint;
+        }
+
+        if (mountPoint is null || !VfsManager.TryStatFs(mountPoint, out var stats))
+            return null;
+
+        // Guard against block counts that would overflow when converted to bytes.
+        var blockSize = stats.BlockSize;
+        if (blockSize == 0 || stats.Blocks > ulong.MaxValue / blockSize || stats.AvailableBlocks > stats.Blocks)
+            return null;
+
+        return new SpaceInfo(stats.AvailableBlocks * blockSize, stats.Blocks * blockSize);
     }
 
     public NetworkInfo? Network

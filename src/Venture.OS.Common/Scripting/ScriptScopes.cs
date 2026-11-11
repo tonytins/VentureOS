@@ -22,8 +22,11 @@ public enum ScriptScopes
     /// <summary><c>shell</c>: <c>venture.command</c>, which adds commands to the shell.</summary>
     Shell = 1 << 2,
 
+    /// <summary><c>files</c>: <c>venture.files</c>, which lists, reads, and changes files and folders.</summary>
+    Files = 1 << 3,
+
     /// <summary>Everything, for code the user types, such as the <c>lua</c> command.</summary>
-    All = System | Network | Shell,
+    All = System | Network | Shell | Files,
 }
 
 /// <summary>
@@ -32,7 +35,8 @@ public enum ScriptScopes
 public static class ScriptScopeNames
 {
     /// <summary>Names that are planned but not offered yet. A script that needs one can't run.</summary>
-    public static readonly IReadOnlyList<string> Reserved = ["files"];
+    /// <remarks><c>ui</c> is for the desktop's <c>venture.ui</c> (Borealis).</remarks>
+    public static readonly IReadOnlyList<string> Reserved = ["ui"];
 
     /// <summary>The name of one scope, such as <c>network</c>.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="scope"/> isn't a single scope.</exception>
@@ -41,6 +45,7 @@ public static class ScriptScopeNames
         ScriptScopes.System => "system",
         ScriptScopes.Network => "network",
         ScriptScopes.Shell => "shell",
+        ScriptScopes.Files => "files",
         _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "Not a single scope."),
     };
 
@@ -50,7 +55,7 @@ public static class ScriptScopeNames
     public static string Describe(ScriptScopes scopes)
     {
         List<string> names = [];
-        foreach (var scope in (ReadOnlySpan<ScriptScopes>)[ScriptScopes.System, ScriptScopes.Network, ScriptScopes.Shell])
+        foreach (var scope in (ReadOnlySpan<ScriptScopes>)[ScriptScopes.System, ScriptScopes.Network, ScriptScopes.Shell, ScriptScopes.Files])
         {
             if ((scopes & scope) != 0)
                 names.Add(Name(scope));
@@ -74,6 +79,7 @@ public static class ScriptScopeNames
             "system" => ScriptScopes.System,
             "network" => ScriptScopes.Network,
             "shell" => ScriptScopes.Shell,
+            "files" => ScriptScopes.Files,
             _ => ScriptScopes.None,
         };
 
@@ -85,7 +91,7 @@ public static class ScriptScopeNames
 
         error = Reserved.Contains(name.ToLowerInvariant())
             ? $"\"{name}\" isn't available yet."
-            : $"\"{name}\" isn't a known scope; use system, network, or shell.";
+            : $"\"{name}\" isn't a known scope; use system, network, shell, or files.";
         return false;
     }
 }

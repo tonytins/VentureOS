@@ -160,7 +160,11 @@ public static class LuaRunner
     {
         LuaInterpreter lua = new() { WorkingDirectory = workingDirectory, Output = writer, Error = writer };
         if (system is not null)
+        {
             VentureLibrary.Open(lua.State, system, scopes);
+            FilesLibrary.Open(lua.State, () => lua.WorkingDirectory ?? "/", system, scopes);
+        }
+
         if (libraryDirectory is not null)
             SetLibraryDirectory(lua.State, libraryDirectory);
 
