@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the unified title bar and minimize) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (window timers and System Monitor) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (634 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (643 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -166,6 +166,7 @@ VentureOS/
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               runs once after boot; prints the help hint
 │     │  ├─ apps/Files.app/        the desktop's own app: browses folders, opens apps, Quick Look
+│     │  ├─ apps/SystemMonitor.app/  version, uptime, memory, and network, kept current
 │     │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
 │     │  ├─ interfaces/about.uix   the About VentureOS window
 │     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
@@ -855,6 +856,13 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   to the desktop's messages; `venture.ui.onNewWindow(fn)` gives the app
   New Window (Ctrl+N), which the dock also uses when the app has no window.
   The app menu shows Quit for every app but the fallback.
+- **Timers** (`window:every(seconds, fn)`, `AppWindows.Every` and `Tick`).
+  The session ticks them once a frame, from its clock, and redraws when one
+  ran. A timer runs through the app's owner like an event handler, with the
+  same output and 5-second limit, at least 0.1 seconds apart. It stops with
+  its `stop()`, when its window closes, or when the app quits. Timers only
+  run while the desktop shows, and lost time isn't made up: a late timer
+  runs once and waits a whole interval again.
 
 `Notes.app` ships as the example: a window with a text field, the list of
 notes, Delete, and a Note menu, plus `note <text>`, `note -l`, `note -d <n>`,
@@ -934,6 +942,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Timers (§2, §9): `window:every` runs code on a schedule while the desktop shows; System Monitor ships. |
 | 2026-11-11 | minor | The unified title bar (§2, §9): close, minimize, toolbar items, and an editable title field in one bar; minimized windows go to the dock; Files gets an address field and bookmarks; Notes moves to the user's apps; the desktop no longer shows what apps need. |
 | 2026-11-11 | minor | User apps (§2, §4, §7, §9): `user/` installs to `/mnt/user`, which the user may change, in a new optional boot step; apps open from either folder, the system's first; the dock divides them; Calculator ships. |
 | 2026-11-11 | minor | Double-click (§9): a selectable list reports `submitted` for a double-clicked item, and Files opens with it. |

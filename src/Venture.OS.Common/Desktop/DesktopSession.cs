@@ -231,6 +231,11 @@ public sealed class DesktopSession
             input.Time);
         happened.AddRange(Windows.Update(windowInput));
 
+        // Timers run once a frame; one may change a window, or close it.
+        var ticked = apps?.Windows?.Tick(Clock()) ?? false;
+        if (ticked)
+            happened.AddRange(Windows.CloseRequested());
+
         QuitAppsWithoutWindows(happened);
         var restarted = KeepFallbackRunning();
         if ((apps is not null && apps.Running.Count != dockedRunning) || MinimizedChanged())
@@ -247,7 +252,7 @@ public sealed class DesktopSession
         LastEvents = happened;
         RefreshMenus();
 
-        var changed = !drawn || input.HasEvents || happened.Count > 0 || restarted
+        var changed = !drawn || input.HasEvents || happened.Count > 0 || restarted || ticked
             || x != last.PointerX || y != last.PointerY || input.PointerDown != last.PointerDown;
         last = new DesktopInput(x, y, input.PointerDown);
         if (released)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.5
+
+- New app: System Monitor shows the version, how long the system has been up, memory in use, and the network, updated every second.
+- App authors: `window:every(seconds, fn)` runs code on a schedule while the desktop shows.
+
 ## 0.3.4
 
 - Windows have a new title bar: close and minimize on the left, the title, and the window's own buttons on the right. Minimize sends a window to the dock; click its tile, or its app's icon, to bring it back.

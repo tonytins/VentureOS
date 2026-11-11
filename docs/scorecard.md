@@ -17,12 +17,12 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 10 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 634 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 643 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 6 | 0 | 0 | Version 0.3; opens in 48 ms at 1024x768 |
-| [Desktop apps](#desktop-apps) | 2 | 0 | 3 | Keystone phase 2 of 5; Files, Notes, and Calculator have windows |
+| [Desktop apps](#desktop-apps) | 3 | 0 | 2 | Keystone phase 4 of 6; Files, System Monitor, Notes, and Calculator have windows |
 | [Distribution](#distribution) | 0 | 0 | 5 | No CI for now; tests and builds run locally |
-| [Known issues](#known-issues) | | | | 2 open, 3 resolved |
+| [Known issues](#known-issues) | | | | 3 open, 3 resolved |
 
 Kernel-free code in `Venture.OS.Common` is covered by tests
 (`dotnet test --project src/Venture.OS.Common.Tests`). Everything else is
@@ -140,7 +140,7 @@ output stays on the console.
 |---|---|---|---|
 | APP-1 | Files is the desktop's fallback app: always running, it browses folders, opens apps, previews `.uix` files, and opens text files | done | `Files.app`, `QuickLook`, `DesktopSession.FallbackApp`, `AppWindows`; tests for Quick Look's kinds, Files' browsing, Quick Look, launching, and new windows, and the fallback's dock place, menus, last-window exemption, and restarts with growing waits. Boot test 2026-11-11: `desktop` opened Files on `/mnt`; Quick Look showed a text file; Ctrl+O opened `system` and `apps`, and launched Notes; closing Files' window left it running, and its dock icon opened a new one; after `close files`, the next `desktop` started it again |
 | APP-2 | User apps ship in `/mnt/user/apps`, which the user can change, and say what they need when they open; Calculator is one | done | `SystemFiles.User`, `Bootstrap.InstallUserFiles`, `AppManager` (two folders), `Dock` (divider), `Calculator.app`; tests for the listing order, name lookup, the needs line, the dock, and 19 calculations. Boot test 2026-11-11: 3 user files installed to `/mnt/user`; `apps` marked Calculator `user`; the dock showed it past a divider; clicking it opened it with `Calculator needs ui.`; 2 + 3 × 4 = showed 20; `rm -r` removed it from `/mnt/user/apps` but was refused for `/mnt/system/apps/Files.app` |
-| APP-3 | Windows can run code on a timer, and System Monitor shows the system as it changes | missing | Keystone phase 3 |
+| APP-3 | Windows can run code on a timer, and System Monitor shows the system as it changes | done | `AppWindows.Every`, `Tick`, `window:every`, `SystemMonitor.app`; tests for the schedule, lost time, stopping, closing, quitting, mistakes, and System Monitor's readings, failures, and network states. Boot test 2026-11-11: `open "System Monitor"` in the shell, then `desktop`; its dock icon brought it forward, and over 40 seconds its uptime counted up each second, with memory and e1000e at 10.0.2.15 |
 | APP-4 | `.uix` interfaces have a multi-line `<TextArea>`, and TextEdit edits and saves text files | missing | Keystone phase 4 |
 | APP-5 | Terminal.app runs the shell in a window | missing | Keystone phase 5 |
 
@@ -162,4 +162,5 @@ output stays on the console.
 | BUG-2 | VentureOS's console output doesn't reach the serial log | resolved | System messages go through `KernelLog` to serial and the console (BOOT-7); command output stays console-only by design |
 | BUG-3 | `DhcpClient.SendDiscoverPacket()` returning `-1` for a timeout was an assumption | resolved | Confirmed by the Cosmos network docs |
 | BUG-4 | A boot occasionally faults inside Cosmos's APIC setup, before any VentureOS code runs | open | Seen twice in about 40 x64 boots under QEMU on 2026-11-06 and 2026-11-10 (Cosmos 3.0.94): `[INT] FATAL: Exception 13` right after `[LegacyPIC] Remapping and disabling 8259 PIC...`. Not reproduced on demand: 8 of 8 boots of the same build succeeded straight after. Outside VentureOS's control; worth reporting to Cosmos if it recurs |
+| BUG-6 | The desktop's frame loop allocates on every pass, even when idle | open | Seen 2026-11-11 in System Monitor: memory in use swung between about 50 and 430 of 492 MiB within seconds, then back, so the collector keeps up and nothing leaks. The loop spins without waiting, and each pass builds lists, menus, and key arrays. Not a crash risk seen so far; cutting idle allocations, or waiting between passes, would fix it |
 | BUG-5 | Non-ASCII text is garbled in the serial log | open | Seen 2026-11-11: a boot probe logged `café` as `caf�` through `KernelLog`, though the text itself was right. Likely how characters reach the serial port; console output is unaffected. Only matters for reading headless logs |

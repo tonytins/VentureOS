@@ -14,7 +14,11 @@ namespace Venture.OS.Desktop;
 /// <param name="stop">Makes the stop for each event handler, such as a time limit; called once per event.</param>
 public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<Func<string?>>? stop = null)
 {
+    /// <summary>The shortest interval a timer may have, so a window can't keep the desktop busy.</summary>
+    public static readonly TimeSpan MinimumInterval = TimeSpan.FromSeconds(0.1);
+
     private readonly Dictionary<string, Action> newWindowHandlers = [];
+    private readonly List<WindowTimer> timers = [];
 
     /// <summary>The desktop's windows.</summary>
     public WindowManager Windows { get; } = windows ?? throw new ArgumentNullException(nameof(windows));
@@ -72,6 +76,65 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
         NewWindow(app);
     }
 
+    /// <summary>The timers running now, such as for tests.</summary>
+    public int TimerCount => timers.Count;
+
+    /// <summary>
+    /// Runs <paramref name="callback"/> every <paramref name="interval"/> while <paramref name="window"/> is open and
+    /// the desktop shows. The first run is one interval after the next tick.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The interval is shorter than <see cref="MinimumInterval"/>.</exception>
+    public WindowTimer Every(DesktopWindow window, TimeSpan interval, Action callback)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        ArgumentNullException.ThrowIfNull(callback);
+        ArgumentOutOfRangeException.ThrowIfLessThan(interval, MinimumInterval);
+
+        WindowTimer timer = new(window, interval, callback);
+        timers.Add(timer);
+        return timer;
+    }
+
+    /// <summary>Stops a timer. Stopping one twice does nothing.</summary>
+    public void StopTimer(WindowTimer timer) => timers.Remove(timer);
+
+    /// <summary>
+    /// Runs the timers that are due at <paramref name="now"/>, called once a frame while the desktop shows. A timer
+    /// whose window closed stops. Time the desktop wasn't showing isn't made up: a late timer runs once and waits a
+    /// whole interval again.
+    /// </summary>
+    /// <returns>Whether any ran, so the desktop knows to draw again.</returns>
+    public bool Tick(TimeSpan now)
+    {
+        var ran = false;
+        foreach (var timer in (WindowTimer[])[.. timers])
+        {
+            if (!timers.Contains(timer))
+                continue;
+
+            if (!Windows.Windows.Contains(timer.Window))
+            {
+                timers.Remove(timer);
+                continue;
+            }
+
+            if (timer.Next is not { } next)
+            {
+                timer.Next = now + timer.Interval;
+                continue;
+            }
+
+            if (now < next)
+                continue;
+
+            timer.Next = now + timer.Interval;
+            timer.Callback();
+            ran = true;
+        }
+
+        return ran;
+    }
+
     /// <summary>Opens a Quick Look preview of a file or folder.</summary>
     /// <returns>Why there's no preview, or <see langword="null"/> when it opened.</returns>
     public string? Preview(string path)
@@ -82,6 +145,28 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
         Windows.Open(window);
         return null;
     }
+}
+
+/// <summary>A callback a window runs on a schedule; see <see cref="AppWindows.Every"/>.</summary>
+public sealed class WindowTimer
+{
+    internal WindowTimer(DesktopWindow window, TimeSpan interval, Action callback)
+    {
+        Window = window;
+        Interval = interval;
+        Callback = callback;
+    }
+
+    /// <summary>The window it belongs to; it stops when that closes.</summary>
+    public DesktopWindow Window { get; }
+
+    /// <summary>How long it waits between runs.</summary>
+    public TimeSpan Interval { get; }
+
+    internal Action Callback { get; }
+
+    // When it runs next; unset until the first tick after it starts.
+    internal TimeSpan? Next { get; set; }
 }
 
 /// <summary>
@@ -113,6 +198,9 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
 /// control or menu item.</description></item>
 /// <item><description><c>focus(name)</c>, <c>setTitle(text)</c>, <c>close()</c>. Focusing the title field starts an
 /// edit of it.</description></item>
+/// <item><description><c>every(seconds, fn)</c>: runs <c>fn</c> every so often, at least 0.1 seconds apart, while
+/// the desktop shows, until the returned timer's <c>stop()</c>, the window closing, or the app quitting. Time the
+/// desktop wasn't showing isn't made up.</description></item>
 /// <item><description>Toolbar items report <c>pressed</c> like buttons, and take <c>setDisabled</c> and
 /// <c>setChecked</c> (shown held down, as a tab). The title field reports <c>submitted</c> on Enter, and takes
 /// <c>text</c> and <c>setText</c>.</description></item>
@@ -402,6 +490,7 @@ public static class UiLibrary
             h.Window!.RequestClose();
             return 0;
         });
+        Method(lua, "every", handle, (state, h) => h.Every(state));
 
         // A readable form, since the lua prompt prints what a call returns.
         lua.NewTable();
@@ -537,6 +626,42 @@ public static class UiLibrary
         public HashSet<string> Names { get; } = [];
 
         public Dictionary<string, int> Handlers { get; } = [];
+
+        /// <summary><c>window:every(seconds, fn)</c>: a timer that lasts until it's stopped, the window closes, or the app quits.</summary>
+        public int Every(ILuaState lua)
+        {
+            if (lua.Type(2) != LuaType.LUA_TNUMBER)
+                return Fail(lua, "window:every needs a number of seconds, such as window:every(1, function() ... end)");
+
+            var seconds = lua.ToNumber(2);
+            if (double.IsNaN(seconds) || seconds < AppWindows.MinimumInterval.TotalSeconds || seconds > TimeSpan.FromDays(1).TotalSeconds)
+                return Fail(lua, $"window:every needs from {AppWindows.MinimumInterval.TotalSeconds} seconds to a day, not {seconds}");
+            if (!lua.IsFunction(3))
+                return Fail(lua, "window:every needs a function to run, such as window:every(1, function() ... end)");
+
+            lua.PushValue(3);
+            var reference = lua.L_Ref(LuaDef.LUA_REGISTRYINDEX);
+            var timer = host.Every(Window!, TimeSpan.FromSeconds(seconds), () =>
+            {
+                // An error in it is reported, as for an event, and it keeps running.
+                if (!owner.IsDisposed)
+                    owner.Call(reference, _ => 0, host.Output, workingDirectory, host.Stop?.Invoke());
+            });
+            var undo = owner.AddUndo(() =>
+            {
+                host.StopTimer(timer);
+                owner.Interpreter.State.L_Unref(LuaDef.LUA_REGISTRYINDEX, reference);
+            });
+
+            lua.NewTable();
+            lua.PushCSharpFunction(_ =>
+            {
+                undo.Run();
+                return 0;
+            });
+            lua.SetField(-2, "stop");
+            return 1;
+        }
 
         public void Dispatch(UIEvent uiEvent)
         {

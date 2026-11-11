@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- System Monitor's window. main.lua fills in the values every second. -->
+<UIScript version="1">
+  <Window width="340" height="150"/>
+
+  <Style name="label" textColor="#6E747E"/>
+
+  <Text name="versionLabel" x="16" y="16" width="80" height="20" style="label" text="Version"/>
+  <Text name="version" x="100" y="16" width="224" height="20"/>
+  <Text name="uptimeLabel" x="16" y="40" width="80" height="20" style="label" text="Uptime"/>
+  <Text name="uptime" x="100" y="40" width="224" height="20"/>
+  <Text name="memoryLabel" x="16" y="64" width="80" height="20" style="label" text="Memory"/>
+  <Text name="memory" x="100" y="64" width="224" height="20"/>
+  <ProgressBar name="memoryBar" x="100" y="88" width="224" height="10"/>
+  <Text name="networkLabel" x="16" y="110" width="80" height="20" style="label" text="Network"/>
+  <Text name="network" x="100" y="110" width="224" height="20"/>
+</UIScript>

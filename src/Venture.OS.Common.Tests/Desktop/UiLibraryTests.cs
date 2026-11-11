@@ -32,16 +32,18 @@ public sealed class UiLibraryTests : IDisposable
     private readonly RecordingOutput events = new();
     private readonly WindowManager windows = new(800, 600);
     private readonly AppManager manager;
+    private readonly AppWindows host;
 
     public UiLibraryTests()
     {
         Directory.CreateDirectory(Path.Combine(root, "apps"));
         CommandRegistry registry = new();
+        host = new AppWindows(windows, events);
         manager = new AppManager(
             Path.Combine(root, "apps"),
             new RuntimeCommands(registry.IsBuiltIn),
             new FakeSystemInfo(),
-            windows: new AppWindows(windows, events));
+            windows: host);
     }
 
     public void Dispose()
@@ -149,6 +151,63 @@ public sealed class UiLibraryTests : IDisposable
         Assert.True(window.View.IsDisabled("refresh"));
         Assert.True(window.View.IsSelected("refresh"));
         Assert.Equal(["pressed\trefresh", "submitted\t/mnt/user"], events.Lines);
+    }
+
+    [Fact]
+    public void ATimerRunsEveryIntervalWithoutMakingUpLostTime()
+    {
+        Open("""
+            local window = venture.ui.open("main.uix")
+            window:every(1, function() print("tick") end)
+            """);
+
+        foreach (var seconds in (double[])[0, 0.5, 1, 1.5, 2, 9])
+            host.Tick(TimeSpan.FromSeconds(seconds));
+
+        // Started at 0: due at 1, then 2, then 3; at 9 it runs once and waits until 10.
+        Assert.Equal(["tick", "tick", "tick"], events.Lines);
+        Assert.False(host.Tick(TimeSpan.FromSeconds(9.5)));
+        Assert.True(host.Tick(TimeSpan.FromSeconds(10)));
+    }
+
+    [Fact]
+    public void ATimerStopsWhenToldWhenItsWindowClosesOrWhenTheAppQuits()
+    {
+        Open("""
+            local window = venture.ui.open("main.uix")
+            local timer = window:every(1, function() print("one") end)
+            window:on("ok", function() timer:stop() end)
+            local other = venture.ui.open("main.uix")
+            other:every(1, function() print("two") end)
+            other:on("ok", function() other:close() end)
+            venture.ui.open("main.uix"):every(1, function() print("three") end)
+            """);
+        Assert.Equal(3, host.TimerCount);
+
+        Send(windows.Windows[0], new UIEvent(UIEventKind.Pressed, "ok"));
+        Assert.Equal(2, host.TimerCount);
+
+        Send(windows.Windows[1], new UIEvent(UIEventKind.Pressed, "ok"));
+        windows.CloseRequested();
+        host.Tick(TimeSpan.Zero);
+        Assert.Equal(1, host.TimerCount);
+
+        manager.CloseApp("Pad", output);
+        Assert.Equal(0, host.TimerCount);
+        Assert.Empty(events.Lines);
+    }
+
+    [Theory]
+    [InlineData("""venture.ui.open("main.uix"):every(0.05, print)""", "from 0.1 seconds to a day, not 0.05")]
+    [InlineData("""venture.ui.open("main.uix"):every("often", print)""", "needs a number of seconds")]
+    [InlineData("""venture.ui.open("main.uix"):every(1)""", "needs a function to run")]
+    public void ExplainsATimerMistake(string code, string expected)
+    {
+        Write(code);
+
+        Assert.False(manager.OpenApp("Pad", root, output));
+        Assert.Contains(output.Lines, line => line.Contains(expected));
+        Assert.Equal(0, host.TimerCount);
     }
 
     [Fact]

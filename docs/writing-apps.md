@@ -249,6 +249,10 @@ new number. `roll` still works in the shell, since both live in the same app.
   item reports `pressed` with its name, like a button. See
   [UIScript menus](./uiscript-menus.md).
 - Anything a handler prints shows in a message window on the desktop.
+- **Timers:** `window:every(1, refresh)` runs `refresh` every second while
+  the desktop shows, until the window closes or the app quits; keep the
+  timer it returns and call `timer:stop()` to stop sooner. Intervals start
+  at 0.1 seconds. System Monitor uses one.
 - **More:** `venture.ui.preview(path)` opens a file in Quick Look,
   `venture.ui.launch(path)` opens another app, and
   `venture.ui.onNewWindow(fn)` adds New Window (Ctrl+N) to your app's menu;

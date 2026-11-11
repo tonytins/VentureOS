@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone phase 3: the unified title bar) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone phase 4: timers and System Monitor) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -69,14 +69,14 @@ fit, rather than waiting on a route.
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
-| Keystone | Desktop apps | 50% | 15–30 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| | **Total** | | **≈ 33–65**, plus every-stage work (≈ 14–28) | |
+| Keystone | Desktop apps | 67% | 12–24 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
+| | **Total** | | **≈ 30–59**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Timers, and System Monitor | Keystone | 3–6 |
+| 1 | `<TextArea>`, and TextEdit | Keystone | 6–12 |
 | 2 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
@@ -248,7 +248,7 @@ changed. Lua drawing in regions and images wait for a later route.
   and bookmarks for Home, User, Apps, and System; Notes, moved to the
   user's apps, with Add and Remove in its toolbar. The desktop stops
   showing what apps need.
-- [ ] Phase 4, timers: `window:every(seconds, fn)`, and System Monitor
+- [x] Phase 4, timers: `window:every(seconds, fn)`, and System Monitor
   (system): version, uptime, memory, and network, kept current.
 - [ ] Phase 5, multi-line text: a `<TextArea>` element in UIScript's core,
   written up for Hudini's rolling spec; and TextEdit (user), which opens,
@@ -285,6 +285,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Keystone 67%: phase 4, `window:every` timers and System Monitor. About 30–59 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 50%: an intermediate phase 3, the unified title bar and minimize from the new design, with Files' address field and bookmarks and Notes in the user's apps; timers, `<TextArea>`, and Terminal.app become phases 4 to 6. |
 | 2026-11-11 | minor | Keystone 40%: phase 2, user apps in `/mnt/user/apps`, divided from the system's in the dock, and Calculator; list items open with a double-click. About 33–65 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 20%: phase 1, Files, the desktop's fallback app, with Quick Look; the desktop restarts it if it stops. About 36–71 h of milestones remain. |
