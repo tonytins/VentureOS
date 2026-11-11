@@ -27,6 +27,7 @@
   <ItemGroup>
     <!-- The kernel's Lua system files, so tests run the scripts that actually ship. -->
     <None Include="../Venture.OS/system/**/*" LinkBase="system" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Venture.OS/user/**/*" LinkBase="user" CopyToOutputDirectory="PreserveNewest" />
     <!-- The app tutorial, whose examples are built and run, so the guide can't drift from what works. -->
     <None Include="../../docs/writing-apps.md" Link="docs/writing-apps.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Interface/Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" />

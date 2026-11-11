@@ -17,7 +17,9 @@ Every .NET project lives in its own folder under `src/` and is listed in
   steps and the RAM disk; `Shell/Commands/` holds one class per shell command.
   `system/` holds the system files (Lua scripts, apps, fonts, and the
   desktop's `.uix` interfaces), which the build turns into C# and boot
-  installs to `/mnt/system`; `system/init.lua` runs once after boot. `CosmosKernelClass` and the package versions are
+  installs to `/mnt/system`, where nothing may change them; `user/` holds the
+  user's files, such as `apps/Calculator.app`, installed to `/mnt/user`, where
+  the user may; `system/init.lua` runs once after boot. `CosmosKernelClass` and the package versions are
   in `Venture.OS.csproj`.
 - `src/Venture.OS.Common` is kernel-free code: the shell framework
   (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and

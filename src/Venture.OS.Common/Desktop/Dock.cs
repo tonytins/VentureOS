@@ -6,7 +6,8 @@ namespace Venture.OS.Desktop;
 /// <param name="Name">The name it shows, from its <c>Info.xml</c>.</param>
 /// <param name="Target">What opens it, such as its name in the apps folder.</param>
 /// <param name="IsOpen">Whether it's open, which puts a dot under its icon.</param>
-public sealed record DockItem(string Name, string Target, bool IsOpen);
+/// <param name="IsUser">Whether it's one of the user's apps, which sit after the system's, past a divider.</param>
+public sealed record DockItem(string Name, string Target, bool IsOpen, bool IsUser = false);
 
 /// <summary>
 /// The dock: a glassy shelf along the bottom of the screen with an icon for each of the system's apps.
@@ -26,6 +27,9 @@ public sealed class Dock(int screenWidth, int screenHeight)
     private const int Gap = 10;
     private const int Padding = 8;
     private const int DotRoom = 8;
+
+    // The extra room the divider between system and user apps takes, on top of the usual gap.
+    private const int DividerRoom = 12;
     private const int LabelSize = DesktopTheme.TextSize;
 
     // Tile colors, picked by the app's name.
@@ -56,7 +60,7 @@ public sealed class Dock(int screenWidth, int screenHeight)
             if (items.Count == 0)
                 return default;
 
-            var width = (items.Count * IconSize) + ((items.Count - 1) * Gap) + (2 * Padding);
+            var width = (items.Count * IconSize) + ((items.Count - 1) * Gap) + (2 * Padding) + (FirstUser > 0 ? DividerRoom : 0);
             return new UIRect((screenWidth - width) / 2, screenHeight - Height, width, Height);
         }
     }
@@ -79,7 +83,23 @@ public sealed class Dock(int screenWidth, int screenHeight)
     public UIRect IconBounds(int index)
     {
         var shelf = Bounds;
-        return new UIRect(shelf.X + Padding + (index * (IconSize + Gap)), shelf.Y + Padding, IconSize, IconSize);
+        var divider = FirstUser > 0 && index >= FirstUser ? DividerRoom : 0;
+        return new UIRect(shelf.X + Padding + (index * (IconSize + Gap)) + divider, shelf.Y + Padding, IconSize, IconSize);
+    }
+
+    /// <summary>The first user app's position, when there are system apps before it to divide it from; else -1.</summary>
+    private int FirstUser
+    {
+        get
+        {
+            for (var index = 0; index < items.Count; index++)
+            {
+                if (items[index].IsUser)
+                    return index;
+            }
+
+            return -1;
+        }
     }
 
     /// <summary>Handles the pointer for a frame.</summary>
@@ -116,6 +136,12 @@ public sealed class Dock(int screenWidth, int screenHeight)
 
         for (var index = 0; index < items.Count; index++)
             DrawIcon(painter, index);
+
+        if (FirstUser > 0)
+        {
+            var x = (int)IconBounds(FirstUser).X - ((Gap + DividerRoom) / 2);
+            painter.FillRectangle(x, shelfY + Padding, 1, IconSize, DesktopTheme.DockEdge);
+        }
 
         if (Hovered is { } item)
             DrawLabel(painter, item.Name, IconBounds(hovered));

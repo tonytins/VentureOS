@@ -19,9 +19,12 @@ the same shape.
 
 ## Make the bundle
 
-An app's files live in the repository under `src/Venture.OS/system/apps/`.
-Everything there is built into VentureOS and appears in `/mnt/system/apps`
-when it boots. Create this layout:
+An app's files live in the repository under `src/Venture.OS/system/apps/`
+or `src/Venture.OS/user/apps/`. Everything there is built into VentureOS and
+appears in `/mnt/system/apps` or `/mnt/user/apps` when it boots. System apps
+can't be changed or deleted on the running system; user apps can, and say
+what they need each time they open. Put an app the system relies on, such as
+Files, in `system/`, and anything else in `user/`. Create this layout:
 
 ```text
 src/Venture.OS/system/apps/Dice.app/

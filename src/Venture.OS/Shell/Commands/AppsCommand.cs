@@ -4,7 +4,7 @@ using Venture.OS.Startup;
 namespace Venture.OS.Shell.Commands;
 
 /// <summary>
-/// Lists the system's apps and which are open, the text-mode version of the dock's marks.
+/// Lists the system's apps, then the user's, and which are open, the text-mode version of the dock's marks.
 /// </summary>
 internal sealed class AppsCommand(Func<AppManager?> apps) : IShellCommand
 {
@@ -26,7 +26,7 @@ internal sealed class AppsCommand(Func<AppManager?> apps) : IShellCommand
         var listings = manager.Available();
         if (listings.Count == 0)
         {
-            output.WriteLine($"No apps in {Bootstrap.AppsDirectoryPath}.");
+            output.WriteLine($"No apps in {Bootstrap.AppsDirectoryPath} or {Bootstrap.UserAppsDirectoryPath}.");
         }
         else
         {
@@ -42,15 +42,17 @@ internal sealed class AppsCommand(Func<AppManager?> apps) : IShellCommand
                     continue;
                 }
 
+                var where = listing.IsUser ? "user" : "system";
                 var state = manager.IsOpen(bundle.Identifier) ? "open" : "";
-                output.WriteLine($"  {bundle.Name.PadRight(width)}  {bundle.Version ?? "",-8}  {state}".TrimEnd());
+                output.WriteLine($"  {bundle.Name.PadRight(width)}  {bundle.Version ?? "",-8}  {where,-6}  {state}".TrimEnd());
             }
         }
 
-        // Apps opened by path, from outside the system's apps.
+        // Apps opened by path, from outside both apps folders.
         foreach (var running in manager.Running)
         {
-            if (!ShellPaths.IsWithin(running.Bundle.Path, Bootstrap.AppsDirectoryPath))
+            if (!ShellPaths.IsWithin(running.Bundle.Path, Bootstrap.AppsDirectoryPath)
+                && !ShellPaths.IsWithin(running.Bundle.Path, Bootstrap.UserAppsDirectoryPath))
                 output.WriteLine($"  {running.Bundle.Name} (from {running.Bundle.Path})  open");
         }
     }

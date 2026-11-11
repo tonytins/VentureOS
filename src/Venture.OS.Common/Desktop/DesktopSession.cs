@@ -459,11 +459,12 @@ public sealed class DesktopSession
             if (listing.Bundle is not { } bundle)
                 continue;
 
+            // A user app opens by its path, so it can't be mistaken for a system app with the same name.
             var extension = Bundle.Extension(BundleKind.App);
-            var target = listing.Folder.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
-                ? listing.Folder[..^extension.Length]
+            var target = listing.IsUser ? listing.Path
+                : listing.Folder.EndsWith(extension, StringComparison.OrdinalIgnoreCase) ? listing.Folder[..^extension.Length]
                 : listing.Folder;
-            DockItem item = new(bundle.Name, target, apps.IsOpen(bundle.Identifier));
+            DockItem item = new(bundle.Name, target, apps.IsOpen(bundle.Identifier), listing.IsUser);
             if (bundle.Name == FallbackApp)
                 items.Insert(0, item);
             else

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.3
+
+- New app: Calculator, for adding, subtracting, multiplying, and dividing.
+- Your own apps live in `/mnt/user/apps`, next to the system's in `/mnt/system/apps`. Unlike system apps, you can change or delete them, and they say what they need each time they open. `apps` shows which is which, and the dock puts yours after a divider.
+
 ## 0.3.2
 
 - Double-click a folder, app, or file in Files to open it.

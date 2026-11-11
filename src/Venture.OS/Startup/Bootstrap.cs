@@ -20,6 +20,15 @@ internal static class Bootstrap
     /// <summary>Where the system's apps are: <c>Name.app</c> bundles that <c>open</c> finds by name.</summary>
     public const string AppsDirectoryPath = SystemDirectoryPath + "/apps";
 
+    /// <summary>
+    /// Where the user's files that ship with VentureOS are installed at boot. Unlike the system folder, the user and
+    /// the file commands may change them.
+    /// </summary>
+    public const string UserDirectoryPath = RamMountPoint + "/user";
+
+    /// <summary>Where the user's apps are, such as Calculator. They say what they need when they open.</summary>
+    public const string UserAppsDirectoryPath = UserDirectoryPath + "/apps";
+
     /// <summary>The About VentureOS window's interface.</summary>
     public const string AboutInterfacePath = SystemDirectoryPath + "/interfaces/about.uix";
 
@@ -92,6 +101,21 @@ internal static class Bootstrap
         SystemDirectory.Install(SystemDirectoryPath, SystemFiles.All);
         var count = SystemFiles.All.Length;
         KernelLog.WriteLine($"Installed {count} system {(count == 1 ? "file" : "files")} to {SystemDirectoryPath}.");
+    }
+
+    /// <summary>
+    /// Writes the user's files built into the kernel (<see cref="SystemFiles.User"/>) to <c>/mnt/user</c>.
+    /// </summary>
+    /// <remarks>
+    /// Like the system files, a fresh copy at every boot, since the RAM disk starts empty. It's optional: without
+    /// it, only the user's apps are missing.
+    /// </remarks>
+    public static void InstallUserFiles()
+    {
+        KernelLog.WriteLine("Installing user files...");
+        SystemDirectory.Install(UserDirectoryPath, SystemFiles.User);
+        var count = SystemFiles.User.Length;
+        KernelLog.WriteLine($"Installed {count} user {(count == 1 ? "file" : "files")} to {UserDirectoryPath}.");
     }
 
     /// <summary>

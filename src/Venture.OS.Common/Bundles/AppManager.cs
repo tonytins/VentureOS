@@ -23,6 +23,10 @@ namespace Venture.OS.Bundles;
 /// Makes the stop for an app's <c>main</c> script when it opens, such as Ctrl+C or a time limit; called once per open.
 /// </param>
 /// <param name="windows">Where apps' windows go, for <c>venture.ui</c>, or <see langword="null"/> without a desktop.</param>
+/// <param name="userAppsDirectory">
+/// Where the user's apps are, such as <c>/mnt/user/apps</c>, or <see langword="null"/> for none. They open by name like
+/// the system's, after them, and say what they need first, since the user may have changed them.
+/// </param>
 public sealed class AppManager(
     string appsDirectory,
     RuntimeCommands commands,
@@ -30,8 +34,10 @@ public sealed class AppManager(
     string? libraryDirectory = null,
     Action<string>? runShell = null,
     Func<Func<string?>>? startupStop = null,
-    AppWindows? windows = null)
+    AppWindows? windows = null,
+    string? userAppsDirectory = null)
 {
+    private readonly string? userAppsDirectory = userAppsDirectory?.TrimEnd('/');
     private readonly string appsDirectory = appsDirectory?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(appsDirectory));
     private readonly RuntimeCommands commands = commands ?? throw new ArgumentNullException(nameof(commands));
     private readonly List<RunningApp> running = [];
@@ -39,8 +45,10 @@ public sealed class AppManager(
     /// <summary>An app that's open: its bundle and the owner running it.</summary>
     public sealed record RunningApp(Bundle Bundle, LuaOwner Owner);
 
-    /// <summary>An entry in the apps folder: a bundle that read, or the reason it didn't.</summary>
-    public sealed record Listing(string Folder, Bundle? Bundle, string? Problem);
+    /// <summary>An entry in an apps folder: a bundle that read, or the reason it didn't.</summary>
+    /// <param name="Path">The bundle folder's full path.</param>
+    /// <param name="IsUser">Whether it's one of the user's apps rather than the system's.</param>
+    public sealed record Listing(string Folder, Bundle? Bundle, string? Problem, string Path = "", bool IsUser = false);
 
     /// <summary>Where apps' windows go, or <see langword="null"/> without a desktop.</summary>
     public AppWindows? Windows => windows;
@@ -48,26 +56,38 @@ public sealed class AppManager(
     /// <summary>The apps that are open, in the order they opened.</summary>
     public IReadOnlyList<RunningApp> Running => running;
 
-    /// <summary>Every <c>.app</c> in the apps folder, sorted by folder name, with any that can't be read.</summary>
+    /// <summary>
+    /// Every <c>.app</c> in the system's apps folder, then the user's, each sorted by folder name, with any that
+    /// can't be read.
+    /// </summary>
     public IReadOnlyList<Listing> Available()
     {
+        List<Listing> listings = List(appsDirectory, isUser: false);
+        if (userAppsDirectory is not null)
+            listings.AddRange(List(userAppsDirectory, isUser: true));
+        return listings;
+    }
+
+    private static List<Listing> List(string directory, bool isUser)
+    {
         List<Listing> listings = [];
-        if (!Directory.Exists(appsDirectory))
+        if (!Directory.Exists(directory))
             return listings;
 
-        foreach (var folder in Directory.GetDirectories(appsDirectory))
+        foreach (var folder in Directory.GetDirectories(directory))
         {
-            var name = Path.GetFileName(folder);
+            var name = System.IO.Path.GetFileName(folder);
             if (!name.EndsWith(Bundle.Extension(BundleKind.App), StringComparison.OrdinalIgnoreCase))
                 continue;
 
+            var path = $"{directory}/{name}";
             try
             {
-                listings.Add(new Listing(name, Bundle.Read($"{appsDirectory}/{name}", BundleKind.App), null));
+                listings.Add(new Listing(name, Bundle.Read(path, BundleKind.App), null, path, isUser));
             }
             catch (BundleException exception)
             {
-                listings.Add(new Listing(name, null, exception.Message));
+                listings.Add(new Listing(name, null, exception.Message, path, isUser));
             }
         }
 
@@ -201,7 +221,7 @@ public sealed class AppManager(
         foreach (var listing in Available())
         {
             if (listing.Folder.Equals(bare + extension, StringComparison.OrdinalIgnoreCase))
-                return $"{appsDirectory}/{listing.Folder}";
+                return listing.Path;
         }
 
         foreach (var listing in Available())

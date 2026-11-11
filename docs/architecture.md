@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Files, Quick Look, and the fallback app) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (user apps in `/mnt/user`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (585 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (613 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -20,8 +20,8 @@ the code wins and this page is out of date.
 - **Platform:** Cosmos gen3 3.0.94 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
-- **Boot:** six steps, three critical (RAM filesystem, timer, shell) and three
-  optional (system files, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
+- **Boot:** seven steps, three critical (RAM filesystem, timer, shell) and four
+  optional (system files, user files, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
 - **Shell:** a command registry with eleven built-in commands (`help`, `desktop`,
@@ -34,7 +34,8 @@ the code wins and this page is out of date.
   with quoting. A failing command reports its error and
   returns to the prompt.
 - **Storage:** a 32 MiB RAM disk, formatted FAT16 and mounted at `/mnt`,
-  with the system files built into the kernel installed to `/mnt/system`.
+  with the system files built into the kernel installed to `/mnt/system`,
+  which nothing may change, and the user's to `/mnt/user`, which the user may.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
@@ -170,6 +171,8 @@ VentureOS/
 │     │  ├─ interfaces/about.uix   the About VentureOS window
 │     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
 │     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
+│     ├─ user/                     the user's files, built into the kernel and installed to /mnt/user
+│     │  └─ apps/Calculator.app/   the first user app
 │     ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
 │     ├─ Bootloader/limine.conf    Limine boot entry; asks for a 1024x768 framebuffer
 │     ├─ GitInfo.txt               base version
@@ -282,6 +285,7 @@ flowchart TD
         Version["Starting VentureOS &lt;version&gt;..."]
         Fs["filesystem<br/>Bootstrap.BootIntoRam"]
         SysFiles["system files<br/>Bootstrap.InstallSystemFiles"]
+        UserFiles["user files<br/>Bootstrap.InstallUserFiles"]
         Timer["time manager<br/>Bootstrap.CheckTimeManager"]
         Net["network<br/>Bootstrap.ConnectToNetwork"]
         ShellStep["shell<br/>VentureKernel.CreateShell"]
@@ -289,7 +293,8 @@ flowchart TD
         Init["init script<br/>Bootstrap.RunInitScript"]
         Version --> Fs
         Fs -- ok --> SysFiles
-        SysFiles -- "ok, or failure reported" --> Timer
+        SysFiles -- "ok, or failure reported" --> UserFiles
+        UserFiles -- "ok, or failure reported" --> Timer
         Timer -- ok --> Net
         Net -- "ok, or failure reported" --> ShellStep
         ShellStep -- ok --> Banner
@@ -309,7 +314,7 @@ flowchart TD
 ```
 
 The filesystem, time manager, and shell steps are critical
-(`RunCriticalStep`); the system files, network, and init script steps are
+(`RunCriticalStep`); the system files, user files, network, and init script steps are
 optional (`RunOptionalStep`). `init.lua` prints through `KernelLogOutput`, so
 its output reaches serial too, and it can use the `venture` table. Ctrl+C or
 Esc stops it, and so does a 10-second limit, so a script that never finishes
@@ -394,6 +399,11 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
   `SystemDirectory.Install` checks every path, then writes the files to
   `/mnt/system`. The RAM disk starts empty, so the system files always match
   the kernel, and edits made on the running system are lost at reboot.
+- **User files.** Everything under `src/Venture.OS/user/` is built in the same
+  way (`SystemFiles.User`, tagged `Root="user"` in the project) and
+  installed to `/mnt/user` by an optional step after the system files. The
+  difference is protection: `venture.files` and the file commands refuse to
+  change `/mnt/system` but may change `/mnt/user`, as on other systems.
   Cosmos's FAT16 keeps long file names (a 23-character name was read back in
   a boot test) and ignores case when looking names up.
 - **Not built yet:** file commands (Blue Water). VentureOS runs from RAM, as
@@ -733,10 +743,13 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   as a pressed event with the item's name, and items are disabled and
   checked by name through the window's `UIView`. Titles and items are laid
   out when drawn, so the pointer hits what was last on screen.
-- **Dock.** `Dock` shows the system's apps (`AppManager.Available`) as
+- **Dock.** `Dock` shows the system's apps, then the user's after a divider
+  (`AppManager.Available`), as
   colored tiles with their initial, since images aren't drawn yet, with a
   dot under open ones and the name over the one under the pointer. A click
-  opens the app from the current folder, or brings an open one forward.
+  opens the app from the current folder, or brings an open one forward. A
+  user app opens by its path, so it can't be mistaken for a system app with
+  the same name.
 - **App output.** An app keeps the output it opened with, and the console
   would draw over the desktop, so apps opened from the dock, and every
   window event handler, write to one `HeldOutput` the kernel keeps. What
@@ -803,8 +816,10 @@ owner, so its commands vanish; an app can't be closed while its own code is
 running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
 
 - **Finding an app:** by folder or `Info.xml` name in `/mnt/system/apps`,
-  ignoring case, or by path. An app opened from elsewhere says what it needs
-  first, such as `Hello needs shell.`, since nothing reviewed it.
+  then `/mnt/user/apps`, ignoring case, or by path. Any app outside the
+  system's apps, including the user's, says what it needs first, such as
+  `Calculator needs ui.`, since the user may have changed it. `apps` marks
+  each app `system` or `user`.
 - **One instance:** an app already open, by identifier, isn't opened again.
 - **What its code gets:** the `venture` table through its `needs`, as any
   script; `venture.app` (`name`, `identifier`, `version`, `path`, and
@@ -904,6 +919,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | User apps (§2, §4, §7, §9): `user/` installs to `/mnt/user`, which the user may change, in a new optional boot step; apps open from either folder, the system's first; the dock divides them; Calculator ships. |
 | 2026-11-11 | minor | Double-click (§9): a selectable list reports `submitted` for a double-clicked item, and Files opens with it. |
 | 2026-11-11 | minor | Files (§2, §9): the desktop's fallback app, started first and restarted with growing waits; Quick Look; `venture.ui.preview`, `launch`, and `onNewWindow`; About moves to the VentureOS menu only. |
 | 2026-11-11 | minor | Version 0.3.0 (§10): a new base in `GitInfo.txt` for the desktop. |

@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone phase 1: Files) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone phase 2: user apps) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,7 +36,8 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Desktop apps** (Keystone): Files is done; user apps are next.
+1. **Desktop apps** (Keystone): Files and user apps are done; timers and
+   System Monitor are next.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
@@ -68,14 +69,14 @@ fit, rather than waiting on a route.
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
-| Keystone | Desktop apps | 20% | 18–36 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| | **Total** | | **≈ 36–71**, plus every-stage work (≈ 14–28) | |
+| Keystone | Desktop apps | 40% | 15–30 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
+| | **Total** | | **≈ 33–65**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | User apps, and Calculator | Keystone | 3–6 |
+| 1 | Timers, and System Monitor | Keystone | 3–6 |
 | 2 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
@@ -237,7 +238,7 @@ changed. Lua drawing in regions and images wait for a later route.
   previews `.uix` files, and opens text files with an app. Quick Look is a
   desktop feature any app can use (`venture.ui.preview`). A double-click
   opens an item, as Open and Ctrl+O do.
-- [ ] Phase 2, user apps: `/mnt/user/apps`, shipped with VentureOS from
+- [x] Phase 2, user apps: `/mnt/user/apps`, shipped with VentureOS from
   `src/Venture.OS/user/apps/`; the dock shows system apps, then user apps.
   Calculator (user) is the first.
 - [ ] Phase 3, timers: `window:every(seconds, fn)`, and System Monitor
@@ -277,6 +278,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Keystone 40%: phase 2, user apps in `/mnt/user/apps`, divided from the system's in the dock, and Calculator; list items open with a double-click. About 33–65 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 20%: phase 1, Files, the desktop's fallback app, with Quick Look; the desktop restarts it if it stops. About 36–71 h of milestones remain. |
 | 2026-11-11 | major | Keystone planned in five phases: Files as the desktop's fallback, user apps in `/mnt/user/apps`, timers and System Monitor, `<TextArea>` and TextEdit, and Terminal.app, moved from Borealis. Borealis is complete. About 44–86 h of milestones remain. |
 | 2026-11-11 | minor | Version 0.3.0: the desktop, with all five Borealis phases done. |

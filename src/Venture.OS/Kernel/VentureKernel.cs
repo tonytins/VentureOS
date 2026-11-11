@@ -46,6 +46,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
         RunCriticalStep("filesystem", Bootstrap.BootIntoRam);
         RunOptionalStep("system files", Bootstrap.InstallSystemFiles);
+        RunOptionalStep("user files", Bootstrap.InstallUserFiles);
         RunCriticalStep("time manager", Bootstrap.CheckTimeManager);
         RunOptionalStep("network", Bootstrap.ConnectToNetwork);
         RunCriticalStep("shell", CreateShell);
@@ -131,7 +132,8 @@ public class VentureKernel : Sys.Kernel, IShellHost
             Bootstrap.LibraryDirectoryPath,
             RunShellLine,
             () => ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(Bootstrap.AppStartupLimit)),
-            new AppWindows(windows, desktopOutput, () => ScriptStop.After(Bootstrap.UiEventLimit)));
+            new AppWindows(windows, desktopOutput, () => ScriptStop.After(Bootstrap.UiEventLimit)),
+            Bootstrap.UserAppsDirectoryPath);
 
         shellContext = new ShellContext(new ConsoleShellOutput(), this, commands)
         {
