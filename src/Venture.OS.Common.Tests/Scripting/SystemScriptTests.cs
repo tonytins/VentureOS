@@ -110,6 +110,17 @@ public sealed class SystemScriptTests
         Assert.Equal(["No network device."], output.Lines);
     }
 
+    [Fact]
+    public void InitPrintsTheHelpHint()
+    {
+        var init = Path.Combine(AppContext.BaseDirectory, "system", "init.lua");
+
+        var finished = LuaRunner.Run(output, Path.GetTempPath(), lua => lua.DoFile(init), new FakeSystemInfo());
+
+        Assert.True(finished);
+        Assert.Equal(["Type \"help\" for a list of commands."], output.Lines);
+    }
+
     private ScriptCommands Source(ISystemInfo system) => new(CommandsDirectory, Path.GetTempPath(), system);
 
     private void Run(string name, ISystemInfo system, params string[] arguments)

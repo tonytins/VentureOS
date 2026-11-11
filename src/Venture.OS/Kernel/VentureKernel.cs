@@ -13,6 +13,9 @@ public class VentureKernel : Sys.Kernel, IShellHost
     // Boot finishes faster than its messages can be read, so each step pauses before the screen clears.
     private static readonly TimeSpan BootStepDelay = TimeSpan.FromSeconds(0.5);
 
+    // What Lua scripts read through the venture table, shared by the shell and init.lua.
+    private readonly KernelSystemInfo system = new();
+
     private CommandShell? shell;
 
     protected override void BeforeRun()
@@ -30,7 +33,9 @@ public class VentureKernel : Sys.Kernel, IShellHost
         Console.Clear();
 
         KernelLog.WriteLine($"{HostInfo.DisplayVersion} booted successfully!");
-        Console.WriteLine("Type \"help\" for a list of commands.");
+
+        // After the banner, so the screen clear above doesn't hide what the script prints.
+        RunOptionalStep("init script", () => Bootstrap.RunInitScript(system));
     }
 
     // Early initialization
@@ -75,8 +80,6 @@ public class VentureKernel : Sys.Kernel, IShellHost
     /// </remarks>
     private bool CreateShell()
     {
-        KernelSystemInfo system = new();
-
         CommandRegistry commands = new();
         commands.Register(new HelpCommand());
         commands.Register(new ClearCommand());

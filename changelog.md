@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.9
+
+- After boot, VentureOS runs `/mnt/system/init.lua`. If it fails, the error is shown and the shell starts anyway. For now it prints the "Type help" hint, which used to be built into the kernel.
+
 ## 0.2.8
 
 - `info` and `net` are now Lua scripts in `/mnt/system/commands`, with the same output, except that `net` shows `yes` or `no` for the link and readiness instead of `True` or `False`.

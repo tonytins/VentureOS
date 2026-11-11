@@ -14,6 +14,9 @@ internal static class Bootstrap
     /// <summary>Where the Lua command scripts are installed: <c>&lt;name&gt;.lua</c> runs as the command <c>name</c>.</summary>
     public const string CommandsDirectoryPath = SystemDirectoryPath + "/commands";
 
+    /// <summary>The script that runs once, after boot finishes.</summary>
+    public const string InitScriptPath = SystemDirectoryPath + "/init.lua";
+
     /// <summary>
     /// Formats a 32 MiB RAM disk as FAT16 and mounts it at <c>/mnt</c>, reporting the step that fails.
     /// </summary>
@@ -59,6 +62,24 @@ internal static class Bootstrap
         SystemDirectory.Install(SystemDirectoryPath, SystemFiles.All);
         var count = SystemFiles.All.Length;
         KernelLog.WriteLine($"Installed {count} system {(count == 1 ? "file" : "files")} to {SystemDirectoryPath}.");
+    }
+
+    /// <summary>
+    /// Runs <c>/mnt/system/init.lua</c>, with its output on serial and the console.
+    /// </summary>
+    /// <remarks>
+    /// It's optional: a missing script or a Lua error is reported, and the shell starts anyway.
+    /// </remarks>
+    public static void RunInitScript(ISystemInfo system)
+    {
+        if (!File.Exists(InitScriptPath))
+        {
+            KernelLog.WriteLine($"No {InitScriptPath}; skipping it.");
+            return;
+        }
+
+        if (!LuaRunner.Run(new KernelLogOutput(), RamMountPoint, lua => lua.DoFile(InitScriptPath), system))
+            KernelLog.WriteLine($"{InitScriptPath} failed; see the error above. The shell still works.");
     }
 
     /// <summary>

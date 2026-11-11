@@ -12,12 +12,12 @@ change. Statuses are `done`, `partial`, and `missing`.
 
 | Area | Done | Partial | Missing | Key numbers |
 |---|---:|---:|---:|---|
-| [Boot](#boot) | 7 | 0 | 0 | 5 boot steps: 3 critical, 2 optional |
+| [Boot](#boot) | 8 | 0 | 0 | 6 boot steps: 3 critical, 3 optional |
 | [Storage](#storage) | 3 | 0 | 2 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system` |
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 8 | 0 | 0 | 6 built-in commands, plus Lua script commands (`echo`, `info`, `net`) |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 134 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 135 tests, all passing |
 | [Documentation](#documentation) | 3 | 1 | 0 | |
 | [Distribution](#distribution) | 2 | 0 | 3 | CI tests, then builds x64 only |
 | [Known issues](#known-issues) | | | | 0 open, 3 resolved |
@@ -42,11 +42,12 @@ output stays on the console.
 |---|---|---|---|
 | BOOT-1 | The kernel boots to the shell loop on x64 | done | Headless boot on 3.0.94: `[Kernel] Entering main loop...`, `[Kernel] Calling Run()...` |
 | BOOT-2 | Critical steps (RAM filesystem, timer) panic deliberately on failure or exception | done | `VentureKernel.RunCriticalStep`; `Bootstrap.BootIntoRam` and `CheckTimeManager` return `bool` |
-| BOOT-3 | Optional steps (system files, network) report a failure and boot continues | done | `VentureKernel.RunOptionalStep`; boot with `--nic none` reaches `Calling Run()` |
+| BOOT-3 | Optional steps (system files, network, init script) report a failure and boot continues | done | `VentureKernel.RunOptionalStep`; boot with `--nic none` reaches `Calling Run()` |
 | BOOT-4 | A panic reports the version, failed step, and reason to serial and the console, then stays halted | done | `KernelPanic.Halt`: `Log` first, then `Console`, then `Power.Halt()` in a loop |
 | BOOT-5 | Each boot step says which part failed | done | `BootIntoRam` reports register, format, or mount; `ConnectToNetwork` reports no device, DHCP timeout, or no address |
 | BOOT-6 | The panic path is proven by a boot that triggers it | done | 2026-10-15, a temporary critical step that threw `InvalidOperationException`: the full report reached serial with the exception type name, no later step ran, `Run()` was never called, and the machine stayed halted until QEMU was stopped |
 | BOOT-7 | Boot step results, the banner, failures, and panics reach the serial log | done | `KernelLog.WriteLine`; headless boot shows `[Venture]` lines for the version at start, every step, the network details, and the banner, all using `HostInfo.DisplayVersion` |
+| BOOT-8 | `/mnt/system/init.lua` runs after boot, and a failure in it doesn't stop the shell | done | `Bootstrap.RunInitScript`; a test runs the shipped `init.lua`. Headless boots 2026-11-10: serial shows `[Venture] Type "help" for a list of commands.` after the banner; with a temporary `error("probe failure")` added, serial showed the Lua error, its traceback, and `The shell still works.`, and `Calling Run()` followed |
 
 ## Storage
 

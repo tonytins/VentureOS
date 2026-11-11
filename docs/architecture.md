@@ -1,17 +1,17 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-06 · **Last updated:** 2026-11-06 · **Change:** minor (the `venture` table; `info` and `net` move to Lua) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (`init.lua` runs after boot) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
-## Current state (2026-11-06)
+## Current state (2026-11-10)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
-- **Projects:** the kernel, `Venture.OS` (15 C# files, plus Lua system
+- **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (134 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (135 tests, including runs of
   the shipped scripts).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -19,8 +19,8 @@ the code wins and this page is out of date.
 - **Platform:** Cosmos gen3 3.0.94 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
-- **Boot:** five steps, three critical (RAM filesystem, timer, shell) and two
-  optional (system files, network). A critical failure panics with a report; an optional
+- **Boot:** six steps, three critical (RAM filesystem, timer, shell) and three
+  optional (system files, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
 - **Shell:** a command registry with six built-in commands (`help`,
@@ -34,7 +34,7 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** running `init.lua` (Illini); a CI boot check and ARM64 builds in CI (Wolverine);
+- **Not built yet:** a CI boot check and ARM64 builds in CI (Wolverine);
   persistent storage (Blue Water). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -141,7 +141,7 @@ VentureOS/
 │     │  ├─ ConsoleShellOutput.cs  IShellOutput on the console
 │     │  └─ Commands/              one class per command
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
-│     │  ├─ init.lua               placeholder; runs after boot from Illini phase 4
+│     │  ├─ init.lua               runs once after boot; prints the help hint
 │     │  └─ commands/              Lua command scripts: echo.lua, info.lua, net.lua
 │     ├─ Bootloader/limine.conf    Limine boot entry
 │     ├─ GitInfo.txt               base version
@@ -259,12 +259,14 @@ flowchart TD
         Net["network<br/>Bootstrap.ConnectToNetwork"]
         ShellStep["shell<br/>VentureKernel.CreateShell"]
         Banner["&lt;version&gt; booted successfully!"]
+        Init["init script<br/>Bootstrap.RunInitScript"]
         Version --> Fs
         Fs -- ok --> SysFiles
         SysFiles -- "ok, or failure reported" --> Timer
         Timer -- ok --> Net
         Net -- "ok, or failure reported" --> ShellStep
         ShellStep -- ok --> Banner
+        Banner --> Init
     end
 
     Panic["KernelPanic.Halt<br/>report, then halt forever"]
@@ -275,13 +277,16 @@ flowchart TD
     Fs -- "false or exception" --> Panic
     Timer -- "false or exception" --> Panic
     ShellStep -- exception --> Panic
-    Banner --> Run
+    Init -- "ok, or failure reported" --> Run
     Run -- "power command" --> Halt
 ```
 
 The filesystem, time manager, and shell steps are critical
-(`RunCriticalStep`); the system files and network steps are optional
-(`RunOptionalStep`).
+(`RunCriticalStep`); the system files, network, and init script steps are
+optional (`RunOptionalStep`). `init.lua` prints through `KernelLogOutput`, so
+its output reaches serial too, and it can use the `venture` table. It can't be
+interrupted, so a script that never finishes keeps the shell from starting;
+it's built into the kernel, so only a kernel build can change it.
 
 | Step | Kind | Succeeds when | On failure |
 |---|---|---|---|
@@ -290,6 +295,7 @@ The filesystem, time manager, and shell steps are critical
 | Time manager | critical | Cosmos reports `TimerManager.IsInitialized` | Reports it, then panics |
 | Shell | critical | Every command registers | Registration only fails on a programming error, such as two commands with one name; it panics |
 | Network | optional | Always returns; records the MAC and DHCP address when it can | No NIC, a DHCP timeout, or no address is reported; an exception is reported and boot continues |
+| Init script | optional | `/mnt/system/init.lua` runs to the end, after the banner so the screen clear doesn't hide its output | A missing script or a Lua error (with its traceback) is reported, and the shell starts anyway |
 
 A step is **critical** when the system can't do its job without it, so
 running on would only make later failures harder to understand. Adding a
@@ -550,6 +556,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | `init.lua` (§2, §4): runs once after the banner as an optional step, with its output on serial through `KernelLogOutput`; it now prints the help hint. |
 | 2026-11-06 | minor | The `venture` table (§2, §3, §9): scripts reach the kernel through `ISystemInfo`, and `info` and `net` are now Lua scripts. |
 | 2026-11-06 | minor | Script commands (§2, §9): `/mnt/system/commands/<name>.lua` runs as `name` through a new command source, Lua output goes through `IShellOutput`, and `echo` is now a script. |
 | 2026-11-06 | minor | System files (§2, §4, §7): Lua scripts under `src/Venture.OS/system/` are built into the kernel and installed to `/mnt/system` by a new optional boot step. |

@@ -16,7 +16,7 @@ Every .NET project lives in its own folder under `src/` and is listed in
   (`VentureKernel`), `KernelPanic`, and `KernelLog`; `Startup/` holds the boot
   steps and the RAM disk; `Shell/Commands/` holds one class per shell command.
   `system/` holds Lua system files, which the build turns into C# and boot
-  installs to `/mnt/system`. `CosmosKernelClass` and the package versions are
+  installs to `/mnt/system`; `system/init.lua` runs once after boot. `CosmosKernelClass` and the package versions are
   in `Venture.OS.csproj`.
 - `src/Venture.OS.Common` is kernel-free code: the shell framework
   (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and
