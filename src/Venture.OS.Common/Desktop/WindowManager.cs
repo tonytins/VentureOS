@@ -232,7 +232,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var target = WindowAt(x, y);
 
         // A press anywhere but a title field drops the edit in progress, as Esc does, except on the same window's
-        // toolbar, whose items act on what was typed, as Go does for an address.
+        // toolbar, whose items act on what was typed.
         foreach (var window in windows)
         {
             if (window.IsEditingTitle

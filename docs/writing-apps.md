@@ -241,8 +241,9 @@ new number. `roll` still works in the shell, since both live in the same app.
   `value`, `items`, and `selected`. Use a colon: `window:setText(...)`.
 - **The title bar:** `<ToolbarItem name="add" title="Add"/>` puts a button
   in the window's title bar, which reports `pressed` like any button, and
-  `<TitleField name="address"/>` makes the title an editable field that
-  reports `submitted` on Enter, as Files' address bar does. Notes uses
+  `<TitleField name="address"/>` makes the title editable, as Files'
+  address bar is: it reads as the title until it's clicked or given focus,
+  then becomes a field that reports `submitted` on Enter. Notes uses
   toolbar items for Add and Remove.
 - **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen

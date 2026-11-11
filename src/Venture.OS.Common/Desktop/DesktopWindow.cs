@@ -29,12 +29,15 @@ public enum FramePart
 /// </summary>
 /// <remarks>
 /// <para>The bar is one band: a red close button and an orange minimize button on the left, then the title, then the
-/// document's toolbar items (<c>&lt;ToolbarItem&gt;</c>) along the right end. A document with a
-/// <c>&lt;TitleField&gt;</c> gets an editable title in place of the plain one, as an address bar: clicking it starts
-/// an edit, Enter submits it under the field's name, and Esc or a click elsewhere puts the old text back. The rest of
-/// the bar drags the window. A window that isn't in front draws faded, as early Aqua did.</para>
-/// <para>Toolbar items are laid out when the bar is drawn, since their widths come from the font, so the pointer hits
-/// what was last on screen.</para>
+/// document's toolbar items (<c>&lt;ToolbarItem&gt;</c>) along the right end. The title is centred in the window when
+/// it fits there clear of the buttons and toolbar, as macOS has it, and otherwise in the room between them.</para>
+/// <para>A document with a <c>&lt;TitleField&gt;</c> gets an editable title in place of the plain one, as an address
+/// bar, after CityLimits' city name: it reads as a plain title until it's clicked, then becomes a field across all
+/// the room. Enter submits it under the field's name, and Esc or a click elsewhere puts the old text back. A title
+/// too long for its room keeps its end, where a path's last folder is. The rest of the bar drags the window. A
+/// window that isn't in front draws faded, as early Aqua did.</para>
+/// <para>Toolbar items and the idle title are laid out when the bar is drawn, since their widths come from the font,
+/// so the pointer hits what was last on screen.</para>
 /// </remarks>
 public sealed class DesktopWindow
 {
@@ -51,9 +54,24 @@ public sealed class DesktopWindow
     private const int ItemGap = 6;
     private const int Margin = 8;
 
+    // An idle title field is padded on each side, and never narrower than this, so an empty one can still be clicked.
+    private const int TitlePadding = 5;
+    private const int SmallestTitleTarget = 48;
+    private const string Ellipsis = "…";
+
     private readonly List<UIRect> itemBounds = [];
     private string savedTitle = "";
     private int caret;
+
+    // Where the idle title was last drawn, from the frame's left edge, so a drag doesn't leave it behind.
+    private int shownLeft;
+    private int shownWidth;
+
+    // The title as last cut to fit, worked out again only when the text or its room changes, as most frames don't.
+    private string? cutFor;
+    private int cutRoom = -1;
+    private bool cutKeepsEnd;
+    private string cutText = "";
 
     /// <param name="title">The title in the title bar.</param>
     /// <param name="view">The content, sized from its document's window.</param>
@@ -138,19 +156,30 @@ public sealed class DesktopWindow
     /// <summary>Where a toolbar item was last drawn, by its position in the document.</summary>
     public UIRect ToolbarItemBounds(int index) => index >= 0 && index < itemBounds.Count ? itemBounds[index] : default;
 
-    /// <summary>Where the title field is, or would be.</summary>
+    /// <summary>
+    /// Where the title field takes clicks: all the room between the buttons and the toolbar while it's being edited,
+    /// and otherwise only the title as last drawn, so the bar around it still drags the window.
+    /// </summary>
     public UIRect TitleFieldBounds
     {
         get
         {
-            var left = TitleLeft;
-            var right = itemBounds.Count > 0 ? (int)itemBounds[0].X - Margin : X + Width - Margin;
-            return new UIRect(left, Y + ((DesktopTheme.TitleBarHeight - ItemHeight) / 2), Math.Max(0, right - left), ItemHeight);
+            var top = Y + ((DesktopTheme.TitleBarHeight - ItemHeight) / 2);
+            if (!IsEditingTitle)
+                return new UIRect(X + shownLeft, top, shownWidth, ItemHeight);
+
+            var (left, right) = TitleRoom();
+            return new UIRect(left, top, right - left, ItemHeight);
         }
     }
 
-    // The title starts after the buttons.
-    private int TitleLeft => X + (IsClosable ? ButtonInset + (2 * ButtonSize) + ButtonGap + 12 : Margin);
+    // The room the title has: after the buttons, and before the toolbar.
+    private (int Left, int Right) TitleRoom()
+    {
+        var left = X + (IsClosable ? ButtonInset + (2 * ButtonSize) + ButtonGap + 12 : Margin);
+        var right = itemBounds.Count > 0 ? (int)itemBounds[0].X - Margin : X + Width - Margin;
+        return (left, Math.Max(left, right));
+    }
 
     /// <summary>The part of the frame a point is on, and for a toolbar item, which one.</summary>
     public (FramePart Part, int Index) Hit(int x, int y)
@@ -256,7 +285,6 @@ public sealed class DesktopWindow
     {
         ArgumentNullException.ThrowIfNull(painter);
         const int Shadow = DesktopTheme.ShadowSize;
-        const int Size = DesktopTheme.TextSize;
         const int Bar = DesktopTheme.TitleBarHeight;
 
         painter.FillRectangle(X + Shadow, Y + Shadow, Width, Height, DesktopTheme.Shadow);
@@ -272,19 +300,10 @@ public sealed class DesktopWindow
 
         DrawToolbar(painter, pressedItem);
 
-        var textY = Y + ((Bar - (int)MathF.Ceiling(Size * 1.35f)) / 2);
-        if (View.Script.TitleField is { } field)
-        {
-            DrawTitleField(painter, field, active);
-        }
+        if (View.Script.TitleField is { } field && IsEditingTitle)
+            DrawTitleEdit(painter, field, active);
         else
-        {
-            var right = itemBounds.Count > 0 ? (int)itemBounds[0].X - Margin : X + Width - Margin;
-            var title = Title;
-            while (title.Length > 0 && painter.MeasureText(title, Size) > right - TitleLeft)
-                title = title[..^1];
-            painter.DrawText(title, TitleLeft, textY, DesktopTheme.Text, Size);
-        }
+            DrawTitle(painter, View.Script.TitleField);
 
         var (contentX, contentY) = ContentOrigin;
         painter.FillRectangle(contentX, contentY, Width, Height - Bar, DesktopTheme.Panel);
@@ -333,7 +352,36 @@ public sealed class DesktopWindow
         }
     }
 
-    private void DrawTitleField(IPainter painter, UITitleField field, bool active)
+    /// <summary>
+    /// Draws the title as plain text, centred: the window's title, or the title field's text, or its placeholder
+    /// dimmed when it's empty. A title field's text keeps its end when it's cut, and remembers where it was drawn.
+    /// </summary>
+    private void DrawTitle(IPainter painter, UITitleField? field)
+    {
+        const int Size = DesktopTheme.TextSize;
+        var (left, right) = TitleRoom();
+        var padding = field is null ? 0 : TitlePadding;
+        var text = Title;
+        var color = DesktopTheme.Text;
+        if (field is not null)
+        {
+            text = View.Text(field.Name) ?? "";
+            if (text.Length == 0)
+                (text, color) = (field.Placeholder ?? "", DesktopTheme.SecondaryText);
+        }
+
+        var shown = Cut(painter, text, right - left - (2 * padding), keepEnd: field is not null);
+        var textWidth = painter.MeasureText(shown, Size);
+        var wanted = field is null ? textWidth : Math.Max(textWidth + (2 * padding), SmallestTitleTarget);
+        var (start, width) = Centre(wanted, left, right);
+        (shownLeft, shownWidth) = field is null ? (0, 0) : (start - X, width);
+
+        var textY = Y + ((DesktopTheme.TitleBarHeight - (int)MathF.Ceiling(Size * 1.35f)) / 2);
+        painter.DrawText(shown, start + ((width - textWidth) / 2), textY, color, Size);
+    }
+
+    /// <summary>Draws the title field being edited: a field across all the room, showing the end that holds the caret.</summary>
+    private void DrawTitleEdit(IPainter painter, UITitleField field, bool active)
     {
         const int Size = DesktopTheme.TextSize;
         var bounds = TitleFieldBounds;
@@ -342,30 +390,61 @@ public sealed class DesktopWindow
             return;
 
         painter.FillRectangle(x, y, width, ItemHeight, DesktopTheme.InputBackground);
-        DesktopTheme.Outline(painter, x, y, width, ItemHeight, IsEditingTitle && active ? DesktopTheme.Accent : DesktopTheme.Border);
+        DesktopTheme.Outline(painter, x, y, width, ItemHeight, active ? DesktopTheme.Accent : DesktopTheme.Border);
 
         var text = View.Text(field.Name) ?? "";
         var textY = y + ((ItemHeight - (int)MathF.Ceiling(Size * 1.35f)) / 2);
-        var room = width - 10;
-        if (text.Length == 0 && !IsEditingTitle)
-        {
-            if (field.Placeholder is { } placeholder)
-                painter.DrawText(placeholder, x + 5, textY, DesktopTheme.SecondaryText, Size);
-            return;
-        }
-
-        // Show the end that holds the caret when the text is wider than the field.
-        var end = IsEditingTitle ? Math.Clamp(caret, 0, text.Length) : text.Length;
+        var room = width - (2 * TitlePadding);
+        var end = Math.Clamp(caret, 0, text.Length);
         var start = 0;
         while (start < end && painter.MeasureText(text[start..end], Size) > room)
             start++;
         var visible = text[start..];
         while (visible.Length > 0 && painter.MeasureText(visible, Size) > room)
             visible = visible[..^1];
-        painter.DrawText(visible, x + 5, textY, DesktopTheme.Text, Size);
+        painter.DrawText(visible, x + TitlePadding, textY, DesktopTheme.Text, Size);
 
-        if (IsEditingTitle && active)
-            painter.FillRectangle(x + 5 + painter.MeasureText(text[start..end], Size) + 1, textY, 1, (int)MathF.Ceiling(Size * 1.35f), DesktopTheme.Text);
+        if (active)
+            painter.FillRectangle(x + TitlePadding + painter.MeasureText(text[start..end], Size) + 1, textY, 1, (int)MathF.Ceiling(Size * 1.35f), DesktopTheme.Text);
+    }
+
+    /// <summary>
+    /// Where something of the wanted width goes in the title's room: centred in the window when it fits there clear
+    /// of both ends of the bar, and otherwise centred in the room, no wider than it.
+    /// </summary>
+    private (int Start, int Width) Centre(int wanted, int left, int right)
+    {
+        var room = right - left;
+        var width = Math.Clamp(wanted, 0, room);
+        var side = Math.Max(left - X, X + Width - right);
+        return width <= Width - (2 * side)
+            ? (X + ((Width - width) / 2), width)
+            : (left + ((room - width) / 2), width);
+    }
+
+    /// <summary>
+    /// Text cut with an ellipsis to fit the room: from the start when <paramref name="keepEnd"/> is set, as a path's
+    /// last folder matters most, and from the end otherwise. Kept until the text or its room changes.
+    /// </summary>
+    private string Cut(IPainter painter, string text, int room, bool keepEnd)
+    {
+        const int Size = DesktopTheme.TextSize;
+        if (ReferenceEquals(text, cutFor) && room == cutRoom && keepEnd == cutKeepsEnd)
+            return cutText;
+
+        (cutFor, cutRoom, cutKeepsEnd) = (text, room, keepEnd);
+        cutText = text;
+        if (painter.MeasureText(text, Size) <= room)
+            return cutText;
+
+        var length = text.Length - 1;
+        while (length > 0 && painter.MeasureText(Piece(text, length, keepEnd), Size) > room)
+            length--;
+        cutText = length > 0 ? Piece(text, length, keepEnd) : "";
+        return cutText;
+
+        static string Piece(string text, int length, bool keepEnd) =>
+            keepEnd ? Ellipsis + text[^length..] : text[..length] + Ellipsis;
     }
 
     // The buttons are small, so a press a little outside still counts.

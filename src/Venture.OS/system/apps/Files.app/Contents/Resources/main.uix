@@ -3,7 +3,6 @@
 <UIScript version="1" requires="menus">
   <Window width="480" height="300"/>
 
-  <ToolbarItem name="go" title="Go"/>
   <TitleField name="address" placeholder="Path"/>
 
   <Menu name="fileMenu" title="File" hotkey="F"/>

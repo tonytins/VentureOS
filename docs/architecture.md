@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Terminal.app and shells for apps) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (centred titles, a title field that edits on click) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (680 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (686 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -733,11 +733,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   frame: one 28 px band with a red close button and an orange minimize
   button on the left, then the title, then the document's toolbar items
   (`<ToolbarItem>`) along the right end, which report `pressed` on release.
-  A `<TitleField>` makes the title an editable field, as Files' address bar
-  is: a click starts an edit, Enter submits it under the field's name, and
-  Esc or a click elsewhere puts the old text back; a click on the same
-  window's toolbar keeps the edit, so Go acts on what was typed. Item
-  widths come from the font, so they're laid out when drawn.
+  The title is centred in the window when it fits clear of both ends of
+  the bar, and otherwise in the room between them, cut with an ellipsis.
+  A `<TitleField>` makes the title editable, as Files' address bar is,
+  after CityLimits' city name: it reads as a plain centred title, keeping
+  its end when cut, and only that text takes clicks, so the bar around it
+  still drags. A click starts an edit, which turns it into a field across
+  all the room; Enter submits it under the field's name, and Esc or a
+  click elsewhere puts the old text back; a click on the same window's
+  toolbar keeps the edit, so an item can act on what was typed. Item and
+  title widths come from the font, so they're laid out when drawn.
 - **Minimize.** The orange button sends a window to the dock: it stays in
   the window list but isn't drawn, takes no input, and can't be in front.
   The dock shows each minimized window as a pale tile after the apps, past
@@ -983,6 +988,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Title bar (§9): titles are centred; a `<TitleField>` reads as a plain title until it's clicked, and only its text takes clicks; Files drops Go for Enter. |
 | 2026-11-11 | minor | Terminal (§2, §9): `venture.openShell` gives apps shells of their own without the console; Terminal.app ships; styles take `font`, text areas `follows`; windows get their focus back when they come forward. |
 | 2026-11-11 | minor | Text (§2, §9): `<TextArea>`; TextEdit ships with the user's apps; Files opens text files in it through `venture.ui.launch(app, file)` and `onOpenFile`. |
 | 2026-11-11 | minor | Frame loop (§9): idle frames allocate nothing, which stopped memory churning between about 50 and 430 MiB (BUG-6). |

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.8
+
+- Window titles sit in the middle of the title bar.
+- Files' address reads as the window's title until you click it or press Ctrl+L, then becomes a field. Press Enter to go there; the Go button is gone. A long path keeps its end in view.
+
 ## 0.3.7
 
 - New app: Terminal, the shell in a window, in Fira Code. Each window has its own current folder; `exit` closes it, and Shell ▸ Clear (Ctrl+K) empties it. `desktop` and the interactive `lua` prompt only work on the text console, and say so.

@@ -101,9 +101,15 @@ public sealed class FilesAppTests : IDisposable
         Assert.Equal(Path.Combine(root, "photos"), Window.View.Text("address"));
 
         Window.View.SetText("address", root);
-        Send(new UIEvent(UIEventKind.Pressed, "go"));
+        Send(new UIEvent(UIEventKind.Submitted, "address", root));
         Assert.Equal(root, Window.View.Text("address"));
         Assert.Equal("3 items", Window.View.Text("status"));
+    }
+
+    [Fact]
+    public void TheAddressNeedsNoGoButton()
+    {
+        Assert.Empty(Window.View.Script.ToolbarItems);
     }
 
     [Fact]

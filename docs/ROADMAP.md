@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone complete: Terminal.app) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Downeaster planned; phase 1, centred titles) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,8 +36,8 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Desktop apps** (Keystone): complete, with Terminal.app. The next route
-   is my call.
+1. **Desktop refinement** (Downeaster): a Snow Leopard-style pass over the
+   desktop Keystone filled: centred titles, sidebars, and resizable windows.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
@@ -70,13 +70,15 @@ fit, rather than waiting on a route.
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
 | Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| | **Total** | | **≈ 18–35**, plus every-stage work (≈ 14–28) | |
+| Downeaster | Desktop refinement | 20% | 10–20 | Centred titles and an address that edits on click are done; sidebars and resizable windows are next |
+| | **Total** | | **≈ 28–55**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | Sidebars and resizable windows | Downeaster | 10–20 |
+| 2 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
 about 20–40 hours.
@@ -255,6 +257,30 @@ changed. Lua drawing in regions and images wait for a later route.
 - [x] Phase 6, Terminal.app (system): the shell in a read-only
   `<TextArea>` that follows its newest text, in Fira Code.
 
+### Downeaster: Desktop refinement
+
+A follow-up to Keystone in the spirit of Snow Leopard: refining what's
+there rather than adding apps. The title bar follows CityLimits', and
+sidebars follow Nautilus in GNOME 45, running the window's full height
+with the close and minimize buttons on top, as Big Sur's Finder does.
+
+- [x] Phase 1, the title: titles are centred in the bar, and a
+  `<TitleField>` reads as a plain title until it's clicked or given focus,
+  then becomes a field across the room. Files drops Go for Enter, and its
+  address shows the full path, keeping its end when cut.
+- [ ] Phase 2, `<Sidebar>` in UIScript: a flat list down the window's left,
+  which Lua treats as a `<List>`, behind `requires="sidebar"`.
+- [ ] Phase 3, the sidebar in the frame: drawn the window's full height in
+  its own shade, with the buttons on top and the title bar over the
+  content only. Files' bookmarks move into one.
+- [ ] Phase 4, resizable windows: `resizable` on `<Window>`, whose size is
+  the smallest, and `anchor` on elements, both ignorable by older readers;
+  a grip of dots in the corner. Files and TextEdit resize; Terminal waits,
+  since it lays out by character cells.
+- [ ] Phase 5, the docs and a boot check.
+
+Collapsing a sidebar in a narrow window waits for resizing.
+
 ## Critical path
 
 Cascades, Hiawatha, Illini, and Wolverine are done, and so are Saluki's
@@ -284,6 +310,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Downeaster planned in five phases, after Tony Bark's idea: centred titles and an address that edits on click, sidebars like Nautilus in GNOME 45, and resizable windows with anchors. Phase 1, the title, is done (20%). About 28–55 h of milestones remain. |
 | 2026-11-11 | minor | Keystone complete: phase 6, Terminal.app, with shells of their own for apps, a monospace font in styles, and text areas that follow their newest text. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 83%: phase 5, `<TextArea>` and TextEdit, which Files opens text files in. Terminal.app is the last phase. About 24–47 h of milestones remain. |
 | 2026-11-11 | minor | Keystone 67%: phase 4, `window:every` timers and System Monitor. About 30–59 h of milestones remain. |

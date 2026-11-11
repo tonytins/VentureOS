@@ -137,7 +137,6 @@ local function openWindow(start)
     if event.kind == "selected" then show(BOOKMARKS[event.index].path) end
   end)
   window:on("address", goTo)
-  window:on("go", goTo)
   window:on("goToFolder", function() window:focus("address") end)
   window:on("openItem", open)
   window:on("lookItem", quickLook)
