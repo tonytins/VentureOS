@@ -17,10 +17,10 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
 | [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 10 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 644 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 665 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 6 | 0 | 0 | Version 0.3; opens in 48 ms at 1024x768 |
-| [Desktop apps](#desktop-apps) | 3 | 0 | 2 | Keystone phase 4 of 6; Files, System Monitor, Notes, and Calculator have windows |
+| [Desktop apps](#desktop-apps) | 4 | 0 | 1 | Keystone phase 5 of 6; Files, System Monitor, Notes, Calculator, and TextEdit have windows |
 | [Distribution](#distribution) | 0 | 0 | 5 | No CI for now; tests and builds run locally |
 | [Known issues](#known-issues) | | | | 2 open, 4 resolved |
 
@@ -141,7 +141,7 @@ output stays on the console.
 | APP-1 | Files is the desktop's fallback app: always running, it browses folders, opens apps, previews `.uix` files, and opens text files | done | `Files.app`, `QuickLook`, `DesktopSession.FallbackApp`, `AppWindows`; tests for Quick Look's kinds, Files' browsing, Quick Look, launching, and new windows, and the fallback's dock place, menus, last-window exemption, and restarts with growing waits. Boot test 2026-11-11: `desktop` opened Files on `/mnt`; Quick Look showed a text file; Ctrl+O opened `system` and `apps`, and launched Notes; closing Files' window left it running, and its dock icon opened a new one; after `close files`, the next `desktop` started it again |
 | APP-2 | User apps ship in `/mnt/user/apps`, which the user can change, and say what they need when they open; Calculator is one | done | `SystemFiles.User`, `Bootstrap.InstallUserFiles`, `AppManager` (two folders), `Dock` (divider), `Calculator.app`; tests for the listing order, name lookup, the needs line, the dock, and 19 calculations. Boot test 2026-11-11: 3 user files installed to `/mnt/user`; `apps` marked Calculator `user`; the dock showed it past a divider; clicking it opened it with `Calculator needs ui.`; 2 + 3 × 4 = showed 20; `rm -r` removed it from `/mnt/user/apps` but was refused for `/mnt/system/apps/Files.app` |
 | APP-3 | Windows can run code on a timer, and System Monitor shows the system as it changes | done | `AppWindows.Every`, `Tick`, `window:every`, `SystemMonitor.app`; tests for the schedule, lost time, stopping, closing, quitting, mistakes, and System Monitor's readings, failures, and network states. Boot test 2026-11-11: `open "System Monitor"` in the shell, then `desktop`; its dock icon brought it forward, and over 40 seconds its uptime counted up each second, with memory and e1000e at 10.0.2.15 |
-| APP-4 | `.uix` interfaces have a multi-line `<TextArea>`, and TextEdit edits and saves text files | missing | Keystone phase 4 |
+| APP-4 | `.uix` interfaces have a multi-line `<TextArea>`, and TextEdit edits and saves text files | done | `UIView` (text areas), `UIScript`, `TextEdit.app`, `AppWindows.OpenFile`, `venture.ui.launch(app, file)`; tests for typing, wrapping, scrolling, caret keys and clicks, limits, placeholders, the reader's rules, TextEdit's opening, editing, saving, naming, and size limit, the dock giving it a window, and Files handing it a file. Boot test 2026-11-11: double-clicking `todo.txt` in Files opened it in TextEdit; typing over two lines marked it Edited; Ctrl+S saved it, and `cat todo.txt` showed the new text |
 | APP-5 | Terminal.app runs the shell in a window | missing | Keystone phase 5 |
 
 ## Distribution

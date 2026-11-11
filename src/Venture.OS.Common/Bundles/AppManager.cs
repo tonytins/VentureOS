@@ -42,6 +42,10 @@ public sealed class AppManager(
     private readonly RuntimeCommands commands = commands ?? throw new ArgumentNullException(nameof(commands));
     private readonly List<RunningApp> running = [];
 
+    // Apps whose main script is running, by identifier. An app only counts as open once main finishes, so without
+    // this, main opening its own app, such as through venture.ui.launch, would start it again, and again.
+    private readonly HashSet<string> opening = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>An app that's open: its bundle and the owner running it.</summary>
     public sealed record RunningApp(Bundle Bundle, LuaOwner Owner);
 
@@ -135,6 +139,12 @@ public sealed class AppManager(
             return false;
         }
 
+        if (opening.Contains(bundle.Identifier))
+        {
+            output.WriteLine($"{bundle.Name} is still opening.");
+            return false;
+        }
+
         if (explainNeeds && !ShellPaths.IsWithin(bundle.Path, appsDirectory)
             && (userAppsDirectory is null || !ShellPaths.IsWithin(bundle.Path, userAppsDirectory)))
             output.WriteLine($"{bundle.Name} needs {DescribeNeeds(bundle.Needs)}.");
@@ -156,7 +166,18 @@ public sealed class AppManager(
         AppLibrary.Open(owner.Interpreter.State, bundle);
         UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
 
-        if (!owner.Run(lua => lua.DoFile(bundle.Main!), startupStop?.Invoke()))
+        bool started;
+        opening.Add(bundle.Identifier);
+        try
+        {
+            started = owner.Run(lua => lua.DoFile(bundle.Main!), startupStop?.Invoke());
+        }
+        finally
+        {
+            opening.Remove(bundle.Identifier);
+        }
+
+        if (!started)
         {
             // A main script that failed partway undoes what it set up, so nothing half-open is left.
             owner.Dispose();

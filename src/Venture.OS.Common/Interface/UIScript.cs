@@ -10,6 +10,9 @@ public enum UIControlType
     FormattedText,
     Button,
     TextField,
+
+    /// <summary>A multi-line text entry: Enter adds a line, and its text wraps and scrolls.</summary>
+    TextArea,
     List,
     Slider,
     ProgressBar,
@@ -416,6 +419,7 @@ public sealed class UIScript
         "FormattedText" => UIControlType.FormattedText,
         "Button" => UIControlType.Button,
         "TextField" => UIControlType.TextField,
+        "TextArea" => UIControlType.TextArea,
         "List" => UIControlType.List,
         "Slider" => UIControlType.Slider,
         "ProgressBar" => UIControlType.ProgressBar,
@@ -601,13 +605,13 @@ public sealed class UIScript
     {
         var (name, type, line) = (control.Name, control.Type, control.Line);
 
-        if (control.Placeholder is not null && type != UIControlType.TextField)
-            throw OnlyFor(name, "placeholder", "a TextField", line);
-        if (control.MaximumLength is { } maximumLength
-            && (maximumLength <= 0 || type != UIControlType.TextField))
-            throw new UIScriptException($"\"{name}\" can't have maximumLength {maximumLength}; only a TextField takes one, and it must be positive.", line);
-        if (control.IsReadOnly && type != UIControlType.TextField)
-            throw OnlyFor(name, "readOnly", "a TextField", line);
+        var takesText = type is UIControlType.TextField or UIControlType.TextArea;
+        if (control.Placeholder is not null && !takesText)
+            throw OnlyFor(name, "placeholder", "a TextField or TextArea", line);
+        if (control.MaximumLength is { } maximumLength && (maximumLength <= 0 || !takesText))
+            throw new UIScriptException($"\"{name}\" can't have maximumLength {maximumLength}; only a TextField or TextArea takes one, and it must be positive.", line);
+        if (control.IsReadOnly && !takesText)
+            throw OnlyFor(name, "readOnly", "a TextField or TextArea", line);
         if (control.IsSecure && type != UIControlType.TextField)
             throw OnlyFor(name, "secure", "a TextField", line);
         if (control.IsSelectable && type != UIControlType.List)
@@ -623,7 +627,7 @@ public sealed class UIScript
                 UIControlType.Button => binding.Direction is not null,
                 _ => false,
             };
-            if (target.Type != UIControlType.List || !directionFits)
+            if (target.Type is not (UIControlType.List or UIControlType.TextArea) || !directionFits)
                 throw ScrollProblem(name, line);
         }
 
@@ -678,7 +682,7 @@ public sealed class UIScript
         new($"\"{owner}\" can't have {attribute}; only {kind} takes it.", line);
 
     private static UIScriptException ScrollProblem(string owner, int line) =>
-        new($"\"{owner}\" has scrolls or direction that don't fit: a Slider scrolls a List with no direction, and a Button scrolls a List up or down.", line);
+        new($"\"{owner}\" has scrolls or direction that don't fit: a Slider scrolls a List or TextArea with no direction, and a Button scrolls one up or down.", line);
 
     private static UIScriptException RangeProblem(string owner, int line) =>
         new($"\"{owner}\" has a minValue and maxValue that don't fit: only a Slider or ProgressBar takes them, and minValue must be below maxValue.", line);

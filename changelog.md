@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.6
+
+- New app: TextEdit, in your apps. Type a path in its title bar and press Enter to open a file, or Save (Ctrl+S) to create one.
+- Double-clicking a text file in Files opens it in TextEdit.
+- App authors: `<TextArea>` is a multi-line text field, and `venture.ui.launch(app, file)` with `venture.ui.onOpenFile` hands a file to an app.
+
 ## 0.3.5
 
 - New app: System Monitor shows the version, how long the system has been up, memory in use, and the network, updated every second.

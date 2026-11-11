@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A TextEdit window. main.lua loads and saves the file. -->
+<UIScript version="1" requires="menus">
+  <Window width="520" height="360"/>
+
+  <ToolbarItem name="save" title="Save"/>
+  <TitleField name="path" placeholder="Untitled: type a path, then Save"/>
+
+  <Menu name="fileMenu" title="File" hotkey="F"/>
+  <MenuItem menu="fileMenu" name="openItem" title="Open…" hotkey="O" shortcut="Ctrl+O"/>
+  <MenuItem menu="fileMenu" name="saveItem" title="Save" hotkey="S" shortcut="Ctrl+S"/>
+  <MenuSeparator menu="fileMenu"/>
+  <MenuItem menu="fileMenu" name="closeWindow" title="Close Window" hotkey="C" shortcut="Ctrl+W"/>
+
+  <Style name="quiet" textColor="#6E747E"/>
+
+  <TextArea name="text" x="10" y="10" width="488" height="316"/>
+  <Slider name="textScroll" x="502" y="10" width="10" height="316" scrolls="text"/>
+  <Text name="status" x="10" y="332" width="500" height="20" alignment="right" style="quiet"/>
+</UIScript>

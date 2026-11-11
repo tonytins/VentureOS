@@ -86,6 +86,12 @@ public sealed class UIView
     // Reused every frame, since the desktop updates views without pause; see Update.
     private readonly List<UIEvent> frameEvents = [];
 
+    // The painter last drawn with, which measures text for clicks in a text area between draws.
+    private IPainter? measurer;
+
+    /// <summary>The most characters a text area takes without a <c>maximumLength</c>.</summary>
+    public const int TextAreaLength = 65536;
+
     /// <summary>The longest gap between two clicks on a list item that makes them a double-click.</summary>
     public static readonly TimeSpan DoubleClickInterval = TimeSpan.FromMilliseconds(500);
 
@@ -248,7 +254,8 @@ public sealed class UIView
     /// <summary>Gives a text field keyboard focus, with the caret at the end.</summary>
     public void Focus(string name)
     {
-        if (script.Control(name) is { Type: UIControlType.TextField, IsReadOnly: false } && Find(name) is { Hidden: false, Disabled: false } state)
+        if (script.Control(name) is { Type: UIControlType.TextField or UIControlType.TextArea, IsReadOnly: false }
+            && Find(name) is { Hidden: false, Disabled: false } state)
         {
             focused = name;
             state.Caret = state.Text.Length;
@@ -338,6 +345,9 @@ public sealed class UIView
                 case UIControlType.TextField:
                     DrawField(painter, control, state, bounds);
                     break;
+                case UIControlType.TextArea:
+                    DrawArea(painter, control, state, bounds);
+                    break;
                 case UIControlType.List:
                     DrawList(painter, control, state, bounds);
                     break;
@@ -359,7 +369,7 @@ public sealed class UIView
     private void Press(int x, int y, TimeSpan time, List<UIEvent> events)
     {
         var hit = Hit(x, y);
-        if (hit is null || hit.Type != UIControlType.TextField)
+        if (hit is null || hit.Type is not (UIControlType.TextField or UIControlType.TextArea))
             focused = null;
         if (hit is null)
             return;
@@ -374,6 +384,15 @@ public sealed class UIView
             case UIControlType.TextField when !hit.IsReadOnly:
                 focused = hit.Name;
                 state.Caret = state.Text.Length;
+                break;
+
+            case UIControlType.TextArea when !hit.IsReadOnly:
+                focused = hit.Name;
+                state.Caret = CaretAt(hit, state, x, y);
+                break;
+
+            case UIControlType.TextArea:
+                focused = null;
                 break;
 
             case UIControlType.List when hit.IsSelectable:
@@ -416,8 +435,8 @@ public sealed class UIView
     {
         if (button.Scrolls is { } binding)
         {
-            if (Find(binding.List)?.List is { } list && script.Control(binding.List) is { } target)
-                ScrollList(target, list, binding.Direction == UIScrollDirection.Up ? -1 : 1);
+            if (script.Control(binding.List) is { } target)
+                ScrollBy(target, binding.Direction == UIScrollDirection.Up ? -1 : 1);
             return;
         }
 
@@ -435,10 +454,10 @@ public sealed class UIView
             : (x - bounds.X) / Math.Max(1, bounds.Width);
         fraction = Math.Clamp(fraction, 0, 1);
 
-        if (slider.Scrolls is { } binding && script.Control(binding.List) is { } target && Find(binding.List)?.List is { } list)
+        if (slider.Scrolls is { } binding && script.Control(binding.List) is { } target)
         {
-            var last = Math.Max(0, list.Items.Count - VisibleRows(target));
-            list.FirstVisible = (int)MathF.Round(fraction * last);
+            var (_, last) = ScrollPosition(target);
+            ScrollTo(target, (int)MathF.Round(fraction * last));
             return;
         }
 
@@ -454,18 +473,35 @@ public sealed class UIView
 
     private void ScrollOver(UIControl control, int scroll)
     {
-        var target = control.Type == UIControlType.List ? control
+        var target = control.Type is UIControlType.List or UIControlType.TextArea ? control
             : control.Scrolls is { } binding ? script.Control(binding.List)
             : null;
-        if (target is not null && Find(target.Name)?.List is { } list)
-            ScrollList(target, list, scroll);
+        if (target is not null)
+            ScrollBy(target, scroll);
     }
 
-    private void ScrollList(UIControl control, UIListState list, int rows)
+    /// <summary>Where a list or text area is scrolled to, and the furthest it can go, in rows.</summary>
+    private (int First, int Last) ScrollPosition(UIControl control)
     {
-        var last = Math.Max(0, list.Items.Count - VisibleRows(control));
-        list.FirstVisible = Math.Clamp(list.FirstVisible + rows, 0, last);
+        var state = states[control.Name];
+        if (state.List is { } list)
+            return (list.FirstVisible, Math.Max(0, list.Items.Count - VisibleRows(control)));
+
+        var lines = state.Lines?.Count ?? 1;
+        return (state.FirstLine, Math.Max(0, lines - VisibleLines(control)));
     }
+
+    private void ScrollTo(UIControl control, int first)
+    {
+        var state = states[control.Name];
+        var (_, last) = ScrollPosition(control);
+        if (state.List is { } list)
+            list.FirstVisible = Math.Clamp(first, 0, last);
+        else
+            state.FirstLine = Math.Clamp(first, 0, last);
+    }
+
+    private void ScrollBy(UIControl control, int rows) => ScrollTo(control, ScrollPosition(control).First + rows);
 
     private void Type(string name, KeyPress key, List<UIEvent> events)
     {
@@ -473,6 +509,12 @@ public sealed class UIView
             return;
 
         var state = states[name];
+        if (field.Type == UIControlType.TextArea)
+        {
+            TypeArea(field, state, key, events);
+            return;
+        }
+
         var maximum = field.MaximumLength ?? 256;
         switch (key.Key)
         {
@@ -507,6 +549,239 @@ public sealed class UIView
                 events.Add(new UIEvent(UIEventKind.Submitted, name, Text: state.Text));
                 break;
         }
+    }
+
+    // ---- Text areas ----
+
+    private int VisibleLines(UIControl control) =>
+        Math.Max(1, (int)((Place(control.Frame, false).Height - (2 * Inset)) / LineHeight(TextSize(control))));
+
+    /// <summary>
+    /// The text's wrapped lines, as (start, length) into it, worked out again only when the text or width changed.
+    /// Lines break at line breaks, then at the last space that fits; a word too long for a line is cut where it
+    /// stops fitting. Words are measured one at a time, so wrapping costs the same however long the text gets.
+    /// </summary>
+    private List<(int Start, int Length)> Layout(IPainter painter, UIControl control, State state, int room)
+    {
+        if (state.Lines is { } cached && ReferenceEquals(state.LinesText, state.Text) && state.LinesWidth == room)
+            return cached;
+
+        var text = state.Text;
+        var size = TextSize(control);
+        var space = painter.MeasureText(" ", size);
+        List<(int Start, int Length)> lines = [];
+        var paragraph = 0;
+        while (true)
+        {
+            var end = text.IndexOf('\n', paragraph);
+            if (end < 0)
+                end = text.Length;
+
+            var lineStart = paragraph;
+            var width = 0;
+            var position = paragraph;
+            while (position < end)
+            {
+                var wordEnd = text.IndexOf(' ', position, end - position);
+                if (wordEnd < 0)
+                    wordEnd = end;
+
+                var wordWidth = painter.MeasureText(text[position..wordEnd], size);
+                if (position > lineStart && width + wordWidth > room)
+                {
+                    lines.Add((lineStart, position - lineStart));
+                    lineStart = position;
+                    width = 0;
+                }
+
+                // A word wider than the whole line is cut where it stops fitting.
+                while (position == lineStart && wordWidth > room && wordEnd - position > 1)
+                {
+                    var cut = position + 1;
+                    while (cut < wordEnd && painter.MeasureText(text[position..(cut + 1)], size) <= room)
+                        cut++;
+                    lines.Add((lineStart, cut - lineStart));
+                    position = lineStart = cut;
+                    wordWidth = painter.MeasureText(text[position..wordEnd], size);
+                }
+
+                width += wordWidth + space;
+                position = Math.Min(end, wordEnd + 1);
+            }
+
+            lines.Add((lineStart, end - lineStart));
+            if (end >= text.Length)
+                break;
+            paragraph = end + 1;
+        }
+
+        state.Lines = lines;
+        state.LinesText = text;
+        state.LinesWidth = room;
+        return lines;
+    }
+
+    /// <summary>The line holding a caret position: the last that starts at or before it.</summary>
+    private static int LineOf(List<(int Start, int Length)> lines, int caret)
+    {
+        var line = 0;
+        while (line + 1 < lines.Count && lines[line + 1].Start <= caret)
+            line++;
+        return line;
+    }
+
+    private void DrawArea(IPainter painter, UIControl control, State state, UIRect bounds)
+    {
+        measurer = painter;
+        var (x, y, width, height) = Ints(bounds);
+        var style = Style(control);
+        var isFocused = focused == control.Name;
+        painter.FillRectangle(x, y, width, height, style?.BackgroundColor ?? DesktopTheme.InputBackground);
+        DesktopTheme.Outline(painter, x, y, width, height, isFocused ? DesktopTheme.Accent : style?.BorderColor ?? DesktopTheme.Border);
+
+        var size = TextSize(control);
+        var lineHeight = LineHeight(size);
+        if (state.Text.Length == 0 && !isFocused && state.Placeholder is { } placeholder)
+        {
+            painter.DrawText(Fit(painter, placeholder, size, width - (2 * Inset)), x + Inset, y + Inset, DesktopTheme.SecondaryText, size);
+            return;
+        }
+
+        var lines = Layout(painter, control, state, width - (2 * Inset));
+        var visible = VisibleLines(control);
+        var caretLine = LineOf(lines, Math.Clamp(state.Caret, 0, state.Text.Length));
+        if (state.RevealCaret)
+        {
+            if (caretLine < state.FirstLine)
+                state.FirstLine = caretLine;
+            else if (caretLine >= state.FirstLine + visible)
+                state.FirstLine = caretLine - visible + 1;
+            state.RevealCaret = false;
+        }
+
+        state.FirstLine = Math.Clamp(state.FirstLine, 0, Math.Max(0, lines.Count - visible));
+        var color = state.Disabled ? DesktopTheme.DisabledText : TextColor(control);
+        for (var row = 0; row < visible && state.FirstLine + row < lines.Count; row++)
+        {
+            var (start, length) = lines[state.FirstLine + row];
+            if (length > 0)
+                painter.DrawText(state.Text.Substring(start, length), x + Inset, y + Inset + (row * lineHeight), color, size);
+        }
+
+        if (isFocused && caretLine >= state.FirstLine && caretLine < state.FirstLine + visible)
+        {
+            var (start, _) = lines[caretLine];
+            var caretX = x + Inset + painter.MeasureText(state.Text[start..state.Caret], size) + 1;
+            painter.FillRectangle(caretX, y + Inset + ((caretLine - state.FirstLine) * lineHeight), 1, lineHeight, TextColor(control));
+        }
+    }
+
+    private void TypeArea(UIControl area, State state, KeyPress key, List<UIEvent> events)
+    {
+        var maximum = area.MaximumLength ?? TextAreaLength;
+        var text = state.Text;
+        state.Caret = Math.Clamp(state.Caret, 0, text.Length);
+        var lines = state.Lines is { } cached && ReferenceEquals(state.LinesText, text) ? cached : null;
+        switch (key.Key)
+        {
+            case DesktopKey.Character when key.Character >= ' ' && !key.Control && !key.Alt && text.Length < maximum:
+                text = text.Insert(state.Caret, key.Character.ToString());
+                state.Caret++;
+                break;
+            case DesktopKey.Enter when text.Length < maximum:
+                text = text.Insert(state.Caret, "\n");
+                state.Caret++;
+                break;
+            case DesktopKey.Backspace when state.Caret > 0:
+                text = text.Remove(state.Caret - 1, 1);
+                state.Caret--;
+                break;
+            case DesktopKey.Delete when state.Caret < text.Length:
+                text = text.Remove(state.Caret, 1);
+                break;
+            case DesktopKey.Left:
+                state.Caret = Math.Max(0, state.Caret - 1);
+                break;
+            case DesktopKey.Right:
+                state.Caret = Math.Min(text.Length, state.Caret + 1);
+                break;
+            case DesktopKey.Home or DesktopKey.End or DesktopKey.Up or DesktopKey.Down:
+                state.Caret = MoveCaret(text, lines, state.Caret, key.Key);
+                break;
+            default:
+                return;
+        }
+
+        state.RevealCaret = true;
+        if (!ReferenceEquals(text, state.Text))
+        {
+            state.Text = text;
+            events.Add(new UIEvent(UIEventKind.Changed, area.Name, text));
+        }
+    }
+
+    /// <summary>
+    /// Home, End, Up, and Down, by the lines as last drawn, or by line breaks before the area has been drawn. Up and
+    /// Down keep the caret's place along the line, as far as the other line reaches.
+    /// </summary>
+    private static int MoveCaret(string text, List<(int Start, int Length)>? lines, int caret, DesktopKey key)
+    {
+        if (lines is null)
+        {
+            var start = caret == 0 ? 0 : text.LastIndexOf('\n', caret - 1) + 1;
+            var end = text.IndexOf('\n', caret);
+            lines = [(start, (end < 0 ? text.Length : end) - start)];
+            if (key is DesktopKey.Up or DesktopKey.Down)
+            {
+                var column = caret - start;
+                if (key == DesktopKey.Up && start > 0)
+                {
+                    var above = start == 1 ? 0 : text.LastIndexOf('\n', start - 2) + 1;
+                    return Math.Min(above + column, start - 1);
+                }
+
+                if (key == DesktopKey.Down && end >= 0)
+                {
+                    var below = text.IndexOf('\n', end + 1);
+                    return Math.Min(end + 1 + column, below < 0 ? text.Length : below);
+                }
+
+                return caret;
+            }
+        }
+
+        var line = LineOf(lines, caret);
+        var (lineStart, length) = lines[line];
+        return key switch
+        {
+            DesktopKey.Home => lineStart,
+            DesktopKey.End => lineStart + length,
+            DesktopKey.Up when line > 0 => lines[line - 1].Start + Math.Min(caret - lineStart, lines[line - 1].Length),
+            DesktopKey.Down when line + 1 < lines.Count => lines[line + 1].Start + Math.Min(caret - lineStart, lines[line + 1].Length),
+            _ => caret,
+        };
+    }
+
+    /// <summary>Where a click in a text area puts the caret: the character nearest the point, on the line it's on.</summary>
+    private int CaretAt(UIControl area, State state, int x, int y)
+    {
+        if (measurer is not { } painter || state.Lines is not { } lines || !ReferenceEquals(state.LinesText, state.Text))
+            return state.Text.Length;
+
+        var bounds = Place(area.Frame, false);
+        var size = TextSize(area);
+        var line = Math.Clamp(state.FirstLine + (int)((y - bounds.Y - Inset) / LineHeight(size)), 0, lines.Count - 1);
+        var (start, length) = lines[line];
+        var along = x - bounds.X - Inset;
+        for (var count = 0; count < length; count++)
+        {
+            var before = painter.MeasureText(state.Text.Substring(start, count), size);
+            var after = painter.MeasureText(state.Text.Substring(start, count + 1), size);
+            if (along < (before + after) / 2f)
+                return start + count;
+        }
+
+        return start + length;
     }
 
     /// <summary>The topmost visible, enabled control under a point, or <see langword="null"/>.</summary>
@@ -679,10 +954,10 @@ public sealed class UIView
         DesktopTheme.Outline(painter, x, y, width, height, style?.BorderColor ?? DesktopTheme.Border);
 
         float fraction;
-        if (control.Scrolls is { } binding && script.Control(binding.List) is { } target && Find(binding.List)?.List is { } list)
+        if (control.Scrolls is { } binding && script.Control(binding.List) is { } target)
         {
-            var last = Math.Max(0, list.Items.Count - VisibleRows(target));
-            fraction = last == 0 ? 0 : (float)list.FirstVisible / last;
+            var (first, last) = ScrollPosition(target);
+            fraction = last == 0 ? 0 : (float)first / last;
         }
         else
         {
@@ -833,5 +1108,12 @@ public sealed class UIView
         public bool Selected { get; set; }
         public int Caret { get; set; }
         public UIListState? List { get; init; }
+
+        // A text area's wrapped lines as last drawn, as (start, length) into Text, and what they were made from.
+        public List<(int Start, int Length)>? Lines { get; set; }
+        public string? LinesText { get; set; }
+        public int LinesWidth { get; set; }
+        public int FirstLine { get; set; }
+        public bool RevealCaret { get; set; }
     }
 }

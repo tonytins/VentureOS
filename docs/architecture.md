@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (idle frames allocate nothing) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (`<TextArea>`, TextEdit, and opening files with apps) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (644 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (665 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -173,7 +173,8 @@ VentureOS/
 │     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
 │     ├─ user/                     the user's files, built into the kernel and installed to /mnt/user
 │     │  ├─ apps/Calculator.app/   the first user app
-│     │  └─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
+│     │  ├─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
+│     │  └─ apps/TextEdit.app/     opens, edits, and saves text files
 │     ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
 │     ├─ Bootloader/limine.conf    Limine boot entry; asks for a 1024x768 framebuffer
 │     ├─ GitInfo.txt               base version
@@ -861,6 +862,22 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   to the desktop's messages; `venture.ui.onNewWindow(fn)` gives the app
   New Window (Ctrl+N), which the dock also uses when the app has no window.
   The app menu shows Quit for every app but the fallback.
+- **Text areas** (`<TextArea>`, a VentureOS addition to UIScript's core). A
+  multi-line entry: Enter adds a line, and typing reports `changed` with the
+  text. Its text wraps at spaces, cutting a word too long for a line, and
+  the wrapped lines are kept until the text or width changes; words are
+  measured one at a time, so wrapping costs the same for any length up to
+  its 65,536-character default limit. The arrows, Home, and End move the
+  caret by those lines, a click places it, and the area scrolls by the wheel
+  or a bound slider (`scrolls`) and to keep the caret in view. Clicks are
+  measured with the painter last drawn with. No selection or clipboard yet.
+- **Opening files with apps.** `venture.ui.onOpenFile(fn)` says how an app
+  opens a file, and `venture.ui.launch(app, file)` (by path or by name,
+  such as `"TextEdit"`) starts the app if it isn't open, then hands it the
+  file. An app started with no window of its own, from the dock or by a
+  launch with no file, gets one from its New Window. `AppManager` refuses to
+  open an app whose main script is still running, so an app that launches
+  itself while it starts can't recurse.
 - **Timers** (`window:every(seconds, fn)`, `AppWindows.Every` and `Tick`).
   The session ticks them once a frame, from its clock, and redraws when one
   ran. A timer runs through the app's owner like an event handler, with the
@@ -947,6 +964,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Text (§2, §9): `<TextArea>`; TextEdit ships with the user's apps; Files opens text files in it through `venture.ui.launch(app, file)` and `onOpenFile`. |
 | 2026-11-11 | minor | Frame loop (§9): idle frames allocate nothing, which stopped memory churning between about 50 and 430 MiB (BUG-6). |
 | 2026-11-11 | minor | Timers (§2, §9): `window:every` runs code on a schedule while the desktop shows; System Monitor ships. |
 | 2026-11-11 | minor | The unified title bar (§2, §9): close, minimize, toolbar items, and an editable title field in one bar; minimized windows go to the dock; Files gets an address field and bookmarks; Notes moves to the user's apps; the desktop no longer shows what apps need. |

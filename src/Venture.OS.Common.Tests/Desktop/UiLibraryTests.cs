@@ -266,6 +266,7 @@ public sealed class UiLibraryTests : IDisposable
     [InlineData("""venture.ui.open("../Info.xml")""", "needs a path inside Contents/Resources")]
     [InlineData("""venture.ui.open("missing.uix")""", "venture.ui.open: missing.uix:")]
     [InlineData("""venture.ui.open("main.uix", "Pad")""", "options must be a table")]
+    [InlineData("""venture.ui.launch("Pad", 5)""", "file must be a path")]
     public void ExplainsMistakes(string code, string expected)
     {
         Write(code);
@@ -273,6 +274,32 @@ public sealed class UiLibraryTests : IDisposable
         Assert.False(manager.OpenApp("Pad", root, output));
         Assert.Contains(output.Lines, line => line.Contains(expected));
         Assert.Empty(windows.Windows);
+    }
+
+    [Fact]
+    public void LaunchExplainsAnUnknownAppAndOneThatCantOpenFiles()
+    {
+        Open("""
+            print(venture.ui.launch("Nowhere"))
+            print(venture.ui.launch("Pad", "notes.txt"))
+            """);
+
+        // Pad is still opening, so launching it again from its own main is refused rather than started twice.
+        Assert.Equal(["nil\tthere's no app called Nowhere", "nil\tPad didn't open"], output.Lines);
+        Assert.Equal(["Pad is still opening."], events.Lines);
+    }
+
+    [Fact]
+    public void LaunchingAnAppWithAFileItCantOpenSaysSo()
+    {
+        Open("""
+            local window = venture.ui.open("main.uix")
+            window:on("ok", function() print(venture.ui.launch("Pad", "notes.txt")) end)
+            """);
+
+        Send(Assert.Single(windows.Windows), new UIEvent(UIEventKind.Pressed, "ok"));
+
+        Assert.Equal(["nil\tPad can't open files"], events.Lines);
     }
 
     [Fact]

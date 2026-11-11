@@ -39,7 +39,8 @@ public sealed class FilesAppTests : IDisposable
             new RuntimeCommands(registry.IsBuiltIn),
             new FakeSystemInfo(),
             Path.Combine(SystemFiles, "lib"),
-            windows: host);
+            windows: host,
+            userAppsDirectory: Path.Combine(AppContext.BaseDirectory, "user", "apps"));
         Assert.True(manager.OpenApp("Files", root, output), string.Join('\n', output.Lines));
     }
 
@@ -115,6 +116,20 @@ public sealed class FilesAppTests : IDisposable
         Assert.Equal(root, Window.View.Text("address"));
         Assert.Contains("nowhere", Window.View.Text("status"));
         Assert.Equal(3, Window.View.List("entries")!.Items.Count);
+    }
+
+    [Fact]
+    public void OpeningATextFileHandsItToTextEdit()
+    {
+        Select(1);
+
+        Send(new UIEvent(UIEventKind.Pressed, "openItem"));
+
+        Assert.True(manager.IsOpen("dev.tonytins.ventureos.textedit"));
+        var edit = windows.Windows[^1];
+        Assert.Equal("TextEdit", edit.App);
+        Assert.Equal("milk\neggs\n", edit.View.Text("text"));
+        Assert.Empty(events.Lines);
     }
 
     [Fact]

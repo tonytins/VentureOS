@@ -18,6 +18,7 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     public static readonly TimeSpan MinimumInterval = TimeSpan.FromSeconds(0.1);
 
     private readonly Dictionary<string, Action> newWindowHandlers = [];
+    private readonly Dictionary<string, Action<string>> openFileHandlers = [];
     private readonly List<WindowTimer> timers = [];
 
     // The timers as a tick began, reused, since a timer's code may start or stop others while the tick runs.
@@ -54,6 +55,39 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
 
         handler();
         return true;
+    }
+
+    /// <summary>Records how an app opens a file, or forgets it with <see langword="null"/>.</summary>
+    public void SetOpenFile(string app, Action<string>? handler)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        if (handler is null)
+            openFileHandlers.Remove(app);
+        else
+            openFileHandlers[app] = handler;
+    }
+
+    /// <summary>Hands an app a file to open, such as Files does with a text file for TextEdit.</summary>
+    /// <returns>Whether the app opens files.</returns>
+    public bool OpenFile(string app, string path)
+    {
+        if (!openFileHandlers.TryGetValue(app, out var handler))
+            return false;
+
+        handler(path);
+        return true;
+    }
+
+    /// <summary>Whether an app has a window open, shown or minimized.</summary>
+    public bool HasWindow(string app)
+    {
+        for (var index = 0; index < Windows.Windows.Count; index++)
+        {
+            if (Windows.Windows[index].OpenedByApp && Windows.Windows[index].App == app)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -189,6 +223,8 @@ public sealed class WindowTimer
 /// window:close()
 /// venture.ui.preview("/mnt/notes.txt")          -- Quick Look; nil and a message when it can't
 /// venture.ui.launch("/mnt/system/apps/Notes.app") -- opens an app, or brings an open one forward
+/// venture.ui.launch("TextEdit", "/mnt/todo.txt")  -- by name, and hands it a file
+/// venture.ui.onOpenFile(function(path) ... end) -- how this app opens a file it's handed
 /// venture.ui.onNewWindow(function() ... end)   -- New Window (Ctrl+N), and the dock with no windows open
 /// </code>
 /// <para>A relative path is in the app's <c>Contents/Resources/</c>. The window belongs to the app: quitting the
@@ -249,6 +285,32 @@ public static class UiLibrary
             return 1;
         });
         Function(state, "launch", app, host, (lua, desktop) => Launch(lua, owner, desktop, apps));
+        Function(state, "onOpenFile", app, host, (lua, desktop) =>
+        {
+            if (!lua.IsFunction(1))
+                return Fail(lua, "venture.ui.onOpenFile needs a function, such as venture.ui.onOpenFile(function(path) ... end)");
+
+            lua.PushValue(1);
+            var reference = lua.L_Ref(LuaDef.LUA_REGISTRYINDEX);
+            var workingDirectory = owner.Interpreter.WorkingDirectory ?? "/";
+            desktop.SetOpenFile(app.Name, path =>
+            {
+                if (!owner.IsDisposed)
+                {
+                    owner.Call(reference, state =>
+                    {
+                        state.PushString(LuaText.Encode(path));
+                        return 1;
+                    }, desktop.Output, workingDirectory, desktop.Stop?.Invoke());
+                }
+            });
+            owner.AddUndo(() =>
+            {
+                desktop.SetOpenFile(app.Name, null);
+                owner.Interpreter.State.L_Unref(LuaDef.LUA_REGISTRYINDEX, reference);
+            });
+            return 0;
+        });
         Function(state, "onNewWindow", app, host, (lua, desktop) =>
         {
             if (!lua.IsFunction(1))
@@ -301,6 +363,28 @@ public static class UiLibrary
         if (apps is null)
             return Fail(lua, "venture.ui.launch needs the system's apps, which aren't available");
 
+        // A bare name, such as "TextEdit", is an app in the system's or the user's apps folder.
+        var given = LuaText.Decode(lua.ToString(1));
+        if (!given.Contains('/') && !given.EndsWith(Bundle.Extension(BundleKind.App), StringComparison.OrdinalIgnoreCase))
+        {
+            path = "";
+            foreach (var listing in apps.Available())
+            {
+                if (listing.Bundle is { } named && named.Name.Equals(given, StringComparison.OrdinalIgnoreCase))
+                {
+                    path = listing.Path;
+                    break;
+                }
+            }
+
+            if (path.Length == 0)
+            {
+                lua.PushNil();
+                lua.PushString(LuaText.Encode($"there's no app called {given}"));
+                return 2;
+            }
+        }
+
         Bundle bundle;
         try
         {
@@ -313,24 +397,39 @@ public static class UiLibrary
             return 2;
         }
 
-        // An open app comes forward instead, as it does from the dock.
-        if (apps.IsOpen(bundle.Identifier))
-        {
-            host.Activate(bundle.Name);
-            lua.PushBoolean(true);
-            return 1;
-        }
+        string? file = null;
+        if (lua.Type(2) == LuaType.LUA_TSTRING)
+            file = ShellPaths.Resolve(owner.Interpreter.WorkingDirectory ?? "/", LuaText.Decode(lua.ToString(2)));
+        else if (!lua.IsNoneOrNil(2))
+            return Fail(lua, "venture.ui.launch's file must be a path, such as venture.ui.launch(app, \"/mnt/todo.txt\")");
 
         // What the app says while it opens, including why it didn't, goes to the desktop's messages.
-        if (apps.OpenApp(path, owner.Interpreter.WorkingDirectory ?? "/", host.Output, explainNeeds: false))
+        if (!apps.IsOpen(bundle.Identifier)
+            && !apps.OpenApp(path, owner.Interpreter.WorkingDirectory ?? "/", host.Output, explainNeeds: false))
         {
-            lua.PushBoolean(true);
-            return 1;
+            lua.PushNil();
+            lua.PushString(LuaText.Encode($"{bundle.Name} didn't open"));
+            return 2;
         }
 
-        lua.PushNil();
-        lua.PushString(LuaText.Encode($"{bundle.Name} didn't open"));
-        return 2;
+        // With a file, the app opens it. Without one, the app comes forward, as from the dock, with a new window if
+        // it has none.
+        if (file is not null)
+        {
+            if (!host.OpenFile(bundle.Name, file))
+            {
+                lua.PushNil();
+                lua.PushString(LuaText.Encode($"{bundle.Name} can't open files"));
+                return 2;
+            }
+        }
+        else
+        {
+            host.Activate(bundle.Name);
+        }
+
+        lua.PushBoolean(true);
+        return 1;
     }
 
     private static int OpenWindow(ILuaState lua, LuaOwner owner, Bundle app, AppWindows host)

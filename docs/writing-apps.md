@@ -249,6 +249,12 @@ new number. `roll` still works in the shell, since both live in the same app.
   item reports `pressed` with its name, like a button. See
   [UIScript menus](./uiscript-menus.md).
 - Anything a handler prints shows in a message window on the desktop.
+- **Longer text:** `<TextArea>` is a text field with several lines: Enter
+  adds a line, and it reports `changed` as you type. TextEdit uses one.
+- **Opening files:** `venture.ui.onOpenFile(function(path) ... end)` lets
+  Files hand your app a file, through `venture.ui.launch("YourApp", path)`.
+  If your app opens no window when it starts, also give it
+  `venture.ui.onNewWindow`, which the dock uses to open one.
 - **Timers:** `window:every(1, refresh)` runs `refresh` every second while
   the desktop shows, until the window closes or the app quits; keep the
   timer it returns and call `timer:stop()` to stop sooner. Intervals start

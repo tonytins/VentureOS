@@ -15,6 +15,13 @@ local BOOKMARKS = {
   { name = "System", path = "/mnt/system" },
 }
 
+-- Files with these extensions open in TextEdit, when it's installed; anything
+-- else gets Quick Look.
+local TEXT = {
+  txt = true, md = true, lua = true, uix = true, xml = true,
+  log = true, json = true, cfg = true, ini = true, cs = true,
+}
+
 -- New windows open where Files started: the folder the desktop opened from.
 local START = files.resolve()
 
@@ -104,7 +111,8 @@ local function openWindow(start)
     if not ok then window:setText("status", problem) end
   end
 
-  -- A folder opens in this window, an app launches, and anything else gets Quick Look.
+  -- A folder opens in this window, an app launches, a text file opens in
+  -- TextEdit, and anything else gets Quick Look.
   local function open()
     local entry = selected()
     if not entry then return end
@@ -115,6 +123,8 @@ local function openWindow(start)
     elseif entry.type == "folder" then
       show(path)
     else
+      local extension = entry.name:match("%.([^.]+)$")
+      if extension and TEXT[extension:lower()] and venture.ui.launch("TextEdit", path) then return end
       quickLook()
     end
   end

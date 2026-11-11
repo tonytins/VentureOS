@@ -398,7 +398,13 @@ public sealed class DesktopSession
         }
 
         if (apps.OpenApp(item.Target, workingDirectory, appOutput, explainNeeds: false))
+        {
             ActiveApp = item.Name;
+
+            // An app that opens no window of its own, such as TextEdit waiting for a file, gets a new one.
+            if (apps.Windows is { } host && !host.HasWindow(item.Name))
+                host.NewWindow(item.Name);
+        }
 
         ShowMessages(item.Name, ActiveApp);
         RefreshDock();
