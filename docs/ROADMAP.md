@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** major (Keystone: apps for the desktop) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Keystone phase 1: Files) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,7 +36,7 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Desktop apps** (Keystone), starting with Files.
+1. **Desktop apps** (Keystone): Files is done; user apps are next.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
@@ -68,14 +68,14 @@ fit, rather than waiting on a route.
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
-| Keystone | Desktop apps | 0% | 26–51 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| | **Total** | | **≈ 44–86**, plus every-stage work (≈ 14–28) | |
+| Keystone | Desktop apps | 20% | 18–36 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
+| | **Total** | | **≈ 36–71**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Files, the desktop's fallback app | Keystone | 8–15 |
+| 1 | User apps, and Calculator | Keystone | 3–6 |
 | 2 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
@@ -230,11 +230,13 @@ depends on, and `/mnt/user/apps` can be, by the user and the file commands.
 User apps say what they need when they open, since they may have been
 changed. Lua drawing in regions and images wait for a later route.
 
-- [ ] Phase 1, Files (system): the desktop's fallback app, like Finder. It
+- [x] Phase 1, Files (system): the desktop's fallback app, like Finder. It
   runs whenever the desktop does and can't be quit; its menu shows when no
   other app is in front; the desktop opens with a Files window on `/mnt`,
   and About stays in the VentureOS menu. It browses folders, opens apps,
-  previews `.uix` files, and opens text files with an app.
+  previews `.uix` files, and opens text files with an app. Quick Look is a
+  desktop feature any app can use (`venture.ui.preview`). Lists don't
+  report double-clicks yet, so Files opens with Open and Ctrl+O.
 - [ ] Phase 2, user apps: `/mnt/user/apps`, shipped with VentureOS from
   `src/Venture.OS/user/apps/`; the dock shows system apps, then user apps.
   Calculator (user) is the first.
@@ -275,6 +277,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Keystone 20%: phase 1, Files, the desktop's fallback app, with Quick Look; the desktop restarts it if it stops. About 36–71 h of milestones remain. |
 | 2026-11-11 | major | Keystone planned in five phases: Files as the desktop's fallback, user apps in `/mnt/user/apps`, timers and System Monitor, `<TextArea>` and TextEdit, and Terminal.app, moved from Borealis. Borealis is complete. About 44–86 h of milestones remain. |
 | 2026-11-11 | minor | Version 0.3.0: the desktop, with all five Borealis phases done. |
 | 2026-11-11 | minor | Borealis 95%: phase 5, apps open windows through `venture.ui` and quit with their last window, and Notes has one. The desktop is ready for 0.3; Terminal.app is next. |

@@ -6,13 +6,79 @@ using Venture.OS.Shell;
 
 namespace Venture.OS.Desktop;
 
-/// <summary>Where apps' windows go, and how their event handlers run.</summary>
-/// <param name="Windows">The desktop's windows, which last while the system runs, so apps can open windows from the
+/// <summary>Where apps' windows go, how their event handlers run, and what the desktop can ask of apps.</summary>
+/// <param name="windows">The desktop's windows, which last while the system runs, so apps can open windows from the
 /// shell too; they show the next time the desktop does.</param>
-/// <param name="Output">Where event handlers write. Events only happen while the desktop shows, and the console
+/// <param name="output">Where event handlers write. Events only happen while the desktop shows, and the console
 /// would draw over it, so this is the desktop's held output.</param>
-/// <param name="Stop">Makes the stop for each event handler, such as a time limit; called once per event.</param>
-public sealed record AppWindows(WindowManager Windows, IShellOutput Output, Func<Func<string?>>? Stop = null);
+/// <param name="stop">Makes the stop for each event handler, such as a time limit; called once per event.</param>
+public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<Func<string?>>? stop = null)
+{
+    private readonly Dictionary<string, Action> newWindowHandlers = [];
+
+    /// <summary>The desktop's windows.</summary>
+    public WindowManager Windows { get; } = windows ?? throw new ArgumentNullException(nameof(windows));
+
+    /// <summary>Where event handlers write.</summary>
+    public IShellOutput Output { get; } = output ?? throw new ArgumentNullException(nameof(output));
+
+    /// <summary>Makes the stop for each event handler, or <see langword="null"/> for none.</summary>
+    public Func<Func<string?>>? Stop { get; } = stop;
+
+    /// <summary>Whether an app said how to open a new window, which puts New Window in its app menu.</summary>
+    public bool HasNewWindow(string app) => newWindowHandlers.ContainsKey(app);
+
+    /// <summary>Records how an app opens a new window, or forgets it with <see langword="null"/>.</summary>
+    public void SetNewWindow(string app, Action? handler)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        if (handler is null)
+            newWindowHandlers.Remove(app);
+        else
+            newWindowHandlers[app] = handler;
+    }
+
+    /// <summary>Asks an app for a new window.</summary>
+    /// <returns>Whether the app knows how to open one.</returns>
+    public bool NewWindow(string app)
+    {
+        if (!newWindowHandlers.TryGetValue(app, out var handler))
+            return false;
+
+        handler();
+        return true;
+    }
+
+    /// <summary>
+    /// Brings an app forward, as clicking it in the dock does: its front window, or a new window when it has none.
+    /// </summary>
+    public void Activate(string app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        for (var index = Windows.Windows.Count - 1; index >= 0; index--)
+        {
+            var window = Windows.Windows[index];
+            if (window.OpenedByApp && window.App == app)
+            {
+                Windows.Open(window);
+                return;
+            }
+        }
+
+        NewWindow(app);
+    }
+
+    /// <summary>Opens a Quick Look preview of a file or folder.</summary>
+    /// <returns>Why there's no preview, or <see langword="null"/> when it opened.</returns>
+    public string? Preview(string path)
+    {
+        if (!QuickLook.TryCreate(path, out var window, out var problem))
+            return problem;
+
+        Windows.Open(window);
+        return null;
+    }
+}
 
 /// <summary>
 /// <c>venture.ui</c>: windows for apps, laid out by <c>.uix</c> documents.
@@ -24,6 +90,9 @@ public sealed record AppWindows(WindowManager Windows, IShellOutput Output, Func
 /// window:setText("count", "3 notes")
 /// window:setItems("notes", { "Milk", "Eggs" })
 /// window:close()
+/// venture.ui.preview("/mnt/notes.txt")          -- Quick Look; nil and a message when it can't
+/// venture.ui.launch("/mnt/system/apps/Notes.app") -- opens an app, or brings an open one forward
+/// venture.ui.onNewWindow(function() ... end)   -- New Window (Ctrl+N), and the dock with no windows open
 /// </code>
 /// <para>A relative path is in the app's <c>Contents/Resources/</c>. The window belongs to the app: quitting the
 /// app closes it, and closing the app's last window quits the app. Event handlers get a table with
@@ -45,7 +114,8 @@ public static class UiLibrary
 {
     /// <summary>Puts <c>venture.ui</c> in the <c>venture</c> table for an app's code.</summary>
     /// <param name="host">Where windows go, or <see langword="null"/> when there's no desktop.</param>
-    public static void Open(ILuaState state, LuaOwner owner, Bundle app, AppWindows? host)
+    /// <param name="apps">Opens and finds apps, for <c>venture.ui.launch</c>, or <see langword="null"/>.</param>
+    public static void Open(ILuaState state, LuaOwner owner, Bundle app, AppWindows? host, AppManager? apps = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(owner);
@@ -60,16 +130,103 @@ public static class UiLibrary
         }
 
         state.NewTable();
-        if ((app.Needs & ScriptScopes.Ui) == 0)
-            state.PushCSharpFunction(lua => Fail(lua, VentureLibrary.UndeclaredMessage("ui.open", ScriptScopes.Ui)));
-        else if (host is null)
-            state.PushCSharpFunction(lua => Fail(lua, "venture.ui.open needs the desktop, which this system doesn't have"));
-        else
-            state.PushCSharpFunction(lua => OpenWindow(lua, owner, app, host));
-        state.SetField(-2, "open");
+        Function(state, "open", app, host, (lua, desktop) => OpenWindow(lua, owner, app, desktop));
+        Function(state, "preview", app, host, (lua, desktop) =>
+        {
+            var path = FullPath(lua, owner, "preview");
+            if (desktop.Preview(path) is { } problem)
+            {
+                lua.PushNil();
+                lua.PushString(LuaText.Encode(problem));
+                return 2;
+            }
+
+            lua.PushBoolean(true);
+            return 1;
+        });
+        Function(state, "launch", app, host, (lua, desktop) => Launch(lua, owner, desktop, apps));
+        Function(state, "onNewWindow", app, host, (lua, desktop) =>
+        {
+            if (!lua.IsFunction(1))
+                return Fail(lua, "venture.ui.onNewWindow needs a function, such as venture.ui.onNewWindow(function() ... end)");
+
+            lua.PushValue(1);
+            var reference = lua.L_Ref(LuaDef.LUA_REGISTRYINDEX);
+            var workingDirectory = owner.Interpreter.WorkingDirectory ?? "/";
+            desktop.SetNewWindow(app.Name, () =>
+            {
+                if (!owner.IsDisposed)
+                    owner.Call(reference, _ => 0, desktop.Output, workingDirectory, desktop.Stop?.Invoke());
+            });
+            owner.AddUndo(() =>
+            {
+                desktop.SetNewWindow(app.Name, null);
+                owner.Interpreter.State.L_Unref(LuaDef.LUA_REGISTRYINDEX, reference);
+            });
+            return 0;
+        });
 
         state.SetField(-2, "ui");
         state.Pop(1);
+    }
+
+    /// <summary>A <c>venture.ui</c> function, or one that explains the missing scope or desktop.</summary>
+    private static void Function(ILuaState state, string name, Bundle app, AppWindows? host, Func<ILuaState, AppWindows, int> body)
+    {
+        if ((app.Needs & ScriptScopes.Ui) == 0)
+            state.PushCSharpFunction(lua => Fail(lua, VentureLibrary.UndeclaredMessage($"ui.{name}", ScriptScopes.Ui)));
+        else if (host is null)
+            state.PushCSharpFunction(lua => Fail(lua, $"venture.ui.{name} needs the desktop, which this system doesn't have"));
+        else
+            state.PushCSharpFunction(lua => body(lua, host));
+        state.SetField(-2, name);
+    }
+
+    /// <summary>The first argument as a full path, from the app's current folder.</summary>
+    private static string FullPath(ILuaState lua, LuaOwner owner, string function)
+    {
+        if (lua.Type(1) != LuaType.LUA_TSTRING)
+            Fail(lua, $"venture.ui.{function} needs a path, such as venture.ui.{function}(\"/mnt/notes.txt\")");
+
+        return ShellPaths.Resolve(owner.Interpreter.WorkingDirectory ?? "/", LuaText.Decode(lua.ToString(1)));
+    }
+
+    private static int Launch(ILuaState lua, LuaOwner owner, AppWindows host, AppManager? apps)
+    {
+        var path = FullPath(lua, owner, "launch");
+        if (apps is null)
+            return Fail(lua, "venture.ui.launch needs the system's apps, which aren't available");
+
+        Bundle bundle;
+        try
+        {
+            bundle = Bundle.Read(path, BundleKind.App);
+        }
+        catch (BundleException exception)
+        {
+            lua.PushNil();
+            lua.PushString(LuaText.Encode(exception.Message));
+            return 2;
+        }
+
+        // An open app comes forward instead, as it does from the dock.
+        if (apps.IsOpen(bundle.Identifier))
+        {
+            host.Activate(bundle.Name);
+            lua.PushBoolean(true);
+            return 1;
+        }
+
+        // What the app says while it opens, including why it didn't, goes to the desktop's messages.
+        if (apps.OpenApp(path, owner.Interpreter.WorkingDirectory ?? "/", host.Output))
+        {
+            lua.PushBoolean(true);
+            return 1;
+        }
+
+        lua.PushNil();
+        lua.PushString(LuaText.Encode($"{bundle.Name} didn't open"));
+        return 2;
     }
 
     private static int OpenWindow(ILuaState lua, LuaOwner owner, Bundle app, AppWindows host)

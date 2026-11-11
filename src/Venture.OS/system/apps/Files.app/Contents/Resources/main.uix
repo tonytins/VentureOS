@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A Files window. main.lua fills the list and handles the events. -->
+<UIScript version="1" requires="menus">
+  <Window width="480" height="340"/>
+
+  <Menu name="fileMenu" title="File" hotkey="F"/>
+  <MenuItem menu="fileMenu" name="openItem" title="Open" hotkey="O" shortcut="Ctrl+O"/>
+  <MenuItem menu="fileMenu" name="lookItem" title="Quick Look" hotkey="L" shortcut="Ctrl+Y"/>
+  <MenuSeparator menu="fileMenu"/>
+  <MenuItem menu="fileMenu" name="closeWindow" title="Close Window" hotkey="C" shortcut="Ctrl+W"/>
+
+  <Menu name="goMenu" title="Go" hotkey="G"/>
+  <MenuItem menu="goMenu" name="enclosing" title="Enclosing Folder" hotkey="E" shortcut="Ctrl+U"/>
+  <MenuSeparator menu="goMenu"/>
+  <MenuItem menu="goMenu" name="home" title="Home" hotkey="H" shortcut="Ctrl+Shift+H"/>
+  <MenuItem menu="goMenu" name="system" title="System" hotkey="S"/>
+
+  <Style name="quiet" textColor="#6E747E"/>
+
+  <Button name="up" x="10" y="10" width="60" height="24" text="Up"/>
+  <Text name="path" x="80" y="12" width="390" height="20"/>
+  <List name="entries" x="10" y="42" width="460" height="240" selectable="true"/>
+  <Button name="open" x="10" y="294" width="80" height="26" text="Open"/>
+  <Button name="look" x="98" y="294" width="100" height="26" text="Quick Look"/>
+  <Text name="status" x="210" y="298" width="260" height="20" alignment="right" style="quiet"/>
+</UIScript>

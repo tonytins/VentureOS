@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- New app: Files. The desktop opens with a Files window. Select something and press Open (Ctrl+O): a folder opens in the window, an app starts, and anything else shows in Quick Look (Ctrl+Y). Go ▸ Enclosing Folder (Ctrl+U) goes back up.
+- Quick Look shows a file without opening it: text, an interface (`.uix`), an app's details, or a file's size.
+- Files is always there. Closing its last window leaves it running; click it in the dock, or choose Files ▸ New Window (Ctrl+N), for another. If it stops, the desktop starts it again.
+- About VentureOS is now in the VentureOS menu, rather than opening with the desktop.
+
 ## 0.3.0
 
 VentureOS has a desktop. Type `desktop` at the prompt to open it, and choose VentureOS ▸ Return to Shell (Ctrl+Shift+Q) to come back.

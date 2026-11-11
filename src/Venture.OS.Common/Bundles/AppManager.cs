@@ -42,6 +42,9 @@ public sealed class AppManager(
     /// <summary>An entry in the apps folder: a bundle that read, or the reason it didn't.</summary>
     public sealed record Listing(string Folder, Bundle? Bundle, string? Problem);
 
+    /// <summary>Where apps' windows go, or <see langword="null"/> without a desktop.</summary>
+    public AppWindows? Windows => windows;
+
     /// <summary>The apps that are open, in the order they opened.</summary>
     public IReadOnlyList<RunningApp> Running => running;
 
@@ -125,7 +128,7 @@ public sealed class AppManager(
             commands,
             runShell);
         AppLibrary.Open(owner.Interpreter.State, bundle);
-        UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows);
+        UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
 
         if (!owner.Run(lua => lua.DoFile(bundle.Main!), startupStop?.Invoke()))
         {

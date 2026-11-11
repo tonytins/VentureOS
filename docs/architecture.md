@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (version 0.3.0) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Files, Quick Look, and the fallback app) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (569 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (585 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -40,7 +40,8 @@ the code wins and this page is out of date.
   network after boot.
 - **Desktop:** `desktop` opens a graphical desktop with a menu bar, a dock
   that opens the system's apps, and movable windows that show `.uix`
-  interfaces. Apps open windows through `venture.ui`; `Notes.app` has one.
+  interfaces. Files is the desktop's own app, and Quick Look previews files.
+  Apps open windows through `venture.ui`; `Notes.app` has one.
 - **Not built yet:** keeping files across reboots
   (Blue Water); Terminal.app (Borealis); CI (removed for now: the kernel doesn't build like a typical .NET project), and published ISOs
   (every-stage work on the roadmap). See the
@@ -163,6 +164,7 @@ VentureOS/
 │     │  └─ Commands/              one class per command
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               runs once after boot; prints the help hint
+│     │  ├─ apps/Files.app/        the desktop's own app: browses folders, opens apps, Quick Look
 │     │  ├─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
 │     │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
 │     │  ├─ interfaces/about.uix   the About VentureOS window
@@ -746,14 +748,29 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   and the app has no other, the app quits, which closes its messages and
   removes its commands. Messages don't count, so closing one never quits
   its app.
+- **The fallback app.** Files is to the desktop what Finder is to a Mac
+  (`DesktopSession.FallbackApp`). The desktop starts it before anything
+  else, so it opens a window on the folder `desktop` was typed in; it's
+  first in the dock and always marked open; its menu shows whenever no
+  other app is in front; it has New Window and no Quit; and closing its
+  last window leaves it running. If it isn't running, such as after
+  `close files`, or fails to start, the desktop keeps going and starts it
+  again, waiting 2, 5, 10, then every 30 seconds between failures, with one
+  message per new reason.
+- **Quick Look** (`QuickLook`). A preview window for a path: a `.uix` file
+  as its live interface, or why it can't show; text as its lines from the
+  top, up to 64 KB; an app's name, identifier, version, and needs; a
+  folder's item count; anything else, its size. A file is text unless its
+  first kilobyte holds a zero byte. Previews belong to the desktop and close
+  with it.
 - **Input order.** The open menu, then shortcuts and menu hotkeys, then the
   bar, the dock, and the windows. A press belongs to what it landed on until
   release. Windows ask to close with `RequestClose`, and the window manager
   closes them at the end of the frame.
-- **Opening.** `desktop` opens About VentureOS, from
-  `/mnt/system/interfaces/about.uix` with the version filled in, and each
-  `.uix` named on the command line, which previews an interface while it's
-  written. Those are read before the screen switches, so a broken document
+- **Opening.** `desktop` starts Files, then opens each `.uix` named on the
+  command line in front of it, which previews an interface while it's
+  written. About VentureOS, from `/mnt/system/interfaces/about.uix` with the
+  version filled in, is in the VentureOS menu. Those are read before the screen switches, so a broken document
   is reported in the shell.
 - **Frame loop.** `DesktopCommand` reads the PS/2 mouse, wheel, and keyboard,
   and `DesktopSession` redraws only when they changed. The loop keeps the
@@ -800,6 +817,11 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   holds the keyboard. Methods (`setText`, `setItems`, `select`,
   `setDisabled`, and the rest) refuse names the document doesn't have.
   Code that isn't an app's gets an error saying only apps have windows.
+  `venture.ui.preview(path)` opens Quick Look; `venture.ui.launch(path)`
+  opens an `.app`, or brings an open one forward, with what it says going
+  to the desktop's messages; `venture.ui.onNewWindow(fn)` gives the app
+  New Window (Ctrl+N), which the dock also uses when the app has no window.
+  The app menu shows Quit for every app but the fallback.
 
 `Notes.app` ships as the example: a window with a text field, the list of
 notes, Delete, and a Note menu, plus `note <text>`, `note -l`, `note -d <n>`,
@@ -879,6 +901,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Files (§2, §9): the desktop's fallback app, started first and restarted with growing waits; Quick Look; `venture.ui.preview`, `launch`, and `onNewWindow`; About moves to the VentureOS menu only. |
 | 2026-11-11 | minor | Version 0.3.0 (§10): a new base in `GitInfo.txt` for the desktop. |
 | 2026-11-11 | minor | Apps with windows (§2, §9): `venture.ui` under the `ui` scope; windows last for the whole boot; an app quits when its last own window closes; event handlers write to the held output with a 5-second limit; Notes has a window. |
 | 2026-11-11 | minor | The menu bar and dock (§2, §9): the VentureOS menu, the active app's menu, and the focused window's `.uix` menus with hotkeys and shortcuts; a dock that opens the system's apps; app output held while the desktop shows. Ctrl+Shift+Q, not Esc, returns to the shell. |

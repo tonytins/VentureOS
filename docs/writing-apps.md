@@ -240,6 +240,11 @@ new number. `roll` still works in the shell, since both live in the same app.
   item reports `pressed` with its name, like a button. See
   [UIScript menus](./uiscript-menus.md).
 - Anything a handler prints shows in a message window on the desktop.
+- **More:** `venture.ui.preview(path)` opens a file in Quick Look,
+  `venture.ui.launch(path)` opens another app, and
+  `venture.ui.onNewWindow(fn)` adds New Window (Ctrl+N) to your app's menu;
+  the dock calls it too when your app has no window open. `Files.app` uses
+  all three.
 
 `Notes.app` has a fuller window: a text field, a list, and a menu.
 

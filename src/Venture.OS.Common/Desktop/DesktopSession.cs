@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Venture.OS.Bundles;
 using Venture.OS.Interface;
 
@@ -31,6 +32,15 @@ public sealed class DesktopSession
     /// <summary>The app menu's item that closes the app.</summary>
     public const string QuitItem = "quit";
 
+    /// <summary>The app menu's item that asks the app for a new window, for apps that said how.</summary>
+    public const string NewWindowItem = "newWindow";
+
+    // How long to wait before starting the fallback app again after each failure in a row; the last one repeats.
+    private static readonly TimeSpan[] RestartDelays =
+        [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30)];
+
+    private static readonly long Started = Stopwatch.GetTimestamp();
+
     private static readonly BarMenu SystemMenu = new(
         new UIMenu("venture", "VentureOS", null,
         [
@@ -53,6 +63,14 @@ public sealed class DesktopSession
     // The window in front when focus was last checked, so a window opened between frames, such as About when the
     // desktop opens, still makes its app the active one.
     private DesktopWindow? lastFocused;
+
+    // The fallback app's failures to start in a row, when to try next, and the last reason shown.
+    private int fallbackFailures;
+    private TimeSpan nextFallbackStart;
+    private string? lastFallbackProblem;
+
+    // How many apps were open when the dock was last filled, so it's filled again only when that changes.
+    private int dockedRunning = -1;
 
     private enum PointerOwner
     {
@@ -114,6 +132,16 @@ public sealed class DesktopSession
     /// <summary>The app whose menu the bar shows, by name, or <see langword="null"/>.</summary>
     public string? ActiveApp { get; private set; }
 
+    /// <summary>
+    /// The app that is the desktop, as Finder is on a Mac, by name, such as <c>Files</c>. The desktop starts it,
+    /// starts it again if it stops, never quits it, and shows its menu when no other app is in front. It's first in
+    /// the dock. <see langword="null"/> for none.
+    /// </summary>
+    public string? FallbackApp { get; init; }
+
+    /// <summary>The time, for waiting between attempts to start the fallback app.</summary>
+    public Func<TimeSpan> Clock { get; init; } = () => Stopwatch.GetElapsedTime(Started);
+
     /// <summary>Whether the user has left the desktop.</summary>
     public bool IsFinished { get; private set; }
 
@@ -132,6 +160,12 @@ public sealed class DesktopSession
             Windows.Open(about);
     }
 
+    /// <summary>
+    /// Starts the fallback app now rather than on the first frame, so windows opened after it, such as previews,
+    /// land in front of its window.
+    /// </summary>
+    public void StartFallbackApp() => KeepFallbackRunning();
+
     /// <summary>Takes a frame's input.</summary>
     /// <returns>Whether the desktop needs drawing again.</returns>
     public bool Update(DesktopInput input)
@@ -140,6 +174,9 @@ public sealed class DesktopSession
         var pressed = input.PointerDown && !last.PointerDown;
         var released = !input.PointerDown && last.PointerDown;
         List<WindowEvent> happened = [];
+
+        // Apps and windows may have changed since the last frame, such as the fallback app starting.
+        RefreshMenus();
 
         // Keys: the open menu takes them all; otherwise shortcuts and menu hotkeys come before the windows.
         List<KeyPress> forWindows = [];
@@ -192,6 +229,9 @@ public sealed class DesktopSession
         happened.AddRange(Windows.Update(windowInput));
 
         QuitAppsWithoutWindows(happened);
+        var restarted = KeepFallbackRunning();
+        if (apps is not null && apps.Running.Count != dockedRunning)
+            RefreshDock();
         ShowMessages(ActiveApp ?? "VentureOS", ActiveApp);
 
         if (Windows.Focused != lastFocused)
@@ -204,7 +244,7 @@ public sealed class DesktopSession
         LastEvents = happened;
         RefreshMenus();
 
-        var changed = !drawn || input.HasEvents || happened.Count > 0
+        var changed = !drawn || input.HasEvents || happened.Count > 0 || restarted
             || x != last.PointerX || y != last.PointerY || input.PointerDown != last.PointerDown;
         last = new DesktopInput(x, y, input.PointerDown);
         if (released)
@@ -236,8 +276,12 @@ public sealed class DesktopSession
             case MenuGroup.System when item == ReturnToShellItem:
                 IsFinished = true;
                 break;
-            case MenuGroup.App when item == QuitItem && ActiveApp is { } app:
-                Quit(app);
+            case MenuGroup.App when item == QuitItem:
+                Quit(choice.Menu.Menu.Title);
+                break;
+            case MenuGroup.App when item == NewWindowItem:
+                apps?.Windows?.NewWindow(choice.Menu.Menu.Title);
+                happened.AddRange(Windows.CloseRequested());
                 break;
             case MenuGroup.Window:
                 // A chosen item reports like a pressed button, by its name, to the window whose menu it's in.
@@ -281,7 +325,8 @@ public sealed class DesktopSession
             foreach (var window in Windows.Windows)
                 hasAnother |= window.OpenedByApp && window.App == app;
 
-            if (!hasAnother && IsAppOpen(app))
+            // The fallback stays, as Finder does with no windows open.
+            if (!hasAnother && app != FallbackApp && IsAppOpen(app))
                 Quit(app);
         }
     }
@@ -307,14 +352,21 @@ public sealed class DesktopSession
 
         if (item.IsOpen)
         {
-            // Bring the app forward: its menu, and its front window.
+            // Bring the app forward: its menu, and its front window, or a new one when it has none.
             ActiveApp = item.Name;
-            for (var index = Windows.Windows.Count - 1; index >= 0; index--)
+            if (apps.Windows is { } host)
             {
-                if (Windows.Windows[index].App == item.Name)
+                host.Activate(item.Name);
+            }
+            else
+            {
+                for (var index = Windows.Windows.Count - 1; index >= 0; index--)
                 {
-                    Windows.Open(Windows.Windows[index]);
-                    break;
+                    if (Windows.Windows[index].App == item.Name)
+                    {
+                        Windows.Open(Windows.Windows[index]);
+                        break;
+                    }
                 }
             }
 
@@ -330,6 +382,9 @@ public sealed class DesktopSession
 
     private void Quit(string app)
     {
+        if (app == FallbackApp)
+            return;
+
         apps?.CloseApp(app, appOutput);
 
         // Its windows go with it.
@@ -351,11 +406,51 @@ public sealed class DesktopSession
             Windows.Open(DesktopAlert.Create(title, string.Join('\n', appOutput.Take()), app));
     }
 
+    /// <summary>
+    /// Starts the fallback app when it isn't running, waiting longer after each failure in a row, so a broken app
+    /// can't keep the desktop busy. A failure is shown once, and again only when the reason changes.
+    /// </summary>
+    /// <returns>Whether it started.</returns>
+    private bool KeepFallbackRunning()
+    {
+        if (FallbackApp is not { } fallback || apps is null || IsAppOpen(fallback))
+            return false;
+
+        var now = Clock();
+        if (fallbackFailures > 0 && now < nextFallbackStart)
+            return false;
+
+        if (apps.OpenApp(fallback, workingDirectory, appOutput))
+        {
+            fallbackFailures = 0;
+            lastFallbackProblem = null;
+            ShowMessages(fallback, fallback);
+            RefreshDock();
+            return true;
+        }
+
+        var delay = RestartDelays[Math.Min(fallbackFailures, RestartDelays.Length - 1)];
+        fallbackFailures++;
+        nextFallbackStart = now + delay;
+
+        var problem = string.Join('\n', appOutput.Take());
+        if (problem != lastFallbackProblem)
+        {
+            lastFallbackProblem = problem;
+            Windows.Open(DesktopAlert.Create(
+                fallback,
+                $"{fallback} didn't start. VentureOS will keep trying, next in {delay.TotalSeconds:0} seconds.\n{problem}".TrimEnd()));
+        }
+
+        return false;
+    }
+
     private void RefreshDock()
     {
         if (apps is null)
             return;
 
+        dockedRunning = apps.Running.Count;
         List<DockItem> items = [];
         foreach (var listing in apps.Available())
         {
@@ -367,7 +462,11 @@ public sealed class DesktopSession
             var target = listing.Folder.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
                 ? listing.Folder[..^extension.Length]
                 : listing.Folder;
-            items.Add(new DockItem(bundle.Name, target, apps.IsOpen(bundle.Identifier)));
+            DockItem item = new(bundle.Name, target, apps.IsOpen(bundle.Identifier));
+            if (bundle.Name == FallbackApp)
+                items.Insert(0, item);
+            else
+                items.Add(item);
         }
 
         Dock.SetItems(items);
@@ -376,8 +475,11 @@ public sealed class DesktopSession
     private void RefreshMenus()
     {
         List<BarMenu> menus = [SystemMenu];
-        if (ActiveApp is { } app)
-            menus.Add(AppMenu(app));
+
+        // With no other app in front, the fallback's menu shows.
+        var shown = ActiveApp ?? (FallbackApp is { } fallback && IsAppOpen(fallback) ? fallback : null);
+        if (shown is not null)
+            menus.Add(AppMenu(shown));
 
         if (Windows.Focused is { } focused && focused.App == ActiveApp)
         {
@@ -388,19 +490,27 @@ public sealed class DesktopSession
         MenuBar.SetMenus(menus);
     }
 
-    /// <summary>The app's menu, kept per app so the bar sees the same menu from frame to frame.</summary>
+    /// <summary>
+    /// The app's menu: New Window when the app said how to open one, and Quit unless it's the fallback. Kept per app
+    /// and shape, so the bar sees the same menu from frame to frame.
+    /// </summary>
     private BarMenu AppMenu(string app)
     {
-        if (!appMenus.TryGetValue(app, out var menu))
+        var newWindow = apps?.Windows?.HasNewWindow(app) ?? false;
+        var quits = app != FallbackApp;
+        var key = $"{app}|{newWindow}|{quits}";
+        if (!appMenus.TryGetValue(key, out var menu))
         {
-            menu = new BarMenu(
-                new UIMenu("app", app, null,
-                [
-                    new UIMenuEntry(QuitItem, $"Quit {app}", 'Q', new UIShortcut(Control: true, Shift: false, Alt: false, 'Q'), 0),
-                ], 0),
-                MenuGroup.App,
-                Emphasized: true);
-            appMenus[app] = menu;
+            List<UIMenuEntry> entries = [];
+            if (newWindow)
+                entries.Add(new UIMenuEntry(NewWindowItem, "New Window", 'N', new UIShortcut(Control: true, Shift: false, Alt: false, 'N'), 0));
+            if (newWindow && quits)
+                entries.Add(new UIMenuEntry(null, null, null, null, 0));
+            if (quits)
+                entries.Add(new UIMenuEntry(QuitItem, $"Quit {app}", 'Q', new UIShortcut(Control: true, Shift: false, Alt: false, 'Q'), 0));
+
+            menu = new BarMenu(new UIMenu("app", app, null, entries, 0), MenuGroup.App, Emphasized: true);
+            appMenus[key] = menu;
         }
 
         return menu;

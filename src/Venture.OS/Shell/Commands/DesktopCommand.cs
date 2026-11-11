@@ -9,8 +9,9 @@ namespace Venture.OS.Shell.Commands;
 /// Opens the desktop: graphics on the whole screen, until the user goes back to the shell.
 /// </summary>
 /// <remarks>
-/// <para>It opens with the About VentureOS window. Any <c>.uix</c> files named on the command line open as windows
-/// too, which previews an interface while it's being written. The dock opens the system's apps; what they write while
+/// <para>Files is the desktop's own app: the desktop starts it, which opens a Files window, and keeps it running.
+/// Any <c>.uix</c> files named on the command line open as windows too, which previews an interface while it's
+/// being written. The dock opens the system's apps; what they write while
 /// the desktop is showing is held and shown in a window, since the console would draw over the desktop, and goes to
 /// the shell again once the desktop closes.</para>
 /// <para>The text console draws on the same canvas, so the desktop draws over it, and leaving clears the console,
@@ -23,6 +24,9 @@ namespace Venture.OS.Shell.Commands;
 /// <param name="appOutput">Where apps write while the desktop shows; held then, and passed to the shell after.</param>
 internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windows, HeldOutput appOutput) : IShellCommand
 {
+    /// <summary>The app that is the desktop, as Finder is on a Mac.</summary>
+    private const string FilesApp = "Files";
+
     public string Name => "desktop";
     public string Summary => "Open the desktop, with any .uix files as windows. Ctrl+Shift+Q comes back.";
     public string Usage => "desktop [interface.uix...]";
@@ -70,9 +74,10 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
             session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, appOutput, windows)
             {
                 AboutWindow = MakeAbout,
+                FallbackApp = FilesApp,
             };
             CanvasPainter painter = new(canvas, interfaceFont, monospaceFont);
-            session.ShowAbout();
+            session.StartFallbackApp();
             foreach (var (title, script) in previews)
                 session.Windows.Open(new DesktopWindow(title, new UIView(script)));
 
