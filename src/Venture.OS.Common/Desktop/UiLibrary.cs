@@ -20,6 +20,9 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     private readonly Dictionary<string, Action> newWindowHandlers = [];
     private readonly List<WindowTimer> timers = [];
 
+    // The timers as a tick began, reused, since a timer's code may start or stop others while the tick runs.
+    private readonly List<WindowTimer> ticking = [];
+
     /// <summary>The desktop's windows.</summary>
     public WindowManager Windows { get; } = windows ?? throw new ArgumentNullException(nameof(windows));
 
@@ -107,12 +110,17 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     public bool Tick(TimeSpan now)
     {
         var ran = false;
-        foreach (var timer in (WindowTimer[])[.. timers])
+        if (timers.Count == 0)
+            return ran;
+
+        ticking.Clear();
+        ticking.AddRange(timers);
+        foreach (var timer in ticking)
         {
             if (!timers.Contains(timer))
                 continue;
 
-            if (!Windows.Windows.Contains(timer.Window))
+            if (!Windows.Contains(timer.Window))
             {
                 timers.Remove(timer);
                 continue;

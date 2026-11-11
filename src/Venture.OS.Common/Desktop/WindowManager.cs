@@ -25,6 +25,9 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     private const int Cascade = 24;
 
     private readonly List<DesktopWindow> windows = [];
+
+    // Reused every frame, since the desktop runs its frame loop without pause; see Update.
+    private readonly List<WindowEvent> frameEvents = [];
     private bool wasDown;
     private DesktopWindow? captured;
     private (DesktopWindow Window, FramePart Part, int Index)? armed;
@@ -110,11 +113,15 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         return true;
     }
 
+    /// <summary>Whether a window is open, minimized or not.</summary>
+    public bool Contains(DesktopWindow window) => windows.Contains(window);
+
     /// <summary>Handles a frame's input.</summary>
-    /// <returns>What happened to windows, in order.</returns>
+    /// <returns>What happened to windows, in order. A frame where nothing happens allocates nothing.</returns>
     public IReadOnlyList<WindowEvent> Update(DesktopInput input)
     {
-        List<WindowEvent> happened = [];
+        var happened = frameEvents;
+        happened.Clear();
         var (x, y) = (input.PointerX, input.PointerY);
         var pressed = input.PointerDown && !wasDown;
         var released = !input.PointerDown && wasDown;
@@ -158,8 +165,9 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             var (originX, originY) = receiver.ContentOrigin;
             UIViewInput viewInput = new(x, y, captured == receiver && input.PointerDown, viewPressed, released && captured == receiver, scroll, keys, input.Time);
 
-            foreach (var uiEvent in receiver.View.Update(viewInput, originX, originY))
-                Dispatch(receiver, uiEvent, happened);
+            var viewEvents = receiver.View.Update(viewInput, originX, originY);
+            for (var index = 0; index < viewEvents.Count; index++)
+                Dispatch(receiver, viewEvents[index], happened);
         }
 
         if (released)
@@ -169,13 +177,19 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         }
 
         happened.AddRange(CloseRequested());
-        return happened;
+        return happened.Count == 0 ? [] : [.. happened];
     }
 
     /// <summary>Closes the windows that asked to close.</summary>
     /// <returns>A closing event for each.</returns>
     public IReadOnlyList<WindowEvent> CloseRequested()
     {
+        var any = false;
+        for (var index = 0; index < windows.Count; index++)
+            any |= windows[index].IsCloseRequested;
+        if (!any)
+            return [];
+
         List<WindowEvent> closed = [];
         for (var index = windows.Count - 1; index >= 0; index--)
         {

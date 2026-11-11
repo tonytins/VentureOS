@@ -83,6 +83,9 @@ public sealed class UIView
     private (int X, int Y) pointer;
     private (string List, int Index, TimeSpan Time)? lastListClick;
 
+    // Reused every frame, since the desktop updates views without pause; see Update.
+    private readonly List<UIEvent> frameEvents = [];
+
     /// <summary>The longest gap between two clicks on a list item that makes them a double-click.</summary>
     public static readonly TimeSpan DoubleClickInterval = TimeSpan.FromMilliseconds(500);
 
@@ -259,9 +262,14 @@ public sealed class UIView
     /// Handles a frame's input with the view's corner at (<paramref name="originX"/>, <paramref name="originY"/>).
     /// </summary>
     /// <returns>The events the input caused, in order.</returns>
+    /// <remarks>
+    /// The desktop calls this on every pass of its frame loop, so a frame where nothing happens allocates nothing:
+    /// the events are gathered in a reused list and copied out only when there are some.
+    /// </remarks>
     public IReadOnlyList<UIEvent> Update(UIViewInput input, int originX, int originY)
     {
-        List<UIEvent> events = [];
+        var events = frameEvents;
+        events.Clear();
         var (x, y) = (input.PointerX - originX, input.PointerY - originY);
         pointer = (x, y);
 
@@ -291,7 +299,7 @@ public sealed class UIView
                 Type(focused, key, events);
         }
 
-        return events;
+        return events.Count == 0 ? [] : [.. events];
     }
 
     /// <summary>Draws the visuals, then the controls in document order, with the view's corner at the origin.</summary>
@@ -519,8 +527,11 @@ public sealed class UIView
     /// <summary>Keeps logs at their newest items as items arrive, and every list's scroll in range.</summary>
     private void FollowLists()
     {
-        foreach (var control in script.Controls)
+        // By index, since a foreach over the interface would allocate on every frame.
+        var controls = script.Controls;
+        for (var index = 0; index < controls.Count; index++)
         {
+            var control = controls[index];
             if (states[control.Name].List is not { } list)
                 continue;
 

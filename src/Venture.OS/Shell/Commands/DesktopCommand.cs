@@ -157,9 +157,13 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
     }
 
     /// <summary>Takes every waiting key, as the desktop sees them.</summary>
+    /// <remarks>
+    /// The frame loop calls this on every pass, so with no key waiting it allocates nothing; the list exists only once
+    /// a key arrives.
+    /// </remarks>
     private static KeyPress[] ReadKeys()
     {
-        List<KeyPress> keys = [];
+        List<KeyPress>? keys = null;
         while (KeyboardManager.TryReadKey(out var key))
         {
             if (key.Type != KeyEvent.KeyEventType.Make)
@@ -184,6 +188,7 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
                 _ => DesktopKey.Character,
             };
 
+            keys ??= [];
             if (special != DesktopKey.Character)
                 keys.Add(new KeyPress(special, '\0', control, shift, alt));
             else if ((control || alt) && Letter(key.Key) is { } letter)
@@ -192,7 +197,7 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
                 keys.Add(new KeyPress(DesktopKey.Character, key.KeyChar, control, shift, alt));
         }
 
-        return [.. keys];
+        return keys is null || keys.Count == 0 ? [] : [.. keys];
     }
 
     /// <summary>

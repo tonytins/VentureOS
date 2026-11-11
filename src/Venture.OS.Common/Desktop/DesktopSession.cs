@@ -54,7 +54,14 @@ public sealed class DesktopSession
     private readonly AppManager? apps;
     private readonly string workingDirectory;
     private readonly HeldOutput appOutput;
-    private readonly Dictionary<string, BarMenu> appMenus = [];
+    private readonly Dictionary<(string App, bool NewWindow, bool Quits), BarMenu> appMenus = [];
+
+    // Reused every frame: the frame loop runs without pause, so a frame where nothing changes allocates nothing.
+    private readonly List<WindowEvent> happened = [];
+    private readonly List<KeyPress> forWindows = [];
+
+    // What the bar's menus were built from, so they're rebuilt only when one of these changes.
+    private (string? App, DesktopWindow? Window, bool NewWindow, bool Built) menuSource;
     private DesktopInput last;
     private bool drawn;
     private PointerOwner owner;
@@ -175,13 +182,13 @@ public sealed class DesktopSession
         var (x, y) = (Math.Clamp(input.PointerX, 0, Width - 1), Math.Clamp(input.PointerY, 0, Height - 1));
         var pressed = input.PointerDown && !last.PointerDown;
         var released = !input.PointerDown && last.PointerDown;
-        List<WindowEvent> happened = [];
+        happened.Clear();
+        forWindows.Clear();
 
         // Apps and windows may have changed since the last frame, such as the fallback app starting.
         RefreshMenus();
 
         // Keys: the open menu takes them all; otherwise shortcuts and menu hotkeys come before the windows.
-        List<KeyPress> forWindows = [];
         foreach (var key in input.KeysPressed)
         {
             if (MenuBar.IsOpen)
@@ -227,7 +234,7 @@ public sealed class DesktopSession
             y,
             input.PointerDown && owner == PointerOwner.Windows,
             overWindows ? input.Scroll : 0,
-            [.. forWindows],
+            forWindows.Count == 0 ? [] : [.. forWindows],
             input.Time);
         happened.AddRange(Windows.Update(windowInput));
 
@@ -249,7 +256,7 @@ public sealed class DesktopSession
                 ActiveApp = lastFocused.App;
         }
 
-        LastEvents = happened;
+        LastEvents = happened.Count == 0 ? [] : [.. happened];
         RefreshMenus();
 
         var changed = !drawn || input.HasEvents || happened.Count > 0 || restarted || ticked
@@ -344,9 +351,11 @@ public sealed class DesktopSession
         if (apps is null)
             return false;
 
-        foreach (var running in apps.Running)
+        // By index, since a foreach over the interface would allocate on every frame.
+        var running = apps.Running;
+        for (var index = 0; index < running.Count; index++)
         {
-            if (running.Bundle.Name == name)
+            if (running[index].Bundle.Name == name)
                 return true;
         }
 
@@ -464,8 +473,10 @@ public sealed class DesktopSession
     private bool MinimizedChanged()
     {
         var count = 0;
-        foreach (var window in Windows.Windows)
+        var windows = Windows.Windows;
+        for (var index = 0; index < windows.Count; index++)
         {
+            var window = windows[index];
             if (!window.IsMinimized)
                 continue;
             if (count >= dockedWindows.Count || dockedWindows[count] != window)
@@ -514,14 +525,19 @@ public sealed class DesktopSession
 
     private void RefreshMenus()
     {
-        List<BarMenu> menus = [SystemMenu];
-
         // With no other app in front, the fallback's menu shows.
         var shown = ActiveApp ?? (FallbackApp is { } fallback && IsAppOpen(fallback) ? fallback : null);
+        var focused = Windows.Focused is { } front && front.App == ActiveApp ? front : null;
+        var newWindow = shown is not null && (apps?.Windows?.HasNewWindow(shown) ?? false);
+        if (menuSource == (shown, focused, newWindow, true))
+            return;
+
+        menuSource = (shown, focused, newWindow, true);
+        List<BarMenu> menus = [SystemMenu];
         if (shown is not null)
             menus.Add(AppMenu(shown));
 
-        if (Windows.Focused is { } focused && focused.App == ActiveApp)
+        if (focused is not null)
         {
             foreach (var menu in focused.View.Script.Menus)
                 menus.Add(new BarMenu(menu, MenuGroup.Window, focused.View));
@@ -538,7 +554,7 @@ public sealed class DesktopSession
     {
         var newWindow = apps?.Windows?.HasNewWindow(app) ?? false;
         var quits = app != FallbackApp;
-        var key = $"{app}|{newWindow}|{quits}";
+        var key = (app, newWindow, quits);
         if (!appMenus.TryGetValue(key, out var menu))
         {
             List<UIMenuEntry> entries = [];

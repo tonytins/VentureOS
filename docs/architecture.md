@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (window timers and System Monitor) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (idle frames allocate nothing) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (643 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (644 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -805,7 +805,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   is reported in the shell.
 - **Frame loop.** `DesktopCommand` reads the PS/2 mouse, wheel, and keyboard,
   and `DesktopSession` redraws only when they changed. The loop keeps the
-  CPU busy while the desktop is open.
+  CPU busy while the desktop is open, so a frame where nothing changes
+  allocates nothing (`IdleFrameTests`): per-frame lists are reused and
+  copied out only when they hold something, loops over interfaces use
+  indexes rather than `foreach`, which would allocate an enumerator, and
+  the menu bar is rebuilt only when the active app or front window
+  changes.
 - **Leaving.** The console draws on the same canvas and can't be hidden, so
   leaving clears it, which redraws the shell; earlier shell output isn't
   kept. Any exception in the desktop clears back to the console and is
@@ -942,6 +947,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Frame loop (§9): idle frames allocate nothing, which stopped memory churning between about 50 and 430 MiB (BUG-6). |
 | 2026-11-11 | minor | Timers (§2, §9): `window:every` runs code on a schedule while the desktop shows; System Monitor ships. |
 | 2026-11-11 | minor | The unified title bar (§2, §9): close, minimize, toolbar items, and an editable title field in one bar; minimized windows go to the dock; Files gets an address field and bookmarks; Notes moves to the user's apps; the desktop no longer shows what apps need. |
 | 2026-11-11 | minor | User apps (§2, §4, §7, §9): `user/` installs to `/mnt/user`, which the user may change, in a new optional boot step; apps open from either folder, the system's first; the dock divides them; Calculator ships. |
