@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0
+
+VentureOS has a desktop. Type `desktop` at the prompt to open it, and choose VentureOS ▸ Return to Shell (Ctrl+Shift+Q) to come back.
+
+- A Tiger-style desktop at 1024x768: a menu bar, a dock with the system's apps, and windows you can drag, bring to the front, and close.
+- Apps open from the dock and can have windows. Notes has one, with a Note menu; closing an app's last window quits it.
+- Interfaces are `.uix` files in Hudini's UIScript format, with menus. `desktop <file.uix>` previews one.
+- App authors: `venture.ui` and the `ui` scope; see [Writing apps](docs/writing-apps.md).
+
+The 0.2.20 to 0.2.23 entries below describe each step.
+
 ## 0.2.23
 
 - Apps can have windows. Notes opens one: type a note and press Enter to add it, select one and press Delete (or Ctrl+D) to remove it, and use the Note menu. The `note` command still works, on the same notes.

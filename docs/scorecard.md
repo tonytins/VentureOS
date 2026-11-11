@@ -19,7 +19,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
 | [Reliability](#reliability) | 3 | 1 | 1 | 569 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
-| [Desktop](#desktop) | 5 | 0 | 0 | All five phases toward 0.3; opens in 48 ms at 1024x768 |
+| [Desktop](#desktop) | 5 | 0 | 0 | Version 0.3; opens in 48 ms at 1024x768 |
 | [Distribution](#distribution) | 0 | 0 | 5 | No CI for now; tests and builds run locally |
 | [Known issues](#known-issues) | | | | 2 open, 3 resolved |
 

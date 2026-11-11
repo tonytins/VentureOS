@@ -56,6 +56,12 @@ cosmos build -p src/Venture.OS
 cosmos run -p src/Venture.OS
 ```
 
+### Using it
+
+VentureOS boots to a shell. Type `help` to list the commands, and `desktop`
+to open the desktop; VentureOS ▸ Return to Shell (Ctrl+Shift+Q) comes back.
+[Writing apps](docs/writing-apps.md) shows how to add your own.
+
 ## ⚖️ No Copyright
 
 Copyrights and any related rights for VentureOS are waived via the [UNLICENSE](UNLICENSE). Credit still appreciated.

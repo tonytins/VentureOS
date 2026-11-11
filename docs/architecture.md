@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (apps with windows: `venture.ui`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (version 0.3.0) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -819,11 +819,11 @@ builds and runs its example, so it can't drift from what works.
 - **Moving `GitInfo.txt` resets the count.** GitInfo finds the file's last
   change with `git log` without following renames, so a move looks like a
   new base. Set a new base version in the same commit as any move: moving
-  the project into `src/` started 0.2.0.
+  the project into `src/` started 0.2.0. The desktop started 0.3.0.
 - **Build number:** derived from the commit hash: its first four characters
   read as a number and reduced to at most six digits. It identifies a build
   but doesn't increase over time.
-- **`HostInfo.DisplayVersion`** (`VentureOS 0.2.0 (Build 123456)`) is the
+- **`HostInfo.DisplayVersion`** (`VentureOS 0.3.0 (Build 123456)`) is the
   one string used at the start of boot, in the banner, and in the panic
   report.
 - **The changelog** records only versions with changes a user would notice,
@@ -879,6 +879,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Version 0.3.0 (§10): a new base in `GitInfo.txt` for the desktop. |
 | 2026-11-11 | minor | Apps with windows (§2, §9): `venture.ui` under the `ui` scope; windows last for the whole boot; an app quits when its last own window closes; event handlers write to the held output with a 5-second limit; Notes has a window. |
 | 2026-11-11 | minor | The menu bar and dock (§2, §9): the VentureOS menu, the active app's menu, and the focused window's `.uix` menus with hotkeys and shortcuts; a dock that opens the system's apps; app output held while the desktop shows. Ctrl+Shift+Q, not Esc, returns to the shell. |
 | 2026-11-11 | minor | CI removed for now (§2, §11, §12): the kernel doesn't build like a typical .NET project. The desktop's sky loses its bubbles. |

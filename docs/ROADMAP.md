@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Borealis phase 5: apps with windows) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (version 0.3: the desktop) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -215,8 +215,8 @@ phases:
 - [x] Phase 5, apps with windows: `venture.ui` and the `ui` scope; an app
   quits when its last window closes; Notes gets a window.
 
-When the desktop is up and running, VentureOS moves to version 0.3 (a new
-base in `GitInfo.txt`), by my decision. Right after it:
+With the desktop up and running, VentureOS moved to version 0.3 (a new base
+in `GitInfo.txt`) on 2026-11-11, by my decision. Right after it:
 
 - [ ] Terminal.app: the shell in a window.
 
@@ -248,6 +248,7 @@ Borealis.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Version 0.3.0: the desktop, with all five Borealis phases done. |
 | 2026-11-11 | minor | Borealis 95%: phase 5, apps open windows through `venture.ui` and quit with their last window, and Notes has one. The desktop is ready for 0.3; Terminal.app is next. |
 | 2026-11-11 | minor | Borealis 80%: phase 4, the menu bar (VentureOS, the app's, and the window's menus, with Alt hotkeys and Ctrl shortcuts) and a dock that opens the system's apps. |
 | 2026-11-11 | minor | Borealis 60%: phase 3, windows show `.uix` interfaces, drag, focus, and close; About VentureOS opens with the desktop, and `desktop` previews `.uix` files. |
