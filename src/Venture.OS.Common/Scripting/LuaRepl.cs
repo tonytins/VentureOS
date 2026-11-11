@@ -14,7 +14,11 @@ namespace Venture.OS.Scripting;
 /// at a <see cref="ContinuationPrompt"/>.</description></item>
 /// <item><description>A stop, such as Ctrl+C, ends only the line that's running; the prompt comes back.</description></item>
 /// <item><description><c>exit</c>, the end of the input, or <c>os.exit</c> leaves the prompt.</description></item>
+/// <item><description>A line starting with <c>!</c> runs the rest as a shell command, as <c>venture.shell</c>
+/// does.</description></item>
 /// </list>
+/// <para>The session is a <see cref="LuaOwner"/> that may replace system script commands, so commands registered
+/// with <c>venture.command</c> work until <c>exit</c>, then vanish, restoring anything they replaced.</para>
 /// </remarks>
 public static class LuaRepl
 {
@@ -26,6 +30,12 @@ public static class LuaRepl
 
     /// <summary>What the user types to leave.</summary>
     public const string ExitWord = "exit";
+
+    /// <summary>What starts a line that runs as a shell command.</summary>
+    public const string ShellPrefix = "!";
+
+    /// <summary>The session's name as an owner, as <c>help</c> shows it.</summary>
+    public const string OwnerName = "the lua prompt";
 
     /// <summary>Shown once, when the prompt opens.</summary>
     /// <remarks>Short enough to fit the console's width.</remarks>
@@ -48,22 +58,37 @@ public static class LuaRepl
     /// <param name="system">What the <c>venture</c> table reports, with every scope, or <see langword="null"/>.</param>
     /// <param name="stop">What can stop a running line, such as a key press; see <see cref="LuaRunner.Run"/>.</param>
     /// <param name="libraryDirectory">Where <c>require</c> finds the system library; see <see cref="LuaRunner.Run"/>.</param>
+    /// <param name="commands">Where <c>venture.command</c> registers commands, or <see langword="null"/> for none.</param>
+    /// <param name="runShell">
+    /// Runs a line as if typed at the shell, for <c>!</c> and <c>venture.shell</c>, or <see langword="null"/> for none.
+    /// </param>
     public static void Run(
         IShellOutput output,
         Func<string, string?> readLine,
         string workingDirectory,
         ISystemInfo? system = null,
         Func<string?>? stop = null,
-        string? libraryDirectory = null)
+        string? libraryDirectory = null,
+        RuntimeCommands? commands = null,
+        Action<string>? runShell = null)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(readLine);
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
 
-        using ShellOutputWriter writer = new(output);
-        using var lua = LuaRunner.Create(
-            writer, workingDirectory, system, stop, ScriptScopes.All, libraryDirectory, out var resetStop);
-        var state = lua.State;
+        using LuaOwner owner = new(
+            OwnerName,
+            "you exit",
+            mayReplaceScripts: true,
+            output,
+            workingDirectory,
+            system,
+            ScriptScopes.All,
+            libraryDirectory,
+            commands,
+            runShell);
+        var state = owner.Interpreter.State;
+        var writer = owner.Writer;
 
         output.WriteLine(Greeting);
         while (true)
@@ -75,6 +100,12 @@ public static class LuaRepl
             if (line.Trim().Length == 0)
                 continue;
 
+            if (line.TrimStart().StartsWith(ShellPrefix, StringComparison.Ordinal))
+            {
+                RunShellLine(output, runShell, line.TrimStart()[ShellPrefix.Length..].Trim());
+                continue;
+            }
+
             var top = state.GetTop();
             if (!TryCompile(state, line, readLine, out var error))
             {
@@ -85,28 +116,61 @@ public static class LuaRepl
                 continue;
             }
 
-            resetStop();
-            ThreadStatus status;
-            try
+            // os.exit leaves the prompt, so it's caught here rather than reported as an ordinary exit.
+            int? exitCode = null;
+            owner.Run(
+                _ =>
+                {
+                    try
+                    {
+                        var status = state.PCall(0, -1, 0);
+                        if (status == ThreadStatus.LUA_OK)
+                            status = PrintResults(state, top);
+
+                        if (status != ThreadStatus.LUA_OK)
+                            throw new LuaException(ErrorMessage(state));
+                    }
+                    catch (LuaExitException exit)
+                    {
+                        exitCode = exit.ExitCode;
+                    }
+                    finally
+                    {
+                        state.SetTop(top);
+                    }
+                },
+                stop);
+            writer.FinishLine();
+
+            if (exitCode is { } code)
             {
-                status = state.PCall(0, -1, 0);
-            }
-            catch (LuaExitException exit)
-            {
-                writer.FinishLine();
-                if (exit.ExitCode != 0)
-                    output.WriteLine($"Lua exited with status {exit.ExitCode}.");
+                if (code != 0)
+                    output.WriteLine($"Lua exited with status {code}.");
                 return;
             }
+        }
+    }
 
-            if (status == ThreadStatus.LUA_OK)
-                status = PrintResults(state, top);
+    /// <summary>Runs what follows <c>!</c> as a shell command, reporting a failure rather than leaving the prompt.</summary>
+    private static void RunShellLine(IShellOutput output, Action<string>? runShell, string line)
+    {
+        if (runShell is null)
+        {
+            output.WriteLine("Shell commands aren't available here.");
+            return;
+        }
 
-            writer.FinishLine();
-            if (status != ThreadStatus.LUA_OK)
-                output.WriteLine($"Lua error: {ErrorMessage(state)}");
+        if (line.Length == 0)
+            return;
 
-            state.SetTop(top);
+        try
+        {
+            runShell(line);
+        }
+        catch (Exception exception)
+        {
+            // The shell loop would catch this, but only by leaving the prompt and its commands behind.
+            output.WriteLine($"Command failed ({exception.GetType().Name}): {exception.Message}");
         }
     }
 

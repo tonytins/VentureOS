@@ -81,7 +81,8 @@ internal static class Bootstrap
     /// <c>-- Needs: shell</c>) last until shutdown. If it fails, everything it registered is undone.</para>
     /// </remarks>
     /// <returns>The owner to keep for the whole boot, or <see langword="null"/> if it didn't run or failed.</returns>
-    public static LuaOwner? RunInitScript(ISystemInfo system, RuntimeCommands? commands)
+    /// <param name="runShell">Runs a line as if typed at the shell, for <c>venture.shell</c>.</param>
+    public static LuaOwner? RunInitScript(ISystemInfo system, RuntimeCommands? commands, Action<string>? runShell)
     {
         if (!File.Exists(InitScriptPath))
         {
@@ -105,7 +106,8 @@ internal static class Bootstrap
             system,
             header.Needs,
             LibraryDirectoryPath,
-            commands);
+            commands,
+            runShell);
 
         var stop = ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(InitScriptLimit));
         if (owner.Run(lua => lua.DoFile(InitScriptPath), stop))

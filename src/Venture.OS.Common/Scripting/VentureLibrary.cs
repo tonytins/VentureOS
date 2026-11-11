@@ -44,19 +44,25 @@ public static class VentureLibrary
             Gated("memory", ScriptScopes.System, scopes, lua => PushMemory(lua, system)),
             Gated("net", ScriptScopes.Network, scopes, lua => PushNetwork(lua, system)),
 
-            // Replaced by ShellLibrary where the code has a lasting owner; elsewhere it explains why it can't work.
-            Gated("command", ScriptScopes.Shell, scopes, lua =>
-            {
-                lua.PushString(LuaText.Encode(NotOwnedMessage));
-                return lua.Error();
-            }),
+            // Replaced by ShellLibrary where the code has a lasting owner; elsewhere they explain why they can't work.
+            Gated("command", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "command")),
+            Gated("shell", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "shell")),
         ]);
         state.SetGlobal(GlobalName);
     }
 
-    /// <summary>The error for <c>venture.command</c> in code that ends when it finishes, such as a script command.</summary>
-    public const string NotOwnedMessage =
-        "venture.command only works in init.lua and at the lua prompt, where commands can outlive the code that registers them";
+    /// <summary>
+    /// The error for <c>venture.command</c> or <c>venture.shell</c> in code that ends when it finishes, such as a
+    /// script command.
+    /// </summary>
+    public static string NotOwnedMessage(string function) =>
+        $"venture.{function} only works in init.lua and at the lua prompt, which last beyond a single run";
+
+    private static int NotOwned(ILuaState lua, string function)
+    {
+        lua.PushString(LuaText.Encode(NotOwnedMessage(function)));
+        return lua.Error();
+    }
 
     /// <summary>The error a script gets for calling <paramref name="function"/> without declaring its scope.</summary>
     public static string UndeclaredMessage(string function, ScriptScopes scope) =>

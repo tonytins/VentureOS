@@ -35,6 +35,9 @@ public sealed class LuaOwner : IDisposable
     /// <param name="scopes">What the code may reach through the <c>venture</c> table.</param>
     /// <param name="libraryDirectory">Where <c>require</c> finds the system library, or <see langword="null"/>.</param>
     /// <param name="commands">Where <c>venture.command</c> registers commands, or <see langword="null"/> for none.</param>
+    /// <param name="runShell">
+    /// Runs a line as if typed at the shell, for <c>venture.shell</c>, or <see langword="null"/> for none.
+    /// </param>
     public LuaOwner(
         string name,
         string lifetime,
@@ -44,7 +47,8 @@ public sealed class LuaOwner : IDisposable
         ISystemInfo? system = null,
         ScriptScopes scopes = ScriptScopes.None,
         string? libraryDirectory = null,
-        RuntimeCommands? commands = null)
+        RuntimeCommands? commands = null,
+        Action<string>? runShell = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         ArgumentException.ThrowIfNullOrEmpty(lifetime);
@@ -59,7 +63,7 @@ public sealed class LuaOwner : IDisposable
             writer, workingDirectory, system, () => currentStop?.Invoke(), scopes, libraryDirectory, out resetStop);
 
         if (commands is not null)
-            ShellLibrary.Open(Interpreter.State, this, commands, scopes);
+            ShellLibrary.Open(Interpreter.State, this, commands, scopes, runShell);
     }
 
     /// <summary>Who the owner is, such as <c>init.lua</c>.</summary>
@@ -137,6 +141,10 @@ public sealed class LuaOwner : IDisposable
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
 
+        // A call can come while other code in this owner is running, such as a prompt line that runs one of the
+        // owner's commands through venture.shell, so the caller's output and stop are put back afterwards.
+        var previousOutput = Interpreter.Output;
+        var previousError = Interpreter.Error;
         using ShellOutputWriter callWriter = new(output);
         Interpreter.Output = callWriter;
         Interpreter.Error = callWriter;
@@ -146,13 +154,14 @@ public sealed class LuaOwner : IDisposable
         }
         finally
         {
-            Interpreter.Output = writer;
-            Interpreter.Error = writer;
+            Interpreter.Output = previousOutput;
+            Interpreter.Error = previousError;
         }
     }
 
     private bool WithStop(Func<string?>? stop, Func<bool> run)
     {
+        var previousStop = currentStop;
         currentStop = stop;
         resetStop();
         try
@@ -161,7 +170,7 @@ public sealed class LuaOwner : IDisposable
         }
         finally
         {
-            currentStop = null;
+            currentStop = previousStop;
         }
     }
 

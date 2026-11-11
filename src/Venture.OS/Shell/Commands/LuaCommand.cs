@@ -13,10 +13,21 @@ namespace Venture.OS.Shell.Commands;
 /// <c>dofile('script.lua')</c> runs <c>/mnt/script.lua</c>), Lua errors and <c>os.exit</c> are reported here, and
 /// Ctrl+C or Esc stops code that doesn't finish. The code gets every scope of the <c>venture</c> table, since it's
 /// the user typing it.</para>
+/// <para>The prompt is an owner: commands it registers with <c>venture.command</c> can be tried with <c>!name</c>
+/// or <c>venture.shell</c>, may replace a system script, and vanish on <c>exit</c>.</para>
 /// </remarks>
-internal sealed class LuaCommand(ISystemInfo system) : IShellCommand
+/// <param name="system">What the <c>venture</c> table reports.</param>
+/// <param name="commands">
+/// Where the prompt's <c>venture.command</c> registers; read when the prompt opens, since the shell sets it up after
+/// this command.
+/// </param>
+/// <param name="runShell">Runs a line as if typed at the shell, for <c>!</c> and <c>venture.shell</c>.</param>
+internal sealed class LuaCommand(ISystemInfo system, Func<RuntimeCommands?> commands, Action<string> runShell)
+    : IShellCommand
 {
     private readonly ISystemInfo system = system ?? throw new ArgumentNullException(nameof(system));
+    private readonly Func<RuntimeCommands?> commands = commands ?? throw new ArgumentNullException(nameof(commands));
+    private readonly Action<string> runShell = runShell ?? throw new ArgumentNullException(nameof(runShell));
 
     public string Name => "lua";
     public string Summary => "Run a line of Lua code, or open a Lua prompt.";
@@ -29,7 +40,14 @@ internal sealed class LuaCommand(ISystemInfo system) : IShellCommand
         if (arguments.Count == 0)
         {
             LuaRepl.Run(
-                context.Output, ReadLine, Bootstrap.RamMountPoint, system, KeyboardStop.Check, Bootstrap.LibraryDirectoryPath);
+                context.Output,
+                ReadLine,
+                Bootstrap.RamMountPoint,
+                system,
+                KeyboardStop.Check,
+                Bootstrap.LibraryDirectoryPath,
+                commands(),
+                runShell);
             return;
         }
 

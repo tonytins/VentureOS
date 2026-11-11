@@ -3,7 +3,8 @@ using Cosmos.Executable.Lua;
 namespace Venture.OS.Scripting;
 
 /// <summary>
-/// <c>venture.command</c> for code with a lasting owner: registers a command the shell can run.
+/// <c>venture.command</c> and <c>venture.shell</c> for code with a lasting owner: register a command the shell can
+/// run, and run a line as if typed at the shell.
 /// </summary>
 /// <remarks>
 /// <code>
@@ -21,10 +22,14 @@ namespace Venture.OS.Scripting;
 public static class ShellLibrary
 {
     /// <summary>
-    /// Puts <c>venture.command</c> in <paramref name="state"/>, registering into <paramref name="commands"/> for
-    /// <paramref name="owner"/>.
+    /// Puts <c>venture.command</c>, and <c>venture.shell</c> when there's a shell to run, in
+    /// <paramref name="state"/>, registering commands into <paramref name="commands"/> for <paramref name="owner"/>.
     /// </summary>
-    public static void Open(ILuaState state, LuaOwner owner, RuntimeCommands commands, ScriptScopes scopes)
+    /// <param name="runShell">
+    /// Runs a line as if typed at the shell, for <c>venture.shell</c>, or <see langword="null"/> to leave it out.
+    /// </param>
+    public static void Open(
+        ILuaState state, LuaOwner owner, RuntimeCommands commands, ScriptScopes scopes, Action<string>? runShell = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(owner);
@@ -44,7 +49,51 @@ public static class ShellLibrary
             state.PushCSharpFunction(lua => Fail(lua, VentureLibrary.UndeclaredMessage("command", ScriptScopes.Shell)));
 
         state.SetField(-2, "command");
+
+        if (runShell is not null)
+        {
+            if ((scopes & ScriptScopes.Shell) != 0)
+                state.PushCSharpFunction(lua => Shell(lua, runShell));
+            else
+                state.PushCSharpFunction(lua => Fail(lua, VentureLibrary.UndeclaredMessage("shell", ScriptScopes.Shell)));
+
+            state.SetField(-2, "shell");
+        }
+
         state.Pop(1);
+    }
+
+    /// <summary>How deeply <c>venture.shell</c> calls may nest, such as a command that runs itself.</summary>
+    /// <remarks>
+    /// Each level is a C# call into the shell and back into Lua, and a .NET stack overflow can't be caught, so it
+    /// would stop the machine. Lua's own recursion is bounded by Lua and reported as an error.
+    /// </remarks>
+    public const int MaxShellDepth = 8;
+
+    // Per thread: the kernel runs on one, and tests run on several at once.
+    [ThreadStatic]
+    private static int shellDepth;
+
+    private static int Shell(ILuaState lua, Action<string> runShell)
+    {
+        if (lua.Type(1) != LuaType.LUA_TSTRING)
+            return Fail(lua, "venture.shell needs a command line, such as venture.shell(\"help\")");
+
+        if (shellDepth >= MaxShellDepth)
+            return Fail(lua, $"venture.shell is nested more than {MaxShellDepth} deep; is a command running itself?");
+
+        var line = LuaText.Decode(lua.ToString(1));
+        shellDepth++;
+        try
+        {
+            runShell(line);
+        }
+        finally
+        {
+            shellDepth--;
+        }
+
+        return 0;
     }
 
     private static int Command(ILuaState lua, LuaOwner owner, RuntimeCommands commands)
@@ -85,6 +134,17 @@ public static class ShellLibrary
             return 0;
         });
         lua.SetField(-2, "remove");
+
+        // A readable form, since the lua prompt prints the handle a registration returns.
+        lua.NewTable();
+        var text = LuaText.Encode($"command \"{command.Name}\"");
+        lua.PushCSharpFunction(state =>
+        {
+            state.PushString(text);
+            return 1;
+        });
+        lua.SetField(-2, "__tostring");
+        lua.SetMetaTable(-2);
         return 1;
     }
 

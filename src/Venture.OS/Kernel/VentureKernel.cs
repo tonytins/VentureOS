@@ -41,7 +41,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
         KernelLog.WriteLine($"{HostInfo.DisplayVersion} booted successfully!");
 
         // After the banner, so the screen clear above doesn't hide what the script prints.
-        RunOptionalStep("init script", () => initOwner = Bootstrap.RunInitScript(system, runtimeCommands));
+        RunOptionalStep("init script", () => initOwner = Bootstrap.RunInitScript(system, runtimeCommands, RunShellLine));
     }
 
     // Early initialization
@@ -92,7 +92,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new HaltCommand());
         commands.Register(new RebootCommand());
         commands.Register(new ShutdownCommand());
-        commands.Register(new LuaCommand(system));
+        commands.Register(new LuaCommand(system, () => runtimeCommands, RunShellLine));
 
         ScriptCommands scripts = new(
             Bootstrap.CommandsDirectoryPath,
@@ -108,6 +108,16 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
         shell = new CommandShell(new ShellContext(new ConsoleShellOutput(), this, commands));
         return true;
+    }
+
+    /// <summary>
+    /// Runs a line as if typed at the prompt, for <c>venture.shell</c> and the Lua prompt's <c>!</c>.
+    /// </summary>
+    /// <remarks>Exceptions reach the caller, which reports them; the shell loop's catch is outside this.</remarks>
+    private void RunShellLine(string line)
+    {
+        var current = shell ?? throw new InvalidOperationException("The shell isn't set up yet.");
+        current.Execute(line);
     }
 
     void IShellHost.Halt()

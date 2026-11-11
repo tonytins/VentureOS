@@ -233,7 +233,7 @@ public sealed class RuntimeCommandsTests : IDisposable
             lua => lua.DoString("print(pcall(venture.command, { name = 'x', run = function() end }))"),
             new FakeSystemInfo());
 
-        Assert.Contains(VentureLibrary.NotOwnedMessage, ownerOutput.Lines[0]);
+        Assert.Contains(VentureLibrary.NotOwnedMessage("command"), ownerOutput.Lines[0]);
     }
 
     [Fact]

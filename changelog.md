@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.15
+
+- Commands made at the `lua` prompt with `venture.command` can be tried right there: a line starting with `!` runs a shell command, such as `!greet Tony`. They vanish when you `exit`.
+- At the prompt, a command can stand in for one of the system's script commands, such as `echo`, until you `exit`. VentureOS says so when it happens.
+- `venture.shell("line")` runs a shell command from Lua, in `init.lua` and at the prompt.
+
 ## 0.2.14
 
 - `init.lua` can add commands to the shell with `venture.command`, after declaring `-- Needs: shell`. They last until shutdown, and if `init.lua` fails, the commands it added are removed again.
