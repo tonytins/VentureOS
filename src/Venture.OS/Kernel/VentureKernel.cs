@@ -88,7 +88,11 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new ShutdownCommand());
         commands.Register(new LuaCommand(system));
         commands.AddSource(new ScriptCommands(
-            Bootstrap.CommandsDirectoryPath, Bootstrap.RamMountPoint, system, KeyboardStop.Check));
+            Bootstrap.CommandsDirectoryPath,
+            Bootstrap.RamMountPoint,
+            system,
+            KeyboardStop.Check,
+            Bootstrap.LibraryDirectoryPath));
 
         shell = new CommandShell(new ShellContext(new ConsoleShellOutput(), this, commands));
         return true;

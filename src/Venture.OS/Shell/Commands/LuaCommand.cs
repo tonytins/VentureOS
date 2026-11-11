@@ -28,7 +28,8 @@ internal sealed class LuaCommand(ISystemInfo system) : IShellCommand
     {
         if (arguments.Count == 0)
         {
-            LuaRepl.Run(context.Output, ReadLine, Bootstrap.RamMountPoint, system, KeyboardStop.Check);
+            LuaRepl.Run(
+                context.Output, ReadLine, Bootstrap.RamMountPoint, system, KeyboardStop.Check, Bootstrap.LibraryDirectoryPath);
             return;
         }
 
@@ -38,7 +39,8 @@ internal sealed class LuaCommand(ISystemInfo system) : IShellCommand
             Bootstrap.RamMountPoint,
             lua => lua.DoString(arguments[0], "=lua"),
             system,
-            KeyboardStop.Check);
+            KeyboardStop.Check,
+            libraryDirectory: Bootstrap.LibraryDirectoryPath);
     }
 
     private static string? ReadLine(string prompt)

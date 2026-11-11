@@ -29,13 +29,19 @@ public sealed class ScriptCommands : ICommandSource
     private readonly string workingDirectory;
     private readonly ISystemInfo? system;
     private readonly Func<string?>? stop;
+    private readonly string? libraryDirectory;
 
     /// <param name="directory">Where the command scripts are.</param>
     /// <param name="workingDirectory">Where relative paths in a script start.</param>
     /// <param name="system">What the scripts' <c>venture</c> table reports, or <see langword="null"/> for none.</param>
     /// <param name="stop">What can stop a running script, such as a key press; see <see cref="LuaRunner.Run"/>.</param>
+    /// <param name="libraryDirectory">Where <c>require</c> finds the system library; see <see cref="LuaRunner.Run"/>.</param>
     public ScriptCommands(
-        string directory, string workingDirectory, ISystemInfo? system = null, Func<string?>? stop = null)
+        string directory,
+        string workingDirectory,
+        ISystemInfo? system = null,
+        Func<string?>? stop = null,
+        string? libraryDirectory = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(directory);
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
@@ -44,6 +50,7 @@ public sealed class ScriptCommands : ICommandSource
         this.workingDirectory = workingDirectory;
         this.system = system;
         this.stop = stop;
+        this.libraryDirectory = libraryDirectory;
     }
 
     public IReadOnlyList<IShellCommand> Commands
@@ -91,7 +98,7 @@ public sealed class ScriptCommands : ICommandSource
     private ScriptCommand Load(string name, string path)
     {
         var header = ScriptHeader.Read(path);
-        return new ScriptCommand(name, header, path, workingDirectory, system, stop);
+        return new ScriptCommand(name, header, path, workingDirectory, system, stop, libraryDirectory);
     }
 
     /// <summary>
@@ -103,7 +110,8 @@ public sealed class ScriptCommands : ICommandSource
         string path,
         string workingDirectory,
         ISystemInfo? system,
-        Func<string?>? stop)
+        Func<string?>? stop,
+        string? libraryDirectory)
         : IScriptCommand
     {
         public string Name { get; } = name;
@@ -126,7 +134,8 @@ public sealed class ScriptCommands : ICommandSource
             for (var index = 0; index < values.Length; index++)
                 values[index] = arguments[index];
 
-            LuaRunner.Run(context.Output, workingDirectory, lua => lua.DoFile(path, values), system, stop, Needs);
+            LuaRunner.Run(
+                context.Output, workingDirectory, lua => lua.DoFile(path, values), system, stop, Needs, libraryDirectory);
         }
     }
 }

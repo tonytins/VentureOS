@@ -86,6 +86,10 @@ public static class LuaRunner
     /// <param name="scopes">
     /// What the code may reach through the <c>venture</c> table besides the version; see <see cref="ScriptScopes"/>.
     /// </param>
+    /// <param name="libraryDirectory">
+    /// Where <c>require</c> finds the system library, such as <c>/mnt/system/lib</c>, or <see langword="null"/> to
+    /// leave Lua's default search path.
+    /// </param>
     /// <returns><see langword="true"/> if the code finished without an error, a stop, or a non-zero exit.</returns>
     public static bool Run(
         IShellOutput output,
@@ -93,14 +97,15 @@ public static class LuaRunner
         Action<LuaInterpreter> run,
         ISystemInfo? system = null,
         Func<string?>? stop = null,
-        ScriptScopes scopes = ScriptScopes.All)
+        ScriptScopes scopes = ScriptScopes.All,
+        string? libraryDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
         ArgumentNullException.ThrowIfNull(run);
 
         using ShellOutputWriter writer = new(output);
-        using var lua = Create(writer, workingDirectory, system, stop, scopes, out _);
+        using var lua = Create(writer, workingDirectory, system, stop, scopes, libraryDirectory, out _);
 
         try
         {
@@ -140,14 +145,32 @@ public static class LuaRunner
         ISystemInfo? system,
         Func<string?>? stop,
         ScriptScopes scopes,
+        string? libraryDirectory,
         out Action resetStop)
     {
         LuaInterpreter lua = new() { WorkingDirectory = workingDirectory, Output = writer, Error = writer };
         if (system is not null)
             VentureLibrary.Open(lua.State, system, scopes);
+        if (libraryDirectory is not null)
+            SetLibraryDirectory(lua.State, libraryDirectory);
 
         resetStop = stop is null ? () => { } : InstallStopHook(lua, stop);
         return lua;
+    }
+
+    /// <summary>
+    /// Points <c>require</c> at <paramref name="directory"/> only, so <c>require("venture.args")</c> loads
+    /// <c>venture/args.lua</c> there, and no native modules load.
+    /// </summary>
+    private static void SetLibraryDirectory(ILuaState state, string directory)
+    {
+        var root = directory.TrimEnd('/');
+        state.GetGlobal("package");
+        state.PushString(LuaText.Encode($"{root}/?.lua;{root}/?/init.lua"));
+        state.SetField(-2, "path");
+        state.PushString("");
+        state.SetField(-2, "cpath");
+        state.Pop(1);
     }
 
     /// <returns>An action that clears the latched stop.</returns>

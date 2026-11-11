@@ -14,6 +14,9 @@ internal static class Bootstrap
     /// <summary>Where the Lua command scripts are installed: <c>&lt;name&gt;.lua</c> runs as the command <c>name</c>.</summary>
     public const string CommandsDirectoryPath = SystemDirectoryPath + "/commands";
 
+    /// <summary>Where <c>require</c> finds the system library, such as <c>venture/args.lua</c>.</summary>
+    public const string LibraryDirectoryPath = SystemDirectoryPath + "/lib";
+
     /// <summary>The script that runs once, after boot finishes.</summary>
     public const string InitScriptPath = SystemDirectoryPath + "/init.lua";
 
@@ -92,7 +95,13 @@ internal static class Bootstrap
 
         var stop = ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(InitScriptLimit));
         if (!LuaRunner.Run(
-                new KernelLogOutput(), RamMountPoint, lua => lua.DoFile(InitScriptPath), system, stop, header.Needs))
+                new KernelLogOutput(),
+                RamMountPoint,
+                lua => lua.DoFile(InitScriptPath),
+                system,
+                stop,
+                header.Needs,
+                LibraryDirectoryPath))
             KernelLog.WriteLine($"{InitScriptPath} failed; see the error above. The shell still works.");
     }
 

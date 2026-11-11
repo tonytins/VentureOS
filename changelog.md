@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.13
+
+- VentureOS ships a Lua library in `/mnt/system/lib` that scripts load with `require`. Its first module, `venture.args`, lets a command declare its arguments and options (`--loud`, `-l`, `--times 3`) and handles the rest: clear messages for mistakes, and a generated `--help`.
+
 ## 0.2.12
 
 - Typing `lua` on its own opens a Lua prompt, `lua>`, for trying things out. Values carry over between lines, an expression prints its value (`1 + 1` prints `2`), and an unfinished statement continues on the next line. Ctrl+C or Esc stops the line that's running, and `exit` returns to the shell.

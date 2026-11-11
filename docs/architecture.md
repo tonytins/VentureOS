@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (plain `lua` opens a Lua prompt) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (the system library and `venture.args`) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-10)
 
@@ -11,8 +11,8 @@ the code wins and this page is out of date.
 - **Projects:** the kernel, `Venture.OS` (16 C# files, plus Lua system
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (15
   files: the shell framework and Lua support); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (186 tests, including runs of
-  the shipped scripts).
+  for the library, `Venture.OS.Common.Tests` (222 tests, including runs of
+  the shipped scripts and library).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -34,8 +34,7 @@ the code wins and this page is out of date.
   Nothing persists across boots.
 - **Network:** DHCP on the first NIC when one is present. Nothing uses the
   network after boot.
-- **Not built yet:** the system library and `venture.args` (Wolverine);
-  runtime commands with undo and `.app` bundles (Saluki); persistent storage
+- **Not built yet:** runtime commands with undo and `.app` bundles (Saluki); persistent storage
   (Blue Water); a CI boot check, ARM64 builds in CI, and published ISOs
   (every-stage work on the roadmap). See the
   [roadmap](./ROADMAP.md); verified status is in the
@@ -145,7 +144,8 @@ VentureOS/
 │     │  └─ Commands/              one class per command
 │     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
 │     │  ├─ init.lua               runs once after boot; prints the help hint
-│     │  └─ commands/              Lua command scripts: echo.lua, info.lua, net.lua
+│     │  ├─ commands/              Lua command scripts: echo.lua, info.lua, net.lua
+│     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
 │     ├─ Bootloader/limine.conf    Limine boot entry
 │     ├─ GitInfo.txt               base version
 │     └─ src/C/                    reserved for native C sources (empty)
@@ -478,6 +478,35 @@ and `os.exit` or the end of the input leaves the prompt. As in the reference
 rather than with the package's `RunPrompt`, which uses the shell's own `> `
 prompt and has no point between lines to clear the stop.
 
+**The system library.** Lua modules that ship with the system live in
+`/mnt/system/lib`, and `require` looks there only (`package.path` is set to
+`/mnt/system/lib/?.lua` and `?/init.lua`; native modules are off). Modules
+are namespaced under `venture.`, so plain names stay free for scripts and
+apps. Tests load the shipped files with `require`, as scripts do.
+
+`venture.args` is the first module: a command declares its arguments and
+options, and gets parsing, clear errors, and a generated `--help`:
+
+```lua
+local options = require("venture.args").parse({...}, {
+  name = "greet",
+  summary = "Greet someone.",
+  arguments = { "name" },
+  options = { loud = { short = "l", summary = "Shout it." } },
+})
+if not options then return end
+```
+
+It reads `--name value`, `--name=value`, `-s value`, combined short flags
+(`-lq`), and `--` before words that start with a dash; negative numbers count
+as arguments. Option types are `flag`, `string`, and `number`. A user's
+mistake prints the problem and the usage line and returns `nil`; a mistake in
+the declaration is a Lua error, since it's the command's bug. It's opt-in, so
+the shell's contract with commands doesn't change: they still get their words
+as `...`. The shell can't see a script's options without running it, so
+`help <command>` keeps showing the header, and `<command> --help` shows the
+options.
+
 **The `venture` table** is how scripts reach the kernel, in `lua` and in
 script commands alike. Its functions return plain values or tables, and the
 scripts do the formatting:
@@ -605,6 +634,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | The system library (§2, §9): `require` loads from `/mnt/system/lib`, and `venture.args` parses a command's arguments and options with a generated `--help`. |
 | 2026-11-10 | minor | The Lua prompt (§2, §9): plain `lua` opens `LuaRepl`, where values carry over between lines and Ctrl+C stops only the running line. |
 | 2026-11-10 | minor | Scopes (§9): scripts declare `-- Needs: system` or `network`; the `venture` table refuses undeclared functions, and unknown or reserved scopes keep a script from running. |
 | 2026-11-10 | minor | Stopping Lua (§4, §9): Ctrl+C or Esc stops `lua` and script commands through a count hook, and `init.lua` also stops after 10 seconds. |

@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** major (routes repurposed: Wolverine is the system library, Saluki apps, Borealis a possible GUI; CI and releases are every-stage work) · **Stage:** alpha
+> **Last reviewed:** 2026-11-10 · **Last updated:** 2026-11-10 · **Change:** minor (Wolverine complete: the system library and `venture.args`) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,11 +36,9 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **System library** (Wolverine): `/mnt/system/lib` and `require`, then the
-   `venture.args` argument parser.
-2. **Apps, part 1** (Saluki): commands registered at runtime, each with its
+1. **Apps, part 1** (Saluki): commands registered at runtime, each with its
    own undo, owned by whatever registered them.
-3. **Persistent storage** (Blue Water), then **apps, part 2** (Saluki):
+2. **Persistent storage** (Blue Water), then **apps, part 2** (Saluki):
    `.app` bundles that install and uninstall without a reboot.
 
 ## Every stage
@@ -64,23 +62,22 @@ fit, rather than waiting on a route.
 |---|---|---:|---:|---|
 | Cascades | Reliable boot | 100% | 0 | Boot steps, a proven panic, range-checked RAM disk, system messages on serial, and the boot delay kept |
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
-| Wolverine | System library | 0% | 5–10 | Shared Lua modules in `/mnt/system/lib`, starting with `venture.args` |
+| Wolverine | System library | 100% | 0 | Shared Lua modules in `/mnt/system/lib`, loaded with `require`; `venture.args` parses arguments and options with a generated `--help` |
 | Blue Water | Persistent storage | 0% | 15–30 | Deferred past alpha. Real disks, file commands |
 | Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 0% | 16–32 | Runtime commands with undo, then `.app` bundles (installs wait on Blue Water) |
 | Borealis | GUI (possible) | 0% | — | Unscoped: a desktop after the classic Mac OS X look |
-| | **Total** | | **≈ 46–92**, plus every-stage work (≈ 14–28) | |
+| | **Total** | | **≈ 41–82**, plus every-stage work (≈ 14–28) | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | `/mnt/system/lib`, `require`, and `venture.args` | Wolverine | 5–10 |
-| 2 | Commands registered at runtime, with undo | Saluki | 6–12 |
-| 3 | File commands, then mounting a real disk | Blue Water | 15–30 |
-| 4 | `.app` bundles | Saluki | 10–20 |
-| 5 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | Commands registered at runtime, with undo | Saluki | 6–12 |
+| 2 | File commands, then mounting a real disk | Blue Water | 15–30 |
+| 3 | `.app` bundles | Saluki | 10–20 |
+| 4 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs the CI boot check (every stage) and Blue Water in substance,
 about 20–40 hours.
@@ -116,9 +113,9 @@ Shared Lua modules that ship with the system, in `/mnt/system/lib`, loaded
 with `require`. Namespaced under `venture.`, so plain names stay free for
 scripts and apps.
 
-- [ ] `/mnt/system/lib` installed with the system files, and `require`
+- [x] `/mnt/system/lib` installed with the system files, and `require`
   pointed at it.
-- [ ] `venture.args`: declare a command's arguments and options, and get
+- [x] `venture.args`: declare a command's arguments and options, and get
   parsing, clear errors, and a generated `--help`.
 
 The former Wolverine checklist (the test project, now done, and CI checks)
@@ -207,6 +204,7 @@ build on Saluki's apps. New kernel-free logic still goes into
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-10 | minor | Wolverine complete: the system library in `/mnt/system/lib` and `venture.args`. Saluki's runtime commands are the current focus; about 41–82 h of milestones remain. |
 | 2026-11-10 | major | Routes repurposed: Wolverine is now the system library (`venture.args`), Saluki apps (runtime commands with undo, then `.app` bundles), and Borealis a possible GUI. CI checks, ARM64, and releases became every-stage work. About 46–92 h of milestones remain, plus 14–28 h every-stage. |
 | 2026-11-10 | minor | Illini: plain `lua` opens an interactive Lua prompt for debugging. Undoable changes are next. |
 | 2026-11-10 | minor | Illini: scripts declare `-- Needs:` scopes, after the capability ideas in "A Programming Paradigm for Spatiotemporal Composability". Undoable changes are the planned next step. |

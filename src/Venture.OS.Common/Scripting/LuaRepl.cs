@@ -47,19 +47,22 @@ public static class LuaRepl
     /// <param name="workingDirectory">Where relative paths in <c>dofile</c> and <c>io.open</c> start.</param>
     /// <param name="system">What the <c>venture</c> table reports, with every scope, or <see langword="null"/>.</param>
     /// <param name="stop">What can stop a running line, such as a key press; see <see cref="LuaRunner.Run"/>.</param>
+    /// <param name="libraryDirectory">Where <c>require</c> finds the system library; see <see cref="LuaRunner.Run"/>.</param>
     public static void Run(
         IShellOutput output,
         Func<string, string?> readLine,
         string workingDirectory,
         ISystemInfo? system = null,
-        Func<string?>? stop = null)
+        Func<string?>? stop = null,
+        string? libraryDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(readLine);
         ArgumentException.ThrowIfNullOrEmpty(workingDirectory);
 
         using ShellOutputWriter writer = new(output);
-        using var lua = LuaRunner.Create(writer, workingDirectory, system, stop, ScriptScopes.All, out var resetStop);
+        using var lua = LuaRunner.Create(
+            writer, workingDirectory, system, stop, ScriptScopes.All, libraryDirectory, out var resetStop);
         var state = lua.State;
 
         output.WriteLine(Greeting);

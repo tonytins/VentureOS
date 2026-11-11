@@ -103,7 +103,10 @@ with no explanation. Stability outranks features.
   `-- Needs:` comment the scopes it uses (`system`, `network`), and it gets its
   arguments as `...`. It reaches the kernel through the `venture` table
   (`VentureLibrary`, backed by `ISystemInfo`); extend that table when a script
-  needs more, and put each new function under a scope (`ScriptScopes`). Write a command in C# only when it must control the kernel,
+  needs more, and put each new function under a scope (`ScriptScopes`). A
+  command that takes options should use `require("venture.args")` rather than
+  reading `...` by hand. Shared Lua modules go in `src/Venture.OS/system/lib/`,
+  namespaced under `venture.`. Write a command in C# only when it must control the kernel,
   as a class in `src/Venture.OS/Shell/Commands/` registered in
   `VentureKernel.CreateShell`; built-in commands win any name clash. `help` is
   generated from both. C# commands write through `IShellOutput` and ask for
