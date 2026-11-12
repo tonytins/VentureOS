@@ -38,7 +38,7 @@ tests, and is listed in `src/Venture.slnx`:
   `Venture.OS.Interface` with xUnit v3.
 
 [docs/architecture.md](docs/architecture.md) explains how the system works,
-[docs/ROADMAP.md](docs/ROADMAP.md) tracks milestones, and
+[docs/ROADMAP.md](docs/ROADMAP.md) tracks releases and ideas, and
 [docs/scorecard.md](docs/scorecard.md) records verified status. Read
 `docs/architecture.md` before changing boot, storage, networking, or the shell.
 
@@ -156,8 +156,10 @@ Describe only what works today, and keep the tree building at every step.
   the revision history when behavior, layout, or a principle changes.
 - `docs/scorecard.md`: flip the rows you moved, with evidence, and update the
   summary counts.
-- `docs/ROADMAP.md`: tick checklist items, update the milestone's progress and
-  estimate, and add a revision-history row. Leave scope decisions to the owner.
+- `docs/ROADMAP.md`: tick a band's checklist items, move a release to its next
+  stage, and add a revision-history row. Leave scope decisions, such as what a
+  release holds or when it ships, to the owner. When a release ships, write its
+  notes in `docs/releases/`.
 - [README.md](README.md) when setup or build steps change, and this file when
   the layout or rules change.
 

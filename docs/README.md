@@ -7,7 +7,9 @@ system written in C# and based on the [Cosmos](https://github.com/CosmosOS/Cosmo
 ## Table of Contents
 
 - [Architecture](./architecture.md): goals and principles, layout, layering, boot, the failure model, and how each part of the system works.
-- [Roadmap](./ROADMAP.md): the alpha gate, current focus, milestones with estimates, ranked work, and risks.
+- [Roadmap](./ROADMAP.md): how VentureOS releases, the release in development, the ones considered, ideas, and risks.
+- [Releases](./releases/): notes for each release.
+- [History](./history/): the roadmap VentureOS was planned with until 0.4.
 - [Scorecard](./scorecard.md): verified status of every area, with the evidence for each row, and known issues.
 - [Writing apps](./writing-apps.md): make an `.app` that adds commands to the shell, step by step.
 - [UIScript menus](./uiscript-menus.md): the draft `menus` feature for `.uix` documents.

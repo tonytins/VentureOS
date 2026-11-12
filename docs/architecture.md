@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (networking: DNS, resolve, and ping) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the roadmap starts over for releases) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -44,9 +44,8 @@ the code wins and this page is out of date.
   that opens the system's apps, and movable windows that show `.uix`
   interfaces. Files is the desktop's own app, and Quick Look previews files.
   Apps open windows through `venture.ui`; `Notes.app` has one.
-- **Not built yet:** keeping files across reboots (Blue Water); dark mode,
-  accent colours, style roles, and Settings (Downeaster). CI and published
-  ISOs were dropped from the roadmap (2026-11-11). See the
+- **Not built yet:** Undo and Redo (0.4.5xx); keeping files across reboots,
+  and published ISOs, which are ideas without a release. See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
 
@@ -59,7 +58,7 @@ the code wins and this page is out of date.
 - A hobby operating system in C#, the spiritual successor to
   [TOMAS](https://github.com/tonytins/tomas/), built to production
   standards because I use it myself.
-- First a usable shell OS (the alpha gate): reliable boot, a shell with
+- First a usable shell OS: reliable boot, a shell with
   arguments, and commands to inspect and control the system.
 - Then: a system that runs from RAM, extended in Lua: script commands, a
   system library, and apps that open and close cleanly as owners.
@@ -406,8 +405,8 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
   change `/mnt/system` but may change `/mnt/user`, as on other systems.
   Cosmos's FAT16 keeps long file names (a 23-character name was read back in
   a boot test) and ignores case when looking names up.
-- **Not built yet:** file commands (Blue Water). VentureOS runs from RAM, as
-  many small systems do; keeping changes on a disk is later and optional,
+- **Not built yet:** keeping files on a disk. VentureOS runs from RAM, as
+  many small systems do; persistence is an idea on the roadmap, optional,
   and whether VentureOS formats blank disks itself is an open decision
   (§13). `cosmos run --disk <image>` attaches a disk when that work starts.
 
@@ -603,7 +602,7 @@ written for a newer VentureOS fails clearly rather than half working.
 `help <command>` shows a script's needs. `init.lua` follows the same rule;
 `lua` gets every scope, since it's the user typing. Scopes cover only the
 `venture` table: Lua's own `io` still reaches files without declaring
-anything, until persistence makes that matter (Blue Water).
+anything, until persistence makes that matter.
 
 **Files.** `venture.files` (`FilesLibrary`) lists, reads, and changes files,
 with paths starting from the current folder. Failures a script should expect,
@@ -1078,18 +1077,20 @@ published for use outside the Cosmos repository hasn't been confirmed.
 ## 13. Open decisions
 
 1. **Formatting disks.** Whether VentureOS formats a blank disk itself, or
-   only mounts existing FAT partitions (Blue Water). The Cosmos docs warn
+   only mounts existing FAT partitions. The Cosmos docs warn
    against testing filesystem code on real hardware.
-2. **Telnet.** Whether to serve a shell over the network, given that it has
-   no login and sends everything in the clear (Pere Marquette).
-3. **Experimental Cosmos APIs.** None are used. Any future need, such as
-   custom drivers through the driver kit, is a decision I'll make when it
-   comes up.
+2. **Experimental Cosmos APIs.** None are used. Any future need, such as
+   custom drivers through the driver kit, or a shorter ARP wait for `ping`,
+   is a decision I'll make when it comes up.
+
+Decided: no Telnet shell, since it would have no login and send everything
+in the clear (2026-11-11).
 
 ## Revision history
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | Docs: the roadmap is planned in releases now, and the route-milestone roadmap moved to `docs/history`; "Blue Water" and the alpha gate are no longer named here. |
 | 2026-11-12 | minor | Network (§8, §9): `net` shows the DNS server DHCP registered; `venture.resolve` and `venture.ping` (`network`), through `INetworkTools`, and the `resolve` and `ping` commands. |
 | 2026-11-12 | minor | Standard menus (§9): File, Edit, and Help are always on the bar, their items dimmed when they can't act; Help holds About VentureOS with no app in front. |
 | 2026-11-12 | minor | Edit (§9): Cut, Copy, Paste, and Select All in the standard Edit menu while text has focus, in every app, through the session's clipboard; secure fields can't be copied. |

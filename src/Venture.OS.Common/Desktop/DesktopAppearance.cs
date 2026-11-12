@@ -17,7 +17,7 @@ public sealed record AppearanceLoad(string Description, string? Problem);
 /// <c>version</c>, an unknown mode, or a bad accent refuses the whole file: the look stays as it was and the reason
 /// is reported.</para>
 /// <para>VentureOS runs from RAM, so the file lasts until reboot, apart from the one shipped in the user's files;
-/// once files are kept across reboots (Blue Water), the choice is too.</para>
+/// once files are kept across reboots, the choice is too.</para>
 /// </remarks>
 public static class DesktopAppearance
 {
