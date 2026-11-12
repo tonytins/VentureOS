@@ -260,6 +260,78 @@ public sealed class UIView
             ? state.Cursor.Selection
             : null;
 
+    /// <summary>
+    /// The focused text field's or area's selected text, for Copy and Cut, or <see langword="null"/> when nothing is
+    /// focused or selected, or the field is secure, whose text never leaves it.
+    /// </summary>
+    public string? FocusedSelection()
+    {
+        if (focused is null || script.Control(focused) is not { } control || control.IsSecure)
+            return null;
+
+        var state = states[focused];
+        state.Cursor.Clamp(state.Text.Length);
+        var (start, length) = state.Cursor.Selection;
+        return length > 0 ? state.Text.Substring(start, length) : null;
+    }
+
+    /// <summary>
+    /// Puts text in place of the focused text field's or area's selection, or at its caret, as Paste does, or removes
+    /// the selection with empty text, as Cut does. A field keeps to one line, with line breaks as spaces; other
+    /// control characters are left out; and as much goes in as the control's maximum length allows.
+    /// </summary>
+    /// <returns>A changed event for a text area whose text changed, as typing reports one.</returns>
+    public IReadOnlyList<UIEvent> ReplaceFocusedSelection(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (focused is null || script.Control(focused) is not { } control)
+            return [];
+
+        var area = control.Type == UIControlType.TextArea;
+        var state = states[focused];
+        var cursor = state.Cursor;
+        cursor.Clamp(state.Text.Length);
+
+        var cleaned = Clean(text, area);
+        var maximum = control.MaximumLength ?? (area ? TextAreaLength : 256);
+        var room = Math.Max(0, maximum - (state.Text.Length - cursor.Selection.Length));
+        if (cleaned.Length > room)
+            cleaned = cleaned[..room];
+
+        var before = state.Text;
+        state.Text = cursor.Replace(before, cleaned, maximum);
+        state.RevealCaret = true;
+        return area && !string.Equals(before, state.Text, StringComparison.Ordinal)
+            ? [new UIEvent(UIEventKind.Changed, focused, state.Text)]
+            : [];
+    }
+
+    /// <summary>Selects all of the focused text field's or area's text, as Select All does.</summary>
+    public void SelectAllFocused()
+    {
+        if (focused is not null)
+            SelectAll(focused);
+    }
+
+    // Text as it can go into a control: line breaks as LF in an area and as spaces in a field, tabs as spaces, and
+    // other control characters left out.
+    private static string Clean(string text, bool area)
+    {
+        text = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        var builder = new System.Text.StringBuilder(text.Length);
+        foreach (var character in text)
+        {
+            if (character == '\n')
+                builder.Append(area ? '\n' : ' ');
+            else if (character == '\t')
+                builder.Append(' ');
+            else if (!char.IsControl(character))
+                builder.Append(character);
+        }
+
+        return builder.ToString();
+    }
+
     /// <summary>Selects all of a text field's or area's text, as Ctrl+A does.</summary>
     public void SelectAll(string name)
     {

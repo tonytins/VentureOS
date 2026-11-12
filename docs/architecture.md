@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (text selection) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Edit: the clipboard) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (857 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (864 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -815,8 +815,14 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   merge into the standard menu their `role` names, or whose title they
   match exactly, items first; the rest sit between View and Help. A
   standard item yields to a window's item with the same shortcut, and an
-  empty standard menu is hidden, so Edit and View show only when an app
-  adds to them. The desktop's own items are told apart by reference
+  empty standard menu is hidden, so View shows only when an app adds to it.
+  Edit gains Cut (Ctrl+X), Copy (Ctrl+C), Paste (Ctrl+V), and Select All
+  (Ctrl+A) while the window in front has text with focus (a text field or
+  area, or its title field being edited), acting on that text through one
+  clipboard the session keeps (`DesktopSession.Clipboard`, for as long as
+  the desktop is open). Pasting into a field turns line breaks into
+  spaces and stops at its maximum length; pasting into an area reports
+  `changed`, as typing does; a secure field can't be cut or copied. The desktop's own items are told apart by reference
   (`BarMenu.Own`), never by name. The active app is the app of the window last
   brought forward, or the app last opened from the dock. Clicking or
   press-drag-release chooses; Alt and a menu's hotkey opens it; the arrows,
@@ -943,8 +949,9 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   Backspace or Delete replace or remove it. A press places the caret at the
   nearest character and a drag selects up to the pointer. The title field
   selects all of itself when editing starts, as an address bar does. The
-  selection is drawn in the selection color behind its text, and
-  `UIView.Selection` and `SelectAll` give it to the desktop's Edit menu.
+  selection is drawn in the selection color behind its text, and the
+  desktop's Edit menu reaches it through `DesktopWindow.SelectedText`,
+  `ReplaceSelectedText`, and `SelectAllText`.
 - **Text areas** (`<TextArea>`, a VentureOS addition to UIScript's core). A
   multi-line entry: Enter adds a line, and typing reports `changed` with the
   text. Its text wraps at spaces, cutting a word too long for a line, and
@@ -1065,6 +1072,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | Edit (§9): Cut, Copy, Paste, and Select All in the standard Edit menu while text has focus, in every app, through the session's clipboard; secure fields can't be copied. |
 | 2026-11-11 | minor | Text selection (§9): fields, areas, and the title field share `TextCursor`; Shift-selection, Ctrl+A, click and drag, and typing over a selection; the title field selects all when editing starts. |
 | 2026-11-11 | minor | Standard menus (§9): every app gets File (Close Window) and Help (About the app, from `Info.xml`'s new optional `description`); a window's menus merge in by `role` or title; a window's own shortcut wins over a standard item's; the About window is built in Common for VentureOS and every app. |
 | 2026-11-11 | minor | Layering (§2, §3): `venture.appearance` and `setAppearance` reach the desktop through `IAppearance` on `ISystemInfo`, so Scripting no longer depends on Desktop (rule 6); the layout tree is redrawn by folder. |

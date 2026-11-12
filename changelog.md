@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.300
+
+- Every app has Cut (Ctrl+X), Copy (Ctrl+C), Paste (Ctrl+V), and Select All (Ctrl+A) in its Edit menu while you're typing in a text field, a text area, or a window's address. What you copy in one app pastes into any other, until you leave the desktop.
+- Pasting into a one-line field turns line breaks into spaces, and stops at the field's length. Password fields can't be cut or copied.
+
 ## 0.4.200
 
 - Select text in any text field or text area: drag across it, hold Shift with the arrow keys, Home, or End, or press Ctrl+A for all of it. Typing replaces what's selected, and Backspace or Delete removes it.

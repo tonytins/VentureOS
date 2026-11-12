@@ -258,6 +258,61 @@ public sealed class DesktopWindow
         IsEditingTitle = true;
     }
 
+    /// <summary>
+    /// Whether the window has text with focus that Edit can act on: the title field being edited, or a text field or
+    /// area in its content.
+    /// </summary>
+    public bool HasEditableText => IsEditingTitle || View.FocusedControl is not null;
+
+    /// <summary>The selected text in whatever has the window's focus, for Copy and Cut, or <see langword="null"/>.</summary>
+    public string? SelectedText()
+    {
+        if (!IsEditingTitle || View.Script.TitleField is not { } field)
+            return View.FocusedSelection();
+
+        var text = View.Text(field.Name) ?? "";
+        cursor.Clamp(text.Length);
+        var (start, length) = cursor.Selection;
+        return length > 0 ? text.Substring(start, length) : null;
+    }
+
+    /// <summary>
+    /// Puts text in place of the selection in whatever has the window's focus, as Paste does, or removes it with
+    /// empty text, as Cut does. The title field keeps to one line, as a text field does.
+    /// </summary>
+    /// <returns>What the content reports, such as a text area's changed event.</returns>
+    public IReadOnlyList<UIEvent> ReplaceSelectedText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!IsEditingTitle || View.Script.TitleField is not { } field)
+            return View.ReplaceFocusedSelection(text);
+
+        var current = View.Text(field.Name) ?? "";
+        cursor.Clamp(current.Length);
+        List<char> kept = [];
+        foreach (var character in text)
+        {
+            if (character is '\n' or '\r' or '\t')
+                kept.Add(' ');
+            else if (!char.IsControl(character))
+                kept.Add(character);
+        }
+
+        var cleaned = new string([.. kept]);
+        var room = Math.Max(0, TitleFieldLength - (current.Length - cursor.Selection.Length));
+        View.SetText(field.Name, cursor.Replace(current, cleaned.Length > room ? cleaned[..room] : cleaned, TitleFieldLength));
+        return [];
+    }
+
+    /// <summary>Selects all of whatever text has the window's focus, as Select All does.</summary>
+    public void SelectAllText()
+    {
+        if (IsEditingTitle && View.Script.TitleField is { } field)
+            cursor.SelectAll((View.Text(field.Name) ?? "").Length);
+        else
+            View.SelectAllFocused();
+    }
+
     /// <summary>The title field's selection while it's being edited, or <see langword="null"/> when it isn't.</summary>
     public (int Start, int Length)? TitleSelection => IsEditingTitle ? cursor.Selection : null;
 

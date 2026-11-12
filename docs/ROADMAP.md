@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (0.4.2xx, text selection) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (0.4.3xx, Edit) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -81,20 +81,19 @@ planned before releases; 0.4's milestones are under its release below.
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
 | Wolverine | System library | 100% | 0 | Shared Lua modules in `/mnt/system/lib`, loaded with `require`; `venture.args` parses arguments and options with a generated `--help` |
 | Blue Water | Files | 67% | 8–15 (persistence, later) | File commands on the RAM disk now; an optional save to disk later |
-| Pere Marquette | Release 0.4 | 50% | 13–26 | Standard menus and text selection are done; Edit and networking are next |
+| Pere Marquette | Release 0.4 | 75% | 10–20 | Standard menus, text selection, and Edit are done; networking is next |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
 | Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
 | Downeaster | Desktop refinement | 100% | 0 | Centred titles, an address that edits on click, sidebars, resizable windows, hover, dark mode and accents, style roles, Settings, and hover text |
-| | **Total** | | **≈ 21–41** | |
+| | **Total** | | **≈ 18–35** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Edit: the clipboard (0.4.3xx) | Pere Marquette | 3–6 |
-| 2 | Networking (0.4.4xx) | Pere Marquette | 10–20 |
+| 1 | Networking (0.4.4xx) | Pere Marquette | 10–20 |
 
 Beta needs Blue Water in substance, about 8–15 hours.
 
@@ -180,8 +179,9 @@ code of its own; an empty standard menu stays hidden.
 
 **0.4.3xx, Edit**
 
-- [ ] A clipboard, and Edit's Cut, Copy, Paste, and Select All for whatever
-  text has focus, in every app. Undo and Redo come later.
+- [x] A clipboard, and Edit's Cut, Copy, Paste, and Select All for whatever
+  text has focus, in every app, the title field included. Undo and Redo come
+  later.
 
 **0.4.4xx, networking**
 
@@ -380,6 +380,7 @@ interface formats into `Venture.OS.Interface`.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | 0.4.3xx done: Edit's Cut, Copy, Paste, and Select All for whatever text has focus, in every app, through one clipboard. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | 0.4.2xx done: text selection in fields, areas, and the title field, by Shift and the arrows, Ctrl+A, and dragging. About 21–41 h of milestones remain. |
 | 2026-11-11 | minor | 0.4.1xx done: standard File and Help menus for every app, with About from `Info.xml`'s `description`, menus merged by `role` or title, and an app's own shortcut winning. About 25–49 h of milestones remain. |
 | 2026-11-11 | major | Tony Bark moved VentureOS to releases: no schedule, .NET-style feature bands, only the latest release supported until 1.0, tags and notes now and ISOs later, and code names for releases. 0.3 is released as `v0.3.18`, holding Borealis, Keystone, Downeaster, and the repository's new layout. 0.4, Pere Marquette, the last Amtrak name, holds standard menus, text selection, Edit, and networking; Telnet is dropped. About 29–57 h of milestones remain. |

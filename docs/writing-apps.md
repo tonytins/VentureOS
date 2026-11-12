@@ -264,7 +264,9 @@ new number. `roll` still works in the shell, since both live in the same app.
   has File, with Close Window (Ctrl+W), and Help, with About your app, which
   shows its `name`, `version`, and `description`. A menu with `role="file"`
   (or the title `File`) adds its items to the top of File, and the same goes
-  for `edit`, `view`, and `help`. Don't add your own Close Window. See
+  for `edit`, `view`, and `help`. Every text field and area also gets Edit's
+  Cut, Copy, Paste, and Select All. Don't add your own Close Window, or your
+  own copy and paste. See
   [UIScript menus](./uiscript-menus.md).
 - **A sidebar:** add `sidebar` to `requires` and
   `<Sidebar name="places" width="120"/>`, and the window gets a list of

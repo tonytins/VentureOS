@@ -45,6 +45,13 @@ public sealed class DesktopSession
     private static readonly UIShortcut CloseShortcut = new(Control: true, Shift: false, Alt: false, 'W');
     private static readonly UIMenuEntry CloseWindowEntry = new("closeWindow", "Close Window", 'C', CloseShortcut, 0);
 
+    // The standard Edit menu's own items, for whatever text has focus, in any window.
+    private static readonly UIMenuEntry CutEntry = new("cut", "Cut", 'T', Control('X'), 0);
+    private static readonly UIMenuEntry CopyEntry = new("copy", "Copy", 'C', Control('C'), 0);
+    private static readonly UIMenuEntry PasteEntry = new("paste", "Paste", 'P', Control('V'), 0);
+    private static readonly UIMenuEntry EditSeparator = new(null, null, null, null, 0);
+    private static readonly UIMenuEntry SelectAllEntry = new("selectAll", "Select All", 'A', Control('A'), 0);
+
     private static readonly BarMenu SystemMenu = new(
         new UIMenu("venture", "VentureOS", null,
         [
@@ -77,8 +84,9 @@ public sealed class DesktopSession
     private readonly List<KeyPress> forWindows = [];
 
     // What the bar's menus were built from, so they're rebuilt only when one of these changes: the app shown, its
-    // window in front, the window in front whoever's it is, and whether the app opens new windows.
-    private (string? App, DesktopWindow? Window, DesktopWindow? Front, bool NewWindow, bool Built) menuSource;
+    // window in front, the window in front whoever's it is, whether the app opens new windows, and whether text has
+    // focus for Edit.
+    private (string? App, DesktopWindow? Window, DesktopWindow? Front, bool NewWindow, bool Editing, bool Built) menuSource;
     private DesktopInput last;
     private bool drawn;
     private PointerOwner owner;
@@ -158,6 +166,12 @@ public sealed class DesktopSession
     /// and an <c>ok</c> button.
     /// </summary>
     public Func<UIScript?>? AboutDocument { get; init; }
+
+    /// <summary>
+    /// The text Cut and Copy last took, which Paste puts in, shared by every window and app; <see langword="null"/>
+    /// until something is copied. It lasts while the desktop is open.
+    /// </summary>
+    public string? Clipboard { get; private set; }
 
     /// <summary>VentureOS's version as About VentureOS shows it, such as <c>Version 0.4.101 (Build 1234)</c>.</summary>
     public string? SystemVersion { get; init; }
@@ -386,6 +400,25 @@ public sealed class DesktopSession
                 Windows.Focused?.RequestClose();
                 happened.AddRange(Windows.CloseRequested());
                 break;
+            case MenuGroup.Standard when ReferenceEquals(choice.Item, CutEntry):
+                if (Windows.Focused is { } cutFrom && cutFrom.SelectedText() is { } cut)
+                {
+                    Clipboard = cut;
+                    Report(cutFrom, cutFrom.ReplaceSelectedText(""), happened);
+                }
+
+                break;
+            case MenuGroup.Standard when ReferenceEquals(choice.Item, CopyEntry):
+                if (Windows.Focused?.SelectedText() is { } copied)
+                    Clipboard = copied;
+                break;
+            case MenuGroup.Standard when ReferenceEquals(choice.Item, PasteEntry):
+                if (Windows.Focused is { } pasteInto && Clipboard is { } pasted)
+                    Report(pasteInto, pasteInto.ReplaceSelectedText(pasted), happened);
+                break;
+            case MenuGroup.Standard when ReferenceEquals(choice.Item, SelectAllEntry):
+                Windows.Focused?.SelectAllText();
+                break;
             case MenuGroup.Standard when choice.Menu.IsOwn(choice.Item):
                 // Help's About item, for the app the bar shows.
                 ShowAbout(menuSource.App);
@@ -395,6 +428,20 @@ public sealed class DesktopSession
                 break;
         }
     }
+
+    // What an edit in a window's content reported, such as a text area's change, goes to the window as typing's would.
+    private void Report(DesktopWindow window, IReadOnlyList<UIEvent> events, List<WindowEvent> happened)
+    {
+        foreach (var uiEvent in events)
+        {
+            happened.Add(new WindowEvent(window, uiEvent));
+            window.EventHandler?.Invoke(window, uiEvent);
+        }
+
+        happened.AddRange(Windows.CloseRequested());
+    }
+
+    private static UIShortcut Control(char key) => new(Control: true, Shift: false, Alt: false, key);
 
     // A chosen item reports like a pressed button, by its name, to the window whose menu it's in.
     private void ReportToWindow(UIView? view, string item, List<WindowEvent> happened)
@@ -633,10 +680,11 @@ public sealed class DesktopSession
         var front = Windows.Focused;
         var focused = front is not null && front.App == ActiveApp ? front : null;
         var newWindow = shown is not null && (apps?.Windows?.HasNewWindow(shown) ?? false);
-        if (menuSource == (shown, focused, front, newWindow, true))
+        var editing = front?.HasEditableText ?? false;
+        if (menuSource == (shown, focused, front, newWindow, editing, true))
             return;
 
-        menuSource = (shown, focused, front, newWindow, true);
+        menuSource = (shown, focused, front, newWindow, editing, true);
         List<BarMenu> menus = [SystemMenu];
         if (shown is not null)
             menus.Add(AppMenu(shown));
@@ -648,7 +696,7 @@ public sealed class DesktopSession
         UIMenuEntry[] helping = shown is not null ? [AboutEntry(shown)] : [];
 
         AddStandard(menus, document, view, UIMenuRole.File, "File", 'F', closing);
-        AddStandard(menus, document, view, UIMenuRole.Edit, "Edit", 'E', []);
+        AddStandard(menus, document, view, UIMenuRole.Edit, "Edit", 'E', editing ? EditItems(document) : []);
         AddStandard(menus, document, view, UIMenuRole.View, "View", 'V', []);
         foreach (var menu in document)
         {
@@ -709,6 +757,26 @@ public sealed class DesktopSession
         }
 
         return false;
+    }
+
+    /// <summary>Edit's own items, each but the separator left out where the document has its own shortcut.</summary>
+    private static UIMenuEntry[] EditItems(IReadOnlyList<UIMenu> document)
+    {
+        List<UIMenuEntry> items = [];
+        foreach (var entry in (UIMenuEntry[])[CutEntry, CopyEntry, PasteEntry])
+        {
+            if (!Takes(document, entry.Shortcut!))
+                items.Add(entry);
+        }
+
+        if (!Takes(document, SelectAllEntry.Shortcut!))
+        {
+            if (items.Count > 0)
+                items.Add(EditSeparator);
+            items.Add(SelectAllEntry);
+        }
+
+        return [.. items];
     }
 
     private UIMenuEntry AboutEntry(string app)
