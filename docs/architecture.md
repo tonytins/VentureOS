@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the roadmap starts over for releases) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Undo and Redo) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (889 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (901 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -44,7 +44,7 @@ the code wins and this page is out of date.
   that opens the system's apps, and movable windows that show `.uix`
   interfaces. Files is the desktop's own app, and Quick Look previews files.
   Apps open windows through `venture.ui`; `Notes.app` has one.
-- **Not built yet:** Undo and Redo (0.4.5xx); keeping files across reboots,
+- **Not built yet:** keeping files across reboots,
   and published ISOs, which are ideas without a release. See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
@@ -832,8 +832,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   when no app is in front; their own items dim when they can't act, which
   the bar asks as it draws (`BarMenu.OwnEnabled`), and a dimmed item's
   shortcut falls through to the window. View, with no items of its own,
-  shows only when an app adds to it. Edit holds Cut (Ctrl+X), Copy (Ctrl+C),
-  Paste (Ctrl+V), and Select All (Ctrl+A), which act on the text with focus
+  shows only when an app adds to it. Edit holds Undo (Ctrl+Z), Redo
+  (Ctrl+Shift+Z), Cut (Ctrl+X), Copy (Ctrl+C), Paste (Ctrl+V), and Select All
+  (Ctrl+A), which act on the text with focus
   in the window in front (a text field or area, or its title field being
   edited), through one
   clipboard the session keeps (`DesktopSession.Clipboard`, for as long as
@@ -969,6 +970,17 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   selection is drawn in the selection color behind its text, and the
   desktop's Edit menu reaches it through `DesktopWindow.SelectedText`,
   `ReplaceSelectedText`, and `SelectAllText`.
+- **Undo and Redo.** Every edit to text goes through `TextCursor`, which
+  records it in its `TextHistory` as a `TextChange`: where, what was there,
+  what replaced it, and the selection before and after. Undo reverts it and
+  Redo applies it again, so the history keeps what changed rather than
+  copies of the text. Typing joins one step until a space or line break;
+  Backspace or Delete joins one step; a paste, a cut, or moving the caret
+  starts another. Each text field, area, and title field keeps its own
+  history, at most 100 steps. Text an app sets clears it, when the text
+  changes; the title field starts over each time editing does. Before a
+  step is undone, the text must still hold what it put there, or the
+  history is cleared rather than applied to the wrong text.
 - **Text areas** (`<TextArea>`, a VentureOS addition to UIScript's core). A
   multi-line entry: Enter adds a line, and typing reports `changed` with the
   text. Its text wraps at spaces, cutting a word too long for a line, and
@@ -1090,6 +1102,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | Undo and Redo (§9): `TextChange` and `TextHistory` on every `TextCursor`, with typing grouped into steps and 100 steps a control; Edit's Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z). |
 | 2026-11-12 | minor | Docs: the roadmap is planned in releases now, and the route-milestone roadmap moved to `docs/history`; "Blue Water" and the alpha gate are no longer named here. |
 | 2026-11-12 | minor | Network (§8, §9): `net` shows the DNS server DHCP registered; `venture.resolve` and `venture.ping` (`network`), through `INetworkTools`, and the `resolve` and `ping` commands. |
 | 2026-11-12 | minor | Standard menus (§9): File, Edit, and Help are always on the bar, their items dimmed when they can't act; Help holds About VentureOS with no app in front. |

@@ -254,6 +254,7 @@ public sealed class DesktopWindow
 
         View.ClearFocus();
         savedTitle = View.Text(field.Name) ?? "";
+        cursor.History.Clear();
         cursor.SelectAll(savedTitle.Length);
         IsEditingTitle = true;
     }
@@ -310,6 +311,30 @@ public sealed class DesktopWindow
         return [];
     }
 
+    /// <summary>Whether whatever text has the window's focus has an edit to undo.</summary>
+    public bool CanUndo => IsEditingTitle ? cursor.History.CanUndo : View.CanUndoFocused;
+
+    /// <summary>Whether whatever text has the window's focus has an undone edit to redo.</summary>
+    public bool CanRedo => IsEditingTitle ? cursor.History.CanRedo : View.CanRedoFocused;
+
+    /// <summary>Takes back the newest edit to whatever text has the window's focus, as Undo does.</summary>
+    /// <returns>What the content reports, such as a text area's changed event.</returns>
+    public IReadOnlyList<UIEvent> Undo() => Step(undo: true);
+
+    /// <summary>Applies again the newest undone edit to whatever text has the window's focus, as Redo does.</summary>
+    /// <returns>What the content reports, such as a text area's changed event.</returns>
+    public IReadOnlyList<UIEvent> Redo() => Step(undo: false);
+
+    private IReadOnlyList<UIEvent> Step(bool undo)
+    {
+        if (!IsEditingTitle || View.Script.TitleField is not { } field)
+            return undo ? View.UndoFocused() : View.RedoFocused();
+
+        var text = View.Text(field.Name) ?? "";
+        View.SetText(field.Name, undo ? cursor.Undo(text) : cursor.Redo(text));
+        return [];
+    }
+
     /// <summary>Selects all of whatever text has the window's focus, as Select All does.</summary>
     public void SelectAllText()
     {
@@ -353,7 +378,7 @@ public sealed class DesktopWindow
                     cursor.SelectAll(text.Length);
                     break;
                 case DesktopKey.Character when !key.Control && !key.Alt && key.Character >= ' ':
-                    text = cursor.Replace(text, key.Character.ToString(), TitleFieldLength);
+                    text = cursor.Replace(text, key.Character.ToString(), TitleFieldLength, TextChangeKind.Typing);
                     break;
                 case DesktopKey.Backspace:
                     text = cursor.DeleteBackward(text);

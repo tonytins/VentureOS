@@ -40,16 +40,76 @@ public sealed class EditMenuTests
     public void IsAlwaysThereWithWhatCantActDimmed()
     {
         Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
-        Assert.Equal(["Cut", "Copy", "Paste", null, "Select All"], Items("Edit"));
-        Assert.Equal([false, false, false, false], Enabled());
+        Assert.Equal(["Undo", "Redo", null, "Cut", "Copy", "Paste", null, "Select All"], Items("Edit"));
+        Assert.Equal([false, false, false, false, false, false], Enabled());
 
         // Text with focus can be selected; with some selected, cut and copied; and once copied, pasted over.
         Focus("name", "Hello");
-        Assert.Equal([false, false, false, true], Enabled());
+        Assert.Equal([false, false, false, false, false, true], Enabled());
         Press('a');
-        Assert.Equal([true, true, false, true], Enabled());
+        Assert.Equal([false, false, true, true, false, true], Enabled());
         Press('c');
-        Assert.Equal([true, true, true, true], Enabled());
+        Assert.Equal([false, false, true, true, true, true], Enabled());
+    }
+
+    [Fact]
+    public void TypingIsUndoneAWordAtATimeAndRedone()
+    {
+        Focus("name", "");
+        Keys([.. "hi there".Select(KeyPress.Typed)]);
+        Assert.Equal([true, false], Enabled()[..2]);
+
+        Press('z');
+        Assert.Equal("hi ", View.Text("name"));
+        Press('z');
+        Assert.Equal("", View.Text("name"));
+        Assert.Equal([false, true], Enabled()[..2]);
+
+        Frame(new KeyPress(DesktopKey.Character, 'z', Control: true, Shift: true));
+        Assert.Equal("hi ", View.Text("name"));
+    }
+
+    [Fact]
+    public void APasteIsOneStepAndUndoingItReportsTheChange()
+    {
+        Focus("name", "copied");
+        Press('a');
+        Press('c');
+        Focus("notes", "");
+        Press('v');
+        events.Clear();
+
+        Press('z');
+
+        Assert.Equal("", View.Text("notes"));
+        Assert.Equal([new UIEvent(UIEventKind.Changed, "notes", "")], events);
+    }
+
+    [Fact]
+    public void TextAnAppSetsStartsTheHistoryOver()
+    {
+        Focus("name", "");
+        Keys(KeyPress.Typed('a'));
+
+        View.SetText("name", "from the app");
+        Frame();
+
+        Assert.False(Enabled()[0]);
+        Press('z');
+        Assert.Equal("from the app", View.Text("name"));
+    }
+
+    [Fact]
+    public void TheTitleFieldUndoesToo()
+    {
+        View.SetText("address", "/mnt");
+        window.BeginTitleEdit();
+        Frame(KeyPress.Typed('x'));
+        Assert.Equal("x", View.Text("address"));
+
+        Press('z');
+
+        Assert.Equal("/mnt", View.Text("address"));
     }
 
     [Fact]
@@ -152,7 +212,7 @@ public sealed class EditMenuTests
 
     private List<string> Titles() => [.. session.MenuBar.Menus.Select(menu => menu.Menu.Title)];
 
-    // Whether Cut, Copy, Paste, and Select All can act, in that order.
+    // Whether Undo, Redo, Cut, Copy, Paste, and Select All can act, in that order.
     private List<bool> Enabled()
     {
         var edit = session.MenuBar.Menus.Single(bar => bar.Menu.Title == "Edit");

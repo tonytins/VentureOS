@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.500
+
+- Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z) in the Edit menu, for any text field, text area, or window address. Typing comes back a word at a time; a paste or cut, one at a time.
+
 ## 0.4.401
 
 - New commands: `resolve example.com` looks up a host name's address, and `ping 10.0.2.2` sends echo requests and shows how long each reply took (`-c` sets how many, up to 20).

@@ -41,7 +41,7 @@ stage to the next, and add a line to the revision history.
 | Release | Code name | Stage | Holds |
 |---|---|---|---|
 | 0.3 | (the desktop) | released 2026-11-11, `v0.3.18`; [notes](./releases/0.3.md) | The desktop, its apps, Settings, and the look |
-| 0.4 | Pere Marquette | in development | Standard menus, text selection, Edit, networking, and Undo and Redo |
+| 0.4 | Pere Marquette | in development; every band done, release is my call | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | (a sleeper train, when it's planned) | considered | Nothing chosen yet; see Ideas |
 
 ## 0.4, Pere Marquette
@@ -78,13 +78,13 @@ its own.
 
 **0.4.5xx, Undo and Redo**
 
-- [ ] Edits recorded as values (where, what was there, what replaced it) at
+- [x] Edits recorded as values (where, what was there, what replaced it) at
   the one place every change to text passes through, so Undo applies the
   inverse and Redo the edit again.
-- [ ] Typing grouped into steps, broken by a space, a caret jump, or a paste.
-- [ ] A history for each text field, area, and title field, capped in steps,
-  and cleared when the app sets the text itself.
-- [ ] Edit's Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z), dimmed when there's
+- [x] Typing grouped into steps, broken by a space, a caret jump, or a paste.
+- [x] A history for each text field, area, and title field, capped at 100
+  steps, and cleared when the app sets the text itself.
+- [x] Edit's Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z), dimmed when there's
   nothing to undo or redo.
 
 ## Ideas
@@ -127,4 +127,5 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | 0.4.5xx done: Undo and Redo for every text field, area, and title field. Every band of 0.4 is done. |
 | 2026-11-12 | major | The roadmap starts over for an evolving OS, by my decision: releases and their stages, bands without hour estimates, an Ideas list, and 1.0 whenever I'm ready. The route milestones and their history moved to [docs/history](./history/roadmap-2026.md). 0.4 gains a fifth band, Undo and Redo. Code names from 0.5 are Japanese sleeper trains, then Japanese limited expresses. |

@@ -93,7 +93,8 @@ menu in document order, and menus appear in the bar in document order.
 
 VentureOS's desktop keeps Ctrl+Q (quit the app) and Ctrl+Shift+Q (return to
 the shell). Its standard menus are File, with Close Window (Ctrl+W); Edit,
-with Cut, Copy, Paste, and Select All (Ctrl+X, Ctrl+C, Ctrl+V, and Ctrl+A);
+with Undo and Redo (Ctrl+Z and Ctrl+Shift+Z) and Cut, Copy, Paste, and Select
+All (Ctrl+X, Ctrl+C, Ctrl+V, and Ctrl+A);
 and Help, with About the app, which are always on the bar, their items
 dimmed when they can't act; and View, which shows only when a document adds
 to it. They sit after the app's menu, in that order, with

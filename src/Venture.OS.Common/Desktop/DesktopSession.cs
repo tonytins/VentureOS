@@ -46,6 +46,8 @@ public sealed class DesktopSession
     private static readonly UIMenuEntry CloseWindowEntry = new("closeWindow", "Close Window", 'C', CloseShortcut, 0);
 
     // The standard Edit menu's own items, for whatever text has focus, in any window.
+    private static readonly UIMenuEntry UndoEntry = new("undo", "Undo", 'U', Control('Z'), 0);
+    private static readonly UIMenuEntry RedoEntry = new("redo", "Redo", 'R', new UIShortcut(Control: true, Shift: true, Alt: false, 'Z'), 0);
     private static readonly UIMenuEntry CutEntry = new("cut", "Cut", 'T', Control('X'), 0);
     private static readonly UIMenuEntry CopyEntry = new("copy", "Copy", 'C', Control('C'), 0);
     private static readonly UIMenuEntry PasteEntry = new("paste", "Paste", 'P', Control('V'), 0);
@@ -407,6 +409,14 @@ public sealed class DesktopSession
                 Windows.Focused?.RequestClose();
                 happened.AddRange(Windows.CloseRequested());
                 break;
+            case MenuGroup.Standard when ReferenceEquals(choice.Item, UndoEntry):
+                if (Windows.Focused is { } undoIn)
+                    Report(undoIn, undoIn.Undo(), happened);
+                break;
+            case MenuGroup.Standard when ReferenceEquals(choice.Item, RedoEntry):
+                if (Windows.Focused is { } redoIn)
+                    Report(redoIn, redoIn.Redo(), happened);
+                break;
             case MenuGroup.Standard when ReferenceEquals(choice.Item, CutEntry):
                 if (Windows.Focused is { } cutFrom && cutFrom.SelectedText() is { } cut)
                 {
@@ -728,6 +738,10 @@ public sealed class DesktopSession
         var front = Windows.Focused;
         if (ReferenceEquals(entry, CloseWindowEntry))
             return front is not null;
+        if (ReferenceEquals(entry, UndoEntry))
+            return front?.CanUndo ?? false;
+        if (ReferenceEquals(entry, RedoEntry))
+            return front?.CanRedo ?? false;
         if (ReferenceEquals(entry, CutEntry) || ReferenceEquals(entry, CopyEntry))
             return front?.HasSelectedText ?? false;
         if (ReferenceEquals(entry, PasteEntry))
@@ -789,21 +803,25 @@ public sealed class DesktopSession
         return false;
     }
 
-    /// <summary>Edit's own items, each but the separator left out where the document has its own shortcut.</summary>
+    /// <summary>
+    /// Edit's own items in their groups (Undo and Redo; Cut, Copy, and Paste; Select All), each left out where the
+    /// document has its own shortcut, with a separator between groups that have anything left.
+    /// </summary>
     private static UIMenuEntry[] EditItems(IReadOnlyList<UIMenu> document)
     {
         List<UIMenuEntry> items = [];
-        foreach (var entry in (UIMenuEntry[])[CutEntry, CopyEntry, PasteEntry])
+        foreach (var group in (UIMenuEntry[][])[[UndoEntry, RedoEntry], [CutEntry, CopyEntry, PasteEntry], [SelectAllEntry]])
         {
-            if (!Takes(document, entry.Shortcut!))
+            var started = false;
+            foreach (var entry in group)
+            {
+                if (Takes(document, entry.Shortcut!))
+                    continue;
+                if (!started && items.Count > 0)
+                    items.Add(EditSeparator);
                 items.Add(entry);
-        }
-
-        if (!Takes(document, SelectAllEntry.Shortcut!))
-        {
-            if (items.Count > 0)
-                items.Add(EditSeparator);
-            items.Add(SelectAllEntry);
+                started = true;
+            }
         }
 
         return [.. items];

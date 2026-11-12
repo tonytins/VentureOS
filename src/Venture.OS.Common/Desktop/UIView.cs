@@ -247,8 +247,39 @@ public sealed class UIView
         if (Find(name) is not { } state)
             return;
 
+        // Text an app sets is a new starting point, so what could be undone before no longer applies.
+        if (!string.Equals(state.Text, text, StringComparison.Ordinal))
+            state.Cursor.History.Clear();
         state.Text = text;
         state.Cursor.Clamp(text.Length);
+    }
+
+    /// <summary>Whether the focused text field or area has an edit to undo.</summary>
+    public bool CanUndoFocused => focused is not null && states[focused].Cursor.History.CanUndo;
+
+    /// <summary>Whether the focused text field or area has an undone edit to redo.</summary>
+    public bool CanRedoFocused => focused is not null && states[focused].Cursor.History.CanRedo;
+
+    /// <summary>Takes back the focused text field's or area's newest edit, as Undo does.</summary>
+    /// <returns>A changed event for a text area whose text changed, as typing reports one.</returns>
+    public IReadOnlyList<UIEvent> UndoFocused() => StepFocused(undo: true);
+
+    /// <summary>Applies again the focused text field's or area's newest undone edit, as Redo does.</summary>
+    /// <returns>A changed event for a text area whose text changed.</returns>
+    public IReadOnlyList<UIEvent> RedoFocused() => StepFocused(undo: false);
+
+    private IReadOnlyList<UIEvent> StepFocused(bool undo)
+    {
+        if (focused is null || script.Control(focused) is not { } control)
+            return [];
+
+        var state = states[focused];
+        var before = state.Text;
+        state.Text = undo ? state.Cursor.Undo(before) : state.Cursor.Redo(before);
+        state.RevealCaret = true;
+        return control.Type == UIControlType.TextArea && !string.Equals(before, state.Text, StringComparison.Ordinal)
+            ? [new UIEvent(UIEventKind.Changed, focused, state.Text)]
+            : [];
     }
 
     /// <summary>
@@ -723,7 +754,7 @@ public sealed class UIView
                 cursor.SelectAll(state.Text.Length);
                 break;
             case DesktopKey.Character when key.Character >= ' ' && !key.Control && !key.Alt:
-                state.Text = cursor.Replace(state.Text, key.Character.ToString(), maximum);
+                state.Text = cursor.Replace(state.Text, key.Character.ToString(), maximum, TextChangeKind.Typing);
                 break;
             case DesktopKey.Backspace:
                 state.Text = cursor.DeleteBackward(state.Text);
@@ -904,10 +935,10 @@ public sealed class UIView
                 cursor.SelectAll(text.Length);
                 break;
             case DesktopKey.Character when key.Character >= ' ' && !key.Control && !key.Alt:
-                text = cursor.Replace(text, key.Character.ToString(), maximum);
+                text = cursor.Replace(text, key.Character.ToString(), maximum, TextChangeKind.Typing);
                 break;
             case DesktopKey.Enter:
-                text = cursor.Replace(text, "\n", maximum);
+                text = cursor.Replace(text, "\n", maximum, TextChangeKind.Typing);
                 break;
             case DesktopKey.Backspace:
                 text = cursor.DeleteBackward(text);
