@@ -1,3 +1,4 @@
+using Venture.OS.Desktop;
 using Venture.OS.Scripting;
 
 namespace Venture.OS.Tests.Scripting;
@@ -23,6 +24,9 @@ internal sealed class FakeSystemInfo : ISystemInfo
     public SpaceInfo? DiskSpace { get; init; } = new(30UL * 1024 * 1024, 32UL * 1024 * 1024);
 
     public SpaceInfo? Space(string path) => DiskSpace;
+
+    /// <summary>The desktop's own, by default, so scripts read and change the real palette.</summary>
+    public IAppearance? Appearance { get; init; } = new ScriptAppearance();
 
     /// <summary>When set, reading <see cref="Uptime"/> throws it, as a failing device might.</summary>
     public Exception? UptimeFailure { get; init; }

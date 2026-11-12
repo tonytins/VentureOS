@@ -1,3 +1,4 @@
+using Venture.OS.Desktop;
 using Venture.OS.Shell;
 
 namespace Venture.OS.Scripting;
@@ -16,6 +17,9 @@ internal sealed class KernelSystemInfo : ISystemInfo
     public uint BuildNumber => HostInfo.BuildNumber;
     public string Commit => ThisAssembly.Git.Commit;
     public string CosmosVersion => Sys.Kernel.VersionString;
+
+    /// <summary>The desktop's look, saved by <see cref="DesktopAppearance"/> once the appearance boot step sets where.</summary>
+    public IAppearance? Appearance { get; } = new ScriptAppearance();
 
     /// <summary>
     /// Time since the CPU started counting, read from the Stopwatch (the timestamp counter on x64).

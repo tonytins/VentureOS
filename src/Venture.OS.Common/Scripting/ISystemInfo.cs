@@ -45,6 +45,12 @@ public interface ISystemInfo
     /// </summary>
     /// <param name="path">A full path.</param>
     SpaceInfo? Space(string path);
+
+    /// <summary>
+    /// The desktop's look, which <c>venture.appearance</c> and <c>venture.setAppearance</c> read and change, or
+    /// <see langword="null"/> on a system without one.
+    /// </summary>
+    IAppearance? Appearance { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>

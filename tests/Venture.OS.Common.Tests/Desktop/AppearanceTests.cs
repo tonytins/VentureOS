@@ -118,6 +118,18 @@ public sealed class AppearanceTests : IDisposable
     }
 
     [Fact]
+    public void ASystemWithoutAnAppearanceSaysSo()
+    {
+        LuaRunner.Run(output, Path.GetTempPath(), lua => lua.DoString("""
+            print(venture.appearance())
+            print(venture.setAppearance("dark"))
+            """), new FakeSystemInfo { Appearance = null });
+
+        Assert.Equal(["nil", "nil\tthis system has no desktop appearance to change"], output.Lines);
+        Assert.Same(DesktopPalette.Light, DesktopTheme.Palette);
+    }
+
+    [Fact]
     public void ChangingTheLookNeedsTheSystemScope()
     {
         Assert.False(Run("""venture.setAppearance("dark")""", ScriptScopes.Files));

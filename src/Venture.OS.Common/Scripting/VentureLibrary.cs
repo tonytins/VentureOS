@@ -1,5 +1,4 @@
 using Cosmos.Executable.Lua;
-using Venture.OS.Desktop;
 
 namespace Venture.OS.Scripting;
 
@@ -48,8 +47,8 @@ public static class VentureLibrary
             Gated("uptime", ScriptScopes.System, scopes, lua => PushUptime(lua, system)),
             Gated("memory", ScriptScopes.System, scopes, lua => PushMemory(lua, system)),
             Gated("net", ScriptScopes.Network, scopes, lua => PushNetwork(lua, system)),
-            Gated("appearance", ScriptScopes.System, scopes, PushAppearance),
-            Gated("setAppearance", ScriptScopes.System, scopes, SetAppearance),
+            Gated("appearance", ScriptScopes.System, scopes, lua => PushAppearance(lua, system.Appearance)),
+            Gated("setAppearance", ScriptScopes.System, scopes, lua => SetAppearance(lua, system.Appearance)),
 
             // Replaced by ShellLibrary where the code has a lasting owner; elsewhere they explain why they can't work.
             Gated("command", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "command")),
@@ -136,13 +135,21 @@ public static class VentureLibrary
         return 1;
     }
 
-    /// <summary><c>venture.appearance()</c>: the desktop's look, as <c>{ mode = "light" or "dark", accent = "#RRGGBB" }</c>.</summary>
-    private static int PushAppearance(ILuaState lua)
+    /// <summary>
+    /// <c>venture.appearance()</c>: the desktop's look, as <c>{ mode = "light" or "dark", accent = "#RRGGBB" }</c>,
+    /// or <c>nil</c> on a system without one.
+    /// </summary>
+    private static int PushAppearance(ILuaState lua, IAppearance? appearance)
     {
-        var palette = DesktopTheme.Palette;
+        if (appearance is null)
+        {
+            lua.PushNil();
+            return 1;
+        }
+
         lua.NewTable();
-        SetString(lua, "mode", palette.IsDark ? "dark" : "light");
-        SetString(lua, "accent", DesktopPalette.Format(palette.ChosenAccent));
+        SetString(lua, "mode", appearance.IsDark ? "dark" : "light");
+        SetString(lua, "accent", appearance.Accent);
         return 1;
     }
 
@@ -152,26 +159,25 @@ public static class VentureLibrary
     /// <see langword="true"/>, with why it couldn't be saved when that failed, or <see langword="nil"/> and why,
     /// changing nothing, when either is wrong. The desktop shows it on its next frame.
     /// </summary>
-    private static int SetAppearance(ILuaState lua)
+    private static int SetAppearance(ILuaState lua, IAppearance? appearance)
     {
         var mode = LuaText.Decode(lua.L_CheckString(1));
         if (mode is not ("light" or "dark"))
             return Refuse(lua, $"the appearance is light or dark, not \"{mode}\"");
 
-        var accent = DesktopTheme.Palette.ChosenAccent;
-        if (!lua.IsNoneOrNil(2))
-        {
-            var text = LuaText.Decode(lua.L_CheckString(2));
-            if (!DesktopPalette.TryParseColor(text, out accent))
-                return Refuse(lua, $"an accent is written #RRGGBB, such as #1E78DC, not \"{text}\"");
-        }
+        var accent = lua.IsNoneOrNil(2) ? null : LuaText.Decode(lua.L_CheckString(2));
+        if (appearance is null)
+            return Refuse(lua, "this system has no desktop appearance to change");
 
-        var unsaved = DesktopAppearance.Apply(DesktopPalette.Create(accent, mode == "dark"));
+        var change = appearance.Set(mode == "dark", accent);
+        if (change.Refused is { } refused)
+            return Refuse(lua, refused);
+
         lua.PushBoolean(true);
-        if (unsaved is null)
+        if (change.Unsaved is null)
             return 1;
 
-        lua.PushString(LuaText.Encode(unsaved));
+        lua.PushString(LuaText.Encode(change.Unsaved));
         return 2;
     }
 

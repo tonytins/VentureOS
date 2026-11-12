@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the interface formats in their own project) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Scripting no longer depends on the desktop) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -126,78 +126,47 @@ and the project file, and nothing in the shell.**
 ```text
 VentureOS/
 ├─ src/
-│  ├─ Venture.slnx              solution
-│  ├─ Venture.OS.Interface/     the interface formats: only the BCL, AOT-compatible, warnings as errors
-│  │  ├─ UIScript.cs            Venture.OS.Interface: reads .uix (UIScript) documents, with menus, sidebars, and style roles
-│  │  ├─ Xml/FlatXml.cs         Venture.OS.Interface.Xml: the flat XML that Info.xml, appearance.xml, and .uix files use
-│  │  └─ Strings/               Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables (a folder's tables)
-│  ├─ Venture.OS.Common/        kernel-free library: no Cosmos, AOT-compatible, warnings as errors
-│  │  └─ Shell/                 Venture.OS.Shell: the shell framework
-│  │     ├─ CommandLine.cs      splits a line into words
-│  │     ├─ CommandRegistry.cs  commands by name; source of `help`
-│  │     ├─ CommandShell.cs     parse, look up, check arguments, run
-│  │     ├─ IShellCommand.cs    what every command declares
-│  │     ├─ ShellContext.cs     what a command can reach
-│  │     ├─ IShellOutput.cs     where commands write
-│  │     ├─ IShellHost.cs       halt, reboot, shutdown, implemented by the kernel
-│  │     ├─ ICommandSource.cs   another place to find commands, after the registered ones
-│  │     └─ ShellOutputWriter.cs  a TextWriter that hands complete lines to IShellOutput
-│  │  └─ Scripting/             Venture.OS.Scripting: Lua system support
-│  │     ├─ EmbeddedFile.cs     a file built into the kernel image
-│  │     ├─ SystemDirectory.cs  writes those files to disk, after checking every path
-│  │     ├─ LuaRunner.cs        runs Lua for a command: output to the shell, errors reported
-│  │     ├─ LuaRepl.cs          the interactive Lua prompt behind plain `lua`
-│  │     ├─ ScriptCommands.cs   <name>.lua files as commands
-│  │     ├─ LuaOwner.cs         lasting Lua code and the undo list for what it set up
-│  │     ├─ RuntimeCommands.cs  commands registered with venture.command, and who may take which name
-│  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
-│  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
-│  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, UIView, windows, the menu bar, the dock, DesktopSession, and UiLibrary (venture.ui)
-│  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
-│  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
-│  │     └─ VentureLibrary.cs   the `venture` table
-│  └─ Venture.OS/
-│     ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
-│     ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
-│     ├─ HostInfo.cs               name, version, and build number
-│     ├─ Scripting/                Venture.OS.Scripting: KernelSystemInfo, ISystemInfo read from Cosmos
-│     ├─ Kernel/                   Venture.OS.Kernel: the lifecycle and how the system reports and stops
-│     │  ├─ VentureKernel.cs       the kernel class: BeforeRun (boot), Run (shell loop)
-│     │  ├─ KernelLog.cs           system messages to serial and the console
-│     │  └─ KernelPanic.cs         deliberate, reported halt
-│     ├─ Startup/                  Venture.OS.Startup: boot steps
-│     │  ├─ Bootstrap.cs           RAM disk, timer check, network and DHCP
-│     │  └─ BootRamDisk.cs         in-memory IBlockDevice
-│     ├─ Shell/                    Venture.OS.Shell: what needs Cosmos
-│     │  ├─ ConsoleShellOutput.cs  IShellOutput on the console
-│     │  └─ Commands/              one class per command
-│     ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
-│     ├─ Bootloader/limine.conf    Limine boot entry; asks for a 1024x768 framebuffer
-│     ├─ GitInfo.txt               base version
-│     └─ src/C/                    reserved for native C sources (empty)
-├─ rootfs/                     files built into the kernel and installed at boot
-│  ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
-│  │  ├─ init.lua               runs once after boot; prints the help hint
-│  │  ├─ apps/Files.app/        the desktop's own app: browses folders, opens apps, Quick Look
-│  │  ├─ apps/Settings.app/     light or dark and the accent color, saved to /mnt/user/settings
-│  │  ├─ apps/SystemMonitor.app/  version, uptime, memory, and network, kept current
-│  │  ├─ apps/Terminal.app/     the shell in a window, in Fira Code
-│  │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
-│  │  ├─ interfaces/about.uix   the About VentureOS window
-│  │  ├─ commands/              Lua command scripts: echo, info, net, appearance, and ls, cat, write, mkdir, rm, df, pwd
-│  │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
-│  └─ user/                     the user's files, built into the kernel and installed to /mnt/user
-│     ├─ apps/Calculator.app/   the first user app
-│     ├─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
-│     ├─ apps/TextEdit.app/     opens, edits, and saves text files
-│     └─ settings/appearance.xml  the look a boot starts with, which Settings and appearance change
+│  ├─ Venture.slnx                 the solution: the three projects below and the tests
+│  ├─ Venture.OS/                  the kernel (Cosmos SDK): package pins and CosmosKernelClass in Venture.OS.csproj
+│  │  ├─ Kernel/                   Venture.OS.Kernel: VentureKernel (boot and the shell loop), KernelLog, KernelPanic
+│  │  ├─ Startup/                  Venture.OS.Startup: Bootstrap (the boot steps) and BootRamDisk
+│  │  ├─ Shell/                    Venture.OS.Shell: ConsoleShellOutput, and Commands/, one class per built-in command
+│  │  ├─ Scripting/                Venture.OS.Scripting: KernelSystemInfo, ISystemInfo read from Cosmos
+│  │  ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
+│  │  ├─ HostInfo.cs               name, version, and build number
+│  │  ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
+│  │  ├─ GitInfo.txt               the base version
+│  │  ├─ Bootloader/limine.conf    the Limine boot entry; asks for a 1024x768 framebuffer
+│  │  └─ src/C/                    reserved for native C sources (empty)
+│  ├─ Venture.OS.Common/           kernel-free code: no Cosmos, AOT-compatible, warnings as errors
+│  │  ├─ Shell/                    Venture.OS.Shell: CommandLine, CommandRegistry, CommandShell, and the interfaces commands use
+│  │  ├─ Scripting/                Venture.OS.Scripting: running Lua, script commands, owners, and the venture table
+│  │  │                            (VentureLibrary, ShellLibrary, FilesLibrary), backed by ISystemInfo and IAppearance
+│  │  ├─ Bundles/                  Venture.OS.Bundles: Bundle (Contents/Info.xml), AppManager, AppLibrary (venture.app)
+│  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
+│  │                               and UiLibrary (venture.ui), all drawn through IPainter
+│  └─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
+│     ├─ UIScript.cs               Venture.OS.Interface: .uix (UIScript) documents, with menus, sidebars, and style roles
+│     ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
+│     └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
+├─ rootfs/                        files built into the kernel and installed at boot
+│  ├─ system/                      installed to /mnt/system, which nothing may change
+│  │  ├─ init.lua                  runs once after boot; prints the help hint
+│  │  ├─ apps/                     Files, Settings, System Monitor, and Terminal
+│  │  ├─ commands/                 Lua commands: echo, info, net, appearance, ls, cat, write, mkdir, rm, df, pwd
+│  │  ├─ lib/venture/args.lua      the system library: the venture.args argument parser
+│  │  ├─ interfaces/about.uix      the About VentureOS window
+│  │  └─ fonts/                    Open Sans and Fira Code, with their licenses
+│  └─ user/                        installed to /mnt/user, which the user may change
+│     ├─ apps/                     Calculator, Notes (the sample app), and TextEdit
+│     └─ settings/appearance.xml   the look a boot starts with, which Settings and appearance change
 ├─ tests/
-│  └─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with the shipped system and user files copied in
-├─ global.json                  opts dotnet test into Microsoft.Testing.Platform
-├─ docs/                        architecture, roadmap, scorecard
-├─ .agents/skills/              C# and Cosmos guidance for agents
-├─ changelog.md                 user-facing history
-└─ run.sh                       check, build, and run x64 locally (--headless for serial only)
+│  └─ Venture.OS.Common.Tests/     xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with rootfs/ copied in
+├─ docs/                          architecture, roadmap, scorecard, the app guide, and the UIScript drafts
+├─ .agents/skills/                C# and Cosmos guidance for agents
+├─ global.json                    opts dotnet test into Microsoft.Testing.Platform
+├─ changelog.md                   user-facing history
+└─ run.sh                         check, build, and run x64 locally (--headless for serial only)
 ```
 
 **Naming.** The kernel class is `VentureKernel` rather than `Kernel`,
@@ -284,7 +253,10 @@ flowchart TD
    logic that doesn't need hardware, so it can be tested on ordinary .NET.
    `Cosmos.Executable.Lua` is the one Cosmos-named package it uses, because
    it runs on ordinary .NET too. Scripts reach the kernel only through
-   `ISystemInfo`, which the kernel implements. It builds
+   `ISystemInfo`, which the kernel implements, and the desktop's look only
+   through its `IAppearance`, which the desktop implements, so
+   `Venture.OS.Scripting` and `Venture.OS.Shell` never name anything in
+   `Venture.OS.Desktop`. Bundles may, since apps open windows. It builds
    with the AOT analyzers and warnings as errors, so code the kernel
    couldn't compile ahead of time fails there first. Its root namespace is
    `Venture.OS`, so a type keeps its namespace when it moves into it.
@@ -1075,6 +1047,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Layering (§2, §3): `venture.appearance` and `setAppearance` reach the desktop through `IAppearance` on `ISystemInfo`, so Scripting no longer depends on Desktop (rule 6); the layout tree is redrawn by folder. |
 | 2026-11-11 | minor | Layout (§2, §3): `Venture.OS.Interface`'s root namespace is its own; UIScript sits at its root, and the CST reader and FlatXml moved to `Venture.OS.Interface.Strings` and `.Xml`. |
 | 2026-11-11 | minor | Layout (§2, §3): UIScript, FlatXml, and the CST reader moved from `Venture.OS.Common` to `Venture.OS.Interface`, which needs only the BCL; namespaces are unchanged (rule 7). |
 | 2026-11-11 | minor | Layout (§2, §7): the system and user files moved from `src/Venture.OS/` to a top-level `rootfs/`, so the kernel project holds only code. |
