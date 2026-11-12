@@ -3,6 +3,7 @@ using Venture.OS.Bundles;
 using Venture.OS.Interface;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
+using Venture.OS.Strings;
 
 namespace Venture.OS.Desktop;
 
@@ -475,7 +476,15 @@ public static class UiLibrary
             return Fail(lua, $"venture.ui.open: {given}: {exception.Message}");
         }
 
-        Handle handle = new(owner, host, new UIView(script), Path.GetFileName(path));
+        // A document's <String>s come from the CST tables beside it, such as an app's Contents/Resources.
+        StringTables tables = new(Path.GetDirectoryName(path) ?? "/");
+        UIView view = new(script, tables.Find);
+        foreach (var problem in tables.Problems)
+            host.Output.WriteLine($"{app.Name}: {given}: {problem}");
+        foreach (var missing in view.MissingStrings)
+            host.Output.WriteLine($"{app.Name}: {given}: no text for the string \"{missing}\" in its tables.");
+
+        Handle handle = new(owner, host, view, Path.GetFileName(path));
         handle.Window = new DesktopWindow(title, handle.View)
         {
             App = app.Name,

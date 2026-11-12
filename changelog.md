@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.15
+
+- Hover text: rest the pointer on a control for half a second to see what it is, such as the name of each accent color in Settings.
+- App authors: a control's `tooltip` names a `<String>`, whose text comes from a CST table beside the app's `.uix`, such as `_1_strings.cst`. See docs/writing-apps.md.
+
 ## 0.3.14
 
 - New app: Settings, in the dock. Choose light or dark, and an accent color from eight swatches or your own `#RRGGBB`. Changes apply to every window at once.

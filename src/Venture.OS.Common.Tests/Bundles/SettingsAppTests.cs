@@ -52,6 +52,23 @@ public sealed class SettingsAppTests : IDisposable
         Assert.False(Window.View.IsSelected("dark"));
         Assert.Equal("Sky Blue", Window.View.Text("accentName"));
         Assert.Empty(output.Lines);
+        Assert.Empty(events.Lines);
+        Assert.Empty(Window.View.MissingStrings);
+    }
+
+    [Fact]
+    public void EachSwatchsHoverTextNamesTheAccentItSets()
+    {
+        for (var number = 1; number <= DesktopPalette.Swatches.Count; number++)
+        {
+            var bounds = Window.View.Bounds($"swatch{number}")!.Value;
+            var name = Window.View.TooltipAt((int)bounds.X + 4, (int)bounds.Y + 4);
+
+            Send(new UIEvent(UIEventKind.Pressed, $"swatch{number}"));
+
+            Assert.NotNull(name);
+            Assert.Equal(name, Window.View.Text("accentName"));
+        }
     }
 
     [Fact]

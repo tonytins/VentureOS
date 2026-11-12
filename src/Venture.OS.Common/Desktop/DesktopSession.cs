@@ -52,6 +52,9 @@ public sealed class DesktopSession
 
     private int[] background;
 
+    // The hover text last drawn, so its showing or going redraws the desktop.
+    private string? drawnTooltip;
+
     // The palette the sky was worked out in; a different one in use means working it out again.
     private DesktopPalette backgroundPalette;
     private readonly AppManager? apps;
@@ -266,6 +269,7 @@ public sealed class DesktopSession
 
         var changed = !drawn || input.HasEvents || happened.Count > 0 || restarted || ticked
             || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
+            || !ReferenceEquals(Windows.Tooltip, drawnTooltip)
             || x != last.PointerX || y != last.PointerY || input.PointerDown != last.PointerDown;
         last = new DesktopInput(x, y, input.PointerDown);
         if (released)
@@ -289,6 +293,8 @@ public sealed class DesktopSession
         Windows.Draw(painter);
         Dock.Draw(painter);
         MenuBar.Draw(painter);
+        Windows.DrawTooltip(painter);
+        drawnTooltip = Windows.Tooltip;
         Pointer.Draw(painter, last.PointerX, last.PointerY);
         drawn = true;
     }

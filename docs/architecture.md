@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Settings, and the saved appearance) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (hover text through a transitional CST reader) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (802 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (827 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -148,6 +148,7 @@ VentureOS/
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
 │  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
+│  └─ Strings/               Venture.OS.Strings: CstTable (a transitional CST reader) and StringTables (a folder's tables)
 │  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, UIView, windows, the menu bar, the dock, DesktopSession, and UiLibrary (venture.ui)
 │  └─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with the menus feature
 │  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
@@ -786,6 +787,19 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   either the close or minimize button, both show their marks; a title
   field's text takes the accent; buttons and toolbar items lighten; and a
   sidebar row is shaded. No app does anything for it.
+- **Hover text.** A control's `tooltip` names a `<String>`, whose text comes
+  from the CST tables beside the document, named `_<id>_<name>.cst`
+  (`StringTables`); for an app, its `Contents/Resources`. The table is the
+  number at the end of the `<String>`'s `table` and the key is its `index`,
+  as Hudini's hosts read The Sims Online's. `CstTable` reads the settled part
+  of the new CST specification (keys on the value's line, values across
+  lines, comments, empty values, a repeated key, an unclosed value) and
+  reports and skips the rest, such as keys above values, so a table it
+  reads means the same to a full reader; CST.NET replaces it once it
+  follows the specification. Table problems and missing strings go to the
+  app's messages. After the pointer rests half a second on a control with
+  hover text, `WindowManager` shows it in a box below the pointer, drawn
+  over everything but the pointer, until the pointer moves or presses.
 - **Sidebars.** A `<Sidebar>` runs down the window's left, its full height,
   in its own shade, as Nautilus has it in GNOME 45: the buttons sit on its
   top, and the title bar spans only the content, whose corner moves right
@@ -1044,6 +1058,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Hover text (§2, §9): `CstTable`, a transitional reader for the settled part of the CST specification, and `StringTables`, which resolve an app's `<String>`s from tables beside its document; tooltips show after a half-second rest. |
 | 2026-11-11 | minor | Settings (§4, §9): the appearance boot step (optional, after the user files) restores `/mnt/user/settings/appearance.xml`, which every change saves; Settings.app ships with the system apps. |
 | 2026-11-11 | minor | Style roles (§9): color and size roles and `dark` twins on `<Style>`, drafted for Hudini; the shipped apps use roles; a contrast test covers every shipped interface in every palette. |
 | 2026-11-11 | minor | Palettes (§9): `DesktopPalette`, light or dark from an accent after Distro Tycoon 2, behind `DesktopTheme`; `venture.appearance` and `setAppearance` (`system`) and the `appearance` command. |

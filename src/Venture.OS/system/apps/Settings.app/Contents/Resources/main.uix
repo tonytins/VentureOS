@@ -19,19 +19,29 @@
   <Style name="swatch7" backgroundColor="#21A6A1"/>
   <Style name="swatch8" backgroundColor="#7E848C"/>
 
+  <!-- The swatches' names, from _1_settings.cst beside this file. -->
+  <String name="swatch1Name" table="1" index="1"/>
+  <String name="swatch2Name" table="1" index="2"/>
+  <String name="swatch3Name" table="1" index="3"/>
+  <String name="swatch4Name" table="1" index="4"/>
+  <String name="swatch5Name" table="1" index="5"/>
+  <String name="swatch6Name" table="1" index="6"/>
+  <String name="swatch7Name" table="1" index="7"/>
+  <String name="swatch8Name" table="1" index="8"/>
+
   <Text name="appearanceHeading" x="12" y="10" width="356" height="24" style="heading" text="Appearance"/>
   <Button name="light" x="12" y="40" width="84" height="26" text="Light"/>
   <Button name="dark" x="102" y="40" width="84" height="26" text="Dark"/>
 
   <Text name="accentHeading" x="12" y="80" width="356" height="24" style="heading" text="Accent color"/>
-  <Button name="swatch1" x="12" y="110" width="36" height="36" style="swatch1"/>
-  <Button name="swatch2" x="56" y="110" width="36" height="36" style="swatch2"/>
-  <Button name="swatch3" x="100" y="110" width="36" height="36" style="swatch3"/>
-  <Button name="swatch4" x="144" y="110" width="36" height="36" style="swatch4"/>
-  <Button name="swatch5" x="188" y="110" width="36" height="36" style="swatch5"/>
-  <Button name="swatch6" x="232" y="110" width="36" height="36" style="swatch6"/>
-  <Button name="swatch7" x="276" y="110" width="36" height="36" style="swatch7"/>
-  <Button name="swatch8" x="320" y="110" width="36" height="36" style="swatch8"/>
+  <Button name="swatch1" x="12" y="110" width="36" height="36" style="swatch1" tooltip="swatch1Name"/>
+  <Button name="swatch2" x="56" y="110" width="36" height="36" style="swatch2" tooltip="swatch2Name"/>
+  <Button name="swatch3" x="100" y="110" width="36" height="36" style="swatch3" tooltip="swatch3Name"/>
+  <Button name="swatch4" x="144" y="110" width="36" height="36" style="swatch4" tooltip="swatch4Name"/>
+  <Button name="swatch5" x="188" y="110" width="36" height="36" style="swatch5" tooltip="swatch5Name"/>
+  <Button name="swatch6" x="232" y="110" width="36" height="36" style="swatch6" tooltip="swatch6Name"/>
+  <Button name="swatch7" x="276" y="110" width="36" height="36" style="swatch7" tooltip="swatch7Name"/>
+  <Button name="swatch8" x="320" y="110" width="36" height="36" style="swatch8" tooltip="swatch8Name"/>
 
   <Text name="accentName" x="12" y="152" width="356" height="20" style="quiet"/>
   <TextField name="custom" x="12" y="182" width="120" height="26" placeholder="#RRGGBB"/>

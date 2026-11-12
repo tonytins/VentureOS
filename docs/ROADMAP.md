@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Downeaster complete: Settings) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Downeaster phase 9, hover text) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -36,8 +36,8 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Desktop refinement** (Downeaster): complete, with Settings; hover text
-   stays optional. The next route is my call, with Pere Marquette waiting.
+1. **Desktop refinement** (Downeaster): complete, with hover text. The next
+   route is my call, with Pere Marquette waiting.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
@@ -58,7 +58,7 @@ reboots is later, optional work (Blue Water).
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
 | Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| Downeaster | Desktop refinement | 100% | 0 (optional hover text, 3–6) | Centred titles, an address that edits on click, sidebars, resizable windows, hover, dark mode and accents, style roles, and Settings |
+| Downeaster | Desktop refinement | 100% | 0 | Centred titles, an address that edits on click, sidebars, resizable windows, hover, dark mode and accents, style roles, Settings, and hover text |
 | | **Total** | | **≈ 18–35** | |
 
 ## Upcoming work, ranked
@@ -66,7 +66,6 @@ reboots is later, optional work (Blue Water).
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
 | 1 | DNS and network commands | Pere Marquette | 10–20 |
-| 2 | Hover text (optional) | Downeaster | 3–6 |
 
 Beta needs Blue Water in substance, about 8–15 hours.
 
@@ -285,7 +284,7 @@ with the close and minimize buttons on top, as Big Sur's Finder does.
 - [x] Phase 8, Settings (system): light or dark and the accent colour,
   saved in `/mnt/user`, so the choice lasts until reboot now and across
   reboots once Blue Water persists files.
-- [ ] Phase 9 (optional), hover text: a transitional reader for a strict
+- [x] Phase 9 (optional), hover text: a transitional reader for a strict
   subset of the CST spec, resolving `<String>` resources from tables in an
   app's bundle, so Hudini's `tooltip` works, until CST.NET is reworked.
 
@@ -322,6 +321,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Downeaster phase 9, the optional one: hover text, through a transitional reader for the settled part of the CST specification; Settings' swatches name themselves. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster complete: phase 8, Settings, with every change saved to `/mnt/user/settings/appearance.xml` and restored by a new optional boot step. Hover text stays optional. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 88%: phase 7, colour and size roles and `dark` twins on `<Style>`, drafted in `docs/uiscript-styles.md`; the shipped apps use roles, and a contrast test covers every shipped interface in every palette. About 21–41 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 75%: phase 6, light and dark palettes from an accent after Distro Tycoon 2, switched by `venture.setAppearance` and the `appearance` command. About 25–49 h of milestones remain. |

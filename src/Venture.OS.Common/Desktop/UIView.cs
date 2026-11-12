@@ -133,6 +133,7 @@ public sealed class UIView
             {
                 Text = Resolve(control.Text, resolveString) ?? "",
                 Placeholder = Resolve(control.Placeholder, resolveString),
+                Tooltip = control.Tooltip is { } tooltip ? Resolve(UIText.Reference(tooltip), resolveString) : null,
                 Value = control.ValueRange?.Minimum ?? 0,
                 List = control.Type == UIControlType.List ? new UIListState() : null,
             };
@@ -337,6 +338,23 @@ public sealed class UIView
         if (focused is null && setAside is { } name)
             Focus(name);
         setAside = null;
+    }
+
+    /// <summary>
+    /// The hover text of the frontmost shown control at a point relative to the view's corner, or
+    /// <see langword="null"/>. A disabled control still has it, to say what it would do.
+    /// </summary>
+    public string? TooltipAt(int x, int y)
+    {
+        for (var index = script.Controls.Count - 1; index >= 0; index--)
+        {
+            var control = script.Controls[index];
+            var state = states[control.Name];
+            if (!state.Hidden && Place(control.Frame, control.Image is not null).Contains(x, y))
+                return state.Tooltip;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -1292,6 +1310,7 @@ public sealed class UIView
     {
         public string Text { get; set; } = "";
         public string? Placeholder { get; init; }
+        public string? Tooltip { get; init; }
         public float Value { get; set; }
         public bool Hidden { get; set; }
         public bool Disabled { get; set; }

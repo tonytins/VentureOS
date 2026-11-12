@@ -232,6 +232,16 @@ public sealed class DesktopWindow
         return (FramePart.Bar, -1);
     }
 
+    /// <summary>The hover text at a point on the screen, from the content under it, or <see langword="null"/>.</summary>
+    public string? TooltipAt(int x, int y)
+    {
+        if (!Bounds.Contains(x, y) || Hit(x, y).Part != FramePart.None)
+            return null;
+
+        var (left, top) = ContentOrigin;
+        return View.TooltipAt(x - left, y - top);
+    }
+
     /// <summary>Starts editing the title field, if the document has one, with the caret at the end.</summary>
     public void BeginTitleEdit()
     {

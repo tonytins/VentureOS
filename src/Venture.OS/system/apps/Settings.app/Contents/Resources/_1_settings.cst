@@ -1,0 +1,10 @@
+// Settings' text: the accent swatches' names, shown as hover text, in the
+// order of DesktopPalette.Swatches. A Lua table in main.lua shows the same names.
+1 ^Sky Blue^
+2 ^Blueberry^
+3 ^Grape^
+4 ^Strawberry^
+5 ^Tangerine^
+6 ^Lime^
+7 ^Teal^
+8 ^Graphite^

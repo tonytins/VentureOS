@@ -36,6 +36,10 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     // Where the pointer was in the last update, and whether its button was down, for hover.
     private (int X, int Y) pointerAt;
 
+    // Where the pointer came to rest and when, for hover text.
+    private (int X, int Y) restingAt = (int.MinValue, int.MinValue);
+    private TimeSpan restingSince;
+
     // A window being resized by its grip: where the press started, and the frame's size then.
     private (DesktopWindow Window, int StartX, int StartY, int Width, int Height)? resizing;
 
@@ -131,6 +135,18 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var (x, y) = (input.PointerX, input.PointerY);
         pointerAt = (x, y);
         var pressed = input.PointerDown && !wasDown;
+
+        // Hover text waits for the pointer to rest, and goes as soon as it moves or presses.
+        if ((x, y) != restingAt || input.PointerDown || !ShowsHover)
+        {
+            restingAt = (x, y);
+            restingSince = input.Time;
+            Tooltip = null;
+        }
+        else if (Tooltip is null && input.Time - restingSince >= TooltipDelay)
+        {
+            Tooltip = WindowAt(x, y)?.TooltipAt(x, y);
+        }
         var released = !input.PointerDown && wasDown;
         wasDown = input.PointerDown;
 
@@ -216,6 +232,37 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         }
 
         return closed;
+    }
+
+    /// <summary>How long the pointer rests on a control before its hover text shows.</summary>
+    public static readonly TimeSpan TooltipDelay = TimeSpan.FromSeconds(0.5);
+
+    /// <summary>The hover text showing by the pointer, or <see langword="null"/>.</summary>
+    public string? Tooltip { get; private set; }
+
+    /// <summary>
+    /// Draws the hover text in a small box below and right of the pointer, kept on the screen, over everything but
+    /// the pointer, so the desktop calls it after the menu bar and dock.
+    /// </summary>
+    public void DrawTooltip(IPainter painter)
+    {
+        ArgumentNullException.ThrowIfNull(painter);
+        if (Tooltip is not { } text)
+            return;
+
+        const int Size = DesktopTheme.TextSize;
+        const int Padding = 6;
+        var lineHeight = (int)MathF.Ceiling(Size * 1.35f);
+        var (width, height) = (painter.MeasureText(text, Size) + (2 * Padding), lineHeight + Padding);
+        var (x, y) = (pointerAt.X + 12, pointerAt.Y + 20);
+        if (x + width > screenWidth)
+            x = Math.Max(0, screenWidth - width);
+        if (y + height > screenHeight)
+            y = Math.Max(0, pointerAt.Y - height - 4);
+
+        painter.FillRectangle(x, y, width, height, DesktopTheme.MenuBackground);
+        DesktopTheme.Outline(painter, x, y, width, height, DesktopTheme.Border);
+        painter.DrawText(text, x + Padding, y + (Padding / 2), DesktopTheme.Text, Size);
     }
 
     /// <summary>

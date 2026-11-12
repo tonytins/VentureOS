@@ -251,6 +251,12 @@ new number. `roll` still works in the shell, since both live in the same app.
   as `#1E5AA0` stays exactly that in every look unless you give it a dark
   twin, such as `darkTextColor="#8CB8F0"`. See
   [UIScript styles](./uiscript-styles.md) for every role.
+- **Hover text:** give a control `tooltip="saveTip"`, naming a
+  `<String name="saveTip" table="1" index="3"/>`, and put its text in a
+  table beside your `.uix`, named `_1_<anything>.cst`, as `3 ^Save the file^`.
+  It shows after the pointer rests on the control for half a second.
+  Settings' color swatches do this. VentureOS reads keys on the same line
+  as their text for now, and tells you about anything else in the table.
 - **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen
   item reports `pressed` with its name, like a button. See
