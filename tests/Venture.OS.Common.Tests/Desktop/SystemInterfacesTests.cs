@@ -4,7 +4,7 @@ using Venture.OS.Interface;
 namespace Venture.OS.Tests.Desktop;
 
 /// <summary>
-/// Reads the interfaces in <c>src/Venture.OS/system/interfaces</c>, copied next to the tests, since the desktop opens
+/// Reads the interfaces in <c>rootfs/system/interfaces</c>, copied next to the tests, since the desktop opens
 /// them at runtime, where a mistake would only show up after booting.
 /// </summary>
 public sealed class SystemInterfacesTests

@@ -8,7 +8,7 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Bundles;
 
 /// <summary>
-/// Opens the shipped <c>Notes.app</c>, one of the user's apps, from <c>src/Venture.OS/user/apps</c>, copied next to the
+/// Opens the shipped <c>Notes.app</c>, one of the user's apps, from <c>rootfs/user/apps</c>, copied next to the
 /// tests.
 /// </summary>
 public sealed class NotesAppTests : IDisposable

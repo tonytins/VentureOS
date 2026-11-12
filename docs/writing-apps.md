@@ -19,15 +19,15 @@ the same shape.
 
 ## Make the bundle
 
-An app's files live in the repository under `src/Venture.OS/system/apps/`
-or `src/Venture.OS/user/apps/`. Everything there is built into VentureOS and
+An app's files live in the repository under `rootfs/system/apps/`
+or `rootfs/user/apps/`. Everything there is built into VentureOS and
 appears in `/mnt/system/apps` or `/mnt/user/apps` when it boots. System apps
 can't be changed or deleted on the running system; user apps can. Put an app
 the system relies on, such as Files, in `system/`, and anything else in
 `user/`. Create this layout:
 
 ```text
-src/Venture.OS/system/apps/Dice.app/
+rootfs/system/apps/Dice.app/
 └── Contents/
     ├── Info.xml
     └── Lua/
@@ -321,7 +321,7 @@ desktop doesn't show this; the scopes are enforced either way.
 
 | Message | What to do |
 |---|---|
-| `there's no app called dice` | Check the folder is `Dice.app` in `src/Venture.OS/system/apps/`, and that you rebuilt. `apps` lists what VentureOS found. |
+| `there's no app called dice` | Check the folder is `Dice.app` in `rootfs/system/apps/`, and that you rebuilt. `apps` lists what VentureOS found. |
 | `Dice.app has no Contents/Info.xml, so it isn't a bundle` | Put `Info.xml` inside `Contents/`, not next to it. |
 | `Dice.app's Contents/Info.xml, line 3: ...` | The file isn't valid. Text between elements, a missing quote, or a `<!DOCTYPE>` all stop it. Each element holds attributes only. |
 | `"dice" isn't a reverse-DNS identifier` | Use at least two parts separated by dots, such as `dev.example.dice`. |

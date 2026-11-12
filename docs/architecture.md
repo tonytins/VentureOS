@@ -9,7 +9,7 @@ design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
 - **Projects:** the kernel, `Venture.OS` (23 C# files, plus Lua system
-  scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
+  scripts and apps in `rootfs/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
   for the library, `Venture.OS.Common.Tests` (827 tests, including runs of
@@ -169,23 +169,26 @@ VentureOS/
 │     ├─ Shell/                    Venture.OS.Shell: what needs Cosmos
 │     │  ├─ ConsoleShellOutput.cs  IShellOutput on the console
 │     │  └─ Commands/              one class per command
-│     ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
-│     │  ├─ init.lua               runs once after boot; prints the help hint
-│     │  ├─ apps/Files.app/        the desktop's own app: browses folders, opens apps, Quick Look
-│     │  ├─ apps/SystemMonitor.app/  version, uptime, memory, and network, kept current
-│     │  ├─ apps/Terminal.app/     the shell in a window, in Fira Code
-│     │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
-│     │  ├─ interfaces/about.uix   the About VentureOS window
-│     │  ├─ commands/              Lua command scripts: echo, info, net, and ls, cat, write, mkdir, rm, df, pwd
-│     │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
-│     ├─ user/                     the user's files, built into the kernel and installed to /mnt/user
-│     │  ├─ apps/Calculator.app/   the first user app
-│     │  ├─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
-│     │  └─ apps/TextEdit.app/     opens, edits, and saves text files
 │     ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
 │     ├─ Bootloader/limine.conf    Limine boot entry; asks for a 1024x768 framebuffer
 │     ├─ GitInfo.txt               base version
 │     └─ src/C/                    reserved for native C sources (empty)
+├─ rootfs/                     files built into the kernel and installed at boot
+│  ├─ system/                   Lua system files, built into the kernel and installed to /mnt/system
+│  │  ├─ init.lua               runs once after boot; prints the help hint
+│  │  ├─ apps/Files.app/        the desktop's own app: browses folders, opens apps, Quick Look
+│  │  ├─ apps/Settings.app/     light or dark and the accent color, saved to /mnt/user/settings
+│  │  ├─ apps/SystemMonitor.app/  version, uptime, memory, and network, kept current
+│  │  ├─ apps/Terminal.app/     the shell in a window, in Fira Code
+│  │  ├─ fonts/                 Open Sans and Fira Code, with their licenses
+│  │  ├─ interfaces/about.uix   the About VentureOS window
+│  │  ├─ commands/              Lua command scripts: echo, info, net, appearance, and ls, cat, write, mkdir, rm, df, pwd
+│  │  └─ lib/venture/args.lua   the system library: the venture.args argument parser
+│  └─ user/                     the user's files, built into the kernel and installed to /mnt/user
+│     ├─ apps/Calculator.app/   the first user app
+│     ├─ apps/Notes.app/        the sample app: a window and a note command, notes kept in notes.txt
+│     ├─ apps/TextEdit.app/     opens, edits, and saves text files
+│     └─ settings/appearance.xml  the look a boot starts with, which Settings and appearance change
 ├─ tests/
 │  └─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common, with the shipped system and user files copied in
 ├─ global.json                  opts dotnet test into Microsoft.Testing.Platform
@@ -334,7 +337,7 @@ can't keep the shell from starting, even in a headless boot.
 | Step | Kind | Succeeds when | On failure |
 |---|---|---|---|
 | Filesystem | critical | The RAM disk registers, formats as FAT16, and mounts at `/mnt` | Reports which of the three failed, then panics |
-| System files | optional | Every file under `src/Venture.OS/system/` is written to `/mnt/system` | An invalid path or I/O error is reported and boot continues; the built-in C# commands still work |
+| System files | optional | Every file under `rootfs/system/` is written to `/mnt/system` | An invalid path or I/O error is reported and boot continues; the built-in C# commands still work |
 | Appearance | optional | `/mnt/user/settings/appearance.xml` is read and its look used, or there's no file and the standard look stays; it runs after the user files, which ship the default | A file that can't be read is reported with why, and the standard look stays |
 | Time manager | critical | Cosmos reports `TimerManager.IsInitialized` | Reports it, then panics |
 | Shell | critical | Every command registers | Registration only fails on a programming error, such as two commands with one name; it panics |
@@ -404,14 +407,14 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
   throwing as Cosmos's `IBlockDevice` contract requires instead of
   overflowing or copying the wrong range.
 - `/` is Cosmos's read-only virtual root, so files live under `/mnt`.
-- **System files.** Everything under `src/Venture.OS/system/` is turned
+- **System files.** Everything under `rootfs/system/` is turned
   into byte arrays in generated C# at build time (`GenerateSystemFiles` in
   `Venture.OS.csproj`), because Cosmos 3.0.94 doesn't expose Limine's
   modules, so the ISO can't hand the kernel loose files. At boot,
   `SystemDirectory.Install` checks every path, then writes the files to
   `/mnt/system`. The RAM disk starts empty, so the system files always match
   the kernel, and edits made on the running system are lost at reboot.
-- **User files.** Everything under `src/Venture.OS/user/` is built in the same
+- **User files.** Everything under `rootfs/user/` is built in the same
   way (`SystemFiles.User`, tagged `Root="user"` in the project) and
   installed to `/mnt/user` by an optional step after the system files. The
   difference is protection: `venture.files` and the file commands refuse to
@@ -1059,6 +1062,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Layout (§2, §7): the system and user files moved from `src/Venture.OS/` to a top-level `rootfs/`, so the kernel project holds only code. |
 | 2026-11-11 | minor | Layout (§2, §12): the test project moved to `tests/Venture.OS.Common.Tests`, as .NET projects usually lay it out. |
 | 2026-11-11 | minor | Hover text (§2, §9): `CstTable`, a transitional reader for the settled part of the CST specification, and `StringTables`, which resolve an app's `<String>`s from tables beside its document; tooltips show after a half-second rest. |
 | 2026-11-11 | minor | Settings (§4, §9): the appearance boot step (optional, after the user files) restores `/mnt/user/settings/appearance.xml`, which every change saves; Settings.app ships with the system apps. |

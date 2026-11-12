@@ -8,7 +8,7 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Bundles;
 
 /// <summary>
-/// Opens the shipped <c>Calculator.app</c> from <c>src/Venture.OS/user/apps</c>, as one of the user's apps, and
+/// Opens the shipped <c>Calculator.app</c> from <c>rootfs/user/apps</c>, as one of the user's apps, and
 /// presses its buttons.
 /// </summary>
 public sealed class CalculatorAppTests : IDisposable

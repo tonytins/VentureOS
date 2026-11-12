@@ -137,7 +137,7 @@ C#, so the shell still works if the scripts don't.
 
 - [x] Lua 5.5 through `Cosmos.Executable.Lua` 4.0.1, in place of
   `LuaCSharp`, and a one-shot `lua <code>` command.
-- [x] Phase 1, scaffolding: files under `src/Venture.OS/system/` are built
+- [x] Phase 1, scaffolding: files under `rootfs/system/` are built
   into the kernel and installed to `/mnt/system` by an optional boot step.
 - [x] Phase 2, script commands: the shell runs
   `/mnt/system/commands/<name>.lua` for names it doesn't know, `help` lists
@@ -226,7 +226,7 @@ changed. Lua drawing in regions and images wait for a later route.
   desktop feature any app can use (`venture.ui.preview`). A double-click
   opens an item, as Open and Ctrl+O do.
 - [x] Phase 2, user apps: `/mnt/user/apps`, shipped with VentureOS from
-  `src/Venture.OS/user/apps/`; the dock shows system apps, then user apps.
+  `rootfs/user/apps/`; the dock shows system apps, then user apps.
   Calculator (user) is the first.
 - [x] Phase 3, the unified title bar (an intermediate phase, after the
   design in `docs/design/interface.figcraft`): close, minimize, the title,

@@ -7,7 +7,7 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Bundles;
 
 /// <summary>
-/// Opens the shipped <c>System Monitor.app</c> from <c>src/Venture.OS/system/apps</c> on a system whose readings the
+/// Opens the shipped <c>System Monitor.app</c> from <c>rootfs/system/apps</c> on a system whose readings the
 /// tests change between ticks.
 /// </summary>
 public sealed class SystemMonitorAppTests : IDisposable

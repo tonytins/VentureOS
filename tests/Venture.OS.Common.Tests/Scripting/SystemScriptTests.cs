@@ -5,7 +5,7 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Scripting;
 
 /// <summary>
-/// Runs the command scripts that ship in <c>src/Venture.OS/system/commands</c>, copied next to the tests.
+/// Runs the command scripts that ship in <c>rootfs/system/commands</c>, copied next to the tests.
 /// </summary>
 public sealed class SystemScriptTests
 {

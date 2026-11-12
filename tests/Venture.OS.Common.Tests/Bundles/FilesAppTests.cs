@@ -8,7 +8,7 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Bundles;
 
 /// <summary>
-/// Opens the shipped <c>Files.app</c> from <c>src/Venture.OS/system/apps</c> on a temporary folder holding a text
+/// Opens the shipped <c>Files.app</c> from <c>rootfs/system/apps</c> on a temporary folder holding a text
 /// file, a folder, and an app.
 /// </summary>
 public sealed class FilesAppTests : IDisposable

@@ -4,7 +4,7 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Scripting;
 
 /// <summary>
-/// Runs the shipped <c>venture.args</c> module from <c>src/Venture.OS/system/lib</c>, loaded with <c>require</c>.
+/// Runs the shipped <c>venture.args</c> module from <c>rootfs/system/lib</c>, loaded with <c>require</c>.
 /// </summary>
 public sealed class ArgsLibraryTests
 {

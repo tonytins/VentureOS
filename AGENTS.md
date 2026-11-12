@@ -15,12 +15,14 @@ tests, and is listed in `src/Venture.slnx`:
 - `src/Venture.OS` is the kernel. `Kernel/` holds the entry point
   (`VentureKernel`), `KernelPanic`, and `KernelLog`; `Startup/` holds the boot
   steps and the RAM disk; `Shell/Commands/` holds one class per shell command.
-  `system/` holds the system files (Lua scripts, apps, fonts, and the
+  `CosmosKernelClass` and the package versions are in `Venture.OS.csproj`.
+- `rootfs/` holds the files the kernel is built with and installs at boot.
+  `rootfs/system/` holds the system files (Lua scripts, apps, fonts, and the
   desktop's `.uix` interfaces), which the build turns into C# and boot
-  installs to `/mnt/system`, where nothing may change them; `user/` holds the
-  user's files, such as `apps/Calculator.app`, installed to `/mnt/user`, where
-  the user may; `system/init.lua` runs once after boot. `CosmosKernelClass` and the package versions are
-  in `Venture.OS.csproj`.
+  installs to `/mnt/system`, where nothing may change them; `rootfs/user/`
+  holds the user's files, such as `apps/Calculator.app` and
+  `settings/appearance.xml`, installed to `/mnt/user`, where the user may;
+  `rootfs/system/init.lua` runs once after boot.
 - `src/Venture.OS.Common` is kernel-free code: the shell framework
   (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and
   Lua system support (`Scripting/`), the flat XML reader (`Xml/`), bundles
@@ -106,22 +108,22 @@ with no explanation. Stability outranks features.
 
 - Keep `VentureKernel.cs` thin. Put boot steps in `Startup/` and new subsystems
   in their own folder and namespace under `Venture.OS`.
-- Prefer writing a new command in Lua, as `src/Venture.OS/system/commands/<name>.lua`:
+- Prefer writing a new command in Lua, as `rootfs/system/commands/<name>.lua`:
   its first `--` comment is its summary, a `-- Usage:` comment its usage, a
   `-- Needs:` comment the scopes it uses (`system`, `network`, `shell`, `files`; `ui` is for apps), and it gets its
   arguments as `...`. It reaches the kernel through the `venture` table
   (`VentureLibrary`, backed by `ISystemInfo`); extend that table when a script
   needs more, and put each new function under a scope (`ScriptScopes`). A
   command that takes options should use `require("venture.args")` rather than
-  reading `...` by hand. Shared Lua modules go in `src/Venture.OS/system/lib/`,
+  reading `...` by hand. Shared Lua modules go in `rootfs/system/lib/`,
   namespaced under `venture.`.
 - Write a command in C# only when it must control the kernel, as a class in
   `src/Venture.OS/Shell/Commands/` registered in `VentureKernel.CreateShell`;
   built-in commands win any name clash. `help` is generated from both. C#
   commands write through `IShellOutput` and ask for power changes through
   `IShellHost`.
-- Apps are `.app` bundles in `src/Venture.OS/system/apps/` (apps the system
-  relies on, such as Files) or `src/Venture.OS/user/apps/` (the rest). Follow
+- Apps are `.app` bundles in `rootfs/system/apps/` (apps the system
+  relies on, such as Files) or `rootfs/user/apps/` (the rest). Follow
   [docs/writing-apps.md](docs/writing-apps.md) to write one, and keep it
   accurate: `WritingAppsTutorialTests` builds and runs its Dice example, so
   change the guide and the code together.
