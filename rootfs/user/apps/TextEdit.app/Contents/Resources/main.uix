@@ -6,11 +6,9 @@
   <ToolbarItem name="save" title="Save"/>
   <TitleField name="path" placeholder="Untitled: type a path, then Save"/>
 
-  <Menu name="fileMenu" title="File" hotkey="F"/>
+  <Menu name="fileMenu" title="File" hotkey="F" role="file"/>
   <MenuItem menu="fileMenu" name="openItem" title="Open…" hotkey="O" shortcut="Ctrl+O"/>
   <MenuItem menu="fileMenu" name="saveItem" title="Save" hotkey="S" shortcut="Ctrl+S"/>
-  <MenuSeparator menu="fileMenu"/>
-  <MenuItem menu="fileMenu" name="closeWindow" title="Close Window" hotkey="C" shortcut="Ctrl+W"/>
 
   <Style name="quiet" textColor="secondaryText"/>
 

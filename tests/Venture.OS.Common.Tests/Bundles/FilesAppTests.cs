@@ -168,15 +168,17 @@ public sealed class FilesAppTests : IDisposable
     }
 
     [Fact]
-    public void NewWindowOpensAnotherAndCloseWindowAsksToClose()
+    public void NewWindowOpensAnotherAndClosingIsTheDesktops()
     {
         Assert.True(host.HasNewWindow("Files"));
         Assert.True(host.NewWindow("Files"));
         Assert.Equal(2, windows.Windows.Count);
 
-        Send(new UIEvent(UIEventKind.Pressed, "closeWindow"));
-
-        Assert.Single(windows.CloseRequested());
+        // Close Window (Ctrl+W) is the desktop's standard File item, so Files declares none of its own.
+        var shortcuts = Window.View.Script.Menus.SelectMany(menu => menu.Entries).Select(entry => entry.Shortcut?.ToString());
+        Assert.Contains("Ctrl+O", shortcuts);
+        Assert.DoesNotContain(Window.View.Script.Menus.SelectMany(menu => menu.Entries),
+            entry => entry.Shortcut?.ToString() == "Ctrl+W");
     }
 
     private void Select(int index)

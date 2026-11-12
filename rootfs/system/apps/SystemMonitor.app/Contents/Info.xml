@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- System Monitor: the system as it runs, refreshed every second. -->
 <App version="1">
-  <Info identifier="dev.tonytins.ventureos.systemmonitor" name="System Monitor" version="1.0" needs="system network ui"/>
+  <Info identifier="dev.tonytins.ventureos.systemmonitor" name="System Monitor" version="1.0" needs="system network ui" description="Shows the version, uptime, memory, and network as the system runs."/>
 </App>

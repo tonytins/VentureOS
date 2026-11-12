@@ -49,7 +49,6 @@ local function openWindow()
     show()
   end)
   window:on("clearItem", clear)
-  window:on("closeWindow", function() window:close() end)
 
   add(venture.version().display)
   add('Type "help" for a list of commands, and "exit" to close this window.')

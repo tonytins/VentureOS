@@ -18,7 +18,7 @@ public sealed class BundleTests : IDisposable
             <?xml version="1.0" encoding="UTF-8"?>
             <App version="1">
               <Info identifier="dev.tonytins.notes" name="Notes" version="1.0" needs="files shell"
-                    icon="Contents/Resources/AppIcon.png"/>
+                    icon="Contents/Resources/AppIcon.png" description="Short notes, kept in notes.txt."/>
             </App>
             """);
 
@@ -29,6 +29,7 @@ public sealed class BundleTests : IDisposable
         Assert.Equal("dev.tonytins.notes", bundle.Identifier);
         Assert.Equal("Notes", bundle.Name);
         Assert.Equal("1.0", bundle.Version);
+        Assert.Equal("Short notes, kept in notes.txt.", bundle.Description);
         Assert.Equal(ScriptScopes.Files | ScriptScopes.Shell, bundle.Needs);
         Assert.Equal($"{path}/Contents/Lua/main.lua", bundle.Main);
         Assert.Equal($"{path}/Contents/Resources/AppIcon.png", bundle.Icon);
@@ -46,6 +47,7 @@ public sealed class BundleTests : IDisposable
         Assert.Equal($"{path}/Contents/Lua/start.lua", bundle.Main);
         Assert.Equal(ScriptScopes.None, bundle.Needs);
         Assert.Null(bundle.Version);
+        Assert.Null(bundle.Description);
         Assert.Null(bundle.Icon);
     }
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Notes: the sample app that ships with VentureOS. See docs/writing-apps.md. -->
 <App version="1">
-  <Info identifier="dev.tonytins.ventureos.notes" name="Notes" version="1.0" needs="shell files ui"/>
+  <Info identifier="dev.tonytins.ventureos.notes" name="Notes" version="1.0" needs="shell files ui" description="Keeps short notes, also from the shell with note while it runs."/>
 </App>

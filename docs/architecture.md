@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Scripting no longer depends on the desktop) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (standard File and Help menus for every app) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (827 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (843 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -807,8 +807,17 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   `DesktopInput.Time`) in a selectable list reports `submitted` with the
   item, a VentureOS addition proposed for Hudini's spec.
 - **Menu bar.** `MenuBar` shows the VentureOS menu (About VentureOS, Return
-  to Shell), then the active app's menu (Quit, Ctrl+Q), then the focused
-  window's own `.uix` menus. The active app is the app of the window last
+  to Shell), then the active app's menu (Quit, Ctrl+Q), then the standard
+  menus every app gets without asking: File, with Close Window (Ctrl+W) for
+  whatever window is in front, and Help, with About the app, which fills the
+  About window from the app's `Info.xml` (name, version, and an optional
+  `description`) and belongs to the app. The focused window's `.uix` menus
+  merge into the standard menu their `role` names, or whose title they
+  match exactly, items first; the rest sit between View and Help. A
+  standard item yields to a window's item with the same shortcut, and an
+  empty standard menu is hidden, so Edit and View show only when an app
+  adds to them. The desktop's own items are told apart by reference
+  (`BarMenu.Own`), never by name. The active app is the app of the window last
   brought forward, or the app last opened from the dock. Clicking or
   press-drag-release chooses; Alt and a menu's hotkey opens it; the arrows,
   Enter, item hotkeys, and Esc work while a menu is open, and an open menu
@@ -1047,6 +1056,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Standard menus (§9): every app gets File (Close Window) and Help (About the app, from `Info.xml`'s new optional `description`); a window's menus merge in by `role` or title; a window's own shortcut wins over a standard item's; the About window is built in Common for VentureOS and every app. |
 | 2026-11-11 | minor | Layering (§2, §3): `venture.appearance` and `setAppearance` reach the desktop through `IAppearance` on `ISystemInfo`, so Scripting no longer depends on Desktop (rule 6); the layout tree is redrawn by folder. |
 | 2026-11-11 | minor | Layout (§2, §3): `Venture.OS.Interface`'s root namespace is its own; UIScript sits at its root, and the CST reader and FlatXml moved to `Venture.OS.Interface.Strings` and `.Xml`. |
 | 2026-11-11 | minor | Layout (§2, §3): UIScript, FlatXml, and the CST reader moved from `Venture.OS.Common` to `Venture.OS.Interface`, which needs only the BCL; namespaces are unchanged (rule 7). |

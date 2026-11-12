@@ -65,7 +65,7 @@ public sealed class FallbackAppTests : IDisposable
 
         Assert.True(apps.IsOpen("dev.example.shelf"));
         Assert.Equal(new DockItem("Shelf", "Shelf", IsOpen: true), session.Dock.Items[0]);
-        Assert.Equal(["VentureOS", "Shelf"], Titles());
+        Assert.Equal(["VentureOS", "Shelf", "File", "Help"], Titles());
         Assert.Equal(["newWindow"], Items(session.MenuBar.Menus[1]));
 
         Frame(keys: [new KeyPress(DesktopKey.Character, 'q', Control: true)]);
@@ -84,7 +84,7 @@ public sealed class FallbackAppTests : IDisposable
 
         Assert.Empty(windows.Windows);
         Assert.True(apps.IsOpen("dev.example.shelf"));
-        Assert.Equal(["VentureOS", "Shelf"], Titles());
+        Assert.Equal(["VentureOS", "Shelf", "Help"], Titles());
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public sealed class FallbackAppTests : IDisposable
         Frame();
 
         Assert.Null(session.ActiveApp);
-        Assert.Equal(["VentureOS", "Shelf"], Titles());
+        Assert.Equal(["VentureOS", "Shelf", "File", "Help"], Titles());
     }
 
     [Fact]

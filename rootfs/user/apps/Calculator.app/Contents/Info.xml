@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Calculator: the first of the user's apps, in /mnt/user/apps. -->
 <App version="1">
-  <Info identifier="dev.tonytins.ventureos.calculator" name="Calculator" version="1.0" needs="ui"/>
+  <Info identifier="dev.tonytins.ventureos.calculator" name="Calculator" version="1.0" needs="ui" description="Adds, subtracts, multiplies, and divides."/>
 </App>

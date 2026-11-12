@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- About VentureOS: opened by the desktop, which fills in the version. -->
+<!-- The About window: About VentureOS, and every app's About, whose name, version, and description the desktop fills in. -->
 <UIScript version="1">
   <Window width="340" height="170"/>
 

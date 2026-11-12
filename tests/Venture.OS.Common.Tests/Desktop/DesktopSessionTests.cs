@@ -23,6 +23,16 @@ public sealed class DesktopSessionTests : IDisposable
         </UIScript>
         """;
 
+    private const string AboutDocumentText = """
+        <UIScript>
+          <Window width="100" height="50"/>
+          <Text name="name" x="0" y="0" width="100" height="10" text="VentureOS"/>
+          <Text name="version" x="0" y="10" width="100" height="10"/>
+          <Text name="blurb" x="0" y="20" width="100" height="10"/>
+          <Button name="ok" x="0" y="30" width="40" height="10" text="OK"/>
+        </UIScript>
+        """;
+
     private readonly string root = Path.Combine(Path.GetTempPath(), $"venture-desktop-{Guid.NewGuid():N}");
     private readonly RuntimeCommands runtime;
     private readonly AppManager apps;
@@ -59,8 +69,7 @@ public sealed class DesktopSessionTests : IDisposable
         apps = new AppManager(Path.Combine(root, "apps"), runtime, new FakeSystemInfo(), windows: new AppWindows(windows, held));
         session = new DesktopSession(800, 600, apps, root, held, windows)
         {
-            AboutWindow = () => new DesktopWindow("About VentureOS", new UIView(UIScript.Parse(
-                """<UIScript><Window width="100" height="50"/></UIScript>"""))),
+            AboutDocument = () => UIScript.Parse(AboutDocumentText),
         };
         Frame(400, 300);
     }
@@ -89,7 +98,8 @@ public sealed class DesktopSessionTests : IDisposable
         Assert.True(apps.IsOpen("dev.example.chatty"));
         Assert.True(session.Dock.Items[0].IsOpen);
         Assert.Equal("Chatty", session.ActiveApp);
-        Assert.Equal(["VentureOS", "Chatty"], Titles());
+        // What Chatty said is in a message in front, which File's Close Window closes; Help has About Chatty.
+        Assert.Equal(["VentureOS", "Chatty", "File", "Help"], Titles());
 
         var alert = session.Windows.Focused!;
         Assert.Equal("Chatty", alert.Title);
@@ -221,17 +231,17 @@ public sealed class DesktopSessionTests : IDisposable
 
         DesktopSession next = new(800, 600, apps, root, held, windows)
         {
-            AboutWindow = () => new DesktopWindow("About VentureOS", new UIView(UIScript.Parse(
-                """<UIScript><Window width="100" height="50"/></UIScript>"""))),
+            AboutDocument = () => UIScript.Parse(AboutDocumentText),
         };
         Assert.Same(left, next.Windows.Focused);
         Assert.Equal("Viewer", next.ActiveApp);
 
-        // About opening in front, before the first frame, still takes the bar from Viewer.
+        // About opening in front, before the first frame, still takes the bar from Viewer, leaving the VentureOS
+        // menu and File, whose Close Window closes About.
         next.ShowAbout();
         next.Update(new DesktopInput(400, 300, false));
         Assert.Null(next.ActiveApp);
-        Assert.Single(next.MenuBar.Menus);
+        Assert.Equal(["VentureOS", "File"], next.MenuBar.Menus.Select(menu => menu.Menu.Title));
     }
 
     [Fact]

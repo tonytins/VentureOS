@@ -6,11 +6,9 @@
 
   <TitleField name="address" placeholder="Path"/>
 
-  <Menu name="fileMenu" title="File" hotkey="F"/>
+  <Menu name="fileMenu" title="File" hotkey="F" role="file"/>
   <MenuItem menu="fileMenu" name="openItem" title="Open" hotkey="O" shortcut="Ctrl+O"/>
   <MenuItem menu="fileMenu" name="lookItem" title="Quick Look" hotkey="L" shortcut="Ctrl+Y"/>
-  <MenuSeparator menu="fileMenu"/>
-  <MenuItem menu="fileMenu" name="closeWindow" title="Close Window" hotkey="C" shortcut="Ctrl+W"/>
 
   <Menu name="goMenu" title="Go" hotkey="G"/>
   <MenuItem menu="goMenu" name="enclosing" title="Enclosing Folder" hotkey="E" shortcut="Ctrl+U"/>

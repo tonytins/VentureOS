@@ -55,6 +55,7 @@ The folder name, `Dice.app`, is how `open dice` finds it.
 | `needs` | No | The scopes the app's code may use, separated by spaces. Without one, the code can only call `venture.version()`. |
 | `main` | No | The script to run when the app opens. Defaults to `Contents/Lua/main.lua`. |
 | `icon` | No | An image inside the bundle, such as `Contents/Resources/AppIcon.png`. |
+| `description` | No | What the app is for, in a sentence, shown in its About window. |
 
 The scopes for `needs`:
 
@@ -259,7 +260,11 @@ new number. `roll` still works in the shell, since both live in the same app.
   as their text for now, and tells you about anything else in the table.
 - **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen
-  item reports `pressed` with its name, like a button. See
+  item reports `pressed` with its name, like a button. Every app already
+  has File, with Close Window (Ctrl+W), and Help, with About your app, which
+  shows its `name`, `version`, and `description`. A menu with `role="file"`
+  (or the title `File`) adds its items to the top of File, and the same goes
+  for `edit`, `view`, and `help`. Don't add your own Close Window. See
   [UIScript menus](./uiscript-menus.md).
 - **A sidebar:** add `sidebar` to `requires` and
   `<Sidebar name="places" width="120"/>`, and the window gets a list of

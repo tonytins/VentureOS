@@ -51,7 +51,7 @@ public sealed class Bundle
 
     private const string InfoPath = "Contents/Info.xml";
 
-    private static readonly string[] InfoAttributes = ["identifier", "name", "version", "needs", "main", "icon"];
+    private static readonly string[] InfoAttributes = ["identifier", "name", "version", "needs", "main", "icon", "description"];
 
     private Bundle(
         BundleKind kind,
@@ -89,6 +89,9 @@ public sealed class Bundle
 
     /// <summary>Its own version, such as <c>1.0</c>, or <see langword="null"/>.</summary>
     public string? Version { get; }
+
+    /// <summary>What it's for, in a sentence, as its About window shows it, or <see langword="null"/>.</summary>
+    public string? Description { get; init; }
 
     /// <summary>The scopes it declares, for all its code.</summary>
     public ScriptScopes Needs { get; }
@@ -205,7 +208,10 @@ public sealed class Bundle
                 throw new BundleException($"{label} has no {main[(root.Length + 1)..]} to run.");
         }
 
-        return new Bundle(kind, root, identifier, name, info["version"], needs, main, icon, ignored);
+        return new Bundle(kind, root, identifier, name, info["version"], needs, main, icon, ignored)
+        {
+            Description = string.IsNullOrWhiteSpace(info["description"]) ? null : info["description"]!.Trim(),
+        };
     }
 
     private static BundleKind ReadKind(FlatXmlElement root, BundleKind expected, string label)

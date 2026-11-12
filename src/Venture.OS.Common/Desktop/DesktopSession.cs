@@ -41,6 +41,10 @@ public sealed class DesktopSession
 
     private static readonly long Started = Stopwatch.GetTimestamp();
 
+    // The standard File menu's own item, which closes the window in front, whoever's it is.
+    private static readonly UIShortcut CloseShortcut = new(Control: true, Shift: false, Alt: false, 'W');
+    private static readonly UIMenuEntry CloseWindowEntry = new("closeWindow", "Close Window", 'C', CloseShortcut, 0);
+
     private static readonly BarMenu SystemMenu = new(
         new UIMenu("venture", "VentureOS", null,
         [
@@ -62,16 +66,22 @@ public sealed class DesktopSession
     private readonly HeldOutput appOutput;
     private readonly Dictionary<(string App, bool NewWindow, bool Quits), BarMenu> appMenus = [];
 
+    // Help's About item for each app, kept so the bar sees the same item, and tells it apart, from frame to frame.
+    private readonly Dictionary<string, UIMenuEntry> aboutEntries = [];
+
+    // The open About windows: VentureOS's under "", and each app's under its name.
+    private readonly Dictionary<string, DesktopWindow> aboutWindows = [];
+
     // Reused every frame: the frame loop runs without pause, so a frame where nothing changes allocates nothing.
     private readonly List<WindowEvent> happened = [];
     private readonly List<KeyPress> forWindows = [];
 
-    // What the bar's menus were built from, so they're rebuilt only when one of these changes.
-    private (string? App, DesktopWindow? Window, bool NewWindow, bool Built) menuSource;
+    // What the bar's menus were built from, so they're rebuilt only when one of these changes: the app shown, its
+    // window in front, the window in front whoever's it is, and whether the app opens new windows.
+    private (string? App, DesktopWindow? Window, DesktopWindow? Front, bool NewWindow, bool Built) menuSource;
     private DesktopInput last;
     private bool drawn;
     private PointerOwner owner;
-    private DesktopWindow? about;
 
     // The window in front when focus was last checked, so a window opened between frames, such as About when the
     // desktop opens, still makes its app the active one.
@@ -142,8 +152,15 @@ public sealed class DesktopSession
     /// <summary>The dock along the bottom.</summary>
     public Dock Dock { get; }
 
-    /// <summary>Makes the About VentureOS window, or <see langword="null"/> when it can't.</summary>
-    public Func<DesktopWindow?>? AboutWindow { get; init; }
+    /// <summary>
+    /// Reads the About window's document, which About VentureOS and every app's About share, or gives
+    /// <see langword="null"/> when it can't, having said why. It has a <c>name</c>, a <c>version</c>, a <c>blurb</c>,
+    /// and an <c>ok</c> button.
+    /// </summary>
+    public Func<UIScript?>? AboutDocument { get; init; }
+
+    /// <summary>VentureOS's version as About VentureOS shows it, such as <c>Version 0.4.101 (Build 1234)</c>.</summary>
+    public string? SystemVersion { get; init; }
 
     /// <summary>The app whose menu the bar shows, by name, or <see langword="null"/>.</summary>
     public string? ActiveApp { get; private set; }
@@ -167,13 +184,61 @@ public sealed class DesktopSession
     /// <summary>What happened to windows in the last update, including menu items their menus chose.</summary>
     public IReadOnlyList<WindowEvent> LastEvents { get; private set; } = [];
 
-    /// <summary>Opens About VentureOS, or brings it to the front if it's open.</summary>
-    public void ShowAbout()
+    /// <summary>
+    /// Opens About VentureOS, or About an app when <paramref name="app"/> names one, or brings it to the front if
+    /// it's open. An app's About shows its name, its version, and its description from <c>Info.xml</c>, leaving out
+    /// what it doesn't say, and belongs to the app, so it goes when the app quits.
+    /// </summary>
+    public void ShowAbout(string? app = null)
     {
-        if (about is null || !Windows.Windows.Contains(about))
-            about = AboutWindow?.Invoke();
-        if (about is not null)
-            Windows.Open(about);
+        var key = app ?? "";
+        if (!aboutWindows.TryGetValue(key, out var window) || !Windows.Windows.Contains(window))
+        {
+            if (MakeAbout(app) is not { } made)
+                return;
+            window = made;
+            aboutWindows[key] = window;
+        }
+
+        Windows.Open(window);
+    }
+
+    private DesktopWindow? MakeAbout(string? app)
+    {
+        if (AboutDocument?.Invoke() is not { } script)
+            return null;
+
+        UIView view = new(script);
+        if (app is null)
+        {
+            view.SetText("version", SystemVersion ?? "");
+        }
+        else
+        {
+            Bundle? bundle = null;
+            foreach (var running in apps?.Running ?? [])
+            {
+                if (running.Bundle.Name == app)
+                    bundle = running.Bundle;
+            }
+
+            view.SetText("name", app);
+            view.SetText("version", bundle?.Version is { } version ? $"Version {version}" : "");
+            if (bundle?.Description is { } description)
+                view.SetText("blurb", description);
+            else
+                view.SetHidden(true, "blurb");
+        }
+
+        return new DesktopWindow(app is null ? "About VentureOS" : $"About {app}", view)
+        {
+            App = app,
+            EventHandler = (about, uiEvent) =>
+            {
+                if (uiEvent is { Kind: UIEventKind.Pressed, Control: "ok" })
+                    about.RequestClose();
+            },
+        };
     }
 
     /// <summary>
@@ -317,22 +382,35 @@ public sealed class DesktopSession
                 apps?.Windows?.NewWindow(choice.Menu.Menu.Title);
                 happened.AddRange(Windows.CloseRequested());
                 break;
-            case MenuGroup.Window:
-                // A chosen item reports like a pressed button, by its name, to the window whose menu it's in.
-                foreach (var window in Windows.Windows)
-                {
-                    if (window.View != choice.Menu.View)
-                        continue;
-
-                    UIEvent chosen = new(UIEventKind.Pressed, item);
-                    happened.Add(new WindowEvent(window, chosen));
-                    window.EventHandler?.Invoke(window, chosen);
-                    break;
-                }
-
+            case MenuGroup.Standard when ReferenceEquals(choice.Item, CloseWindowEntry):
+                Windows.Focused?.RequestClose();
                 happened.AddRange(Windows.CloseRequested());
                 break;
+            case MenuGroup.Standard when choice.Menu.IsOwn(choice.Item):
+                // Help's About item, for the app the bar shows.
+                ShowAbout(menuSource.App);
+                break;
+            case MenuGroup.Window or MenuGroup.Standard:
+                ReportToWindow(choice.Menu.View, item, happened);
+                break;
         }
+    }
+
+    // A chosen item reports like a pressed button, by its name, to the window whose menu it's in.
+    private void ReportToWindow(UIView? view, string item, List<WindowEvent> happened)
+    {
+        foreach (var window in Windows.Windows)
+        {
+            if (window.View != view)
+                continue;
+
+            UIEvent chosen = new(UIEventKind.Pressed, item);
+            happened.Add(new WindowEvent(window, chosen));
+            window.EventHandler?.Invoke(window, chosen);
+            break;
+        }
+
+        happened.AddRange(Windows.CloseRequested());
     }
 
     /// <summary>
@@ -552,23 +630,96 @@ public sealed class DesktopSession
     {
         // With no other app in front, the fallback's menu shows.
         var shown = ActiveApp ?? (FallbackApp is { } fallback && IsAppOpen(fallback) ? fallback : null);
-        var focused = Windows.Focused is { } front && front.App == ActiveApp ? front : null;
+        var front = Windows.Focused;
+        var focused = front is not null && front.App == ActiveApp ? front : null;
         var newWindow = shown is not null && (apps?.Windows?.HasNewWindow(shown) ?? false);
-        if (menuSource == (shown, focused, newWindow, true))
+        if (menuSource == (shown, focused, front, newWindow, true))
             return;
 
-        menuSource = (shown, focused, newWindow, true);
+        menuSource = (shown, focused, front, newWindow, true);
         List<BarMenu> menus = [SystemMenu];
         if (shown is not null)
             menus.Add(AppMenu(shown));
 
-        if (focused is not null)
+        // The standard menus, with the window's menus of the same role merged in, then its others, with Help last.
+        var view = focused?.View;
+        IReadOnlyList<UIMenu> document = view?.Script.Menus ?? [];
+        UIMenuEntry[] closing = front is not null && !Takes(document, CloseShortcut) ? [CloseWindowEntry] : [];
+        UIMenuEntry[] helping = shown is not null ? [AboutEntry(shown)] : [];
+
+        AddStandard(menus, document, view, UIMenuRole.File, "File", 'F', closing);
+        AddStandard(menus, document, view, UIMenuRole.Edit, "Edit", 'E', []);
+        AddStandard(menus, document, view, UIMenuRole.View, "View", 'V', []);
+        foreach (var menu in document)
         {
-            foreach (var menu in focused.View.Script.Menus)
-                menus.Add(new BarMenu(menu, MenuGroup.Window, focused.View));
+            if (RoleOf(menu) is null)
+                menus.Add(new BarMenu(menu, MenuGroup.Window, view));
         }
 
+        AddStandard(menus, document, view, UIMenuRole.Help, "Help", 'H', helping);
         MenuBar.SetMenus(menus);
+    }
+
+    /// <summary>
+    /// Adds a standard menu: the document's items of that role, in order, then the desktop's own after a separator.
+    /// An empty one is left out, so a menu shows only when there's something in it.
+    /// </summary>
+    private static void AddStandard(
+        List<BarMenu> menus, IReadOnlyList<UIMenu> document, UIView? view, UIMenuRole role, string title, char hotkey,
+        UIMenuEntry[] own)
+    {
+        List<UIMenuEntry> entries = [];
+        foreach (var menu in document)
+        {
+            if (RoleOf(menu) == role)
+                entries.AddRange(menu.Entries);
+        }
+
+        if (entries.Count > 0 && own.Length > 0)
+            entries.Add(new UIMenuEntry(null, null, null, null, 0));
+        entries.AddRange(own);
+        if (entries.Count > 0)
+            menus.Add(new BarMenu(new UIMenu(title.ToLowerInvariant(), title, hotkey, entries, 0, role), MenuGroup.Standard, view, Own: own));
+    }
+
+    /// <summary>
+    /// The standard menu a document's menu adds to: its <c>role</c>, or without one, its title when that's exactly a
+    /// standard menu's, so menus written before roles merge too.
+    /// </summary>
+    private static UIMenuRole? RoleOf(UIMenu menu) => menu.Role ?? menu.Title switch
+    {
+        "File" => UIMenuRole.File,
+        "Edit" => UIMenuRole.Edit,
+        "View" => UIMenuRole.View,
+        "Help" => UIMenuRole.Help,
+        _ => null,
+    };
+
+    /// <summary>Whether a document has an item of its own with this shortcut, which then takes the standard item's place.</summary>
+    private static bool Takes(IReadOnlyList<UIMenu> document, UIShortcut shortcut)
+    {
+        foreach (var menu in document)
+        {
+            foreach (var entry in menu.Entries)
+            {
+                if (entry.Shortcut is { } own && own.Control == shortcut.Control && own.Shift == shortcut.Shift
+                    && own.Alt == shortcut.Alt && char.ToUpperInvariant(own.Key) == char.ToUpperInvariant(shortcut.Key))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private UIMenuEntry AboutEntry(string app)
+    {
+        if (!aboutEntries.TryGetValue(app, out var entry))
+        {
+            entry = new UIMenuEntry("about", $"About {app}", 'A', null, 0);
+            aboutEntries[app] = entry;
+        }
+
+        return entry;
     }
 
     /// <summary>

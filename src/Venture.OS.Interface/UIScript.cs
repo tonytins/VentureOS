@@ -214,8 +214,31 @@ public sealed record UIControl(
     UIOrientation? Orientation = null,
     bool Follows = false);
 
-/// <summary>A drop-down menu in the global menu bar (the <c>menus</c> feature).</summary>
-public sealed record UIMenu(string Name, string Title, char? Hotkey, IReadOnlyList<UIMenuEntry> Entries, int Line);
+/// <summary>
+/// Which of the desktop's standard menus a document's menu adds to, so a host can merge it rather than show two
+/// File menus.
+/// </summary>
+public enum UIMenuRole
+{
+    /// <summary><c>file</c>: the File menu.</summary>
+    File,
+
+    /// <summary><c>edit</c>: the Edit menu.</summary>
+    Edit,
+
+    /// <summary><c>view</c>: the View menu.</summary>
+    View,
+
+    /// <summary><c>help</c>: the Help menu.</summary>
+    Help,
+}
+
+/// <summary>
+/// A drop-down menu in the global menu bar (the <c>menus</c> feature). <see cref="Role"/> is the standard menu it
+/// adds to, when it says; a role this reader doesn't know is skipped, so the menu shows as the document's own.
+/// </summary>
+public sealed record UIMenu(
+    string Name, string Title, char? Hotkey, IReadOnlyList<UIMenuEntry> Entries, int Line, UIMenuRole? Role = null);
 
 /// <summary>An item or a separator in a <see cref="UIMenu"/>. A separator has no name.</summary>
 public sealed record UIMenuEntry(string? Name, string? Title, char? Hotkey, UIShortcut? Shortcut, int Line)
@@ -410,7 +433,7 @@ public sealed class UIScript
         Dictionary<string, UIStyle> styles = [];
         List<UIVisual> visuals = [];
         List<UIControl> controls = [];
-        List<(string Name, string Title, char? Hotkey, int Line)> menus = [];
+        List<(string Name, string Title, char? Hotkey, int Line, UIMenuRole? Role)> menus = [];
         List<(string Menu, UIMenuEntry Entry)> entries = [];
         List<UIToolbarItem> toolbar = [];
         UITitleField? titleField = null;
@@ -467,9 +490,15 @@ public sealed class UIScript
                     break;
 
                 case "Menu" when hasMenus:
+                {
+                    // An unknown role is a newer document's; its menu still works as the document's own.
+                    var role = reader.String("role") is { } written ? ParseMenuRole(written) : null;
+                    if (role is null && element["role"] is not null)
+                        ignored.Add(new UIIgnoredAttribute("Menu", "role", element.Line));
                     menus.Add((reader.RequiredString("name"), reader.RequiredString("title"), reader.Hotkey("hotkey"),
-                        element.Line));
+                        element.Line, role));
                     break;
+                }
 
                 case "MenuItem" when hasMenus:
                     entries.Add((reader.RequiredString("menu"), new UIMenuEntry(
@@ -629,12 +658,12 @@ public sealed class UIScript
     }
 
     private static IReadOnlyList<UIMenu> BuildMenus(
-        List<(string Name, string Title, char? Hotkey, int Line)> menus,
+        List<(string Name, string Title, char? Hotkey, int Line, UIMenuRole? Role)> menus,
         List<(string Menu, UIMenuEntry Entry)> entries)
     {
         List<UIMenu> built = [];
         HashSet<char> menuHotkeys = [];
-        foreach (var (name, title, hotkey, line) in menus)
+        foreach (var (name, title, hotkey, line, role) in menus)
         {
             if (built.Exists(menu => menu.Name == name))
                 throw Duplicate(name, line);
@@ -652,7 +681,7 @@ public sealed class UIScript
                 items.Add(entry);
             }
 
-            built.Add(new UIMenu(name, title, hotkey, items, line));
+            built.Add(new UIMenu(name, title, hotkey, items, line, role));
         }
 
         foreach (var (menuName, entry) in entries)
@@ -845,6 +874,15 @@ public sealed class UIScript
             reader.StyleColor(Name("borderColor")),
             reader.StyleColor(Name("fillColor")));
     }
+
+    private static UIMenuRole? ParseMenuRole(string value) => value switch
+    {
+        "file" => UIMenuRole.File,
+        "edit" => UIMenuRole.Edit,
+        "view" => UIMenuRole.View,
+        "help" => UIMenuRole.Help,
+        _ => null,
+    };
 
     private static UIColorRole? ParseColorRole(string value) => value switch
     {

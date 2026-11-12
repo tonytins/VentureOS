@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.102
+
+- Every app has a File menu with Close Window (Ctrl+W), and a Help menu with About the app, showing its name, version, and what it's for. An app's own File items appear at the top of File.
+- App authors: `role="file"`, `"edit"`, `"view"`, or `"help"` on a `<Menu>` adds it to that standard menu, and `description` in `Info.xml` shows in About. A menu titled `File` merges even without a role. Leave out your own Close Window; if you keep one with Ctrl+W, yours is used instead.
+
 ## 0.3.18
 
 - VentureOS 0.3 is released. See [the release notes](docs/releases/0.3.md).

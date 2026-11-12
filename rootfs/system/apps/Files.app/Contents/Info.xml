@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Files: the desktop's own app, which it starts and keeps running. -->
 <App version="1">
-  <Info identifier="dev.tonytins.ventureos.files" name="Files" version="1.0" needs="files ui"/>
+  <Info identifier="dev.tonytins.ventureos.files" name="Files" version="1.0" needs="files ui" description="Browses folders, opens apps and files, and shows anything else with Quick Look."/>
 </App>

@@ -95,7 +95,6 @@ local function openWindow(path)
   window:on("save", save)
   window:on("saveItem", save)
   window:on("openItem", function() window:focus("path") end)
-  window:on("closeWindow", function() window:close() end)
 
   if path then
     load(path)

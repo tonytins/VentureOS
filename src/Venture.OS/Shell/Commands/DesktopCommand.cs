@@ -80,7 +80,8 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
             var opening = Stopwatch.GetTimestamp();
             session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, appOutput, windows)
             {
-                AboutWindow = MakeAbout,
+                AboutDocument = LoadAbout,
+                SystemVersion = $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})",
                 FallbackApp = FilesApp,
             };
             CanvasPainter painter = new(canvas, interfaceFont, monospaceFont);
@@ -137,30 +138,19 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
     }
 
     /// <summary>Makes About VentureOS, with the version filled in; its OK button closes it.</summary>
-    private static DesktopWindow? MakeAbout()
+    /// <summary>Reads the About window's document, which About VentureOS and every app's About share.</summary>
+    private static UIScript? LoadAbout()
     {
-        UIScript script;
         try
         {
-            script = UIScript.Load(Bootstrap.AboutInterfacePath);
+            return UIScript.Load(Bootstrap.AboutInterfacePath);
         }
         catch (Exception exception) when (exception is UIScriptException or IOException)
         {
             // The desktop works without it; say why it's missing on serial, since the screen is in graphics.
-            KernelLog.WriteSerialLine($"About VentureOS couldn't open: {exception.Message}");
+            KernelLog.WriteSerialLine($"The About window couldn't open: {exception.Message}");
             return null;
         }
-
-        UIView view = new(script);
-        view.SetText("version", $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})");
-        return new DesktopWindow("About VentureOS", view)
-        {
-            EventHandler = (about, uiEvent) =>
-            {
-                if (uiEvent is { Kind: UIEventKind.Pressed, Control: "ok" })
-                    about.RequestClose();
-            },
-        };
     }
 
     /// <summary>Takes every waiting key, as the desktop sees them.</summary>

@@ -13,6 +13,12 @@ public enum MenuGroup
 
     /// <summary>A menu from the focused window's <c>.uix</c> document, which the window's owner handles.</summary>
     Window,
+
+    /// <summary>
+    /// One of the desktop's standard menus, such as File: the desktop's own items, which it handles, after the
+    /// focused window's items of the same role, which the window's owner handles.
+    /// </summary>
+    Standard,
 }
 
 /// <summary>A menu in the bar: the menu, who it belongs to, and the view whose state its items follow.</summary>
@@ -23,13 +29,34 @@ public enum MenuGroup
 /// menus, whose items are always on.
 /// </param>
 /// <param name="Emphasized">Whether its title draws in heavier text, as the app's menu does.</param>
-public sealed record BarMenu(UIMenu Menu, MenuGroup Group, UIView? View = null, bool Emphasized = false)
+/// <param name="Own">
+/// In a standard menu, the desktop's own items, told apart by reference so an app's item of the same name is never
+/// mistaken for one; they're always on, whatever the view says.
+/// </param>
+public sealed record BarMenu(
+    UIMenu Menu, MenuGroup Group, UIView? View = null, bool Emphasized = false, IReadOnlyList<UIMenuEntry>? Own = null)
 {
     /// <summary>Whether an entry can be chosen: an item that isn't disabled.</summary>
-    public bool IsEnabled(UIMenuEntry entry) => entry.Name is { } name && !(View?.IsDisabled(name) ?? false);
+    public bool IsEnabled(UIMenuEntry entry) =>
+        entry.Name is { } name && (IsOwn(entry) || !(View?.IsDisabled(name) ?? false));
 
     /// <summary>Whether an item has a check mark.</summary>
-    public bool IsChecked(UIMenuEntry entry) => entry.Name is { } name && (View?.IsSelected(name) ?? false);
+    public bool IsChecked(UIMenuEntry entry) => entry.Name is { } name && !IsOwn(entry) && (View?.IsSelected(name) ?? false);
+
+    /// <summary>Whether an entry is one of the desktop's own items in a standard menu.</summary>
+    public bool IsOwn(UIMenuEntry entry)
+    {
+        if (Own is null)
+            return false;
+
+        for (var index = 0; index < Own.Count; index++)
+        {
+            if (ReferenceEquals(Own[index], entry))
+                return true;
+        }
+
+        return false;
+    }
 }
 
 /// <summary>A menu item someone chose, and the menu it's in.</summary>

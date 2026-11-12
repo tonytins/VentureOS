@@ -5,8 +5,6 @@
 
   <Menu name="shellMenu" title="Shell" hotkey="S"/>
   <MenuItem menu="shellMenu" name="clearItem" title="Clear" hotkey="C" shortcut="Ctrl+K"/>
-  <MenuSeparator menu="shellMenu"/>
-  <MenuItem menu="shellMenu" name="closeWindow" title="Close Window" hotkey="W" shortcut="Ctrl+W"/>
 
   <Style name="mono" font="monospace"/>
   <Style name="prompt" font="monospace" textColor="secondaryText"/>

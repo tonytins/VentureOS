@@ -46,6 +46,5 @@ window:on("custom", function()
   local typed = window:text("custom"):match("^%s*(.-)%s*$"):upper()
   if choose(venture.appearance().mode, typed) then window:setText("custom", "") end
 end)
-window:on("closeWindow", function() window:close() end)
 
 show()

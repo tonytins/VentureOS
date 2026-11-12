@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- TextEdit: opens, edits, and saves text files. Files hands it text files to open. -->
 <App version="1">
-  <Info identifier="dev.tonytins.ventureos.textedit" name="TextEdit" version="1.0" needs="files ui"/>
+  <Info identifier="dev.tonytins.ventureos.textedit" name="TextEdit" version="1.0" needs="files ui" description="Opens, edits, and saves text files."/>
 </App>

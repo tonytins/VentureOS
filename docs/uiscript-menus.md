@@ -38,6 +38,7 @@ menu in document order, and menus appear in the bar in document order.
 | `name` | Yes | The name items use to join it. |
 | `title` | Yes | The text in the menu bar. |
 | `hotkey` | No | One letter or digit. With Alt held, it opens the menu. |
+| `role` | No | `file`, `edit`, `view`, or `help`: the host's standard menu this one adds to. |
 
 `<MenuItem>` is a choice in a menu.
 
@@ -64,6 +65,9 @@ menu in document order, and menus appear in the bar in document order.
   document use the same shortcut, ignoring case.
 - An item that names an undeclared menu, or a menu element in a document
   without `requires="menus"`, refuses the document.
+- A `role` the reader doesn't know is skipped, and listed with the
+  document's skipped attributes, so the menu shows as the document's own
+  rather than refusing a document written for a newer host.
 
 ## Host responsibilities
 
@@ -77,7 +81,18 @@ menu in document order, and menus appear in the bar in document order.
 - Draw `hotkey` and `shortcut` in the menu so people can learn them.
 - A host may keep shortcuts for its own menus, such as Ctrl+Q to quit. Those
   win over a document's, so a host should list the ones it keeps.
+- A host that has standard menus, such as File and Help, merges a
+  document's menu into the one its `role` names, the document's items first,
+  rather than showing two. A menu without a `role` whose title is exactly a
+  standard menu's (`File`, `Edit`, `View`, or `Help`) merges the same way, so
+  documents written before roles do too.
+- A standard item of the host's yields to a document's item with the same
+  shortcut, so a document that already handles it keeps doing so.
+- A standard menu with nothing in it is hidden.
 
 VentureOS's desktop keeps Ctrl+Q (quit the app) and Ctrl+Shift+Q (return to
-the shell). Its own menus have no `hotkey`, so every letter is free for a
-document's menus.
+the shell). Its standard menus are File, with Close Window (Ctrl+W), and
+Help, with About the app, plus Edit and View, which show only when a
+document adds to them. They sit after the app's menu, in that order, with
+the document's other menus between View and Help. Their hotkeys are F, E, V,
+and H, so a document's own menus should use other letters.

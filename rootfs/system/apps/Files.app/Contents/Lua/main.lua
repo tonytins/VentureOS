@@ -144,7 +144,6 @@ local function openWindow(start)
     local up = parent(folder)
     if up then show(up) end
   end)
-  window:on("closeWindow", function() window:close() end)
 
   show(start)
 end
