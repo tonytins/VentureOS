@@ -1,4 +1,4 @@
--- Show the network adapter and its address.
+-- Show the network adapter, its address, and its DNS server.
 -- Usage: net
 -- Needs: network
 
@@ -25,3 +25,4 @@ end
 print("Address:  " .. net.address)
 print("Subnet:   " .. (net.subnet or "unknown"))
 print("Gateway:  " .. (net.gateway or "unknown"))
+print("DNS:      " .. (net.dns or "none"))

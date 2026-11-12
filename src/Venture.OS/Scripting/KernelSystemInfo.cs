@@ -95,7 +95,13 @@ internal sealed class KernelSystemInfo : ISystemInfo
                 NetworkManager.Ready,
                 config?.Address.ToString(),
                 config?.SubnetMask.ToString(),
-                config?.DefaultGateway.ToString());
+                config?.DefaultGateway.ToString(),
+                DnsConfig.Nameservers.Count > 0 ? DnsConfig.Nameservers[0].ToString() : null);
         }
     }
+
+    /// <summary>Resolving and pinging, once there's a network adapter.</summary>
+    public INetworkTools? NetworkTools => NetworkManager.DeviceCount > 0 ? networkTools : null;
+
+    private readonly KernelNetworkTools networkTools = new();
 }

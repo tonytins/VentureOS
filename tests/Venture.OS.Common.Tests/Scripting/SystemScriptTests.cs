@@ -89,8 +89,63 @@ public sealed class SystemScriptTests
                 "Address:  10.0.2.15",
                 "Subnet:   255.255.255.0",
                 "Gateway:  10.0.2.2",
+                "DNS:      10.0.2.3",
             ],
             output.Lines);
+    }
+
+    [Fact]
+    public void ResolveShowsAnAddressOrWhyNot()
+    {
+        Run("resolve", new FakeSystemInfo(), "example.com");
+        Run("resolve", new FakeSystemInfo(), "nowhere.example");
+        Run("resolve", new FakeSystemInfo(), "bad name");
+
+        Assert.Equal(
+            [
+                "example.com: 93.184.216.34",
+                "resolve: no answer for nowhere.example",
+                "resolve: \"bad name\" isn't a host name or an address: use letters, digits, and hyphens between dots",
+            ],
+            output.Lines);
+    }
+
+    [Fact]
+    public void PingResolvesOnceAndCountsReplies()
+    {
+        FakeNetworkTools network = new();
+        Run("ping", new FakeSystemInfo { NetworkTools = network }, "-c", "2", "10.0.2.2");
+
+        Assert.Equal(
+            ["Pinging 10.0.2.2:", "Reply from 10.0.2.2: time=12 ms", "Reply from 10.0.2.2: time=12 ms", "2 sent, 2 received."],
+            output.Lines);
+        Assert.Equal(["resolve", "ping", "ping"], network.Calls.Select(call => call.Call));
+    }
+
+    [Fact]
+    public void PingNamesTheAddressAndSaysWhenNothingCameBack()
+    {
+        Run("ping", new FakeSystemInfo(), "-c", "1", "example.com");
+
+        Assert.Equal(
+            ["Pinging example.com (93.184.216.34):", "No reply from 93.184.216.34: no reply within 2 s", "1 sent, 0 received."],
+            output.Lines);
+    }
+
+    [Fact]
+    public void PingKeepsItsCountSmall()
+    {
+        Run("ping", new FakeSystemInfo(), "-c", "50", "10.0.2.2");
+
+        Assert.Equal(["ping: the count is a whole number from 1 to 20"], output.Lines);
+    }
+
+    [Fact]
+    public void ResolveAndPingSayWhenThereIsNoNetwork()
+    {
+        Run("resolve", new FakeSystemInfo { NetworkTools = null }, "example.com");
+
+        Assert.Equal(["resolve: there's no network device"], output.Lines);
     }
 
     [Fact]
@@ -121,7 +176,8 @@ public sealed class SystemScriptTests
         Assert.Equal(["Type \"help\" for a list of commands."], output.Lines);
     }
 
-    private ScriptCommands Source(ISystemInfo system) => new(CommandsDirectory, system);
+    private ScriptCommands Source(ISystemInfo system) =>
+        new(CommandsDirectory, system, libraryDirectory: Path.Combine(AppContext.BaseDirectory, "system", "lib"));
 
     private void Run(string name, ISystemInfo system, params string[] arguments)
     {

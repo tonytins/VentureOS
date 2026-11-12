@@ -16,7 +16,7 @@ public enum ScriptScopes
     /// <summary><c>system</c>: <c>venture.uptime()</c>, <c>venture.memory()</c>, and the desktop's appearance.</summary>
     System = 1 << 0,
 
-    /// <summary><c>network</c>: <c>venture.net()</c>.</summary>
+    /// <summary><c>network</c>: <c>venture.net()</c>, <c>venture.resolve</c>, and <c>venture.ping</c>.</summary>
     Network = 1 << 1,
 
     /// <summary><c>shell</c>: <c>venture.command</c>, which adds commands to the shell.</summary>

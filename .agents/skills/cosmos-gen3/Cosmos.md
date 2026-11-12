@@ -228,7 +228,20 @@ Drivers can be dropped or opted into in the `.csproj` with
   `System.Net.Sockets.UdpClient` work. Cosmos has its own `UdpClient`, so
   name the .NET one in full when both namespaces are imported.
 - DNS: register a server with `DnsConfig.Add`, then use `Dns` (A records
-  only) or `DnsClient`.
+  only) or `DnsClient`. `DhcpClient` already registers the server its lease
+  gives. In 3.0.94, `DnsClient` is `IDisposable` (it binds local port 53):
+  `Connect(server)`, `SendQuery(name)`, then `Receive(timeoutMs)`, which
+  polls in 10 ms steps and returns `null` on no answer.
+- Ping (3.0.94): `IcmpClient`, `IDisposable`: `Connect(address)`,
+  `SendEcho(id, sequence)`, then `Receive(ref EndPoint, timeoutMs)`, which
+  returns the elapsed milliseconds in 10 ms steps, or `-1`. IPv4 only; its
+  raw-packet `Send` and `ReceivePacket` are experimental (`COSMOS0002`).
+  `EndPoint` clashes with `System.Net.EndPoint` when both namespaces are
+  imported, so name Cosmos's in full.
+- ARP: a packet to a local address nobody answers waits in
+  `IPv4OutgoingBuffer` for up to 10,000 tries (several seconds), before any
+  receive timeout starts, then logs `ARP timeout`. It's bounded, but by a
+  count rather than a time.
 - QEMU user networking: guest on `10.0.2.0/24`, host at `10.0.2.2`,
   built-in DHCP.
 - Limits: the TCP stack doesn't retransmit, there's no half-close, and

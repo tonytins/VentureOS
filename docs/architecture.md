@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (File, Edit, and Help always on the bar) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (networking: DNS, resolve, and ping) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (864 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (889 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -421,8 +421,18 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
   e1000e, and DHCP leases 10.0.2.15.
 - `NetworkManager.Primary` is a struct handle that may name no device, so
   it's only read after checking `NetworkManager.DeviceCount`.
-- **Not built yet:** DNS (DHCP reports a server, but it isn't registered),
-  and any use of the network after boot (Pere Marquette).
+- **DNS.** DHCP registers the server it gives with Cosmos (`DnsConfig`), and
+  `net` shows it. `venture.resolve(name)` asks it with `DnsClient`, waiting
+  up to 3 seconds by default; an address passes through.
+- **Ping.** `venture.ping(address)` sends one ICMP echo with `IcmpClient`
+  and waits up to 2 seconds by default for the reply, which Cosmos times in
+  10 ms steps. Both run in `KernelNetworkTools`, behind `INetworkTools` on
+  `ISystemInfo`, and report every failure, a thrown one included, as a
+  result. Names are checked first (`HostNames`), so a typo is reported
+  rather than sent. An address on the local network that nothing answers
+  takes Cosmos's own ARP wait before ours starts, several seconds; it's
+  bounded by a count of tries, not a time, and can't be shortened without
+  Cosmos's experimental packet API.
 - Cosmos's limits apply: no TLS, and TCP doesn't retransmit.
 
 ---
@@ -502,7 +512,9 @@ flowchart LR
 | `info` | Lua script: version and build, commit, Cosmos version, uptime, and free and total memory |
 | `appearance [light\|dark] [--accent #RRGGBB]` | Lua script: shows or switches the desktop's look, and saves it, as Settings does |
 | `lua [code]` | Runs one chunk of Lua 5.5 in a fresh interpreter, or with no code, opens a Lua prompt |
-| `net` | Lua script: device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
+| `net` | Lua script: device, MAC, link, readiness, and IPv4 address, subnet, gateway, and DNS server |
+| `resolve <name>` | Lua script: the address a host name has, through the DNS server DHCP gave |
+| `ping [-c count] <host>` | Lua script: echo requests to a host, 4 by default and at most 20, with each reply's time |
 | `halt` | Ends the shell loop; the CPU halts and the machine stays on |
 | `reboot` | Restarts through ACPI |
 | `shutdown` | Powers off through ACPI |
@@ -577,7 +589,9 @@ scripts do the formatting:
 | `venture.command{...}` | `shell` | Registers a command for as long as its owner lasts; see **Owners** below |
 | `venture.shell(line)` | `shell` | Runs a line as if typed at the shell; in `init.lua` and at the `lua` prompt |
 | `venture.files.*` | `files` | Lists, reads, writes, and changes files; see **Files** below |
-| `venture.net()` | `network` | `nil` without an adapter, else `{ device, mac, link_up, ready, address, subnet, gateway }`; the last three are `nil` until IPv4 is configured |
+| `venture.net()` | `network` | `nil` without an adapter, else `{ device, mac, link_up, ready, address, subnet, gateway, dns }`; the last four are `nil` until IPv4 is configured |
+| `venture.resolve(name, seconds)` | `network` | The address a host name has, or `nil` and why; waits 1 to 10 seconds, 3 by default |
+| `venture.ping(address, seconds)` | `network` | Milliseconds for one echo's reply, or `nil` and why; waits 1 to 10 seconds, 2 by default |
 
 **Scopes.** A script declares what it reaches with `-- Needs:` in its header,
 like an app's permissions, such as `-- Needs: system, network`. Scopes are
@@ -1076,6 +1090,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | Network (§8, §9): `net` shows the DNS server DHCP registered; `venture.resolve` and `venture.ping` (`network`), through `INetworkTools`, and the `resolve` and `ping` commands. |
 | 2026-11-12 | minor | Standard menus (§9): File, Edit, and Help are always on the bar, their items dimmed when they can't act; Help holds About VentureOS with no app in front. |
 | 2026-11-12 | minor | Edit (§9): Cut, Copy, Paste, and Select All in the standard Edit menu while text has focus, in every app, through the session's clipboard; secure fields can't be copied. |
 | 2026-11-11 | minor | Text selection (§9): fields, areas, and the title field share `TextCursor`; Shift-selection, Ctrl+A, click and drag, and typing over a selection; the title field selects all when editing starts. |

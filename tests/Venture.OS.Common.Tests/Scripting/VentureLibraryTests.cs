@@ -69,10 +69,56 @@ public sealed class VentureLibraryTests
     {
         Run(new FakeSystemInfo(), """
             local n = venture.net()
-            print(n.device, n.mac, n.link_up, n.ready, n.address, n.subnet, n.gateway)
+            print(n.device, n.mac, n.link_up, n.ready, n.address, n.subnet, n.gateway, n.dns)
             """);
 
-        Assert.Equal(["e1000e\t52:54:00:12:34:56\ttrue\tfalse\t10.0.2.15\t255.255.255.0\t10.0.2.2"], output.Lines);
+        Assert.Equal(["e1000e\t52:54:00:12:34:56\ttrue\tfalse\t10.0.2.15\t255.255.255.0\t10.0.2.2\t10.0.2.3"], output.Lines);
+    }
+
+    [Fact]
+    public void ResolvesAndPings()
+    {
+        FakeNetworkTools network = new();
+        Run(new FakeSystemInfo { NetworkTools = network }, """
+            print(venture.resolve("example.com"))
+            print(venture.ping("10.0.2.2", 5), math.type(venture.ping("10.0.2.2")))
+            print(venture.ping("10.0.2.9"))
+            """);
+
+        Assert.Equal(["93.184.216.34", "12\tinteger", "nil\tno reply within 2 s"], output.Lines);
+        Assert.Equal(
+            [("resolve", "example.com", TimeSpan.FromSeconds(3)), ("ping", "10.0.2.2", TimeSpan.FromSeconds(5)),
+                ("ping", "10.0.2.2", TimeSpan.FromSeconds(2)), ("ping", "10.0.2.9", TimeSpan.FromSeconds(2))],
+            network.Calls);
+    }
+
+    [Theory]
+    [InlineData("""print(venture.resolve("bad name"))""", "isn't a host name")]
+    [InlineData("""print(venture.resolve("example.com", 30))""", "from 1 to 10")]
+    [InlineData("""print(venture.ping("10.0.2.2", 0))""", "from 1 to 10")]
+    public void SaysWhyItWontAsk(string code, string reason)
+    {
+        FakeNetworkTools network = new();
+        Run(new FakeSystemInfo { NetworkTools = network }, code);
+
+        Assert.StartsWith("nil\t", output.Lines.Single());
+        Assert.Contains(reason, output.Lines.Single());
+        Assert.Empty(network.Calls);
+    }
+
+    [Fact]
+    public void SaysWhenThereIsNoNetworkToAsk()
+    {
+        Run(new FakeSystemInfo { NetworkTools = null }, """print(venture.resolve("example.com")) print(venture.ping("10.0.2.2"))""");
+
+        Assert.Equal(["nil\tthere's no network device", "nil\tthere's no network device"], output.Lines);
+    }
+
+    [Fact]
+    public void ResolvingAndPingingNeedTheNetworkScope()
+    {
+        Assert.False(Run(new FakeSystemInfo(), """venture.resolve("example.com")""", ScriptScopes.System));
+        Assert.Contains(output.Lines, line => line.Contains("network scope", StringComparison.Ordinal));
     }
 
     [Fact]

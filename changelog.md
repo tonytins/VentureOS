@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.401
+
+- New commands: `resolve example.com` looks up a host name's address, and `ping 10.0.2.2` sends echo requests and shows how long each reply took (`-c` sets how many, up to 20).
+- `net` shows the DNS server the network gave.
+- Scripts: `venture.resolve(name)` and `venture.ping(address)`, with `network` in `-- Needs:`.
+
 ## 0.4.400
 
 - File, Edit, and Help are always in the menu bar, whatever's open. Items that can't do anything at the moment are dimmed, such as Copy with no text selected.

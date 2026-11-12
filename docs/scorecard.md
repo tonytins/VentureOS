@@ -12,12 +12,12 @@ change. Statuses are `done`, `partial`, and `missing`.
 
 | Area | Done | Partial | Missing | Key numbers |
 |---|---:|---:|---:|---|
-| [Boot](#boot) | 8 | 0 | 0 | 7 boot steps: 3 critical, 4 optional |
+| [Boot](#boot) | 8 | 0 | 0 | 8 boot steps: 3 critical, 5 optional |
 | [Storage](#storage) | 4 | 0 | 1 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system`, read-only to file commands |
-| [Network](#network) | 2 | 0 | 2 | DHCP lease 10.0.2.15 under QEMU |
-| [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 10 Lua script commands; `Notes.app` ships |
+| [Network](#network) | 4 | 0 | 0 | DHCP lease 10.0.2.15 under QEMU; `resolve` and `ping` |
+| [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 13 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 680 tests, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 889 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 6 | 0 | 0 | Version 0.3; opens in 48 ms at 1024x768 |
 | [Desktop apps](#desktop-apps) | 5 | 0 | 0 | Keystone complete; Files, Settings, System Monitor, Terminal, Notes, Calculator, and TextEdit |
@@ -69,8 +69,8 @@ output stays on the console.
 |---|---|---|---|
 | NET-1 | DHCP configures the primary NIC and reports the address | done | Headless boot: `[DHCP CONFIG] IP configuration _applied.`, address 10.0.2.15 on `e1000e` |
 | NET-2 | No NIC means network setup is skipped without touching the adapter | done | `NetworkManager.DeviceCount` guard; boot with `--nic none` reaches `Calling Run()` |
-| NET-3 | DNS resolution | missing | No `DnsConfig` setup, although DHCP reports a DNS server (10.0.2.3) |
-| NET-4 | Anything uses the network after boot | missing | No shell command or service touches the network |
+| NET-3 | DNS resolution | done | DHCP registers its server with Cosmos; `KernelNetworkTools.Resolve`, `venture.resolve`, `resolve`; tests for names, the Lua function, and the command. Boot test 2026-11-12 (QEMU user networking): `net` showed DNS 10.0.2.3, and `resolve example.com` answered 104.20.23.154 |
+| NET-4 | Anything uses the network after boot | done | `venture.ping`, `ping`; tests for the function, the count, and no reply. Boot test 2026-11-12: `ping -c 2 10.0.2.2` got 2 replies (0 ms, as Cosmos times in 10 ms steps), and `ping -c 1 10.0.2.99` reported no reply after Cosmos's ARP wait of several seconds |
 
 ## Shell
 

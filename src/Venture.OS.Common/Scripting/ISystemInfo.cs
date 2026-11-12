@@ -51,6 +51,12 @@ public interface ISystemInfo
     /// <see langword="null"/> on a system without one.
     /// </summary>
     IAppearance? Appearance { get; }
+
+    /// <summary>
+    /// Resolving names and pinging, which <c>venture.resolve</c> and <c>venture.ping</c> use, or
+    /// <see langword="null"/> without a network adapter.
+    /// </summary>
+    INetworkTools? NetworkTools { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>
@@ -61,7 +67,7 @@ public sealed record MemoryInfo(ulong FreeBytes, ulong TotalBytes);
 
 /// <summary>
 /// The primary network adapter. The address, subnet mask, and gateway are <see langword="null"/> until IPv4 is
-/// configured.
+/// configured, and the DNS server until DHCP gives one.
 /// </summary>
 public sealed record NetworkInfo(
     string Device,
@@ -70,4 +76,5 @@ public sealed record NetworkInfo(
     bool Ready,
     string? Address,
     string? SubnetMask,
-    string? Gateway);
+    string? Gateway,
+    string? DnsServer = null);

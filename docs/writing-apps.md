@@ -64,7 +64,7 @@ The scopes for `needs`:
 | `shell` | `venture.command` to add commands, and `venture.shell` to run them |
 | `files` | `venture.files` to list, read, and change files |
 | `system` | `venture.uptime()` and `venture.memory()` |
-| `network` | `venture.net()` |
+| `network` | `venture.net()`, `venture.resolve(name)`, and `venture.ping(address)` |
 | `ui` | `venture.ui` to open windows on the desktop |
 
 Dice adds a command, so it needs `shell`. Ask for only what the app uses.

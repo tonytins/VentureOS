@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (0.4.4xx begins: File, Edit, and Help always there) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (0.4.4xx done: networking; 0.4's milestones complete) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -39,7 +39,7 @@ releases, which are what people get, rather than milestones alone.
 | Release | Code name | Stage | Holds | Notes |
 |---|---|---|---|---|
 | 0.3 | (the desktop) | released 2026-11-11, `v0.3.18` | Borealis, Keystone, Downeaster, and the layout of the repository | [0.3](./releases/0.3.md) |
-| 0.4 | Pere Marquette | in development | Standard menus, text selection, Edit, and networking | |
+| 0.4 | Pere Marquette | milestones done, not yet released | Standard menus, text selection, Edit, and networking | |
 
 ## Alpha gate
 
@@ -63,8 +63,7 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **0.4, Pere Marquette**, a transition into releasing as an OS: standard
-   menus first, then text selection, Edit, and networking.
+1. **0.4, Pere Marquette**: every milestone is done; releasing it is my call.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
@@ -81,19 +80,19 @@ planned before releases; 0.4's milestones are under its release below.
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
 | Wolverine | System library | 100% | 0 | Shared Lua modules in `/mnt/system/lib`, loaded with `require`; `venture.args` parses arguments and options with a generated `--help` |
 | Blue Water | Files | 67% | 8–15 (persistence, later) | File commands on the RAM disk now; an optional save to disk later |
-| Pere Marquette | Release 0.4 | 75% | 10–20 | Standard menus, text selection, and Edit are done; networking is next |
+| Pere Marquette | Release 0.4 | 100% | 0 | Standard menus, text selection, Edit, and networking; ready to release when I say |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
 | Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
 | Downeaster | Desktop refinement | 100% | 0 | Centred titles, an address that edits on click, sidebars, resizable windows, hover, dark mode and accents, style roles, Settings, and hover text |
-| | **Total** | | **≈ 18–35** | |
+| | **Total** | | **≈ 8–15** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Networking (0.4.4xx) | Pere Marquette | 10–20 |
+| 1 | Persistence | Blue Water | 8–15 |
 
 Beta needs Blue Water in substance, about 8–15 hours.
 
@@ -187,9 +186,13 @@ code of its own; an empty standard menu stays hidden.
 
 - [x] File, Edit, and Help always on the bar, their items dimmed when they
   can't act, as Tony Bark asked after trying Edit.
-- [ ] Check what Cosmos 3.0.94 offers for DNS and ICMP.
-- [ ] Register the DNS server DHCP reports.
-- [ ] `resolve` and `ping` commands, on `venture.net`, with every wait bounded.
+- [x] Check what Cosmos 3.0.94 offers for DNS and ICMP: `DnsClient` and
+  `IcmpClient`, outside the experimental packet API.
+- [x] Register the DNS server DHCP reports: Cosmos's DHCP client already
+  does; `net` now shows it.
+- [x] `resolve` and `ping` commands, on `venture.resolve` and
+  `venture.ping`, with every wait bounded. Cosmos's own ARP wait, for a
+  local address nothing answers, is bounded by a count rather than a time.
 
 A Telnet shell was dropped by my decision on 2026-11-11.
 
@@ -382,6 +385,7 @@ interface formats into `Venture.OS.Interface`.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | 0.4.4xx done: `net` shows the DNS server, and `resolve` and `ping` use Cosmos's DNS and ICMP clients. Every 0.4 milestone is done; release is the owner's call. About 8–15 h of milestones remain. |
 | 2026-11-12 | minor | 0.4.4xx begins with Tony Bark's tweak to the standard menus: File, Edit, and Help are always on the bar, with their items dimmed when they can't act. Networking follows in the same band. |
 | 2026-11-12 | minor | 0.4.3xx done: Edit's Cut, Copy, Paste, and Select All for whatever text has focus, in every app, through one clipboard. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | 0.4.2xx done: text selection in fields, areas, and the title field, by Shift and the arrows, Ctrl+A, and dragging. About 21–41 h of milestones remain. |

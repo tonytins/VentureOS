@@ -17,7 +17,10 @@ internal sealed class FakeSystemInfo : ISystemInfo
     public MemoryInfo? Memory { get; init; } = new(100UL * 1024 * 1024, 512UL * 1024 * 1024);
 
     public NetworkInfo? Network { get; init; } =
-        new("e1000e", "52:54:00:12:34:56", true, false, "10.0.2.15", "255.255.255.0", "10.0.2.2");
+        new("e1000e", "52:54:00:12:34:56", true, false, "10.0.2.15", "255.255.255.0", "10.0.2.2", "10.0.2.3");
+
+    /// <summary>A network that knows example.com and the gateway, by default.</summary>
+    public INetworkTools? NetworkTools { get; init; } = new FakeNetworkTools();
 
     public string? SystemDirectory { get; init; }
 

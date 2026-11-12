@@ -119,6 +119,8 @@ public sealed class SystemMonitorAppTests : IDisposable
 
         public IAppearance? Appearance => null;
 
+        public INetworkTools? NetworkTools => null;
+
         private NetworkInfo? network = new("e1000e", "52:54:00:12:34:56", LinkUp: true, Ready: true, "10.0.2.15", "255.255.255.0", "10.0.2.2");
     }
 }

@@ -1,4 +1,5 @@
 using Cosmos.Executable.Lua;
+using Venture.OS.Network;
 
 namespace Venture.OS.Scripting;
 
@@ -47,6 +48,8 @@ public static class VentureLibrary
             Gated("uptime", ScriptScopes.System, scopes, lua => PushUptime(lua, system)),
             Gated("memory", ScriptScopes.System, scopes, lua => PushMemory(lua, system)),
             Gated("net", ScriptScopes.Network, scopes, lua => PushNetwork(lua, system)),
+            Gated("resolve", ScriptScopes.Network, scopes, lua => Resolve(lua, system.NetworkTools)),
+            Gated("ping", ScriptScopes.Network, scopes, lua => Ping(lua, system.NetworkTools)),
             Gated("appearance", ScriptScopes.System, scopes, lua => PushAppearance(lua, system.Appearance)),
             Gated("setAppearance", ScriptScopes.System, scopes, lua => SetAppearance(lua, system.Appearance)),
 
@@ -204,7 +207,67 @@ public static class VentureLibrary
         SetString(lua, "address", network.Address);
         SetString(lua, "subnet", network.SubnetMask);
         SetString(lua, "gateway", network.Gateway);
+        SetString(lua, "dns", network.DnsServer);
         return 1;
+    }
+
+    // How long resolving and pinging wait by default, and the range a script may ask for, in seconds.
+    private const int ResolveSeconds = 3;
+    private const int PingSeconds = 2;
+    private const int LongestWait = 10;
+
+    /// <summary>
+    /// <c>venture.resolve(name, seconds)</c>: the address a host name has, as text, or <c>nil</c> and why. An address
+    /// passes through. It waits up to <paramref name="lua"/>'s second argument, from 1 to 10 seconds, or 3.
+    /// </summary>
+    private static int Resolve(ILuaState lua, INetworkTools? tools)
+    {
+        var name = LuaText.Decode(lua.L_CheckString(1));
+        if (HostNames.Problem(name) is { } problem)
+            return Refuse(lua, problem);
+        if (Wait(lua, ResolveSeconds) is not { } timeout)
+            return Refuse(lua, $"a wait is a whole number of seconds from 1 to {LongestWait}");
+        if (tools is null)
+            return Refuse(lua, "there's no network device");
+
+        var result = tools.Resolve(name, timeout);
+        if (result.Address is not { } address)
+            return Refuse(lua, result.Problem ?? $"no answer for {name}");
+
+        lua.PushString(LuaText.Encode(address));
+        return 1;
+    }
+
+    /// <summary>
+    /// <c>venture.ping(address, seconds)</c>: how many milliseconds one echo request to an IPv4 address took to be
+    /// answered, or <c>nil</c> and why. It waits up to the second argument, from 1 to 10 seconds, or 2.
+    /// </summary>
+    private static int Ping(ILuaState lua, INetworkTools? tools)
+    {
+        var address = LuaText.Decode(lua.L_CheckString(1));
+        if (HostNames.Problem(address) is { } problem)
+            return Refuse(lua, problem);
+        if (Wait(lua, PingSeconds) is not { } timeout)
+            return Refuse(lua, $"a wait is a whole number of seconds from 1 to {LongestWait}");
+        if (tools is null)
+            return Refuse(lua, "there's no network device");
+
+        var result = tools.Ping(address, timeout);
+        if (result.Time is not { } time)
+            return Refuse(lua, result.Problem ?? $"no reply from {address}");
+
+        lua.PushInteger((long)time.TotalMilliseconds);
+        return 1;
+    }
+
+    // The wait a script gave as its second argument, or the default; null when it's out of range or not whole.
+    private static TimeSpan? Wait(ILuaState lua, int seconds)
+    {
+        if (lua.IsNoneOrNil(2))
+            return TimeSpan.FromSeconds(seconds);
+
+        var given = lua.L_CheckNumber(2);
+        return given >= 1 && given <= LongestWait && given == Math.Floor(given) ? TimeSpan.FromSeconds(given) : null;
     }
 
     // Each helper sets one field on the table at the top of the stack. A null string leaves the field nil.
