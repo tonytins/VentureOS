@@ -245,6 +245,12 @@ new number. `roll` still works in the shell, since both live in the same app.
   address bar is: it reads as the title until it's clicked or given focus,
   then becomes a field that reports `submitted` on Enter. Notes uses
   toolbar items for Add and Remove.
+- **Styles:** say what a color or size is for, and your app follows the
+  desktop's light or dark look and accent: `textColor="secondaryText"`,
+  `backgroundColor="inputBackground"`, `fontSize="title"`. A hex color such
+  as `#1E5AA0` stays exactly that in every look unless you give it a dark
+  twin, such as `darkTextColor="#8CB8F0"`. See
+  [UIScript styles](./uiscript-styles.md) for every role.
 - **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen
   item reports `pressed` with its name, like a button. See

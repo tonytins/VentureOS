@@ -78,17 +78,102 @@ public sealed record UIImageResource(string Name, string? Path, string? AssetId,
 /// <summary>Localized text the host supplies, by table and index.</summary>
 public sealed record UIStringResource(string Name, string Table, int Index);
 
-/// <summary>A named set of visual properties that controls refer to.</summary>
+/// <summary>
+/// What a color in a style is for, which the host resolves against its palette, so the style follows light, dark,
+/// and accent changes: the way an app says "quieter text" rather than which grey.
+/// </summary>
+public enum UIColorRole
+{
+    /// <summary><c>text</c>: ordinary text.</summary>
+    Text,
+
+    /// <summary><c>secondaryText</c>: quieter text, such as a status line or a placeholder.</summary>
+    SecondaryText,
+
+    /// <summary><c>disabledText</c>: text on something turned off.</summary>
+    DisabledText,
+
+    /// <summary><c>highlightedText</c>: text on the accent color.</summary>
+    HighlightedText,
+
+    /// <summary><c>accent</c>: the accent color, for focus, selection marks, and fills.</summary>
+    Accent,
+
+    /// <summary><c>panel</c>: a window's background.</summary>
+    Panel,
+
+    /// <summary><c>inputBackground</c>: the inside of text fields and lists.</summary>
+    InputBackground,
+
+    /// <summary><c>border</c>: lines around controls.</summary>
+    Border,
+
+    /// <summary><c>selection</c>: a selected item's background.</summary>
+    Selection,
+}
+
+/// <summary>A color in a style: one written as <c>#RRGGBB</c> or <c>#RRGGBBAA</c>, or a role.</summary>
+public readonly record struct UIStyleColor(UIColor Color, UIColorRole? Role)
+{
+    /// <summary>A color written in the document, the same in every palette unless a <c>dark</c> twin replaces it.</summary>
+    public static UIStyleColor Literal(UIColor color) => new(color, null);
+
+    /// <summary>A color the host resolves against its palette.</summary>
+    public static UIStyleColor FromRole(UIColorRole role) => new(default, role);
+}
+
+/// <summary>
+/// A style's colors, each left out when it doesn't set one: text, text on a held button, text on a button under the
+/// pointer, text on a disabled control, background, border, and fill.
+/// </summary>
+public sealed record UIStyleColors(
+    UIStyleColor? Text,
+    UIStyleColor? SelectedText,
+    UIStyleColor? HighlightedText,
+    UIStyleColor? DisabledText,
+    UIStyleColor? Background,
+    UIStyleColor? Border,
+    UIStyleColor? Fill)
+{
+    /// <summary>No colors set.</summary>
+    public static UIStyleColors None { get; } = new(null, null, null, null, null, null, null);
+}
+
+/// <summary>What a text size is for, which the host turns into points: the way an app says "a title".</summary>
+public enum UIFontSizeRole
+{
+    /// <summary><c>caption</c>: small print.</summary>
+    Caption,
+
+    /// <summary><c>body</c>: ordinary text, the size controls use without a style.</summary>
+    Body,
+
+    /// <summary><c>title</c>: a heading.</summary>
+    Title,
+
+    /// <summary><c>largeTitle</c>: a large heading, such as a dialog's.</summary>
+    LargeTitle,
+}
+
+/// <summary>A text size in a style: points written in the document, or a role.</summary>
+public readonly record struct UIStyleSize(int Size, UIFontSizeRole? Role)
+{
+    /// <summary>A size in points.</summary>
+    public static UIStyleSize Points(int points) => new(points, null);
+
+    /// <summary>A size the host turns into points.</summary>
+    public static UIStyleSize FromRole(UIFontSizeRole role) => new(0, role);
+}
+
+/// <summary>
+/// A named set of visual properties that controls refer to. <see cref="Colors"/> are its colors; <see cref="Dark"/>
+/// holds the <c>dark</c> twins, which replace them on a dark palette where they're set.
+/// </summary>
 public sealed record UIStyle(
     string Name,
-    UIColor? TextColor,
-    UIColor? SelectedTextColor,
-    UIColor? HighlightedTextColor,
-    UIColor? DisabledTextColor,
-    UIColor? BackgroundColor,
-    UIColor? BorderColor,
-    UIColor? FillColor,
-    int? FontSize,
+    UIStyleColors Colors,
+    UIStyleColors Dark,
+    UIStyleSize? FontSize,
     UIFont? Font = null);
 
 /// <summary>Text that's either written in the document or names a <c>&lt;String&gt;</c>.</summary>
@@ -369,14 +454,9 @@ public sealed class UIScript
                         throw Duplicate(name, element.Line);
                     styles[name] = new UIStyle(
                         name,
-                        reader.Color("textColor"),
-                        reader.Color("selectedTextColor"),
-                        reader.Color("highlightedTextColor"),
-                        reader.Color("disabledTextColor"),
-                        reader.Color("backgroundColor"),
-                        reader.Color("borderColor"),
-                        reader.Color("fillColor"),
-                        reader.Integer("fontSize"),
+                        ReadColors(reader, ""),
+                        ReadColors(reader, "dark"),
+                        reader.Size("fontSize"),
                         reader.Enum("font", ParseFont));
                     break;
                 }
@@ -598,7 +678,7 @@ public sealed class UIScript
 
         foreach (var style in Styles.Values)
         {
-            if (style.FontSize is <= 0)
+            if (style.FontSize is { Role: null, Size: <= 0 })
                 throw new UIScriptException($"The style \"{style.Name}\" needs a positive fontSize.");
         }
 
@@ -752,6 +832,43 @@ public sealed class UIScript
         _ => null,
     };
 
+    // A style's colors, each attribute's name after the prefix: textColor, or with "dark", darkTextColor.
+    private static UIStyleColors ReadColors(Attributes reader, string prefix)
+    {
+        string Name(string color) => prefix.Length == 0 ? color : prefix + char.ToUpperInvariant(color[0]) + color[1..];
+        return new UIStyleColors(
+            reader.StyleColor(Name("textColor")),
+            reader.StyleColor(Name("selectedTextColor")),
+            reader.StyleColor(Name("highlightedTextColor")),
+            reader.StyleColor(Name("disabledTextColor")),
+            reader.StyleColor(Name("backgroundColor")),
+            reader.StyleColor(Name("borderColor")),
+            reader.StyleColor(Name("fillColor")));
+    }
+
+    private static UIColorRole? ParseColorRole(string value) => value switch
+    {
+        "text" => UIColorRole.Text,
+        "secondaryText" => UIColorRole.SecondaryText,
+        "disabledText" => UIColorRole.DisabledText,
+        "highlightedText" => UIColorRole.HighlightedText,
+        "accent" => UIColorRole.Accent,
+        "panel" => UIColorRole.Panel,
+        "inputBackground" => UIColorRole.InputBackground,
+        "border" => UIColorRole.Border,
+        "selection" => UIColorRole.Selection,
+        _ => null,
+    };
+
+    private static UIFontSizeRole? ParseSizeRole(string value) => value switch
+    {
+        "caption" => UIFontSizeRole.Caption,
+        "body" => UIFontSizeRole.Body,
+        "title" => UIFontSizeRole.Title,
+        "largeTitle" => UIFontSizeRole.LargeTitle,
+        _ => null,
+    };
+
     private static UIFont? ParseFont(string value) => value switch
     {
         "interface" => UIFont.Interface,
@@ -838,6 +955,35 @@ public sealed class UIScript
 
             var rgba = digits.Length == 6 ? (number << 8) | 0xFF : number;
             return new UIColor((byte)(rgba >> 24), (byte)(rgba >> 16), (byte)(rgba >> 8), (byte)rgba);
+        }
+
+        /// <summary>A style's color: written as a color, or a role's name.</summary>
+        public UIStyleColor? StyleColor(string attribute)
+        {
+            if (String(attribute) is not { } value)
+                return null;
+            if (!value.StartsWith('#'))
+            {
+                return ParseColorRole(value) is { } role
+                    ? UIStyleColor.FromRole(role)
+                    : throw new UIScriptException(
+                        $"{attribute}=\"{value}\" isn't a color: use #RRGGBB, #RRGGBBAA, or a role such as secondaryText.",
+                        element.Line);
+            }
+
+            return UIStyleColor.Literal(Color(attribute)!.Value);
+        }
+
+        /// <summary>A style's text size: points, or a role's name.</summary>
+        public UIStyleSize? Size(string attribute)
+        {
+            if (String(attribute) is not { } value)
+                return null;
+            if (ParseSizeRole(value) is { } role)
+                return UIStyleSize.FromRole(role);
+            return Integer(attribute) is { } points
+                ? UIStyleSize.Points(points)
+                : null;
         }
 
         public UIText? Text(string literal, string reference) => (String(literal), String(reference)) switch

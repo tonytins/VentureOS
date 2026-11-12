@@ -9,7 +9,7 @@
   <MenuItem menu="shellMenu" name="closeWindow" title="Close Window" hotkey="W" shortcut="Ctrl+W"/>
 
   <Style name="mono" font="monospace"/>
-  <Style name="prompt" font="monospace" textColor="#6E747E"/>
+  <Style name="prompt" font="monospace" textColor="secondaryText"/>
 
   <TextArea name="output" x="8" y="8" width="610" height="350" readOnly="true" follows="true" style="mono"/>
   <Slider name="outputScroll" x="622" y="8" width="10" height="350" scrolls="output"/>

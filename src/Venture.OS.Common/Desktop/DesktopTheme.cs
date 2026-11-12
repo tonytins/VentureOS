@@ -124,6 +124,39 @@ public static class DesktopTheme
     /// <summary>The size of title and body text, in pixels.</summary>
     public const int TextSize = 13;
 
+    /// <summary>The sizes of the <c>caption</c>, <c>title</c>, and <c>largeTitle</c> roles; <c>body</c> is <see cref="TextSize"/>.</summary>
+    public const int CaptionSize = 11;
+
+    /// <inheritdoc cref="CaptionSize"/>
+    public const int TitleSize = 17;
+
+    /// <inheritdoc cref="CaptionSize"/>
+    public const int LargeTitleSize = 22;
+
+    /// <summary>The color a style's role stands for in the palette in use.</summary>
+    public static UIColor Resolve(UIColorRole role) => role switch
+    {
+        UIColorRole.Text => Text,
+        UIColorRole.SecondaryText => SecondaryText,
+        UIColorRole.DisabledText => DisabledText,
+        UIColorRole.HighlightedText => HighlightedText,
+        UIColorRole.Accent => Accent,
+        UIColorRole.Panel => Panel,
+        UIColorRole.InputBackground => InputBackground,
+        UIColorRole.Border => Border,
+        UIColorRole.Selection => Selection,
+        _ => Text,
+    };
+
+    /// <summary>The points a style's size role stands for.</summary>
+    public static int Resolve(UIFontSizeRole role) => role switch
+    {
+        UIFontSizeRole.Caption => CaptionSize,
+        UIFontSizeRole.Title => TitleSize,
+        UIFontSizeRole.LargeTitle => LargeTitleSize,
+        _ => TextSize,
+    };
+
     /// <summary>How far a drop shadow reaches.</summary>
     public const int ShadowSize = 4;
 

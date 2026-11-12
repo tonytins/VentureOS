@@ -28,8 +28,8 @@ public sealed class UIScriptTests
 
         Assert.Equal(new UISize(400, 255), script.Window.Size);
         Assert.Equal(new UISize(350, 196), script.Window.MinimumSize);
-        Assert.Equal(new UIColor(0xFF, 0xF9, 0x9D), script.Styles["history"].TextColor);
-        Assert.Equal(14, script.Styles["entry"].FontSize);
+        Assert.Equal(UIStyleColor.Literal(new UIColor(0xFF, 0xF9, 0x9D)), script.Styles["history"].Colors.Text);
+        Assert.Equal(UIStyleSize.Points(14), script.Styles["entry"].FontSize);
 
         Assert.Equal(["chatHistory", "chatHistorySlider", "scrollUp", "scrollDown", "chatEntry"],
             script.Controls.Select(control => control.Name));
@@ -75,8 +75,8 @@ public sealed class UIScriptTests
         Assert.Equal(new UISize(300.5f, 200), script.Window.Size);
         Assert.Equal(new UIImageResource("send", "ui/send.bmp", "0x1234", 4), script.Images["send"]);
         Assert.Equal(new UIStringResource("hello", "UIText:174", 3), script.Strings["hello"]);
-        Assert.Equal(new UIColor(0x11, 0x22, 0x33, 0x44), script.Styles["s"].TextColor);
-        Assert.Equal(new UIColor(7, 8, 9), script.Styles["s"].FillColor);
+        Assert.Equal(UIStyleColor.Literal(new UIColor(0x11, 0x22, 0x33, 0x44)), script.Styles["s"].Colors.Text);
+        Assert.Equal(UIStyleColor.Literal(new UIColor(7, 8, 9)), script.Styles["s"].Colors.Fill);
         Assert.Equal("send", Assert.Single(script.Visuals).Image);
 
         Assert.Equal(UIText.Reference("hello"), script.Control("t")!.Text);

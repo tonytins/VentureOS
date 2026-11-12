@@ -102,6 +102,57 @@ public sealed class AppearanceTests : IDisposable
     }
 
     [Fact]
+    public void StyleRolesFollowThePalette()
+    {
+        var view = Styled("""textColor="secondaryText" fontSize="title" """);
+        var dark = DesktopPalette.Create(DesktopPalette.StandardAccent, isDark: true);
+
+        Assert.Equal((DesktopPalette.Light.SecondaryText, DesktopTheme.TitleSize), Drawn(view));
+        DesktopTheme.Use(dark);
+        Assert.Equal((dark.SecondaryText, DesktopTheme.TitleSize), Drawn(view));
+    }
+
+    [Fact]
+    public void ADarkTwinReplacesItsColorOnlyOnADarkPalette()
+    {
+        var view = Styled("""textColor="#112233" darkTextColor="#DDEEFF" """);
+
+        Assert.Equal(new UIColor(0x11, 0x22, 0x33), Drawn(view).Color);
+        DesktopTheme.Use(DesktopPalette.Create(DesktopPalette.StandardAccent, isDark: true));
+        Assert.Equal(new UIColor(0xDD, 0xEE, 0xFF), Drawn(view).Color);
+    }
+
+    [Fact]
+    public void AWrittenColorWithoutATwinStaysInEveryPalette()
+    {
+        var view = Styled("""textColor="#112233" """);
+
+        DesktopTheme.Use(DesktopPalette.Create(DesktopPalette.StandardAccent, isDark: true));
+
+        Assert.Equal(new UIColor(0x11, 0x22, 0x33), Drawn(view).Color);
+    }
+
+    private static UIView Styled(string attributes)
+    {
+        UIView view = new(UIScript.Parse($"""
+            <UIScript>
+              <Window width="200" height="50"/>
+              <Style name="s" {attributes}/>
+              <Text name="label" x="0" y="0" width="200" height="30" style="s" text="Hello"/>
+            </UIScript>
+            """));
+        return view;
+    }
+
+    private static (UIColor Color, int Size) Drawn(UIView view)
+    {
+        RecordingPainter painter = new(200, 50);
+        view.Draw(painter, 0, 0);
+        var text = painter.Texts.Single(text => text.Text == "Hello");
+        return (text.Color, text.Size);
+    }
+
+    [Fact]
     public void TheCommandShowsTheLook()
     {
         Command("appearance");

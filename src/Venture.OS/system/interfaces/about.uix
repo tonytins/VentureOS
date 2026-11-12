@@ -3,8 +3,8 @@
 <UIScript version="1">
   <Window width="340" height="170"/>
 
-  <Style name="heading" fontSize="22"/>
-  <Style name="plain" backgroundColor="#F0F3F7"/>
+  <Style name="heading" fontSize="largeTitle"/>
+  <Style name="plain" backgroundColor="panel"/>
 
   <Text name="name" x="20" y="16" width="300" height="30" style="heading" alignment="center" text="VentureOS"/>
   <Text name="version" x="20" y="48" width="300" height="20" alignment="center" text="Version"/>

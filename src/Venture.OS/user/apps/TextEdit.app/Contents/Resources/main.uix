@@ -12,7 +12,7 @@
   <MenuSeparator menu="fileMenu"/>
   <MenuItem menu="fileMenu" name="closeWindow" title="Close Window" hotkey="C" shortcut="Ctrl+W"/>
 
-  <Style name="quiet" textColor="#6E747E"/>
+  <Style name="quiet" textColor="secondaryText"/>
 
   <!-- Edge offsets keep these to the window's edges as it's resized; the status stays clear of the grip. -->
   <TextArea name="text" x="10" y="10" width="488" height="316"

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (palettes: dark mode and accent colors) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (style roles and dark twins) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (748 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (782 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -771,7 +771,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   dark until it reads, and `ChosenAccent` keeps it as chosen. The desktop
   works out its sky again, once, when the palette changes.
   `venture.setAppearance` and the `appearance` command switch it; the
-  choice lasts until reboot. A document's `<Style>` colors stay as written.
+  choice lasts until reboot. A document's `<Style>` roles follow it; its hex
+  colors stay as written, unless a `dark` twin replaces them.
 - **Hover.** The window manager tells the window under the pointer where it
   is, unless a button is held or the pointer is over the menu bar or dock;
   every window gets this, not only the front one, which gets input. Over
@@ -875,8 +876,13 @@ tests with Hudini's license. VentureOS adds two features, drafted for
 Hudini to take up: `menus` (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with
 hotkeys and Ctrl or Alt shortcuts), in [uiscript-menus.md](./uiscript-menus.md),
 and `sidebar` (`<Sidebar>`, a list of places beside the content), in
-[uiscript-sidebar.md](./uiscript-sidebar.md). `UIView` draws documents in
-desktop windows.
+[uiscript-sidebar.md](./uiscript-sidebar.md). Styles take color roles
+(`secondaryText`, `panel`, ...), size roles (`caption` to `largeTitle`), and
+`dark` twins of each color, drafted in [uiscript-styles.md](./uiscript-styles.md)
+as if already in Hudini's spec. `UIView` draws documents in desktop windows,
+resolving each style once per palette, so styles with roles follow a switch
+to dark or a new accent. `ShippedContrastTests` draws every shipped
+interface in every palette and fails on any text below a 3 to 1 contrast.
 
 **Apps.** `AppManager` opens, closes, and lists `.app` bundles. Opening one
 reads its bundle, makes an owner named after the app with the app's `needs`,
@@ -1031,6 +1037,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Style roles (§9): color and size roles and `dark` twins on `<Style>`, drafted for Hudini; the shipped apps use roles; a contrast test covers every shipped interface in every palette. |
 | 2026-11-11 | minor | Palettes (§9): `DesktopPalette`, light or dark from an accent after Distro Tycoon 2, behind `DesktopTheme`; `venture.appearance` and `setAppearance` (`system`) and the `appearance` command. |
 | 2026-11-11 | minor | Hover (§1, §9): what the pointer rests on shows it, in any window, with no change to apps; principle 7, apps get the new look without changing; CI and published ISOs dropped from the plans (§11, §12). |
 | 2026-11-11 | minor | Resizing (§9): `resizable` on `<Window>`, a grip, and `UIView.SetWindowSize`, with controls following Hudini's edge offsets; Files and TextEdit resize. |

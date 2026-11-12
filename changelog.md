@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.13
+
+- Calculator and About read properly in the dark appearance; quieter text in Files, TextEdit, Terminal, and System Monitor follows the appearance too.
+- App authors: styles can say what a color or size is for, such as `textColor="secondaryText"` or `fontSize="title"`, and follow the desktop's look; a hex color can have a dark twin, such as `darkTextColor`. See docs/uiscript-styles.md.
+
 ## 0.3.12
 
 - The desktop has a dark appearance, and any accent color: `appearance dark`, `appearance light`, or `appearance --accent "#E8922A"` in the shell or Terminal. Windows, the sky, the menu bar, and the dock change at once. The choice lasts until reboot.

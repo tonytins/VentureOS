@@ -16,7 +16,7 @@
   <MenuItem menu="goMenu" name="enclosing" title="Enclosing Folder" hotkey="E" shortcut="Ctrl+U"/>
   <MenuItem menu="goMenu" name="goToFolder" title="Go to Folder…" hotkey="G" shortcut="Ctrl+L"/>
 
-  <Style name="quiet" textColor="#6E747E"/>
+  <Style name="quiet" textColor="secondaryText"/>
 
   <!-- Edge offsets keep these to the window's edges as it's resized; the status stays clear of the grip. -->
   <List name="entries" x="10" y="10" width="350" height="256" selectable="true"

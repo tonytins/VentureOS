@@ -104,6 +104,10 @@ public sealed class UIView
     // The field that had focus before its window left the front; see RestoreFocus.
     private string? setAside;
 
+    // Styles as the palette in use resolves them, by name, worked out again when the palette changes.
+    private readonly Dictionary<string, ResolvedStyle> resolvedStyles = [];
+    private DesktopPalette? resolvedFor;
+
     // Draws and measures in the monospace font, for controls whose style asks for it; kept while the painter is.
     private MonospacePainter? monospace;
 
@@ -1141,8 +1145,64 @@ public sealed class UIView
 
     private State? Find(string name) => states.GetValueOrDefault(name);
 
-    private UIStyle? Style(UIControl control) =>
-        control.Style is { } name ? script.Styles.GetValueOrDefault(name) : null;
+    /// <summary>
+    /// A control's style with its roles and <c>dark</c> twins resolved for the palette in use, so every color and size
+    /// is a plain one to draw with. Resolving allocates, so it happens once a style per palette.
+    /// </summary>
+    private ResolvedStyle? Style(UIControl control)
+    {
+        if (control.Style is not { } name || script.Styles.GetValueOrDefault(name) is not { } style)
+            return null;
+
+        var palette = DesktopTheme.Palette;
+        if (!ReferenceEquals(palette, resolvedFor))
+        {
+            resolvedStyles.Clear();
+            resolvedFor = palette;
+        }
+
+        if (!resolvedStyles.TryGetValue(name, out var resolved))
+        {
+            resolved = ResolvedStyle.For(style, palette.IsDark);
+            resolvedStyles[name] = resolved;
+        }
+
+        return resolved;
+    }
+
+    /// <summary>A style's colors and size as plain values for one palette.</summary>
+    private sealed record ResolvedStyle(
+        UIColor? TextColor,
+        UIColor? SelectedTextColor,
+        UIColor? HighlightedTextColor,
+        UIColor? DisabledTextColor,
+        UIColor? BackgroundColor,
+        UIColor? BorderColor,
+        UIColor? FillColor,
+        int? FontSize,
+        UIFont? Font)
+    {
+        public static ResolvedStyle For(UIStyle style, bool dark)
+        {
+            // On a dark palette, a dark twin wins where it's set; otherwise the color as written, roles resolved.
+            UIColor? Pick(UIStyleColor? light, UIStyleColor? darkTwin) =>
+                (dark && darkTwin is { } twin ? twin : light) is { } color
+                    ? color.Role is { } role ? DesktopTheme.Resolve(role) : color.Color
+                    : null;
+
+            var (colors, twins) = (style.Colors, style.Dark);
+            return new ResolvedStyle(
+                Pick(colors.Text, twins.Text),
+                Pick(colors.SelectedText, twins.SelectedText),
+                Pick(colors.HighlightedText, twins.HighlightedText),
+                Pick(colors.DisabledText, twins.DisabledText),
+                Pick(colors.Background, twins.Background),
+                Pick(colors.Border, twins.Border),
+                Pick(colors.Fill, twins.Fill),
+                style.FontSize is { } size ? size.Role is { } role ? DesktopTheme.Resolve(role) : size.Size : null,
+                style.Font);
+        }
+    }
 
     private UIColor TextColor(UIControl control) => Style(control)?.TextColor ?? DesktopTheme.Text;
 
