@@ -5,7 +5,7 @@ namespace Venture.OS.Tests.Desktop;
 
 /// <summary>
 /// Every interface VentureOS ships stays readable in every palette: light and dark, with each of the accent swatches.
-/// It draws each one in a window, with sample text in every control, and checks each piece of text against what's
+/// It draws each one in a window, with sample text in every control an app fills as it runs, and checks each piece of text against what's
 /// behind it. The recording painter keeps text without painting it, so the pixel under a text is its background.
 /// </summary>
 /// <remarks>
@@ -76,8 +76,10 @@ public sealed class ShippedContrastTests : IDisposable
                 list.Items.AddRange(["First item", "Second item"]);
                 list.SelectedIndex = 0;
             }
-            else if (string.IsNullOrEmpty(view.Text(control.Name)))
+            else if (control.Type != UIControlType.Button && string.IsNullOrEmpty(view.Text(control.Name)))
             {
+                // Text the app sets as it runs, such as a status line. A button's label is its document's, and one
+                // without, such as a color swatch, has no text to read.
                 view.SetText(control.Name, "Sample text");
             }
         }

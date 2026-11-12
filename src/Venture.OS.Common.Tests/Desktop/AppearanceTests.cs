@@ -20,7 +20,11 @@ public sealed class AppearanceTests : IDisposable
 {
     private readonly RecordingOutput output = new();
 
-    public void Dispose() => DesktopTheme.Use(DesktopPalette.Light);
+    public void Dispose()
+    {
+        DesktopAppearance.SettingsPath = null;
+        DesktopTheme.Use(DesktopPalette.Light);
+    }
 
     [Fact]
     public void TheThemeReadsThePaletteInUse()
@@ -69,6 +73,26 @@ public sealed class AppearanceTests : IDisposable
         Assert.Equal(["true"], output.Lines);
         Assert.True(DesktopTheme.Palette.IsDark);
         Assert.Equal(new UIColor(232, 146, 42), DesktopTheme.Palette.ChosenAccent);
+    }
+
+    [Fact]
+    public void ScriptsHearWhenALookCouldntBeSaved()
+    {
+        // A file where the settings folder should be stops the save.
+        var blocked = Path.Combine(Path.GetTempPath(), $"venture-blocked-{Guid.NewGuid():N}");
+        File.WriteAllText(blocked, "in the way");
+        DesktopAppearance.SettingsPath = Path.Combine(blocked, "appearance.xml");
+        try
+        {
+            Run("""print(venture.setAppearance("dark"))""");
+        }
+        finally
+        {
+            File.Delete(blocked);
+        }
+
+        Assert.StartsWith("true\tcouldn't save the appearance", output.Lines.Single());
+        Assert.True(DesktopTheme.Palette.IsDark);
     }
 
     [Fact]

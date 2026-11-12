@@ -5,7 +5,7 @@ local args = require("venture.args")
 
 local options = args.parse({...}, {
   name = "appearance",
-  summary = "Show or change the desktop's look. It lasts until reboot.",
+  summary = "Show or change the desktop's look, as Settings does. The choice is saved.",
   arguments = { { name = "mode", optional = true, summary = "light or dark." } },
   options = { accent = { short = "a", type = "string", summary = "The accent color, as #RRGGBB." } },
 })
@@ -18,6 +18,7 @@ if options.mode or options.accent then
     print("appearance: " .. problem)
     return
   end
+  if problem then print("appearance: " .. problem) end
 end
 
 local look = venture.appearance()

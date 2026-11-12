@@ -1,4 +1,5 @@
 using Venture.OS.Scripting;
+using Venture.OS.Desktop;
 
 namespace Venture.OS.Startup;
 
@@ -28,6 +29,9 @@ internal static class Bootstrap
 
     /// <summary>Where the user's apps are, such as Calculator. They say what they need when they open.</summary>
     public const string UserAppsDirectoryPath = UserDirectoryPath + "/apps";
+
+    /// <summary>The desktop's saved look, which Settings and the <c>appearance</c> command write.</summary>
+    public const string AppearancePath = UserDirectoryPath + "/settings/appearance.xml";
 
     /// <summary>The About VentureOS window's interface.</summary>
     public const string AboutInterfacePath = SystemDirectoryPath + "/interfaces/about.uix";
@@ -116,6 +120,20 @@ internal static class Bootstrap
         SystemDirectory.Install(UserDirectoryPath, SystemFiles.User);
         var count = SystemFiles.User.Length;
         KernelLog.WriteLine($"Installed {count} user {(count == 1 ? "file" : "files")} to {UserDirectoryPath}.");
+    }
+
+    /// <summary>
+    /// Restores the desktop's saved look from <see cref="AppearancePath"/>, and saves changes there from now on.
+    /// </summary>
+    /// <remarks>
+    /// It's optional, and it runs after the user's files are installed, since the shipped choice is one of them.
+    /// Without a file the standard look stays; a file that can't be read is reported, and the standard look stays.
+    /// </remarks>
+    public static void LoadAppearance()
+    {
+        DesktopAppearance.SettingsPath = AppearancePath;
+        var result = DesktopAppearance.Load();
+        KernelLog.WriteLine(result.Problem is { } problem ? $"Appearance: {problem}" : $"Appearance: {result.Description}.");
     }
 
     /// <summary>

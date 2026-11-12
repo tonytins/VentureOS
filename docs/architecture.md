@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (style roles and dark twins) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Settings, and the saved appearance) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (782 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (802 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -20,8 +20,8 @@ the code wins and this page is out of date.
 - **Platform:** Cosmos gen3 3.0.94 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
-- **Boot:** seven steps, three critical (RAM filesystem, timer, shell) and four
-  optional (system files, user files, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
+- **Boot:** eight steps, three critical (RAM filesystem, timer, shell) and five
+  optional (system files, user files, the saved appearance, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
 - **Shell:** a command registry with eleven built-in commands (`help`, `desktop`,
@@ -323,7 +323,7 @@ flowchart TD
 ```
 
 The filesystem, time manager, and shell steps are critical
-(`RunCriticalStep`); the system files, user files, network, and init script steps are
+(`RunCriticalStep`); the system files, user files, appearance, network, and init script steps are
 optional (`RunOptionalStep`). `init.lua` prints through `KernelLogOutput`, so
 its output reaches serial too, and it can use the `venture` table. Ctrl+C or
 Esc stops it, and so does a 10-second limit, so a script that never finishes
@@ -333,6 +333,7 @@ can't keep the shell from starting, even in a headless boot.
 |---|---|---|---|
 | Filesystem | critical | The RAM disk registers, formats as FAT16, and mounts at `/mnt` | Reports which of the three failed, then panics |
 | System files | optional | Every file under `src/Venture.OS/system/` is written to `/mnt/system` | An invalid path or I/O error is reported and boot continues; the built-in C# commands still work |
+| Appearance | optional | `/mnt/user/settings/appearance.xml` is read and its look used, or there's no file and the standard look stays; it runs after the user files, which ship the default | A file that can't be read is reported with why, and the standard look stays |
 | Time manager | critical | Cosmos reports `TimerManager.IsInitialized` | Reports it, then panics |
 | Shell | critical | Every command registers | Registration only fails on a programming error, such as two commands with one name; it panics |
 | Network | optional | Always returns; records the MAC and DHCP address when it can | No NIC, a DHCP timeout, or no address is reported; an exception is reported and boot continues |
@@ -509,7 +510,7 @@ flowchart LR
 | `df [folder]` | Lua script: free and total space where a folder is stored |
 | `pwd` | Lua script: the current folder |
 | `info` | Lua script: version and build, commit, Cosmos version, uptime, and free and total memory |
-| `appearance [light\|dark] [--accent #RRGGBB]` | Lua script: shows or switches the desktop's look, until reboot |
+| `appearance [light\|dark] [--accent #RRGGBB]` | Lua script: shows or switches the desktop's look, and saves it, as Settings does |
 | `lua [code]` | Runs one chunk of Lua 5.5 in a fresh interpreter, or with no code, opens a Lua prompt |
 | `net` | Lua script: device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
 | `halt` | Ends the shell loop; the CPU halts and the machine stays on |
@@ -582,7 +583,7 @@ scripts do the formatting:
 | `venture.uptime()` | `system` | Whole seconds since the CPU started counting, or `nil` |
 | `venture.memory()` | `system` | `{ free, total }` in bytes, or `nil` |
 | `venture.appearance()` | `system` | The desktop's look, `{ mode, accent }`: `"light"` or `"dark"`, and the accent as `#RRGGBB` |
-| `venture.setAppearance(mode, accent)` | `system` | Switches to `"light"` or `"dark"`, with an optional `#RRGGBB` accent (the current one otherwise); `true`, or `nil` and why |
+| `venture.setAppearance(mode, accent)` | `system` | Switches to `"light"` or `"dark"`, with an optional `#RRGGBB` accent (the current one otherwise), and saves it; `true` (and why it wasn't saved, if it wasn't), or `nil` and why |
 | `venture.command{...}` | `shell` | Registers a command for as long as its owner lasts; see **Owners** below |
 | `venture.shell(line)` | `shell` | Runs a line as if typed at the shell; in `init.lua` and at the `lua` prompt |
 | `venture.files.*` | `files` | Lists, reads, writes, and changes files; see **Files** below |
@@ -770,8 +771,14 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   colors to within a shade. The accent is darkened on light and lightened on
   dark until it reads, and `ChosenAccent` keeps it as chosen. The desktop
   works out its sky again, once, when the palette changes.
-  `venture.setAppearance` and the `appearance` command switch it; the
-  choice lasts until reboot. A document's `<Style>` roles follow it; its hex
+  Settings, `venture.setAppearance`, and the `appearance` command switch
+  it, and `DesktopAppearance` saves each change to
+  `/mnt/user/settings/appearance.xml` (`<Appearance version="1" mode=...
+  accent=.../>`), which the appearance boot step reads. A newer version, an
+  unknown mode, or a bad accent refuses the file and keeps the standard look;
+  unknown attributes are skipped, and dropped when it's saved again. The
+  file lives in RAM like the rest, so a change lasts until reboot, and the
+  shipped file sets the look a boot starts with. A document's `<Style>` roles follow it; its hex
   colors stay as written, unless a `dark` twin replaces them.
 - **Hover.** The window manager tells the window under the pointer where it
   is, unless a button is held or the pointer is over the menu bar or dock;
@@ -1037,6 +1044,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Settings (§4, §9): the appearance boot step (optional, after the user files) restores `/mnt/user/settings/appearance.xml`, which every change saves; Settings.app ships with the system apps. |
 | 2026-11-11 | minor | Style roles (§9): color and size roles and `dark` twins on `<Style>`, drafted for Hudini; the shipped apps use roles; a contrast test covers every shipped interface in every palette. |
 | 2026-11-11 | minor | Palettes (§9): `DesktopPalette`, light or dark from an accent after Distro Tycoon 2, behind `DesktopTheme`; `venture.appearance` and `setAppearance` (`system`) and the `appearance` command. |
 | 2026-11-11 | minor | Hover (§1, §9): what the pointer rests on shows it, in any window, with no change to apps; principle 7, apps get the new look without changing; CI and published ISOs dropped from the plans (§11, §12). |

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Settings window. main.lua applies and saves each choice. -->
+<UIScript version="1" requires="menus">
+  <Window width="380" height="222"/>
+
+  <Menu name="fileMenu" title="File" hotkey="F"/>
+  <MenuItem menu="fileMenu" name="closeWindow" title="Close Window" hotkey="C" shortcut="Ctrl+W"/>
+
+  <Style name="heading" fontSize="title"/>
+  <Style name="quiet" textColor="secondaryText"/>
+
+  <!-- The accent swatches, after Distro Tycoon 2's, in DesktopPalette.Swatches' order. A test keeps them in step. -->
+  <Style name="swatch1" backgroundColor="#1E78DC"/>
+  <Style name="swatch2" backgroundColor="#1D63BF"/>
+  <Style name="swatch3" backgroundColor="#8F4CBF"/>
+  <Style name="swatch4" backgroundColor="#E0435D"/>
+  <Style name="swatch5" backgroundColor="#F27E18"/>
+  <Style name="swatch6" backgroundColor="#71BF39"/>
+  <Style name="swatch7" backgroundColor="#21A6A1"/>
+  <Style name="swatch8" backgroundColor="#7E848C"/>
+
+  <Text name="appearanceHeading" x="12" y="10" width="356" height="24" style="heading" text="Appearance"/>
+  <Button name="light" x="12" y="40" width="84" height="26" text="Light"/>
+  <Button name="dark" x="102" y="40" width="84" height="26" text="Dark"/>
+
+  <Text name="accentHeading" x="12" y="80" width="356" height="24" style="heading" text="Accent color"/>
+  <Button name="swatch1" x="12" y="110" width="36" height="36" style="swatch1"/>
+  <Button name="swatch2" x="56" y="110" width="36" height="36" style="swatch2"/>
+  <Button name="swatch3" x="100" y="110" width="36" height="36" style="swatch3"/>
+  <Button name="swatch4" x="144" y="110" width="36" height="36" style="swatch4"/>
+  <Button name="swatch5" x="188" y="110" width="36" height="36" style="swatch5"/>
+  <Button name="swatch6" x="232" y="110" width="36" height="36" style="swatch6"/>
+  <Button name="swatch7" x="276" y="110" width="36" height="36" style="swatch7"/>
+  <Button name="swatch8" x="320" y="110" width="36" height="36" style="swatch8"/>
+
+  <Text name="accentName" x="12" y="152" width="356" height="20" style="quiet"/>
+  <TextField name="custom" x="12" y="182" width="120" height="26" placeholder="#RRGGBB"/>
+  <Text name="status" x="142" y="185" width="226" height="20" style="quiet"/>
+</UIScript>

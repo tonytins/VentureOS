@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.14
+
+- New app: Settings, in the dock. Choose light or dark, and an accent color from eight swatches or your own `#RRGGBB`. Changes apply to every window at once.
+- The desktop's look is saved in `/mnt/user/settings/appearance.xml`, whether it's changed in Settings or with `appearance`, and restored when VentureOS starts. Like other files, a change lasts until reboot for now; the file that ships sets the look a boot starts with.
+
 ## 0.3.13
 
 - Calculator and About read properly in the dark appearance; quieter text in Files, TextEdit, Terminal, and System Monitor follows the appearance too.

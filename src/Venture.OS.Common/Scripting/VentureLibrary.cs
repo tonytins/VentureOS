@@ -17,7 +17,8 @@ namespace Venture.OS.Scripting;
 /// IPv4 is configured.</description></item>
 /// <item><description><c>venture.appearance()</c>: the desktop's look, <c>{ mode, accent }</c>, and
 /// <c>venture.setAppearance(mode, accent)</c>, which switches it to <c>"light"</c> or <c>"dark"</c> with an optional
-/// <c>#RRGGBB</c> accent, returning <c>true</c>, or <c>nil</c> and why.</description></item>
+/// <c>#RRGGBB</c> accent and saves it, returning <c>true</c> (and why it wasn't saved, if it wasn't), or <c>nil</c>
+/// and why.</description></item>
 /// </list>
 /// <para>The functions other than <c>setAppearance</c> take no arguments and ignore any they're given. An exception from
 /// <see cref="ISystemInfo"/> becomes a Lua error, which <c>pcall</c> can catch, so a failing device can't stop the
@@ -147,8 +148,9 @@ public static class VentureLibrary
 
     /// <summary>
     /// <c>venture.setAppearance(mode, accent)</c>: switches the desktop to <c>"light"</c> or <c>"dark"</c>, with an
-    /// accent written <c>#RRGGBB</c>, or the current one when it's left out. Returns <see langword="true"/>, or
-    /// <see langword="nil"/> and why, changing nothing, when either is wrong. The desktop shows it on its next frame.
+    /// accent written <c>#RRGGBB</c>, or the current one when it's left out, and saves the choice. Returns
+    /// <see langword="true"/>, with why it couldn't be saved when that failed, or <see langword="nil"/> and why,
+    /// changing nothing, when either is wrong. The desktop shows it on its next frame.
     /// </summary>
     private static int SetAppearance(ILuaState lua)
     {
@@ -164,9 +166,13 @@ public static class VentureLibrary
                 return Refuse(lua, $"an accent is written #RRGGBB, such as #1E78DC, not \"{text}\"");
         }
 
-        DesktopTheme.Use(DesktopPalette.Create(accent, mode == "dark"));
+        var unsaved = DesktopAppearance.Apply(DesktopPalette.Create(accent, mode == "dark"));
         lua.PushBoolean(true);
-        return 1;
+        if (unsaved is null)
+            return 1;
+
+        lua.PushString(LuaText.Encode(unsaved));
+        return 2;
     }
 
     private static int Refuse(ILuaState lua, string reason)
