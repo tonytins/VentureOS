@@ -88,12 +88,14 @@ menu in document order, and menus appear in the bar in document order.
   documents written before roles do too.
 - A standard item of the host's yields to a document's item with the same
   shortcut, so a document that already handles it keeps doing so.
-- A standard menu with nothing in it is hidden.
+- A standard menu with nothing in it is hidden. A host may keep some of its
+  standard menus on the bar always, dimming the items that can't act.
 
 VentureOS's desktop keeps Ctrl+Q (quit the app) and Ctrl+Shift+Q (return to
-the shell). Its standard menus are File, with Close Window (Ctrl+W), and
-Help, with About the app, plus Edit, with Cut, Copy, Paste, and Select All
-(Ctrl+X, Ctrl+C, Ctrl+V, and Ctrl+A) while text has focus, and View. Edit
-and View otherwise show only when a document adds to them. They sit after the app's menu, in that order, with
+the shell). Its standard menus are File, with Close Window (Ctrl+W); Edit,
+with Cut, Copy, Paste, and Select All (Ctrl+X, Ctrl+C, Ctrl+V, and Ctrl+A);
+and Help, with About the app, which are always on the bar, their items
+dimmed when they can't act; and View, which shows only when a document adds
+to it. They sit after the app's menu, in that order, with
 the document's other menus between View and Help. Their hotkeys are F, E, V,
 and H, so a document's own menus should use other letters.

@@ -52,6 +52,9 @@ public sealed class DesktopSession
     private static readonly UIMenuEntry EditSeparator = new(null, null, null, null, 0);
     private static readonly UIMenuEntry SelectAllEntry = new("selectAll", "Select All", 'A', Control('A'), 0);
 
+    // Help's item when no app is in front, so Help is never empty.
+    private static readonly UIMenuEntry AboutSystemEntry = new("about", "About VentureOS", 'A', null, 0);
+
     private static readonly BarMenu SystemMenu = new(
         new UIMenu("venture", "VentureOS", null,
         [
@@ -73,6 +76,9 @@ public sealed class DesktopSession
     private readonly HeldOutput appOutput;
     private readonly Dictionary<(string App, bool NewWindow, bool Quits), BarMenu> appMenus = [];
 
+    // Whether one of the desktop's own items in a standard menu can act now; made once, since the bar asks each draw.
+    private readonly Func<UIMenuEntry, bool> ownEnabled;
+
     // Help's About item for each app, kept so the bar sees the same item, and tells it apart, from frame to frame.
     private readonly Dictionary<string, UIMenuEntry> aboutEntries = [];
 
@@ -84,9 +90,9 @@ public sealed class DesktopSession
     private readonly List<KeyPress> forWindows = [];
 
     // What the bar's menus were built from, so they're rebuilt only when one of these changes: the app shown, its
-    // window in front, the window in front whoever's it is, whether the app opens new windows, and whether text has
-    // focus for Edit.
-    private (string? App, DesktopWindow? Window, DesktopWindow? Front, bool NewWindow, bool Editing, bool Built) menuSource;
+    // window in front, and whether the app opens new windows. Whether the standard items can act is asked as the bar
+    // draws, so selecting text, for one, needs no rebuild.
+    private (string? App, DesktopWindow? Window, bool NewWindow, bool Built) menuSource;
     private DesktopInput last;
     private bool drawn;
     private PointerOwner owner;
@@ -129,6 +135,7 @@ public sealed class DesktopSession
         WindowManager? windows = null)
     {
         ArgumentNullException.ThrowIfNull(workingDirectory);
+        ownEnabled = IsOwnEnabled;
         Width = width;
         Height = height;
         this.apps = apps;
@@ -419,6 +426,9 @@ public sealed class DesktopSession
             case MenuGroup.Standard when ReferenceEquals(choice.Item, SelectAllEntry):
                 Windows.Focused?.SelectAllText();
                 break;
+            case MenuGroup.Standard when ReferenceEquals(choice.Item, AboutSystemEntry):
+                ShowAbout();
+                break;
             case MenuGroup.Standard when choice.Menu.IsOwn(choice.Item):
                 // Help's About item, for the app the bar shows.
                 ShowAbout(menuSource.App);
@@ -680,23 +690,24 @@ public sealed class DesktopSession
         var front = Windows.Focused;
         var focused = front is not null && front.App == ActiveApp ? front : null;
         var newWindow = shown is not null && (apps?.Windows?.HasNewWindow(shown) ?? false);
-        var editing = front?.HasEditableText ?? false;
-        if (menuSource == (shown, focused, front, newWindow, editing, true))
+        if (menuSource == (shown, focused, newWindow, true))
             return;
 
-        menuSource = (shown, focused, front, newWindow, editing, true);
+        menuSource = (shown, focused, newWindow, true);
         List<BarMenu> menus = [SystemMenu];
         if (shown is not null)
             menus.Add(AppMenu(shown));
 
         // The standard menus, with the window's menus of the same role merged in, then its others, with Help last.
+        // File, Edit, and Help are always there, their items dimmed when they can't act; View only when a window
+        // adds to it.
         var view = focused?.View;
         IReadOnlyList<UIMenu> document = view?.Script.Menus ?? [];
-        UIMenuEntry[] closing = front is not null && !Takes(document, CloseShortcut) ? [CloseWindowEntry] : [];
-        UIMenuEntry[] helping = shown is not null ? [AboutEntry(shown)] : [];
+        UIMenuEntry[] closing = Takes(document, CloseShortcut) ? [] : [CloseWindowEntry];
+        UIMenuEntry[] helping = [shown is not null ? AboutEntry(shown) : AboutSystemEntry];
 
         AddStandard(menus, document, view, UIMenuRole.File, "File", 'F', closing);
-        AddStandard(menus, document, view, UIMenuRole.Edit, "Edit", 'E', editing ? EditItems(document) : []);
+        AddStandard(menus, document, view, UIMenuRole.Edit, "Edit", 'E', EditItems(document));
         AddStandard(menus, document, view, UIMenuRole.View, "View", 'V', []);
         foreach (var menu in document)
         {
@@ -709,10 +720,28 @@ public sealed class DesktopSession
     }
 
     /// <summary>
+    /// Whether one of the desktop's own items can act now: Close Window with a window in front; Cut and Copy with
+    /// text selected; Paste with text focused and something to paste; Select All with text focused.
+    /// </summary>
+    private bool IsOwnEnabled(UIMenuEntry entry)
+    {
+        var front = Windows.Focused;
+        if (ReferenceEquals(entry, CloseWindowEntry))
+            return front is not null;
+        if (ReferenceEquals(entry, CutEntry) || ReferenceEquals(entry, CopyEntry))
+            return front?.HasSelectedText ?? false;
+        if (ReferenceEquals(entry, PasteEntry))
+            return Clipboard is not null && (front?.HasEditableText ?? false);
+        if (ReferenceEquals(entry, SelectAllEntry))
+            return front?.HasEditableText ?? false;
+        return true;
+    }
+
+    /// <summary>
     /// Adds a standard menu: the document's items of that role, in order, then the desktop's own after a separator.
     /// An empty one is left out, so a menu shows only when there's something in it.
     /// </summary>
-    private static void AddStandard(
+    private void AddStandard(
         List<BarMenu> menus, IReadOnlyList<UIMenu> document, UIView? view, UIMenuRole role, string title, char hotkey,
         UIMenuEntry[] own)
     {
@@ -727,7 +756,8 @@ public sealed class DesktopSession
             entries.Add(new UIMenuEntry(null, null, null, null, 0));
         entries.AddRange(own);
         if (entries.Count > 0)
-            menus.Add(new BarMenu(new UIMenu(title.ToLowerInvariant(), title, hotkey, entries, 0, role), MenuGroup.Standard, view, Own: own));
+            menus.Add(new BarMenu(new UIMenu(title.ToLowerInvariant(), title, hotkey, entries, 0, role), MenuGroup.Standard, view,
+                Own: own, OwnEnabled: ownEnabled));
     }
 
     /// <summary>

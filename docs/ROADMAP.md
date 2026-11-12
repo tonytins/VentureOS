@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (0.4.3xx, Edit) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (0.4.4xx begins: File, Edit, and Help always there) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -185,6 +185,8 @@ code of its own; an empty standard menu stays hidden.
 
 **0.4.4xx, networking**
 
+- [x] File, Edit, and Help always on the bar, their items dimmed when they
+  can't act, as Tony Bark asked after trying Edit.
 - [ ] Check what Cosmos 3.0.94 offers for DNS and ICMP.
 - [ ] Register the DNS server DHCP reports.
 - [ ] `resolve` and `ping` commands, on `venture.net`, with every wait bounded.
@@ -380,6 +382,7 @@ interface formats into `Venture.OS.Interface`.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | 0.4.4xx begins with Tony Bark's tweak to the standard menus: File, Edit, and Help are always on the bar, with their items dimmed when they can't act. Networking follows in the same band. |
 | 2026-11-12 | minor | 0.4.3xx done: Edit's Cut, Copy, Paste, and Select All for whatever text has focus, in every app, through one clipboard. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | 0.4.2xx done: text selection in fields, areas, and the title field, by Shift and the arrows, Ctrl+A, and dragging. About 21–41 h of milestones remain. |
 | 2026-11-11 | minor | 0.4.1xx done: standard File and Help menus for every app, with About from `Info.xml`'s `description`, menus merged by `role` or title, and an app's own shortcut winning. About 25–49 h of milestones remain. |

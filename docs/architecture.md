@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Edit: the clipboard) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (File, Edit, and Help always on the bar) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -814,11 +814,15 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   `description`) and belongs to the app. The focused window's `.uix` menus
   merge into the standard menu their `role` names, or whose title they
   match exactly, items first; the rest sit between View and Help. A
-  standard item yields to a window's item with the same shortcut, and an
-  empty standard menu is hidden, so View shows only when an app adds to it.
-  Edit gains Cut (Ctrl+X), Copy (Ctrl+C), Paste (Ctrl+V), and Select All
-  (Ctrl+A) while the window in front has text with focus (a text field or
-  area, or its title field being edited), acting on that text through one
+  standard item yields to a window's item with the same shortcut. File,
+  Edit, and Help are always on the bar, with Help holding About VentureOS
+  when no app is in front; their own items dim when they can't act, which
+  the bar asks as it draws (`BarMenu.OwnEnabled`), and a dimmed item's
+  shortcut falls through to the window. View, with no items of its own,
+  shows only when an app adds to it. Edit holds Cut (Ctrl+X), Copy (Ctrl+C),
+  Paste (Ctrl+V), and Select All (Ctrl+A), which act on the text with focus
+  in the window in front (a text field or area, or its title field being
+  edited), through one
   clipboard the session keeps (`DesktopSession.Clipboard`, for as long as
   the desktop is open). Pasting into a field turns line breaks into
   spaces and stops at its maximum length; pasting into an area reports
@@ -1072,6 +1076,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-12 | minor | Standard menus (§9): File, Edit, and Help are always on the bar, their items dimmed when they can't act; Help holds About VentureOS with no app in front. |
 | 2026-11-12 | minor | Edit (§9): Cut, Copy, Paste, and Select All in the standard Edit menu while text has focus, in every app, through the session's clipboard; secure fields can't be copied. |
 | 2026-11-11 | minor | Text selection (§9): fields, areas, and the title field share `TextCursor`; Shift-selection, Ctrl+A, click and drag, and typing over a selection; the title field selects all when editing starts. |
 | 2026-11-11 | minor | Standard menus (§9): every app gets File (Close Window) and Help (About the app, from `Info.xml`'s new optional `description`); a window's menus merge in by `role` or title; a window's own shortcut wins over a standard item's; the About window is built in Common for VentureOS and every app. |

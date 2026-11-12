@@ -264,6 +264,12 @@ public sealed class DesktopWindow
     /// </summary>
     public bool HasEditableText => IsEditingTitle || View.FocusedControl is not null;
 
+    /// <summary>
+    /// Whether whatever has the window's focus has text selected that Cut and Copy can take, worked out without
+    /// allocating, since the menu bar asks each time it draws.
+    /// </summary>
+    public bool HasSelectedText => IsEditingTitle ? cursor.HasSelection : View.HasFocusedSelection;
+
     /// <summary>The selected text in whatever has the window's focus, for Copy and Cut, or <see langword="null"/>.</summary>
     public string? SelectedText()
     {

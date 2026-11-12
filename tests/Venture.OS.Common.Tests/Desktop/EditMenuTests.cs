@@ -37,14 +37,19 @@ public sealed class EditMenuTests
     private UIView View => window.View;
 
     [Fact]
-    public void ShowsWhileTextHasFocus()
+    public void IsAlwaysThereWithWhatCantActDimmed()
     {
-        Assert.DoesNotContain("Edit", Titles());
-
-        Focus("name", "Hello");
-
-        Assert.Equal(["VentureOS", "File", "Edit"], Titles());
+        Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
         Assert.Equal(["Cut", "Copy", "Paste", null, "Select All"], Items("Edit"));
+        Assert.Equal([false, false, false, false], Enabled());
+
+        // Text with focus can be selected; with some selected, cut and copied; and once copied, pasted over.
+        Focus("name", "Hello");
+        Assert.Equal([false, false, false, true], Enabled());
+        Press('a');
+        Assert.Equal([true, true, false, true], Enabled());
+        Press('c');
+        Assert.Equal([true, true, true, true], Enabled());
     }
 
     [Fact]
@@ -146,6 +151,13 @@ public sealed class EditMenuTests
     private void Frame(params KeyPress[] keys) => session.Update(new DesktopInput(1000, 700, false, Keys: keys));
 
     private List<string> Titles() => [.. session.MenuBar.Menus.Select(menu => menu.Menu.Title)];
+
+    // Whether Cut, Copy, Paste, and Select All can act, in that order.
+    private List<bool> Enabled()
+    {
+        var edit = session.MenuBar.Menus.Single(bar => bar.Menu.Title == "Edit");
+        return [.. edit.Menu.Entries.Where(entry => !entry.IsSeparator).Select(edit.IsEnabled)];
+    }
 
     private List<string?> Items(string menu) =>
         [.. session.MenuBar.Menus.Single(bar => bar.Menu.Title == menu).Menu.Entries.Select(entry => entry.Title)];

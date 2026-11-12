@@ -62,9 +62,17 @@ public sealed class StandardMenusTests : IDisposable
     }
 
     [Fact]
-    public void WithNothingOpenOnlyTheSystemMenuShows()
+    public void WithNothingOpenFileEditAndHelpStillShowDimmed()
     {
-        Assert.Equal(["VentureOS"], Titles());
+        Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
+        Assert.False(Enabled("File", "Close Window"));
+        Assert.False(Enabled("Edit", "Copy"));
+        Assert.Equal(["About VentureOS"], Items("Help"));
+        Assert.True(Enabled("Help", "About VentureOS"));
+
+        // A dimmed item's shortcut does nothing.
+        Frame(keys: [new KeyPress(DesktopKey.Character, 'w', Control: true)]);
+        Assert.Empty(windows.Windows);
     }
 
     [Fact]
@@ -72,7 +80,7 @@ public sealed class StandardMenusTests : IDisposable
     {
         Open("Writer");
 
-        Assert.Equal(["VentureOS", "Writer", "File", "Tools", "Help"], Titles());
+        Assert.Equal(["VentureOS", "Writer", "File", "Edit", "Tools", "Help"], Titles());
         Assert.Equal(["Save", null, "Close Window"], Items("File"));
         Assert.Equal(["Tips", null, "About Writer"], Items("Help"));
     }
@@ -82,7 +90,7 @@ public sealed class StandardMenusTests : IDisposable
     {
         Open("Plain");
 
-        Assert.Equal(["VentureOS", "Plain", "File", "Help"], Titles());
+        Assert.Equal(["VentureOS", "Plain", "File", "Edit", "Help"], Titles());
         Assert.Equal(["Close Window"], Items("File"));
         Assert.Equal(["About Plain"], Items("Help"));
     }
@@ -165,7 +173,7 @@ public sealed class StandardMenusTests : IDisposable
         Assert.Equal("About VentureOS", about.Title);
         Assert.Equal("Version 9.9.9 (Build 1)", about.View.Text("version"));
         Assert.False(about.View.IsHidden("blurb"));
-        Assert.Equal(["VentureOS", "File"], Titles());
+        Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
     }
 
     private void App(string name, string info, string menus)
@@ -202,6 +210,12 @@ public sealed class StandardMenusTests : IDisposable
     private void Frame(KeyPress[]? keys = null) => session.Update(new DesktopInput(5, 400, false, Keys: keys));
 
     private List<string> Titles() => [.. session.MenuBar.Menus.Select(menu => menu.Menu.Title)];
+
+    private bool Enabled(string menu, string item)
+    {
+        var bar = session.MenuBar.Menus.Single(bar => bar.Menu.Title == menu);
+        return bar.IsEnabled(bar.Menu.Entries.Single(entry => entry.Title == item));
+    }
 
     private List<string?> Items(string menu) =>
         [.. session.MenuBar.Menus.Single(bar => bar.Menu.Title == menu).Menu.Entries.Select(entry => entry.Title)];

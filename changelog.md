@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.400
+
+- File, Edit, and Help are always in the menu bar, whatever's open. Items that can't do anything at the moment are dimmed, such as Copy with no text selected.
+
 ## 0.4.300
 
 - Every app has Cut (Ctrl+X), Copy (Ctrl+C), Paste (Ctrl+V), and Select All (Ctrl+A) in its Edit menu while you're typing in a text field, a text area, or a window's address. What you copy in one app pastes into any other, until you leave the desktop.

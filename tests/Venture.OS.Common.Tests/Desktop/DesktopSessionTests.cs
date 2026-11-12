@@ -87,7 +87,7 @@ public sealed class DesktopSessionTests : IDisposable
     public void TheDockShowsTheSystemsApps()
     {
         Assert.Equal([new DockItem("Chatty", "Chatty", IsOpen: false), new DockItem("Viewer", "Viewer", IsOpen: false)], session.Dock.Items);
-        Assert.Equal(["VentureOS"], Titles());
+        Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class DesktopSessionTests : IDisposable
         Assert.True(session.Dock.Items[0].IsOpen);
         Assert.Equal("Chatty", session.ActiveApp);
         // What Chatty said is in a message in front, which File's Close Window closes; Help has About Chatty.
-        Assert.Equal(["VentureOS", "Chatty", "File", "Help"], Titles());
+        Assert.Equal(["VentureOS", "Chatty", "File", "Edit", "Help"], Titles());
 
         var alert = session.Windows.Focused!;
         Assert.Equal("Chatty", alert.Title);
@@ -117,7 +117,7 @@ public sealed class DesktopSessionTests : IDisposable
         Assert.False(apps.IsOpen("dev.example.chatty"));
         Assert.False(session.Dock.Items[0].IsOpen);
         Assert.Null(session.ActiveApp);
-        Assert.Equal(["VentureOS"], Titles());
+        Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public sealed class DesktopSessionTests : IDisposable
         session.Windows.Open(window);
         Frame(400, 300);
 
-        Assert.Equal(["VentureOS", "File"], Titles());
+        Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
 
         Frame(400, 300, keys: [new KeyPress(DesktopKey.Character, 'n', Control: true)]);
         Assert.Equal(["newNote"], chosen);
@@ -159,7 +159,7 @@ public sealed class DesktopSessionTests : IDisposable
         Frame(400, 300, keys: [new KeyPress(DesktopKey.Down), new KeyPress(DesktopKey.Enter)]);
         Assert.Equal(["newNote", "closeIt"], chosen);
         Assert.Empty(session.Windows.Windows);
-        Assert.Equal(["VentureOS"], Titles());
+        Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
     }
 
     [Fact]
@@ -237,11 +237,11 @@ public sealed class DesktopSessionTests : IDisposable
         Assert.Equal("Viewer", next.ActiveApp);
 
         // About opening in front, before the first frame, still takes the bar from Viewer, leaving the VentureOS
-        // menu and File, whose Close Window closes About.
+        // menu and the standard ones.
         next.ShowAbout();
         next.Update(new DesktopInput(400, 300, false));
         Assert.Null(next.ActiveApp);
-        Assert.Equal(["VentureOS", "File"], next.MenuBar.Menus.Select(menu => menu.Menu.Title));
+        Assert.Equal(["VentureOS", "File", "Edit", "Help"], next.MenuBar.Menus.Select(menu => menu.Menu.Title));
     }
 
     [Fact]

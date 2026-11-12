@@ -31,14 +31,19 @@ public enum MenuGroup
 /// <param name="Emphasized">Whether its title draws in heavier text, as the app's menu does.</param>
 /// <param name="Own">
 /// In a standard menu, the desktop's own items, told apart by reference so an app's item of the same name is never
-/// mistaken for one; they're always on, whatever the view says.
+/// mistaken for one; whether they're on is <paramref name="OwnEnabled"/>'s to say, whatever the view says.
+/// </param>
+/// <param name="OwnEnabled">
+/// Whether one of the desktop's own items can act now, such as Copy with text selected, asked each time the menu is
+/// drawn or chosen; without one, they're always on.
 /// </param>
 public sealed record BarMenu(
-    UIMenu Menu, MenuGroup Group, UIView? View = null, bool Emphasized = false, IReadOnlyList<UIMenuEntry>? Own = null)
+    UIMenu Menu, MenuGroup Group, UIView? View = null, bool Emphasized = false, IReadOnlyList<UIMenuEntry>? Own = null,
+    Func<UIMenuEntry, bool>? OwnEnabled = null)
 {
     /// <summary>Whether an entry can be chosen: an item that isn't disabled.</summary>
     public bool IsEnabled(UIMenuEntry entry) =>
-        entry.Name is { } name && (IsOwn(entry) || !(View?.IsDisabled(name) ?? false));
+        entry.Name is { } name && (IsOwn(entry) ? OwnEnabled?.Invoke(entry) ?? true : !(View?.IsDisabled(name) ?? false));
 
     /// <summary>Whether an item has a check mark.</summary>
     public bool IsChecked(UIMenuEntry entry) => entry.Name is { } name && !IsOwn(entry) && (View?.IsSelected(name) ?? false);

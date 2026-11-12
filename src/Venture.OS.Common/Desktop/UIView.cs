@@ -260,6 +260,10 @@ public sealed class UIView
             ? state.Cursor.Selection
             : null;
 
+    /// <summary>Whether the focused text field or area has text selected that can be copied: not a secure field's.</summary>
+    public bool HasFocusedSelection =>
+        focused is not null && script.Control(focused) is { IsSecure: false } && states[focused].Cursor.HasSelection;
+
     /// <summary>
     /// The focused text field's or area's selected text, for Copy and Cut, or <see langword="null"/> when nothing is
     /// focused or selected, or the field is secure, whose text never leaves it.

@@ -261,12 +261,13 @@ new number. `roll` still works in the shell, since both live in the same app.
 - **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen
   item reports `pressed` with its name, like a button. Every app already
-  has File, with Close Window (Ctrl+W), and Help, with About your app, which
-  shows its `name`, `version`, and `description`. A menu with `role="file"`
+  has File, with Close Window (Ctrl+W); Edit, with Cut, Copy, Paste, and
+  Select All; and Help, with About your app, which shows its `name`,
+  `version`, and `description`. A menu with `role="file"`
   (or the title `File`) adds its items to the top of File, and the same goes
-  for `edit`, `view`, and `help`. Every text field and area also gets Edit's
-  Cut, Copy, Paste, and Select All. Don't add your own Close Window, or your
-  own copy and paste. See
+  for `edit`, `view`, and `help`. Edit works on every text field and area
+  with no code of yours. Don't add your own Close Window, or your own copy
+  and paste. See
   [UIScript menus](./uiscript-menus.md).
 - **A sidebar:** add `sidebar` to `requires` and
   `<Sidebar name="places" width="120"/>`, and the window gets a list of
