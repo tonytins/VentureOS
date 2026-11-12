@@ -21,7 +21,9 @@ releases, which are what people get, rather than milestones alone.
 - **Versions** follow the .NET SDK's feature bands: `0.4` is the release, each
   milestone in it takes a band (`0.4.1xx`, `0.4.2xx`, ...), and the last two
   digits count builds within the band. A build's version is the one the kernel
-  reports, from `GitInfo.txt` and the commits since.
+  reports, from `GitInfo.txt` and the commits since. `GitInfo.txt` moves to a
+  milestone's band (`0.4.200`) when work on it begins; a new release
+  (`0.5.100`) waits for my word.
 - **Support.** Until 1.0, only the latest release is supported.
 - **Stages.** A release is in development, then released: tagged
   (`v0.3.18`), with notes in [docs/releases](./releases/). Published ISOs come

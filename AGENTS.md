@@ -147,8 +147,11 @@ Describe only what works today, and keep the tree building at every step.
 - [changelog.md](changelog.md): only changes a user would notice, under the
   version the kernel reports for that commit. `GitInfo.txt` holds the base
   version, and the patch number rises with each commit that touches
-  `src/Venture.OS/`, so the changelog is expected to lag. Don't edit
-  `GitInfo.txt` unless asked to cut a version.
+  `src/Venture.OS/`, so the changelog is expected to lag. When work on the
+  next milestone in a release begins, set `GitInfo.txt` to its feature band
+  (`0.4.200` for the second), in the commit that starts it, as
+  [the roadmap](docs/ROADMAP.md) lays out. Starting a new release, such as
+  `0.5.100`, needs the owner's word.
 - `docs/architecture.md`: update the section, the current-state summary, and
   the revision history when behavior, layout, or a principle changes.
 - `docs/scorecard.md`: flip the rows you moved, with evidence, and update the
