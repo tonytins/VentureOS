@@ -93,6 +93,9 @@ public sealed class UIView
     private string? armed;
     private string? dragging;
     private (int X, int Y) pointer;
+
+    // Where the pointer is over the view, for drawing; see SetHover.
+    private (int X, int Y)? hover;
     private (string List, int Index, TimeSpan Time)? lastListClick;
 
     // Reused every frame, since the desktop updates views without pause; see Update.
@@ -331,6 +334,13 @@ public sealed class UIView
             Focus(name);
         setAside = null;
     }
+
+    /// <summary>
+    /// Says where the pointer is, relative to the view's corner, or <see langword="null"/> when it's somewhere else,
+    /// such as over another window, so drawing shows what it rests on. The desktop sets it for every window, since
+    /// only the front one gets input.
+    /// </summary>
+    public void SetHover((int X, int Y)? point) => hover = point;
 
     /// <summary>
     /// Handles a frame's input with the view's corner at (<paramref name="originX"/>, <paramref name="originY"/>).
@@ -947,9 +957,9 @@ public sealed class UIView
             return;
         }
 
-        var under = Place(control.Frame, control.Image is not null).Contains(pointer.X, pointer.Y);
-        var held = state.Selected || (armed == control.Name && under);
-        var hovered = !held && under;
+        var place = Place(control.Frame, control.Image is not null);
+        var held = state.Selected || (armed == control.Name && place.Contains(pointer.X, pointer.Y));
+        var hovered = !held && !state.Disabled && hover is { } at && place.Contains(at.X, at.Y);
         var style = Style(control);
 
         if (style?.BackgroundColor is { } background)
@@ -957,7 +967,8 @@ public sealed class UIView
         else if (held)
             painter.FillRectangle(x, y, width, height, DesktopTheme.ButtonPressed);
         else
-            DesktopTheme.FillGradient(painter, x, y, width, height, DesktopTheme.TitleBarTop, DesktopTheme.TitleBarBottom);
+            DesktopTheme.FillGradient(painter, x, y, width, height, DesktopTheme.TitleBarTop,
+                hovered ? DesktopTheme.ButtonHover : DesktopTheme.TitleBarBottom);
 
         DesktopTheme.Outline(painter, x, y, width, height, style?.BorderColor ?? DesktopTheme.Border);
 
@@ -1040,14 +1051,21 @@ public sealed class UIView
         var rowHeight = RowHeight(control);
         var rows = VisibleRows(control);
         var room = width - (4 * SidebarSelectionInset);
+
+        // The row under the pointer, by the same arithmetic a click uses.
+        var hovered = -1;
+        var place = Place(control.Frame, false);
+        if (!state.Disabled && hover is { } at && place.Contains(at.X, at.Y))
+            hovered = list.FirstVisible + (int)((at.Y - place.Y - 1) / rowHeight);
+
         for (var row = 0; row < rows && list.FirstVisible + row < list.Items.Count; row++)
         {
             var index = list.FirstVisible + row;
             var rowY = y + 1 + (row * rowHeight);
-            if (index == list.SelectedIndex)
+            if (index == list.SelectedIndex || index == hovered)
             {
                 painter.FillRectangle(x + SidebarSelectionInset, rowY, width - (2 * SidebarSelectionInset), rowHeight,
-                    DesktopTheme.SidebarSelection);
+                    index == list.SelectedIndex ? DesktopTheme.SidebarSelection : DesktopTheme.SidebarHover);
             }
 
             var text = Fit(painter, list.Items[index], size, room);

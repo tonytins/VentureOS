@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (resizable windows) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (hover; apps get the new look without changing) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (715 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (723 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -43,9 +43,9 @@ the code wins and this page is out of date.
   that opens the system's apps, and movable windows that show `.uix`
   interfaces. Files is the desktop's own app, and Quick Look previews files.
   Apps open windows through `venture.ui`; `Notes.app` has one.
-- **Not built yet:** keeping files across reboots
-  (Blue Water); Terminal.app (Borealis); CI (removed for now: the kernel doesn't build like a typical .NET project), and published ISOs
-  (every-stage work on the roadmap). See the
+- **Not built yet:** keeping files across reboots (Blue Water); dark mode,
+  accent colours, style roles, and Settings (Downeaster). CI and published
+  ISOs were dropped from the roadmap (2026-11-11). See the
   [roadmap](./ROADMAP.md); verified status is in the
   [scorecard](./scorecard.md).
 
@@ -77,8 +77,8 @@ the code wins and this page is out of date.
    system except the user's `halt` (§5).
 3. **Observable without a screen.** Anything that tells you whether the
    system is healthy (boot step results, the version, failures, panics)
-   reaches the serial log as well as the console, so a headless boot or CI
-   can check it (§6).
+   reaches the serial log as well as the console, so a headless boot can
+   check it (§6).
 4. **One version string.** The version and build the user sees on screen
    are the ones in the serial log and in a panic report (§10).
 5. **Stay on Cosmos's supported API.** VentureOS programs against
@@ -88,6 +88,12 @@ the code wins and this page is out of date.
 6. **Describe only what works.** Docs, the scorecard, and the changelog
    record what a build or boot has shown, and say plainly what hasn't been
    verified.
+7. **Apps get the new look without changing.** As Apple's apps took on Dark
+   Mode through semantic colours, a change to how the desktop looks, such
+   as the title bar, hover, or a palette, reaches every app with no change
+   to it. The desktop draws every frame and control, and styles say what a
+   colour or size is for rather than what it is. Only a change to layout,
+   such as a sidebar or resizing, is something an app opts into (§9).
 
 ### 1.1 Riding Cosmos's churn
 
@@ -751,6 +757,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   without them), and kept on the screen. Controls follow their edge
   offsets, which measure from that size; a sidebar keeps its width. Apps
   get no event when their window resizes.
+- **Hover.** The window manager tells the window under the pointer where it
+  is, unless a button is held or the pointer is over the menu bar or dock;
+  every window gets this, not only the front one, which gets input. Over
+  either the close or minimize button, both show their marks; a title
+  field's text takes the accent; buttons and toolbar items lighten; and a
+  sidebar row is shaded. No app does anything for it.
 - **Sidebars.** A `<Sidebar>` runs down the window's left, its full height,
   in its own shade, as Nautilus has it in GNOME 45: the buttons sit on its
   top, and the title bar spans only the content, whose corner moves right
@@ -966,8 +978,8 @@ builds and runs its example, so it can't drift from what works.
 - **CI:** none for now. The kernel needs Cosmos's toolchain and doesn't build
   like a typical .NET project, so the workflow was removed (2026-11-11).
   Tests and builds run locally.
-- **Not built yet:** CI, a headless boot check, and published ISOs
-  (every-stage work on the roadmap).
+- **Not planned:** CI, an automatic headless boot check, and published ISOs,
+  dropped from the roadmap (2026-11-11).
 
 ---
 
@@ -975,8 +987,8 @@ builds and runs its example, so it can't drift from what works.
 
 | Kind | Today | Planned |
 |---|---|---|
-| Build | x64 and ARM64 with no warnings, locally | CI, when it returns |
-| Boot | Headless boots by hand, read through `[Venture]` serial lines | CI boots headless and fails on a panic or a missing banner |
+| Build | x64 and ARM64 with no warnings, locally | Nothing more |
+| Boot | Headless boots by hand, read through `[Venture]` serial lines | Nothing more |
 | Failure paths | A forced panic and a no-NIC boot, verified by hand | Kept as repeatable checks |
 | Logic | xUnit v3 tests for `Venture.OS.Common`, run locally | Each new kernel-free type comes with tests |
 
@@ -1004,6 +1016,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Hover (§1, §9): what the pointer rests on shows it, in any window, with no change to apps; principle 7, apps get the new look without changing; CI and published ISOs dropped from the plans (§11, §12). |
 | 2026-11-11 | minor | Resizing (§9): `resizable` on `<Window>`, a grip, and `UIView.SetWindowSize`, with controls following Hudini's edge offsets; Files and TextEdit resize. |
 | 2026-11-11 | minor | Sidebars (§9): windows draw a `<Sidebar>` down their left, full height, with the buttons on top; the view keeps it as a list; Files' bookmarks move into one. |
 | 2026-11-11 | minor | Interfaces (§9): the `sidebar` feature and `<Sidebar>` in UIScript, drafted for Hudini; the desktop doesn't draw it yet. |

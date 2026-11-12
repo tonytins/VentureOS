@@ -229,6 +229,7 @@ public sealed class DesktopSession
             OpenFromDock(clicked);
 
         var overWindows = !MenuBar.IsOpen && !MenuBar.Contains(x, y) && !Dock.Contains(x, y);
+        Windows.ShowsHover = overWindows;
         DesktopInput windowInput = new(
             x,
             y,

@@ -38,6 +38,12 @@ public static class DesktopTheme
     /// <summary>The selected place in a sidebar, softer than a list's selection.</summary>
     public static readonly UIColor SidebarSelection = new(190, 210, 236);
 
+    /// <summary>The place in a sidebar under the pointer, fainter than the selected one.</summary>
+    public static readonly UIColor SidebarHover = new(210, 221, 236);
+
+    /// <summary>The bottom of a button or toolbar item under the pointer, lighter than its usual gradient.</summary>
+    public static readonly UIColor ButtonHover = new(218, 230, 244);
+
     /// <summary>The top and bottom of a title bar, and of a button.</summary>
     public static readonly UIColor TitleBarTop = new(250, 251, 253);
 

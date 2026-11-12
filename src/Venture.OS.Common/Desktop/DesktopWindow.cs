@@ -311,7 +311,11 @@ public sealed class DesktopWindow
 
     /// <summary>Draws the frame and the content. A window that isn't <paramref name="active"/> draws faded.</summary>
     /// <param name="pressedItem">The toolbar item being pressed, drawn held down, or -1.</param>
-    public void Draw(IPainter painter, bool active, int pressedItem = -1)
+    /// <param name="pointer">
+    /// Where the pointer is on the screen when it's over this window and no button is held, so what it rests on
+    /// shows it; otherwise <see langword="null"/>.
+    /// </param>
+    public void Draw(IPainter painter, bool active, int pressedItem = -1, (int X, int Y)? pointer = null)
     {
         ArgumentNullException.ThrowIfNull(painter);
         const int Shadow = DesktopTheme.ShadowSize;
@@ -330,20 +334,26 @@ public sealed class DesktopWindow
         DesktopTheme.FillGradient(painter, X + side, Y, Width - side, Bar, DesktopTheme.TitleBarTop, DesktopTheme.TitleBarBottom);
         painter.FillRectangle(X + side, Y + Bar - 1, Width - side, 1, DesktopTheme.Border);
 
+        var (hovered, hoveredIndex) = pointer is { } at ? Hit(at.X, at.Y) : (FramePart.None, -1);
         if (IsClosable)
         {
+            // Over either button, both show their marks, as macOS does.
+            var marked = hovered is FramePart.Close or FramePart.Minimize;
             DrawDot(painter, CloseButton, DesktopTheme.CloseButton, DesktopTheme.CloseMark);
             DrawDot(painter, MinimizeButton, DesktopTheme.MinimizeButton, DesktopTheme.MinimizeMark);
+            if (marked)
+                DrawMarks(painter);
         }
 
-        DrawToolbar(painter, pressedItem);
+        DrawToolbar(painter, pressedItem, hovered == FramePart.ToolbarItem ? hoveredIndex : -1);
 
         if (View.Script.TitleField is { } field && IsEditingTitle)
             DrawTitleEdit(painter, field, active);
         else
-            DrawTitle(painter, View.Script.TitleField);
+            DrawTitle(painter, View.Script.TitleField, hovered == FramePart.TitleField);
 
         var (contentX, contentY) = ContentOrigin;
+        View.SetHover(pointer is { } point && hovered == FramePart.None ? (point.X - contentX, point.Y - contentY) : null);
         painter.FillRectangle(contentX, contentY, Width - side, Height - Bar, DesktopTheme.Panel);
         View.Draw(painter, contentX, contentY);
         if (IsResizable)
@@ -355,7 +365,7 @@ public sealed class DesktopWindow
             painter.FillRectangle(X, Y, Width, Height, DesktopTheme.InactiveFade);
     }
 
-    private void DrawToolbar(IPainter painter, int pressedItem)
+    private void DrawToolbar(IPainter painter, int pressedItem, int hoveredItem)
     {
         const int Size = DesktopTheme.TextSize;
         var items = View.Script.ToolbarItems;
@@ -380,10 +390,12 @@ public sealed class DesktopWindow
             var (x, y, width) = ((int)bounds.X, (int)bounds.Y, (int)bounds.Width);
             var disabled = View.IsDisabled(items[index].Name);
             var held = !disabled && (index == pressedItem || View.IsSelected(items[index].Name));
+            var bottom = held ? DesktopTheme.ButtonPressed
+                : !disabled && index == hoveredItem ? DesktopTheme.ButtonHover
+                : DesktopTheme.TitleBarBottom;
 
             DesktopTheme.FillGradient(painter, x, y, width, ItemHeight,
-                held ? DesktopTheme.ButtonPressed : DesktopTheme.InputBackground,
-                held ? DesktopTheme.ButtonPressed : DesktopTheme.TitleBarBottom);
+                held ? DesktopTheme.ButtonPressed : DesktopTheme.InputBackground, bottom);
             DesktopTheme.Outline(painter, x, y, width, ItemHeight, DesktopTheme.Border);
             var title = items[index].Title;
             painter.DrawText(title, x + ((width - painter.MeasureText(title, Size)) / 2),
@@ -394,9 +406,10 @@ public sealed class DesktopWindow
 
     /// <summary>
     /// Draws the title as plain text, centred: the window's title, or the title field's text, or its placeholder
-    /// dimmed when it's empty. A title field's text keeps its end when it's cut, and remembers where it was drawn.
+    /// dimmed when it's empty, in the accent while the pointer is over it, to show it can be clicked. A title
+    /// field's text keeps its end when it's cut, and remembers where it was drawn.
     /// </summary>
-    private void DrawTitle(IPainter painter, UITitleField? field)
+    private void DrawTitle(IPainter painter, UITitleField? field, bool hovered)
     {
         const int Size = DesktopTheme.TextSize;
         var (left, right) = TitleRoom();
@@ -409,6 +422,9 @@ public sealed class DesktopWindow
             if (text.Length == 0)
                 (text, color) = (field.Placeholder ?? "", DesktopTheme.SecondaryText);
         }
+
+        if (hovered)
+            color = DesktopTheme.Accent;
 
         var shown = Cut(painter, text, right - left - (2 * padding), keepEnd: field is not null);
         var textWidth = painter.MeasureText(shown, Size);
@@ -486,6 +502,19 @@ public sealed class DesktopWindow
 
         static string Piece(string text, int length, bool keepEnd) =>
             keepEnd ? Ellipsis + text[^length..] : text[..length] + Ellipsis;
+    }
+
+    /// <summary>The close button's × and the minimize button's −, drawn over their dots.</summary>
+    private void DrawMarks(IPainter painter)
+    {
+        var (closeX, closeY) = ((int)CloseButton.X, (int)CloseButton.Y);
+        for (var step = 0; step < 6; step++)
+        {
+            painter.FillRectangle(closeX + 3 + step, closeY + 3 + step, 1, 1, DesktopTheme.CloseMark);
+            painter.FillRectangle(closeX + 3 + step, closeY + 8 - step, 1, 1, DesktopTheme.CloseMark);
+        }
+
+        painter.FillRectangle((int)MinimizeButton.X + 3, (int)MinimizeButton.Y + 5, 6, 2, DesktopTheme.MinimizeMark);
     }
 
     /// <summary>Six dots in a triangle against the bottom-right corner, as a resizable window's grip.</summary>

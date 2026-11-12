@@ -33,6 +33,9 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     private (DesktopWindow Window, FramePart Part, int Index)? armed;
     private (DesktopWindow Window, int OffsetX, int OffsetY)? drag;
 
+    // Where the pointer was in the last update, and whether its button was down, for hover.
+    private (int X, int Y) pointerAt;
+
     // A window being resized by its grip: where the press started, and the frame's size then.
     private (DesktopWindow Window, int StartX, int StartY, int Width, int Height)? resizing;
 
@@ -126,6 +129,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var happened = frameEvents;
         happened.Clear();
         var (x, y) = (input.PointerX, input.PointerY);
+        pointerAt = (x, y);
         var pressed = input.PointerDown && !wasDown;
         var released = !input.PointerDown && wasDown;
         wasDown = input.PointerDown;
@@ -214,17 +218,27 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         return closed;
     }
 
-    /// <summary>Draws the windows from back to front; only the front one draws as active.</summary>
+    /// <summary>
+    /// Whether the window under the pointer shows what it rests on. The desktop turns it off while the pointer is over
+    /// the menu bar or the dock, which sit above the windows.
+    /// </summary>
+    public bool ShowsHover { get; set; } = true;
+
+    /// <summary>
+    /// Draws the windows from back to front; only the front one draws as active. The window under the pointer shows
+    /// what it rests on, unless a button is held, when the press shows instead.
+    /// </summary>
     public void Draw(IPainter painter)
     {
         var focused = Focused;
+        var under = ShowsHover && !wasDown ? WindowAt(pointerAt.X, pointerAt.Y) : null;
         foreach (var window in windows)
         {
             if (window.IsMinimized)
                 continue;
 
             var held = armed is { Part: FramePart.ToolbarItem } item && item.Window == window ? item.Index : -1;
-            window.Draw(painter, window == focused, held);
+            window.Draw(painter, window == focused, held, window == under ? pointerAt : null);
         }
     }
 

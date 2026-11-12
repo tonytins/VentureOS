@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Downeaster phase 4, resizable windows) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** major (Downeaster extended; phase 5, hover; every-stage work dropped) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -37,22 +37,11 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 In order:
 
 1. **Desktop refinement** (Downeaster): a Snow Leopard-style pass over the
-   desktop Keystone filled: centred titles, sidebars, and resizable windows.
+   desktop Keystone filled: centred titles, sidebars, resizable windows,
+   hover, dark mode and accent colours, and style roles.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
-
-## Every stage
-
-Not a milestone: each stage carries its own tests, and these land when they
-fit, rather than waiting on a route.
-
-- [ ] CI boots the kernel headless and fails when the serial log shows a
-  panic or never reaches the shell.
-- [ ] CI builds ARM64 as well as x64.
-- [ ] Boot on ARM64 under QEMU with a virtio NIC, and run the CI boot check
-  there.
-- [ ] Publish ISOs from tagged builds.
 
 ## Milestones
 
@@ -70,18 +59,17 @@ fit, rather than waiting on a route.
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
 | Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| Downeaster | Desktop refinement | 80% | 1–3 | Centred titles, an address that edits on click, sidebars, and resizable windows are done; the docs and a boot check remain |
-| | **Total** | | **≈ 19–38**, plus every-stage work (≈ 14–28) | |
+| Downeaster | Desktop refinement | 63% | 11–22 | Centred titles, an address that edits on click, sidebars, resizable windows, and hover are done; dark mode and accents, style roles, and Settings are next |
+| | **Total** | | **≈ 29–57** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Docs and a boot check | Downeaster | 1–3 |
+| 1 | Dark mode, accents, style roles, and Settings | Downeaster | 11–22 |
 | 2 | DNS and network commands | Pere Marquette | 10–20 |
 
-Beta needs the CI boot check (every stage) and Blue Water in substance,
-about 20–40 hours.
+Beta needs Blue Water in substance, about 8–15 hours.
 
 ## Milestone checklists
 
@@ -119,8 +107,8 @@ scripts and apps.
 - [x] `venture.args`: declare a command's arguments and options, and get
   parsing, clear errors, and a generated `--help`.
 
-The former Wolverine checklist (the test project, now done, and CI checks)
-became the every-stage list above.
+The former Wolverine checklist held the test project, now done, and CI
+checks, which were dropped by my decision on 2026-11-11.
 
 ### Blue Water: Files
 
@@ -280,9 +268,30 @@ with the close and minimize buttons on top, as Big Sur's Finder does.
   offsets, rather than a new `anchor` attribute, by Tony Bark's choice; a
   grip of dots in the corner. Files and TextEdit resize; Terminal waits,
   since it lays out by character cells.
-- [ ] Phase 5, the docs and a boot check.
+- [x] Phase 5, hover: whatever the pointer rests on shows it, in any window
+  and with no change to apps. The close and minimize buttons show their
+  marks, the title field's text takes the accent, buttons and toolbar
+  items lighten, and sidebar rows are shaded.
+- [ ] Phase 6, a switchable theme: the desktop's colours come from a
+  current palette, with a dark palette beside today's light one, both
+  built from an accent colour after Distro Tycoon 2, with its swatches.
+  Everything without a style follows.
+- [ ] Phase 7, style roles: colour roles (`textColor="secondary"`) and
+  font-size roles (`fontSize="title"`) on `<Style>`, written as if in
+  Hudini's spec and drafted in `docs/uiscript-styles.md`, with layered
+  `dark*` colours for apps that need literal ones. The shipped apps move to
+  roles, and a test checks every shipped interface stays readable in both
+  palettes.
+- [ ] Phase 8, Settings (system): light or dark and the accent colour,
+  saved in `/mnt/user`, so the choice lasts until reboot now and across
+  reboots once Blue Water persists files.
+- [ ] Phase 9 (optional), hover text: a transitional reader for a strict
+  subset of the CST spec, resolving `<String>` resources from tables in an
+  app's bundle, so Hudini's `tooltip` works, until CST.NET is reworked.
 
-Collapsing a sidebar in a narrow window waits for resizing.
+Appearance changes reach apps without changing them; only changes to
+layout, such as sidebars and resizing, are opt-in. Collapsing a sidebar in
+a narrow window is left for later.
 
 ## Critical path
 
@@ -301,7 +310,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
   filesystem, timer, network, and storage namespaces), and its docs follow
   the latest release only.
 - Only `Venture.OS.Common` and the Lua system files are tested; kernel code
-  is checked by booting by hand until CI boots the kernel (every stage).
+  is checked by booting by hand.
 - `Cosmos.Executable.Lua` is young (4.0.1, from 2026-10); a bug there lands
   in every script.
 - Nothing has run on real hardware, and the Cosmos docs warn against testing
@@ -313,6 +322,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | major | Tony Bark extended Downeaster with hover, a dark palette and accent colours after Distro Tycoon 2, style roles drafted for Hudini, Settings, and optional hover text through a transitional CST reader; the docs-and-boot phase and the every-stage list (CI, ARM64 boots, ISO releases) are dropped, and beta needs only Blue Water. Phase 5, hover, is done (63% of the required phases). About 29–57 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 80%: phase 4, resizable windows with a grip, following Hudini's edge offsets instead of a new `anchor` attribute; Files and TextEdit resize. About 19–38 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 60%: phase 3, sidebars drawn the window's full height with the buttons on top, and Files' bookmarks in one. Phase 4 uses Hudini's `minWidth` and `minHeight` for the smallest size. About 24–47 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 40%: phase 2, `<Sidebar>` in UIScript behind the `sidebar` feature, drafted for Hudini. About 26–51 h of milestones remain. |

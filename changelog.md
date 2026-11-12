@@ -2,6 +2,7 @@
 
 ## 0.3.10
 
+- The desktop shows what the pointer rests on: the close and minimize buttons show their × and −, a window's address turns blue, buttons lighten, and sidebar places are shaded.
 - Files and TextEdit windows can be resized: drag the dots in the bottom-right corner.
 - App authors: `resizable="true"` on `<Window>` makes a window resizable, no smaller than its `minWidth` and `minHeight`; controls follow the edges their edge offsets name.
 
