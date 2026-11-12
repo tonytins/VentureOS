@@ -3,7 +3,7 @@ using Venture.OS.Bundles;
 using Venture.OS.Interface;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
-using Venture.OS.Strings;
+using Venture.OS.Interface.Strings;
 
 namespace Venture.OS.Desktop;
 

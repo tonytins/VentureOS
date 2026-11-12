@@ -128,9 +128,9 @@ VentureOS/
 ├─ src/
 │  ├─ Venture.slnx              solution
 │  ├─ Venture.OS.Interface/     the interface formats: only the BCL, AOT-compatible, warnings as errors
-│  │  ├─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with menus, sidebars, and style roles
-│  │  ├─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml, appearance.xml, and .uix files use
-│  │  └─ Strings/               Venture.OS.Strings: CstTable (a transitional CST reader) and StringTables (a folder's tables)
+│  │  ├─ UIScript.cs            Venture.OS.Interface: reads .uix (UIScript) documents, with menus, sidebars, and style roles
+│  │  ├─ Xml/FlatXml.cs         Venture.OS.Interface.Xml: the flat XML that Info.xml, appearance.xml, and .uix files use
+│  │  └─ Strings/               Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables (a folder's tables)
 │  ├─ Venture.OS.Common/        kernel-free library: no Cosmos, AOT-compatible, warnings as errors
 │  │  └─ Shell/                 Venture.OS.Shell: the shell framework
 │  │     ├─ CommandLine.cs      splits a line into words
@@ -291,8 +291,9 @@ flowchart TD
 7. **`Venture.OS.Interface` references nothing but the BCL.** The formats
    interfaces are written in (UIScript, flat XML, and CST tables) read and
    test on their own, and VentureOS's drafts of them stay free of its
-   desktop and scripting. It builds like `Venture.OS.Common`, with the same
-   root namespace, so its types kept their namespaces when they moved.
+   desktop and scripting. It builds like `Venture.OS.Common`, and its root
+   namespace is `Venture.OS.Interface`: UIScript at its root, the CST reader
+   in `Venture.OS.Interface.Strings`, and FlatXml in `Venture.OS.Interface.Xml`.
 
 ---
 
@@ -1074,6 +1075,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Layout (§2, §3): `Venture.OS.Interface`'s root namespace is its own; UIScript sits at its root, and the CST reader and FlatXml moved to `Venture.OS.Interface.Strings` and `.Xml`. |
 | 2026-11-11 | minor | Layout (§2, §3): UIScript, FlatXml, and the CST reader moved from `Venture.OS.Common` to `Venture.OS.Interface`, which needs only the BCL; namespaces are unchanged (rule 7). |
 | 2026-11-11 | minor | Layout (§2, §7): the system and user files moved from `src/Venture.OS/` to a top-level `rootfs/`, so the kernel project holds only code. |
 | 2026-11-11 | minor | Layout (§2, §12): the test project moved to `tests/Venture.OS.Common.Tests`, as .NET projects usually lay it out. |

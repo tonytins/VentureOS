@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Venture.OS.Xml;
+namespace Venture.OS.Interface.Xml;
 
 /// <summary>
 /// One element of a <see cref="FlatXml"/> document: a name, its attributes in document order, and its line.

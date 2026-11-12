@@ -1,5 +1,5 @@
 using Venture.OS.Interface;
-using Venture.OS.Strings;
+using Venture.OS.Interface.Strings;
 
 namespace Venture.OS.Tests.Strings;
 

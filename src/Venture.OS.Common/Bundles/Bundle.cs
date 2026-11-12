@@ -1,5 +1,5 @@
 using Venture.OS.Scripting;
-using Venture.OS.Xml;
+using Venture.OS.Interface.Xml;
 
 namespace Venture.OS.Bundles;
 

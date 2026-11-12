@@ -1,7 +1,6 @@
 using System.Globalization;
-using Venture.OS.Interface;
 
-namespace Venture.OS.Strings;
+namespace Venture.OS.Interface.Strings;
 
 /// <summary>
 /// The CST tables in one folder, such as beside an app's <c>main.uix</c>, which supply the text a document's

@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Venture.OS.Strings;
+namespace Venture.OS.Interface.Strings;
 
 /// <summary>
 /// One table of Caret-Separated Text (CST), the key-value format The Sims Online kept its interface text in:

@@ -1,4 +1,4 @@
-using Venture.OS.Xml;
+using Venture.OS.Interface.Xml;
 
 namespace Venture.OS.Tests.Xml;
 

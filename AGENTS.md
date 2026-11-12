@@ -30,7 +30,7 @@ tests, and is listed in `src/Venture.slnx`:
   reference the Cosmos kernel; `Cosmos.Executable.Lua` is allowed, since it
   runs on ordinary .NET.
 - `src/Venture.OS.Interface` holds the formats interfaces are written in:
-  the UIScript reader (`Interface/`), which must keep matching Hudini's (its
+  the UIScript reader (`UIScript.cs`), which must keep matching Hudini's (its
   examples are copied into the tests), the flat XML reader (`Xml/`), and a
   transitional reader for CST string tables (`Strings/`), until CST.NET
   follows the new CST specification. It references nothing but the BCL.
