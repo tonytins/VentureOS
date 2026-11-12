@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.18
+
+- VentureOS 0.3 is released. See [the release notes](docs/releases/0.3.md).
+
 ## 0.3.15
 
 - Hover text: rest the pointer on a control for half a second to see what it is, such as the name of each accent color in Settings.

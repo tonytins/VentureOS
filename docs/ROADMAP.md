@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Downeaster phase 9, hover text) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** major (releases: 0.3 released, 0.4 Pere Marquette planned) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -9,10 +9,35 @@ comes next. Verified status and evidence are in the
 Keep it current: when work lands, update its milestone row and checklist,
 re-estimate what remains, and add a line to the revision history.
 
-Milestones are named after Amtrak routes that run, or are moving to, Siemens
-Venture cars, the trains VentureOS is named after. The names are labels, not
-a release order. Estimates are rough hours for one developer and are
-re-measured when a milestone lands.
+Estimates are rough hours for one developer and are re-measured when a
+milestone lands.
+
+## How VentureOS releases
+
+VentureOS is an operating system with its own apps, so it's planned in
+releases, which are what people get, rather than milestones alone.
+
+- **No schedule.** A release ships when its milestones land, not on a date.
+- **Versions** follow the .NET SDK's feature bands: `0.4` is the release, each
+  milestone in it takes a band (`0.4.1xx`, `0.4.2xx`, ...), and the last two
+  digits count builds within the band. A build's version is the one the kernel
+  reports, from `GitInfo.txt` and the commits since.
+- **Support.** Until 1.0, only the latest release is supported.
+- **Stages.** A release is in development, then released: tagged
+  (`v0.3.18`), with notes in [docs/releases](./releases/). Published ISOs come
+  later.
+- **Names.** Each release has a code name, and the milestones in it plain
+  ones. 0.4, Pere Marquette, is the last named after an Amtrak route that runs
+  Siemens Venture cars, the trains VentureOS is named after; earlier
+  milestones carried those names too, and keep them below as history.
+- **Apps** don't declare which VentureOS they need yet.
+
+## Releases
+
+| Release | Code name | Stage | Holds | Notes |
+|---|---|---|---|---|
+| 0.3 | (the desktop) | released 2026-11-11, `v0.3.18` | Borealis, Keystone, Downeaster, and the layout of the repository | [0.3](./releases/0.3.md) |
+| 0.4 | Pere Marquette | in development | Standard menus, text selection, Edit, and networking | |
 
 ## Alpha gate
 
@@ -36,8 +61,8 @@ Persistent storage is deferred until after alpha by my decision (Blue Water).
 
 In order:
 
-1. **Desktop refinement** (Downeaster): complete, with hover text. The next
-   route is my call, with Pere Marquette waiting.
+1. **0.4, Pere Marquette**, a transition into releasing as an OS: standard
+   menus first, then text selection, Edit, and networking.
 
 VentureOS runs from RAM, as many small systems do; keeping changes across
 reboots is later, optional work (Blue Water).
@@ -45,7 +70,8 @@ reboots is later, optional work (Blue Water).
 ## Milestones
 
 "Done" is the share of the milestone's checklist below that is complete.
-"Remaining" estimates the open items only.
+"Remaining" estimates the open items only. The routes up to Downeaster were
+planned before releases; 0.4's milestones are under its release below.
 
 | Route | Milestone | Done | Remaining (h, est.) | Notes |
 |---|---|---:|---:|---|
@@ -53,19 +79,22 @@ reboots is later, optional work (Blue Water).
 | Hiawatha | Shell | 100% | 0 | Command registry, argument parsing, `info`, `net`, `reboot`, and `shutdown` |
 | Wolverine | System library | 100% | 0 | Shared Lua modules in `/mnt/system/lib`, loaded with `require`; `venture.args` parses arguments and options with a generated `--help` |
 | Blue Water | Files | 67% | 8–15 (persistence, later) | File commands on the RAM disk now; an optional save to disk later |
-| Pere Marquette | Networking | 0% | 10–20 | DNS, network commands, maybe Telnet |
+| Pere Marquette | Release 0.4 | 0% | 21–42 | Standard menus, text selection, Edit, and networking; see below |
 | Illini | Lua system scripts | 100% | 0 | System files install to `/mnt/system`, `<name>.lua` there runs as a command, the `venture` table lets `echo`, `info`, and `net` be scripts, and `init.lua` runs after boot |
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
 | Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
 | Downeaster | Desktop refinement | 100% | 0 | Centred titles, an address that edits on click, sidebars, resizable windows, hover, dark mode and accents, style roles, Settings, and hover text |
-| | **Total** | | **≈ 18–35** | |
+| | **Total** | | **≈ 29–57** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | DNS and network commands | Pere Marquette | 10–20 |
+| 1 | Standard menus (0.4.1xx) | Pere Marquette | 4–8 |
+| 2 | Text selection (0.4.2xx) | Pere Marquette | 4–8 |
+| 3 | Edit: the clipboard (0.4.3xx) | Pere Marquette | 3–6 |
+| 4 | Networking (0.4.4xx) | Pere Marquette | 10–20 |
 
 Beta needs Blue Water in substance, about 8–15 hours.
 
@@ -123,11 +152,42 @@ Files come first; keeping them across reboots is later and optional.
   beside the RAM system; `cosmos run --disk <image>` attaches one.
 - [ ] Later: decide whether VentureOS formats blank disks itself.
 
-### Pere Marquette: Networking
+### Pere Marquette: release 0.4
 
+The bridge into releasing as an OS, and the last release named after an
+Amtrak route. It gives every app the menus a global menu bar implies, and
+brings networking. Whatever a standard menu offers, every app gets, with no
+code of its own; an empty standard menu stays hidden.
+
+**0.4.1xx, standard menus**
+
+- [ ] The desktop's File menu, with Close Window (Ctrl+W), and Help, with
+  About *App* from the app's `Info.xml` in the About VentureOS window; Quit
+  stays in the app menu.
+- [ ] An optional `description` on `<Info>`, which About shows.
+- [ ] `role` on `<Menu>` (`file`, `edit`, `view`), or a menu's exact title
+  without one, merges an app's menu into the standard one, its items first.
+- [ ] An app's item with a standard item's shortcut replaces the standard
+  item, so apps written before keep working as they did.
+- [ ] The shipped apps drop their own Close Window.
+
+**0.4.2xx, text selection**
+
+- [ ] Select text in fields and areas by dragging, with Shift and the arrows,
+  and all at once.
+
+**0.4.3xx, Edit**
+
+- [ ] A clipboard, and Edit's Cut, Copy, Paste, and Select All for whatever
+  text has focus, in every app. Undo and Redo come later.
+
+**0.4.4xx, networking**
+
+- [ ] Check what Cosmos 3.0.94 offers for DNS and ICMP.
 - [ ] Register the DNS server DHCP reports.
-- [ ] `resolve` and `ping` commands.
-- [ ] Decide whether to serve a Telnet shell.
+- [ ] `resolve` and `ping` commands, on `venture.net`, with every wait bounded.
+
+A Telnet shell was dropped by my decision on 2026-11-11.
 
 ### Illini: Lua system scripts
 
@@ -294,14 +354,11 @@ a narrow window is left for later.
 
 ## Critical path
 
-Cascades, Hiawatha, Illini, and Wolverine are done, and so are Saluki's
-runtime commands. Blue Water's file commands come next, as the first real
-users of `venture.args`. Because VentureOS runs from RAM, `.app` bundles ship
-with the system and don't wait on persistence. Borealis builds on Saluki's
-apps, which become its windows. New kernel-free logic, such as the UIScript
-reader, still goes into `Venture.OS.Common` with tests. With Borealis done,
-Keystone's apps are the long pole; Files comes first because the others
-open from it, and `<TextArea>` comes before Terminal.app, which needs it.
+In 0.4, the standard menus come first, since Edit merges into the menu bar
+they build. Text selection comes before Edit, which acts on what's selected.
+Networking stands apart and could move earlier without blocking the rest.
+Kernel-free logic still goes into `Venture.OS.Common` with tests, and the
+interface formats into `Venture.OS.Interface`.
 
 ## Risks most likely to push estimates up
 
@@ -321,6 +378,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | major | Tony Bark moved VentureOS to releases: no schedule, .NET-style feature bands, only the latest release supported until 1.0, tags and notes now and ISOs later, and code names for releases. 0.3 is released as `v0.3.18`, holding Borealis, Keystone, Downeaster, and the repository's new layout. 0.4, Pere Marquette, the last Amtrak name, holds standard menus, text selection, Edit, and networking; Telnet is dropped. About 29–57 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster phase 9, the optional one: hover text, through a transitional reader for the settled part of the CST specification; Settings' swatches name themselves. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster complete: phase 8, Settings, with every change saved to `/mnt/user/settings/appearance.xml` and restored by a new optional boot step. Hover text stays optional. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 88%: phase 7, colour and size roles and `dark` twins on `<Style>`, drafted in `docs/uiscript-styles.md`; the shipped apps use roles, and a contrast test covers every shipped interface in every palette. About 21–41 h of milestones remain. |
