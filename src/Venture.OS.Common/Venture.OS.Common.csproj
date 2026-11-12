@@ -15,6 +15,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The interface formats: UIScript, flat XML, and CST tables. -->
+    <ProjectReference Include="../Venture.OS.Interface/Venture.OS.Interface.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Lua 5.5 for the system scripts. It has no Cosmos dependency, so it runs (and is tested) on ordinary .NET too. -->
     <PackageReference Include="Cosmos.Executable.Lua" Version="4.0.1" />
   </ItemGroup>

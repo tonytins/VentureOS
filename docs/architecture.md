@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (hover text through a transitional CST reader) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (the interface formats in their own project) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -9,9 +9,10 @@ design, and mark what's planned rather than built; where the code differs,
 the code wins and this page is out of date.
 
 - **Projects:** the kernel, `Venture.OS` (23 C# files, plus Lua system
-  scripts and apps in `rootfs/`); a kernel-free library, `Venture.OS.Common` (39
-  files: the shell framework, Lua support, bundles, UIScript, and the
-  desktop's drawing); and an xUnit v3 test project
+  scripts and apps in `rootfs/`); a kernel-free library, `Venture.OS.Common`
+  (the shell framework, Lua support, bundles, and the desktop's drawing); the
+  interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
+  tables, needing only the BCL); and an xUnit v3 test project
   for the library, `Venture.OS.Common.Tests` (827 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -113,7 +114,7 @@ grow):
 | **Version pins** | `Cosmos.Sdk` and the `Cosmos.*` packages move together, in a change of their own, with a build and a headless boot. | `Venture.OS.csproj` |
 | **Docs drift** | Check an API exists in the pinned version before using it; the build is the quickest check. | [cosmos-gen3 skill](../.agents/skills/cosmos-gen3/SKILL.md) |
 | **Experimental APIs** | Each one needs an explicit `<NoWarn>` and a deliberate decision from me, so a seam can't creep in unnoticed. | `Venture.OS.csproj` |
-| **Missing runtime pieces** | Not all of .NET links under Cosmos. `System.Xml` doesn't in 3.0.94 (it needs `RhGetMaxGcGeneration`, which Cosmos's runtime lacks), so VentureOS reads XML with its own `FlatXml`. Prefer explicit code over reflection-backed helpers such as `Enum.GetValues`. The kernel build, not `Venture.OS.Common`'s analyzers, is what finds these. | `Venture.OS.Common/Xml/` |
+| **Missing runtime pieces** | Not all of .NET links under Cosmos. `System.Xml` doesn't in 3.0.94 (it needs `RhGetMaxGcGeneration`, which Cosmos's runtime lacks), so VentureOS reads XML with its own `FlatXml`. Prefer explicit code over reflection-backed helpers such as `Enum.GetValues`. The kernel build, not `Venture.OS.Common`'s analyzers, is what finds these. | `Venture.OS.Interface/Xml/` |
 
 The test: **a Cosmos upgrade should touch `GlobalUsings.cs`, `Startup/`,
 and the project file, and nothing in the shell.**
@@ -126,6 +127,10 @@ and the project file, and nothing in the shell.**
 VentureOS/
 ├─ src/
 │  ├─ Venture.slnx              solution
+│  ├─ Venture.OS.Interface/     the interface formats: only the BCL, AOT-compatible, warnings as errors
+│  │  ├─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with menus, sidebars, and style roles
+│  │  ├─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml, appearance.xml, and .uix files use
+│  │  └─ Strings/               Venture.OS.Strings: CstTable (a transitional CST reader) and StringTables (a folder's tables)
 │  ├─ Venture.OS.Common/        kernel-free library: no Cosmos, AOT-compatible, warnings as errors
 │  │  └─ Shell/                 Venture.OS.Shell: the shell framework
 │  │     ├─ CommandLine.cs      splits a line into words
@@ -147,10 +152,7 @@ VentureOS/
 │  │     ├─ RuntimeCommands.cs  commands registered with venture.command, and who may take which name
 │  │     ├─ ShellLibrary.cs     venture.command, for code with a lasting owner
 │  │     ├─ FilesLibrary.cs     venture.files: list, read, write, and change files, never in /mnt/system
-│  └─ Xml/FlatXml.cs         Venture.OS.Xml: the flat XML that Info.xml and .uix files use
-│  └─ Strings/               Venture.OS.Strings: CstTable (a transitional CST reader) and StringTables (a folder's tables)
 │  └─ Desktop/               Venture.OS.Desktop: IPainter, the sky, the pointer, UIView, windows, the menu bar, the dock, DesktopSession, and UiLibrary (venture.ui)
-│  └─ Interface/UIScript.cs  Venture.OS.Interface: reads .uix (UIScript) documents, with the menus feature
 │  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
 │  │     └─ VentureLibrary.cs   the `venture` table
@@ -190,7 +192,7 @@ VentureOS/
 │     ├─ apps/TextEdit.app/     opens, edits, and saves text files
 │     └─ settings/appearance.xml  the look a boot starts with, which Settings and appearance change
 ├─ tests/
-│  └─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common, with the shipped system and user files copied in
+│  └─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with the shipped system and user files copied in
 ├─ global.json                  opts dotnet test into Microsoft.Testing.Platform
 ├─ docs/                        architecture, roadmap, scorecard
 ├─ .agents/skills/              C# and Cosmos guidance for agents
@@ -237,6 +239,11 @@ flowchart TD
         Framework -- "unknown names" --> Scripting
         Scripting --> Lua
     end
+
+    subgraph Formats["Venture.OS.Interface (only the BCL)"]
+        UIScript["UIScript · FlatXml · CST tables"]
+    end
+    Common -- reads --> UIScript
     Kernel -- builds --> Framework
     Shell -- implements --> Framework
     SystemInfo -- implements --> Scripting
@@ -281,6 +288,11 @@ flowchart TD
    with the AOT analyzers and warnings as errors, so code the kernel
    couldn't compile ahead of time fails there first. Its root namespace is
    `Venture.OS`, so a type keeps its namespace when it moves into it.
+7. **`Venture.OS.Interface` references nothing but the BCL.** The formats
+   interfaces are written in (UIScript, flat XML, and CST tables) read and
+   test on their own, and VentureOS's drafts of them stay free of its
+   desktop and scripting. It builds like `Venture.OS.Common`, with the same
+   root namespace, so its types kept their namespaces when they moved.
 
 ---
 
@@ -1062,6 +1074,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Layout (§2, §3): UIScript, FlatXml, and the CST reader moved from `Venture.OS.Common` to `Venture.OS.Interface`, which needs only the BCL; namespaces are unchanged (rule 7). |
 | 2026-11-11 | minor | Layout (§2, §7): the system and user files moved from `src/Venture.OS/` to a top-level `rootfs/`, so the kernel project holds only code. |
 | 2026-11-11 | minor | Layout (§2, §12): the test project moved to `tests/Venture.OS.Common.Tests`, as .NET projects usually lay it out. |
 | 2026-11-11 | minor | Hover text (§2, §9): `CstTable`, a transitional reader for the settled part of the CST specification, and `StringTables`, which resolve an app's `<String>`s from tables beside its document; tooltips show after a half-second rest. |

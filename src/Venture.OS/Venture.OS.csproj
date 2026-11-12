@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Venture.OS.Common/Venture.OS.Common.csproj" />
+    <ProjectReference Include="../Venture.OS.Interface/Venture.OS.Interface.csproj" />
   </ItemGroup>
 
   <!--

@@ -25,14 +25,17 @@ tests, and is listed in `src/Venture.slnx`:
   `rootfs/system/init.lua` runs once after boot.
 - `src/Venture.OS.Common` is kernel-free code: the shell framework
   (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and
-  Lua system support (`Scripting/`), the flat XML reader (`Xml/`), bundles
-  (`Bundles/`), the desktop's drawing logic (`Desktop/`, drawn through
-  `IPainter`), the UIScript reader (`Interface/`), which must keep
-  matching Hudini's (its examples are copied into the tests), and a
+  Lua system support (`Scripting/`), bundles (`Bundles/`), and the desktop's
+  drawing logic (`Desktop/`, drawn through `IPainter`). It must never
+  reference the Cosmos kernel; `Cosmos.Executable.Lua` is allowed, since it
+  runs on ordinary .NET.
+- `src/Venture.OS.Interface` holds the formats interfaces are written in:
+  the UIScript reader (`Interface/`), which must keep matching Hudini's (its
+  examples are copied into the tests), the flat XML reader (`Xml/`), and a
   transitional reader for CST string tables (`Strings/`), until CST.NET
-  follows the new CST specification. It must never reference the Cosmos
-  kernel; `Cosmos.Executable.Lua` is allowed, since it runs on ordinary .NET.
-- `tests/Venture.OS.Common.Tests` covers `Venture.OS.Common` with xUnit v3.
+  follows the new CST specification. It references nothing but the BCL.
+- `tests/Venture.OS.Common.Tests` covers `Venture.OS.Common` and
+  `Venture.OS.Interface` with xUnit v3.
 
 [docs/architecture.md](docs/architecture.md) explains how the system works,
 [docs/ROADMAP.md](docs/ROADMAP.md) tracks milestones, and
@@ -98,8 +101,9 @@ with no explanation. Stability outranks features.
 - The Cosmos docs track the latest release. Check that an API exists in the
   pinned version before using it, and say so when you can't confirm it.
 - Put anything that doesn't need hardware (parsing, formatting, validation) in
-  `Venture.OS.Common`, which builds with the AOT analyzers and warnings as
-  errors, so problems the kernel couldn't compile fail there first.
+  `Venture.OS.Common`, or `Venture.OS.Interface` for the interface formats,
+  which build with the AOT analyzers and warnings as errors, so problems the
+  kernel couldn't compile fail there first.
 - Keep both architectures building. Guard and note any x64-only code.
 - Bump the `Cosmos.*` package versions only in a change of their own. New NuGet
   dependencies need the owner's approval and must work under Cosmos's compiler.

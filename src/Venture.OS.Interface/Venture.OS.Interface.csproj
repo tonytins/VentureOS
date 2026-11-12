@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The formats VentureOS's interfaces are written in: UIScript (.uix), which must keep matching Hudini's reader,
+    the flat XML it and Info.xml use, and CST string tables. It needs nothing but the BCL: no Cosmos, no Lua, and
+    nothing else of VentureOS's, so the formats can be read and tested on their own. The kernel compiles it ahead
+    of time, like Venture.OS.Common.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Venture.OS</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Flags anything that wouldn't survive the kernel's ahead-of-time compile. -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>
