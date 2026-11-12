@@ -154,7 +154,6 @@ VentureOS/
 │  └─ Bundles/               Venture.OS.Bundles: Bundle (reads Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │     ├─ ISystemInfo.cs      what the kernel reports to scripts
 │  │     └─ VentureLibrary.cs   the `venture` table
-│  ├─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common
 │  └─ Venture.OS/
 │     ├─ Venture.OS.csproj         Cosmos SDK project: package pins, CosmosKernelClass
 │     ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
@@ -187,6 +186,8 @@ VentureOS/
 │     ├─ Bootloader/limine.conf    Limine boot entry; asks for a 1024x768 framebuffer
 │     ├─ GitInfo.txt               base version
 │     └─ src/C/                    reserved for native C sources (empty)
+├─ tests/
+│  └─ Venture.OS.Common.Tests/  xUnit v3 tests for Venture.OS.Common, with the shipped system and user files copied in
 ├─ global.json                  opts dotnet test into Microsoft.Testing.Platform
 ├─ docs/                        architecture, roadmap, scorecard
 ├─ .agents/skills/              C# and Cosmos guidance for agents
@@ -1012,7 +1013,7 @@ builds and runs its example, so it can't drift from what works.
 
 ## 11. Build and run
 
-- **Locally:** `dotnet test --project src/Venture.OS.Common.Tests`, then
+- **Locally:** `dotnet test --project tests/Venture.OS.Common.Tests`, then
   `cosmos check` (always first before building: tool status and CLI updates),
   `cosmos build -p src/Venture.OS`, then `./run.sh` (add `--headless`
   for serial only) or `cosmos run -p src/Venture.OS --headless`. `--nic none`
@@ -1058,6 +1059,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Layout (§2, §12): the test project moved to `tests/Venture.OS.Common.Tests`, as .NET projects usually lay it out. |
 | 2026-11-11 | minor | Hover text (§2, §9): `CstTable`, a transitional reader for the settled part of the CST specification, and `StringTables`, which resolve an app's `<String>`s from tables beside its document; tooltips show after a half-second rest. |
 | 2026-11-11 | minor | Settings (§4, §9): the appearance boot step (optional, after the user files) restores `/mnt/user/settings/appearance.xml`, which every change saves; Settings.app ships with the system apps. |
 | 2026-11-11 | minor | Style roles (§9): color and size roles and `dark` twins on `<Style>`, drafted for Hudini; the shipped apps use roles; a contrast test covers every shipped interface in every palette. |

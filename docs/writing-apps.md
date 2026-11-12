@@ -298,12 +298,12 @@ new number. `roll` still works in the shell, since both live in the same app.
 
 ## Test your app
 
-The tests in `src/Venture.OS.Common.Tests` run on ordinary .NET, without
+The tests in `tests/Venture.OS.Common.Tests` run on ordinary .NET, without
 booting. `NotesAppTests.cs` opens the shipped `Notes.app`, runs its command,
 and checks what it printed. Copy its setup for your app, then run:
 
 ```sh
-dotnet test --project src/Venture.OS.Common.Tests
+dotnet test --project tests/Venture.OS.Common.Tests
 ```
 
 Test the cases a user can get wrong too, such as `roll 0` or `roll -s 1`.

@@ -9,8 +9,8 @@ Limine boots from an ISO. It targets x64 and ARM64 and runs in QEMU. Write the
 name as **VentureOS** in prose; the project is `Venture.OS`, the assembly is
 `Venture`, and namespaces start with `Venture.OS`.
 
-Every .NET project lives in its own folder under `src/` and is listed in
-`src/Venture.slnx`:
+Every .NET project lives in its own folder, under `src/`, or `tests/` for
+tests, and is listed in `src/Venture.slnx`:
 
 - `src/Venture.OS` is the kernel. `Kernel/` holds the entry point
   (`VentureKernel`), `KernelPanic`, and `KernelLog`; `Startup/` holds the boot
@@ -30,7 +30,7 @@ Every .NET project lives in its own folder under `src/` and is listed in
   transitional reader for CST string tables (`Strings/`), until CST.NET
   follows the new CST specification. It must never reference the Cosmos
   kernel; `Cosmos.Executable.Lua` is allowed, since it runs on ordinary .NET.
-- `src/Venture.OS.Common.Tests` covers `Venture.OS.Common` with xUnit v3.
+- `tests/Venture.OS.Common.Tests` covers `Venture.OS.Common` with xUnit v3.
 
 [docs/architecture.md](docs/architecture.md) explains how the system works,
 [docs/ROADMAP.md](docs/ROADMAP.md) tracks milestones, and
@@ -42,7 +42,7 @@ Never commit build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`).
 ## Build and test
 
 ```sh
-dotnet test --project src/Venture.OS.Common.Tests   # all tests must pass
+dotnet test --project tests/Venture.OS.Common.Tests   # all tests must pass
 cosmos check                                        # always before building
 cosmos build -p src/Venture.OS                      # no new warnings
 ./run.sh                                            # boots x64 in QEMU; --headless for serial only

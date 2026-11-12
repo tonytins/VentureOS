@@ -9,5 +9,5 @@
   </Folder>
   <Project Path="Venture.OS\Venture.OS.csproj" />
   <Project Path="Venture.OS.Common\Venture.OS.Common.csproj" />
-  <Project Path="Venture.OS.Common.Tests/Venture.OS.Common.Tests.csproj" />
+  <Project Path="../tests/Venture.OS.Common.Tests/Venture.OS.Common.Tests.csproj" />
 </Solution>

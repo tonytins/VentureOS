@@ -25,7 +25,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Known issues](#known-issues) | | | | 2 open, 4 resolved |
 
 Kernel-free code in `Venture.OS.Common` is covered by tests
-(`dotnet test --project src/Venture.OS.Common.Tests`). Everything else is
+(`dotnet test --project tests/Venture.OS.Common.Tests`). Everything else is
 proven by a build or a boot. Boots were run headless under the QEMU that
 Cosmos bundles:
 

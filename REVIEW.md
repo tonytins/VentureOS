@@ -12,7 +12,7 @@ a Cosmos gen3 kernel. The rules it checks against are in [AGENTS.md](AGENTS.md).
   If it refers to a roadmap milestone, an issue, or a design discussion, check
   that the change addresses that context.
 - Check the available test and CI results. Run `dotnet test --project
-  src/Venture.OS.Common.Tests`, `cosmos check`, and `cosmos build -p
+  tests/Venture.OS.Common.Tests`, `cosmos check`, and `cosmos build -p
   src/Venture.OS` when the change or its verification warrants it. For changes
   to boot, storage, networking, or commands, boot it with `./run.sh` (or
   `./run.sh --headless` to read the serial log). Report checks that couldn't be
