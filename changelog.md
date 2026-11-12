@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.200
+
+- Select text in any text field or text area: drag across it, hold Shift with the arrow keys, Home, or End, or press Ctrl+A for all of it. Typing replaces what's selected, and Backspace or Delete removes it.
+- Clicking in a text field puts the caret where you click, rather than at the end.
+- Clicking a window's address, or pressing Ctrl+L in Files, selects the whole path, so you can type a new one; press End or an arrow key to edit it instead.
+
 ## 0.4.102
 
 - Every app has a File menu with Close Window (Ctrl+W), and a Help menu with About the app, showing its name, version, and what it's for. An app's own File items appear at the top of File.

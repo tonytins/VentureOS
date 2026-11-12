@@ -92,6 +92,9 @@ public sealed class UIView
     private string? focused;
     private string? armed;
     private string? dragging;
+
+    // The text field or area a press landed in, whose selection follows the pointer until it's released.
+    private string? selecting;
     private (int X, int Y) pointer;
 
     // Where the pointer is over the view, for drawing; see SetHover.
@@ -245,7 +248,23 @@ public sealed class UIView
             return;
 
         state.Text = text;
-        state.Caret = Math.Min(state.Caret, text.Length);
+        state.Cursor.Clamp(text.Length);
+    }
+
+    /// <summary>
+    /// The selected text's start and length in a text field or area, or <see langword="null"/> for anything else;
+    /// with nothing selected, an empty one at the caret.
+    /// </summary>
+    public (int Start, int Length)? Selection(string name) =>
+        script.Control(name) is { Type: UIControlType.TextField or UIControlType.TextArea } && Find(name) is { } state
+            ? state.Cursor.Selection
+            : null;
+
+    /// <summary>Selects all of a text field's or area's text, as Ctrl+A does.</summary>
+    public void SelectAll(string name)
+    {
+        if (script.Control(name) is { Type: UIControlType.TextField or UIControlType.TextArea } && Find(name) is { } state)
+            state.Cursor.SelectAll(state.Text.Length);
     }
 
     /// <summary>A slider's or progress bar's value, or <see langword="null"/>.</summary>
@@ -387,6 +406,10 @@ public sealed class UIView
         if (dragging is not null && input.PointerDown)
             Drag(dragging, x, y, events);
 
+        // Dragging from a press in text selects up to the pointer.
+        if (selecting is not null && input.PointerDown && !input.PointerPressed && script.Control(selecting) is { } text)
+            states[selecting].Cursor.MoveTo(CaretAt(text, states[selecting], x, y), extend: true);
+
         if (input.PointerReleased)
         {
             if (armed is not null && Hit(x, y) is { } released && released.Name == armed)
@@ -394,6 +417,7 @@ public sealed class UIView
 
             armed = null;
             dragging = null;
+            selecting = null;
         }
 
         if (input.Scroll != 0 && Hit(x, y) is { } scrolled)
@@ -484,14 +508,10 @@ public sealed class UIView
                 armed = hit.Name;
                 break;
 
-            case UIControlType.TextField when !hit.IsReadOnly:
-                focused = hit.Name;
-                state.Caret = state.Text.Length;
-                break;
-
-            case UIControlType.TextArea when !hit.IsReadOnly:
+            case UIControlType.TextField or UIControlType.TextArea when !hit.IsReadOnly:
                 focused = hit.Name;
                 state.Caret = CaretAt(hit, state, x, y);
+                selecting = hit.Name;
                 break;
 
             case UIControlType.TextArea:
@@ -619,34 +639,33 @@ public sealed class UIView
         }
 
         var maximum = field.MaximumLength ?? 256;
+        var cursor = state.Cursor;
+        cursor.Clamp(state.Text.Length);
         switch (key.Key)
         {
+            case DesktopKey.Character when key.Control && !key.Alt && key.Character is 'a' or 'A':
+                cursor.SelectAll(state.Text.Length);
+                break;
             case DesktopKey.Character when key.Character >= ' ' && !key.Control && !key.Alt:
-                if (state.Text.Length < maximum)
-                {
-                    state.Text = state.Text.Insert(state.Caret, key.Character.ToString());
-                    state.Caret++;
-                }
-
+                state.Text = cursor.Replace(state.Text, key.Character.ToString(), maximum);
                 break;
-            case DesktopKey.Backspace when state.Caret > 0:
-                state.Text = state.Text.Remove(state.Caret - 1, 1);
-                state.Caret--;
+            case DesktopKey.Backspace:
+                state.Text = cursor.DeleteBackward(state.Text);
                 break;
-            case DesktopKey.Delete when state.Caret < state.Text.Length:
-                state.Text = state.Text.Remove(state.Caret, 1);
+            case DesktopKey.Delete:
+                state.Text = cursor.DeleteForward(state.Text);
                 break;
             case DesktopKey.Left:
-                state.Caret = Math.Max(0, state.Caret - 1);
+                cursor.Left(key.Shift);
                 break;
             case DesktopKey.Right:
-                state.Caret = Math.Min(state.Text.Length, state.Caret + 1);
+                cursor.Right(state.Text.Length, key.Shift);
                 break;
             case DesktopKey.Home:
-                state.Caret = 0;
+                cursor.MoveTo(0, key.Shift);
                 break;
             case DesktopKey.End:
-                state.Caret = state.Text.Length;
+                cursor.MoveTo(state.Text.Length, key.Shift);
                 break;
             case DesktopKey.Enter:
                 events.Add(new UIEvent(UIEventKind.Submitted, name, Text: state.Text));
@@ -770,9 +789,20 @@ public sealed class UIView
 
         state.FirstLine = Math.Clamp(state.FirstLine, 0, Math.Max(0, lines.Count - visible));
         var color = state.Disabled ? DesktopTheme.DisabledText : TextColor(control);
+        var (from, selected) = state.Cursor.Selection;
         for (var row = 0; row < visible && state.FirstLine + row < lines.Count; row++)
         {
             var (start, length) = lines[state.FirstLine + row];
+
+            // The part of the selection on this line, behind its text.
+            var (first, last) = (Math.Max(from, start), Math.Min(from + selected, start + length));
+            if (isFocused && last > first)
+            {
+                var left = painter.MeasureText(state.Text[start..first], size);
+                painter.FillRectangle(x + Inset + left, y + Inset + (row * lineHeight),
+                    painter.MeasureText(state.Text[first..last], size), lineHeight, DesktopTheme.Selection);
+            }
+
             if (length > 0)
                 painter.DrawText(state.Text.Substring(start, length), x + Inset, y + Inset + (row * lineHeight), color, size);
         }
@@ -789,33 +819,34 @@ public sealed class UIView
     {
         var maximum = area.MaximumLength ?? TextAreaLength;
         var text = state.Text;
-        state.Caret = Math.Clamp(state.Caret, 0, text.Length);
+        var cursor = state.Cursor;
+        cursor.Clamp(text.Length);
         var lines = state.Lines is { } cached && ReferenceEquals(state.LinesText, text) ? cached : null;
         switch (key.Key)
         {
-            case DesktopKey.Character when key.Character >= ' ' && !key.Control && !key.Alt && text.Length < maximum:
-                text = text.Insert(state.Caret, key.Character.ToString());
-                state.Caret++;
+            case DesktopKey.Character when key.Control && !key.Alt && key.Character is 'a' or 'A':
+                cursor.SelectAll(text.Length);
                 break;
-            case DesktopKey.Enter when text.Length < maximum:
-                text = text.Insert(state.Caret, "\n");
-                state.Caret++;
+            case DesktopKey.Character when key.Character >= ' ' && !key.Control && !key.Alt:
+                text = cursor.Replace(text, key.Character.ToString(), maximum);
                 break;
-            case DesktopKey.Backspace when state.Caret > 0:
-                text = text.Remove(state.Caret - 1, 1);
-                state.Caret--;
+            case DesktopKey.Enter:
+                text = cursor.Replace(text, "\n", maximum);
                 break;
-            case DesktopKey.Delete when state.Caret < text.Length:
-                text = text.Remove(state.Caret, 1);
+            case DesktopKey.Backspace:
+                text = cursor.DeleteBackward(text);
+                break;
+            case DesktopKey.Delete:
+                text = cursor.DeleteForward(text);
                 break;
             case DesktopKey.Left:
-                state.Caret = Math.Max(0, state.Caret - 1);
+                cursor.Left(key.Shift);
                 break;
             case DesktopKey.Right:
-                state.Caret = Math.Min(text.Length, state.Caret + 1);
+                cursor.Right(text.Length, key.Shift);
                 break;
             case DesktopKey.Home or DesktopKey.End or DesktopKey.Up or DesktopKey.Down:
-                state.Caret = MoveCaret(text, lines, state.Caret, key.Key);
+                cursor.MoveTo(MoveCaret(text, lines, cursor.Caret, key.Key), key.Shift);
                 break;
             default:
                 return;
@@ -871,9 +902,14 @@ public sealed class UIView
         };
     }
 
-    /// <summary>Where a click in a text area puts the caret: the character nearest the point, on the line it's on.</summary>
+    /// <summary>
+    /// Where a point in a text field or area puts the caret: the character nearest it, on the line it's on. Before the
+    /// control has been drawn, the end of its text.
+    /// </summary>
     private int CaretAt(UIControl area, State state, int x, int y)
     {
+        if (area.Type == UIControlType.TextField)
+            return FieldCaretAt(area, state, x);
         if (state.Measurer is not { } painter || state.Lines is not { } lines || !ReferenceEquals(state.LinesText, state.Text))
             return state.Text.Length;
 
@@ -891,6 +927,27 @@ public sealed class UIView
         }
 
         return start + length;
+    }
+
+    /// <summary>Where a point along a text field puts the caret, from the first character it last showed.</summary>
+    private int FieldCaretAt(UIControl field, State state, int x)
+    {
+        if (state.Measurer is not { } painter)
+            return state.Text.Length;
+
+        var shown = field.IsSecure ? new string('*', state.Text.Length) : state.Text;
+        var start = Math.Clamp(state.FirstShown, 0, shown.Length);
+        var size = TextSize(field);
+        var along = x - Place(field.Frame, false).X - Inset;
+        for (var count = start; count < shown.Length; count++)
+        {
+            var before = painter.MeasureText(shown[start..count], size);
+            var after = painter.MeasureText(shown[start..(count + 1)], size);
+            if (along < (before + after) / 2f)
+                return count;
+        }
+
+        return shown.Length;
     }
 
     /// <summary>The topmost visible, enabled control under a point, or <see langword="null"/>.</summary>
@@ -1023,12 +1080,23 @@ public sealed class UIView
         }
 
         // Show the end that holds the caret when the text is wider than the field.
+        state.Cursor.Clamp(shown.Length);
         var start = 0;
         while (start < state.Caret && painter.MeasureText(shown[start..state.Caret], size) > room)
             start++;
         var visible = shown[start..];
         while (visible.Length > 0 && painter.MeasureText(visible, size) > room)
             visible = visible[..^1];
+        (state.FirstShown, state.Measurer) = (start, painter);
+
+        // The selection, behind the text it covers.
+        var (from, length) = state.Cursor.Selection;
+        var (first, last) = (Math.Max(from, start), Math.Min(from + length, start + visible.Length));
+        if (isFocused && last > first)
+        {
+            var left = painter.MeasureText(shown[start..first], size);
+            painter.FillRectangle(x + Inset + left, textY, painter.MeasureText(shown[first..last], size), LineHeight(size), DesktopTheme.Selection);
+        }
 
         var color = state.Disabled ? DesktopTheme.DisabledText : TextColor(control);
         painter.DrawText(visible, x + Inset, textY, color, size);
@@ -1315,7 +1383,14 @@ public sealed class UIView
         public bool Hidden { get; set; }
         public bool Disabled { get; set; }
         public bool Selected { get; set; }
-        public int Caret { get; set; }
+        /// <summary>The caret and selection in a text field or area.</summary>
+        public TextCursor Cursor { get; } = new();
+
+        /// <summary>Where typing goes; setting it drops any selection.</summary>
+        public int Caret { get => Cursor.Caret; set => Cursor.Caret = value; }
+
+        /// <summary>The first character a text field showed when last drawn, for placing the caret at a click.</summary>
+        public int FirstShown { get; set; }
         public UIListState? List { get; init; }
 
         // A text area's wrapped lines as last drawn, as (start, length) into Text, and what they were made from.

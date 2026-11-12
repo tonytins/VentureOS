@@ -81,12 +81,30 @@ public sealed class WindowFrameTests
         Click((int)field.X + 3, (int)field.Y + 3);
         Assert.True(window.IsEditingTitle);
 
-        Frame(0, 0, keys: [new KeyPress(DesktopKey.Character, '/'), KeyPress.Typed('u'), new KeyPress(DesktopKey.Enter)]);
+        // All of it is selected, as in an address bar, so End is needed to add to it.
+        Assert.Equal((0, 4), window.TitleSelection);
+        Frame(0, 0, keys: [new KeyPress(DesktopKey.End), new KeyPress(DesktopKey.Character, '/'), KeyPress.Typed('u'), new KeyPress(DesktopKey.Enter)]);
 
         Assert.False(window.IsEditingTitle);
         Assert.Equal("/mnt/u", window.View.Text("address"));
         Assert.Equal([new UIEvent(UIEventKind.Submitted, "address", "/mnt/u")], events);
         Assert.Equal("", window.View.Text("field"));
+    }
+
+    [Fact]
+    public void TypingInTheTitleFieldReplacesItAndShiftSelects()
+    {
+        window.View.SetText("address", "/mnt/user");
+        var field = window.TitleFieldBounds;
+        Click((int)field.X + 3, (int)field.Y + 3);
+
+        Frame(0, 0, keys: [KeyPress.Typed('/'), KeyPress.Typed('x')]);
+        Assert.Equal("/x", window.View.Text("address"));
+
+        Frame(0, 0, keys: [new KeyPress(DesktopKey.Left, Shift: true), new KeyPress(DesktopKey.Left, Shift: true)]);
+        Assert.Equal((0, 2), window.TitleSelection);
+        Frame(0, 0, keys: [new KeyPress(DesktopKey.Character, 'a', Control: true), new KeyPress(DesktopKey.Backspace)]);
+        Assert.Equal("", window.View.Text("address"));
     }
 
     [Fact]

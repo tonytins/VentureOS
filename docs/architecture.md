@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (standard File and Help menus for every app) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (text selection) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (843 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (857 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -936,6 +936,15 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   to the desktop's messages; `venture.ui.onNewWindow(fn)` gives the app
   New Window (Ctrl+N), which the dock also uses when the app has no window.
   The app menu shows Quit for every app but the fallback.
+- **Text selection.** Text fields, text areas, and the title field share a
+  `TextCursor`: a caret and the anchor a selection started from. Shift with
+  the arrows, Home, End, Up, and Down extends it; an arrow without Shift
+  leaves it at its edge; Ctrl+A selects everything; typing, Enter, and
+  Backspace or Delete replace or remove it. A press places the caret at the
+  nearest character and a drag selects up to the pointer. The title field
+  selects all of itself when editing starts, as an address bar does. The
+  selection is drawn in the selection color behind its text, and
+  `UIView.Selection` and `SelectAll` give it to the desktop's Edit menu.
 - **Text areas** (`<TextArea>`, a VentureOS addition to UIScript's core). A
   multi-line entry: Enter adds a line, and typing reports `changed` with the
   text. Its text wraps at spaces, cutting a word too long for a line, and
@@ -1056,6 +1065,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Text selection (§9): fields, areas, and the title field share `TextCursor`; Shift-selection, Ctrl+A, click and drag, and typing over a selection; the title field selects all when editing starts. |
 | 2026-11-11 | minor | Standard menus (§9): every app gets File (Close Window) and Help (About the app, from `Info.xml`'s new optional `description`); a window's menus merge in by `role` or title; a window's own shortcut wins over a standard item's; the About window is built in Common for VentureOS and every app. |
 | 2026-11-11 | minor | Layering (§2, §3): `venture.appearance` and `setAppearance` reach the desktop through `IAppearance` on `ISystemInfo`, so Scripting no longer depends on Desktop (rule 6); the layout tree is redrawn by folder. |
 | 2026-11-11 | minor | Layout (§2, §3): `Venture.OS.Interface`'s root namespace is its own; UIScript sits at its root, and the CST reader and FlatXml moved to `Venture.OS.Interface.Strings` and `.Xml`. |

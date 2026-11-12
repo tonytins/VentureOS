@@ -72,7 +72,8 @@ public sealed class DesktopWindow
 
     private readonly List<UIRect> itemBounds = [];
     private string savedTitle = "";
-    private int caret;
+    // The caret and selection in the title field while it's being edited.
+    private readonly TextCursor cursor = new();
 
     // Where the idle title was last drawn, from the frame's left edge, so a drag doesn't leave it behind.
     private int shownLeft;
@@ -242,7 +243,10 @@ public sealed class DesktopWindow
         return View.TooltipAt(x - left, y - top);
     }
 
-    /// <summary>Starts editing the title field, if the document has one, with the caret at the end.</summary>
+    /// <summary>
+    /// Starts editing the title field, if the document has one, with all of it selected, as an address bar does, so
+    /// typing replaces it and an arrow key edits it in place.
+    /// </summary>
     public void BeginTitleEdit()
     {
         if (View.Script.TitleField is not { } field || IsEditingTitle || View.IsDisabled(field.Name))
@@ -250,9 +254,12 @@ public sealed class DesktopWindow
 
         View.ClearFocus();
         savedTitle = View.Text(field.Name) ?? "";
-        caret = savedTitle.Length;
+        cursor.SelectAll(savedTitle.Length);
         IsEditingTitle = true;
     }
+
+    /// <summary>The title field's selection while it's being edited, or <see langword="null"/> when it isn't.</summary>
+    public (int Start, int Length)? TitleSelection => IsEditingTitle ? cursor.Selection : null;
 
     /// <summary>Drops an edit of the title, putting back what it said before, as Esc or a click elsewhere does.</summary>
     public void CancelTitleEdit()
@@ -276,33 +283,34 @@ public sealed class DesktopWindow
             return events;
 
         var text = View.Text(field.Name) ?? "";
-        caret = Math.Clamp(caret, 0, text.Length);
+        cursor.Clamp(text.Length);
         foreach (var key in keys)
         {
             switch (key.Key)
             {
-                case DesktopKey.Character when !key.Control && !key.Alt && key.Character >= ' ' && text.Length < TitleFieldLength:
-                    text = text.Insert(caret, key.Character.ToString());
-                    caret++;
+                case DesktopKey.Character when key.Control && !key.Alt && key.Character is 'a' or 'A':
+                    cursor.SelectAll(text.Length);
                     break;
-                case DesktopKey.Backspace when caret > 0:
-                    text = text.Remove(caret - 1, 1);
-                    caret--;
+                case DesktopKey.Character when !key.Control && !key.Alt && key.Character >= ' ':
+                    text = cursor.Replace(text, key.Character.ToString(), TitleFieldLength);
                     break;
-                case DesktopKey.Delete when caret < text.Length:
-                    text = text.Remove(caret, 1);
+                case DesktopKey.Backspace:
+                    text = cursor.DeleteBackward(text);
+                    break;
+                case DesktopKey.Delete:
+                    text = cursor.DeleteForward(text);
                     break;
                 case DesktopKey.Left:
-                    caret = Math.Max(0, caret - 1);
+                    cursor.Left(key.Shift);
                     break;
                 case DesktopKey.Right:
-                    caret = Math.Min(text.Length, caret + 1);
+                    cursor.Right(text.Length, key.Shift);
                     break;
                 case DesktopKey.Home:
-                    caret = 0;
+                    cursor.MoveTo(0, key.Shift);
                     break;
                 case DesktopKey.End:
-                    caret = text.Length;
+                    cursor.MoveTo(text.Length, key.Shift);
                     break;
                 case DesktopKey.Enter:
                     View.SetText(field.Name, text);
@@ -461,13 +469,25 @@ public sealed class DesktopWindow
         var text = View.Text(field.Name) ?? "";
         var textY = y + ((ItemHeight - (int)MathF.Ceiling(Size * 1.35f)) / 2);
         var room = width - (2 * TitlePadding);
-        var end = Math.Clamp(caret, 0, text.Length);
+        var lineHeight = (int)MathF.Ceiling(Size * 1.35f);
+        cursor.Clamp(text.Length);
+        var end = cursor.Caret;
         var start = 0;
         while (start < end && painter.MeasureText(text[start..end], Size) > room)
             start++;
         var visible = text[start..];
         while (visible.Length > 0 && painter.MeasureText(visible, Size) > room)
             visible = visible[..^1];
+
+        // The selection, behind the text it covers.
+        var (from, length) = cursor.Selection;
+        var (first, last) = (Math.Max(from, start), Math.Min(from + length, start + visible.Length));
+        if (active && last > first)
+        {
+            painter.FillRectangle(x + TitlePadding + painter.MeasureText(text[start..first], Size), textY,
+                painter.MeasureText(text[first..last], Size), lineHeight, DesktopTheme.Selection);
+        }
+
         painter.DrawText(visible, x + TitlePadding, textY, DesktopTheme.Text, Size);
 
         if (active)
