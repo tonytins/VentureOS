@@ -3,26 +3,26 @@ using Venture.OS.Interface;
 namespace Venture.OS.Desktop;
 
 /// <summary>
-/// The desktop's sky: a blue gradient with a soft glow rising from the bottom, after early Aqua.
+/// The desktop's sky: a gradient in the palette's sky colors with a soft glow rising from the bottom, after early Aqua.
 /// </summary>
 /// <remarks>
 /// Cosmos's canvas doesn't blend, and the glow is translucent, so the whole picture is worked out
-/// once, as pixels, and copied to the screen on every frame.
+/// once for each palette, as pixels, and copied to the screen on every frame.
 /// </remarks>
 public static class DesktopBackground
 {
-    /// <summary>The top of the sky, a deep blue.</summary>
-    public static readonly UIColor Top = new(32, 86, 140);
-
-    /// <summary>The bottom of the sky, a pale blue.</summary>
-    public static readonly UIColor Bottom = new(180, 211, 242);
-
-    /// <summary>Works out the sky for a screen, as 0xAARRGGBB pixels row by row.</summary>
+    /// <summary>Works out the sky for a screen in the palette in use, as 0xAARRGGBB pixels row by row.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A size isn't positive.</exception>
-    public static int[] Render(int width, int height)
+    public static int[] Render(int width, int height) => Render(width, height, DesktopTheme.Palette);
+
+    /// <summary>Works out the sky for a screen in a palette, as 0xAARRGGBB pixels row by row.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A size isn't positive.</exception>
+    public static int[] Render(int width, int height, DesktopPalette palette)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        ArgumentNullException.ThrowIfNull(palette);
+        var (top, bottom) = (palette.SkyTop, palette.SkyBottom);
 
         var pixels = new int[width * height];
         var glowX = width * 0.5f;
@@ -32,16 +32,16 @@ public static class DesktopBackground
         for (var y = 0; y < height; y++)
         {
             var along = height == 1 ? 0 : (float)y / (height - 1);
-            var rowRed = Mix(Top.Red, Bottom.Red, along);
-            var rowGreen = Mix(Top.Green, Bottom.Green, along);
-            var rowBlue = Mix(Top.Blue, Bottom.Blue, along);
+            var rowRed = Mix(top.Red, bottom.Red, along);
+            var rowGreen = Mix(top.Green, bottom.Green, along);
+            var rowBlue = Mix(top.Blue, bottom.Blue, along);
 
             for (var x = 0; x < width; x++)
             {
                 var (red, green, blue) = (rowRed, rowGreen, rowBlue);
 
                 // A white glow that fades out from below the bottom edge.
-                var glow = Fade(Distance(x, y, glowX, glowY) / glowRadius, 0.55f, 0f);
+                var glow = Fade(Distance(x, y, glowX, glowY) / glowRadius, palette.SkyGlow, 0f);
                 (red, green, blue) = Over(red, green, blue, glow);
 
                 pixels[(y * width) + x] = Pack(red, green, blue);

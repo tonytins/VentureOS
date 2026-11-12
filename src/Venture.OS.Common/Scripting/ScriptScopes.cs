@@ -13,7 +13,7 @@ public enum ScriptScopes
     /// <summary>Only <c>venture.version()</c>.</summary>
     None = 0,
 
-    /// <summary><c>system</c>: <c>venture.uptime()</c> and <c>venture.memory()</c>.</summary>
+    /// <summary><c>system</c>: <c>venture.uptime()</c>, <c>venture.memory()</c>, and the desktop's appearance.</summary>
     System = 1 << 0,
 
     /// <summary><c>network</c>: <c>venture.net()</c>.</summary>

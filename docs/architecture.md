@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (hover; apps get the new look without changing) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (palettes: dark mode and accent colors) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -12,7 +12,7 @@ the code wins and this page is out of date.
   scripts in `system/`); a kernel-free library, `Venture.OS.Common` (39
   files: the shell framework, Lua support, bundles, UIScript, and the
   desktop's drawing); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (723 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (748 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -509,6 +509,7 @@ flowchart LR
 | `df [folder]` | Lua script: free and total space where a folder is stored |
 | `pwd` | Lua script: the current folder |
 | `info` | Lua script: version and build, commit, Cosmos version, uptime, and free and total memory |
+| `appearance [light\|dark] [--accent #RRGGBB]` | Lua script: shows or switches the desktop's look, until reboot |
 | `lua [code]` | Runs one chunk of Lua 5.5 in a fresh interpreter, or with no code, opens a Lua prompt |
 | `net` | Lua script: device, MAC, link, readiness, and IPv4 address, subnet, and gateway |
 | `halt` | Ends the shell loop; the CPU halts and the machine stays on |
@@ -580,6 +581,8 @@ scripts do the formatting:
 | `venture.version()` | *(always)* | `{ name, version, build, commit, cosmos, display }` |
 | `venture.uptime()` | `system` | Whole seconds since the CPU started counting, or `nil` |
 | `venture.memory()` | `system` | `{ free, total }` in bytes, or `nil` |
+| `venture.appearance()` | `system` | The desktop's look, `{ mode, accent }`: `"light"` or `"dark"`, and the accent as `#RRGGBB` |
+| `venture.setAppearance(mode, accent)` | `system` | Switches to `"light"` or `"dark"`, with an optional `#RRGGBB` accent (the current one otherwise); `true`, or `nil` and why |
 | `venture.command{...}` | `shell` | Registers a command for as long as its owner lasts; see **Owners** below |
 | `venture.shell(line)` | `shell` | Runs a line as if typed at the shell; in `init.lua` and at the `lua` prompt |
 | `venture.files.*` | `files` | Lists, reads, writes, and changes files; see **Files** below |
@@ -757,6 +760,18 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   without them), and kept on the screen. Controls follow their edge
   offsets, which measure from that size; a sidebar keeps its width. Apps
   get no event when their window resizes.
+- **Palettes.** Every color the desktop draws with comes from the
+  `DesktopPalette` in use, which `DesktopTheme`'s colors read each time
+  something draws, so switching it reaches every window and app on the next
+  frame. A palette is built from an accent, light or dark, after Distro
+  Tycoon 2: tinted colors (title bars, selection, the sidebar, the sky) take
+  the accent's hue and a share of its saturation, while text, panels, and
+  borders stay neutral. The standard light palette rebuilds the original
+  colors to within a shade. The accent is darkened on light and lightened on
+  dark until it reads, and `ChosenAccent` keeps it as chosen. The desktop
+  works out its sky again, once, when the palette changes.
+  `venture.setAppearance` and the `appearance` command switch it; the
+  choice lasts until reboot. A document's `<Style>` colors stay as written.
 - **Hover.** The window manager tells the window under the pointer where it
   is, unless a button is held or the pointer is over the menu bar or dock;
   every window gets this, not only the front one, which gets input. Over
@@ -1016,6 +1031,7 @@ published for use outside the Cosmos repository hasn't been confirmed.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Palettes (§9): `DesktopPalette`, light or dark from an accent after Distro Tycoon 2, behind `DesktopTheme`; `venture.appearance` and `setAppearance` (`system`) and the `appearance` command. |
 | 2026-11-11 | minor | Hover (§1, §9): what the pointer rests on shows it, in any window, with no change to apps; principle 7, apps get the new look without changing; CI and published ISOs dropped from the plans (§11, §12). |
 | 2026-11-11 | minor | Resizing (§9): `resizable` on `<Window>`, a grip, and `UIView.SetWindowSize`, with controls following Hudini's edge offsets; Files and TextEdit resize. |
 | 2026-11-11 | minor | Sidebars (§9): windows draw a `<Sidebar>` down their left, full height, with the buttons on top; the view keeps it as a list; Files' bookmarks move into one. |

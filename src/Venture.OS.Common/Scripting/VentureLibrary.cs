@@ -1,4 +1,5 @@
 using Cosmos.Executable.Lua;
+using Venture.OS.Desktop;
 
 namespace Venture.OS.Scripting;
 
@@ -14,8 +15,11 @@ namespace Venture.OS.Scripting;
 /// <item><description><c>venture.net()</c>: <c>nil</c> without a network adapter, otherwise
 /// <c>{ device, mac, link_up, ready, address, subnet, gateway }</c>, where the last three are <c>nil</c> until
 /// IPv4 is configured.</description></item>
+/// <item><description><c>venture.appearance()</c>: the desktop's look, <c>{ mode, accent }</c>, and
+/// <c>venture.setAppearance(mode, accent)</c>, which switches it to <c>"light"</c> or <c>"dark"</c> with an optional
+/// <c>#RRGGBB</c> accent, returning <c>true</c>, or <c>nil</c> and why.</description></item>
 /// </list>
-/// <para>The functions take no arguments and ignore any they're given. An exception from
+/// <para>The functions other than <c>setAppearance</c> take no arguments and ignore any they're given. An exception from
 /// <see cref="ISystemInfo"/> becomes a Lua error, which <c>pcall</c> can catch, so a failing device can't stop the
 /// system.</para>
 /// </remarks>
@@ -43,6 +47,8 @@ public static class VentureLibrary
             Gated("uptime", ScriptScopes.System, scopes, lua => PushUptime(lua, system)),
             Gated("memory", ScriptScopes.System, scopes, lua => PushMemory(lua, system)),
             Gated("net", ScriptScopes.Network, scopes, lua => PushNetwork(lua, system)),
+            Gated("appearance", ScriptScopes.System, scopes, PushAppearance),
+            Gated("setAppearance", ScriptScopes.System, scopes, SetAppearance),
 
             // Replaced by ShellLibrary where the code has a lasting owner; elsewhere they explain why they can't work.
             Gated("command", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "command")),
@@ -127,6 +133,47 @@ public static class VentureLibrary
         SetInteger(lua, "free", memory.FreeBytes);
         SetInteger(lua, "total", memory.TotalBytes);
         return 1;
+    }
+
+    /// <summary><c>venture.appearance()</c>: the desktop's look, as <c>{ mode = "light" or "dark", accent = "#RRGGBB" }</c>.</summary>
+    private static int PushAppearance(ILuaState lua)
+    {
+        var palette = DesktopTheme.Palette;
+        lua.NewTable();
+        SetString(lua, "mode", palette.IsDark ? "dark" : "light");
+        SetString(lua, "accent", DesktopPalette.Format(palette.ChosenAccent));
+        return 1;
+    }
+
+    /// <summary>
+    /// <c>venture.setAppearance(mode, accent)</c>: switches the desktop to <c>"light"</c> or <c>"dark"</c>, with an
+    /// accent written <c>#RRGGBB</c>, or the current one when it's left out. Returns <see langword="true"/>, or
+    /// <see langword="nil"/> and why, changing nothing, when either is wrong. The desktop shows it on its next frame.
+    /// </summary>
+    private static int SetAppearance(ILuaState lua)
+    {
+        var mode = LuaText.Decode(lua.L_CheckString(1));
+        if (mode is not ("light" or "dark"))
+            return Refuse(lua, $"the appearance is light or dark, not \"{mode}\"");
+
+        var accent = DesktopTheme.Palette.ChosenAccent;
+        if (!lua.IsNoneOrNil(2))
+        {
+            var text = LuaText.Decode(lua.L_CheckString(2));
+            if (!DesktopPalette.TryParseColor(text, out accent))
+                return Refuse(lua, $"an accent is written #RRGGBB, such as #1E78DC, not \"{text}\"");
+        }
+
+        DesktopTheme.Use(DesktopPalette.Create(accent, mode == "dark"));
+        lua.PushBoolean(true);
+        return 1;
+    }
+
+    private static int Refuse(ILuaState lua, string reason)
+    {
+        lua.PushNil();
+        lua.PushString(LuaText.Encode(reason));
+        return 2;
     }
 
     private static int PushNetwork(ILuaState lua, ISystemInfo system)

@@ -11,10 +11,11 @@ public sealed class DesktopTests
     [Fact]
     public void TheSkyRunsFromDeepBlueAtTheTopToPaleBlueAtTheBottom()
     {
-        var pixels = DesktopBackground.Render(200, 100);
+        var pixels = DesktopBackground.Render(200, 100, DesktopPalette.Light);
 
         // The top corner is untouched by the glow.
-        Assert.Equal(DesktopBackground.Pack(32, 86, 140), pixels[0]);
+        var top = DesktopPalette.Light.SkyTop;
+        Assert.Equal(DesktopBackground.Pack(top.Red, top.Green, top.Blue), pixels[0]);
         var (topBlue, bottomBlue) = (pixels[100] & 0xFF, pixels[(99 * 200) + 100] & 0xFF);
         Assert.True(bottomBlue > topBlue, "The bottom should be paler than the top.");
         Assert.All(pixels, pixel => Assert.Equal(0xFF, (pixel >> 24) & 0xFF));

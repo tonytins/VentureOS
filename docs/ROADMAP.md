@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** major (Downeaster extended; phase 5, hover; every-stage work dropped) · **Stage:** alpha
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Downeaster phase 6, palettes) · **Stage:** alpha
 
 Forward-looking: where VentureOS stands, what blocks the next stage, and what
 comes next. Verified status and evidence are in the
@@ -59,14 +59,14 @@ reboots is later, optional work (Blue Water).
 | Saluki | Apps | 90% | later | Runtime commands, bundles, and opening and closing apps are done, with `Notes.app` and a guide; installing apps from outside the system waits on persistence |
 | Borealis | Desktop | 100% | 0 | A Tiger-style desktop: `.uix` (UIScript) interfaces, windows, a menu bar, and a dock; version 0.3 |
 | Keystone | Desktop apps | 100% | 0 | Files, user apps, timers and System Monitor, a multi-line `<TextArea>` and TextEdit, and Terminal.app |
-| Downeaster | Desktop refinement | 63% | 11–22 | Centred titles, an address that edits on click, sidebars, resizable windows, and hover are done; dark mode and accents, style roles, and Settings are next |
-| | **Total** | | **≈ 29–57** | |
+| Downeaster | Desktop refinement | 75% | 7–14 | Centred titles, an address that edits on click, sidebars, resizable windows, hover, and dark mode and accents are done; style roles and Settings are next |
+| | **Total** | | **≈ 25–49** | |
 
 ## Upcoming work, ranked
 
 | Rank | Work | Milestone | Estimate (h) |
 |---|---|---|---|
-| 1 | Dark mode, accents, style roles, and Settings | Downeaster | 11–22 |
+| 1 | Style roles and Settings | Downeaster | 7–14 |
 | 2 | DNS and network commands | Pere Marquette | 10–20 |
 
 Beta needs Blue Water in substance, about 8–15 hours.
@@ -272,10 +272,11 @@ with the close and minimize buttons on top, as Big Sur's Finder does.
   and with no change to apps. The close and minimize buttons show their
   marks, the title field's text takes the accent, buttons and toolbar
   items lighten, and sidebar rows are shaded.
-- [ ] Phase 6, a switchable theme: the desktop's colours come from a
+- [x] Phase 6, a switchable theme: the desktop's colours come from a
   current palette, with a dark palette beside today's light one, both
   built from an accent colour after Distro Tycoon 2, with its swatches.
-  Everything without a style follows.
+  Everything without a style follows. `venture.setAppearance` and the
+  `appearance` command switch it until reboot, ahead of Settings.
 - [ ] Phase 7, style roles: colour roles (`textColor="secondary"`) and
   font-size roles (`fontSize="title"`) on `<Style>`, written as if in
   Hudini's spec and drafted in `docs/uiscript-styles.md`, with layered
@@ -322,6 +323,7 @@ open from it, and `<TextArea>` comes before Terminal.app, which needs it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-11 | minor | Downeaster 75%: phase 6, light and dark palettes from an accent after Distro Tycoon 2, switched by `venture.setAppearance` and the `appearance` command. About 25–49 h of milestones remain. |
 | 2026-11-11 | major | Tony Bark extended Downeaster with hover, a dark palette and accent colours after Distro Tycoon 2, style roles drafted for Hudini, Settings, and optional hover text through a transitional CST reader; the docs-and-boot phase and the every-stage list (CI, ARM64 boots, ISO releases) are dropped, and beta needs only Blue Water. Phase 5, hover, is done (63% of the required phases). About 29–57 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 80%: phase 4, resizable windows with a grip, following Hudini's edge offsets instead of a new `anchor` attribute; Files and TextEdit resize. About 19–38 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 60%: phase 3, sidebars drawn the window's full height with the buttons on top, and Files' bookmarks in one. Phase 4 uses Hudini's `minWidth` and `minHeight` for the smallest size. About 24–47 h of milestones remain. |

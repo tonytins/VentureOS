@@ -1,27 +1,32 @@
 # Changelog
 
-## 0.3.10
+## 0.3.12
+
+- The desktop has a dark appearance, and any accent color: `appearance dark`, `appearance light`, or `appearance --accent "#E8922A"` in the shell or Terminal. Windows, the sky, the menu bar, and the dock change at once. The choice lasts until reboot.
+- Scripts: `venture.appearance()` and `venture.setAppearance(mode, accent)`, with `system` in `-- Needs:`.
+
+## 0.3.11
 
 - The desktop shows what the pointer rests on: the close and minimize buttons show their × and −, a window's address turns blue, buttons lighten, and sidebar places are shaded.
 - Files and TextEdit windows can be resized: drag the dots in the bottom-right corner.
 - App authors: `resizable="true"` on `<Window>` makes a window resizable, no smaller than its `minWidth` and `minHeight`; controls follow the edges their edge offsets name.
 
-## 0.3.9
+## 0.3.10
 
 - Files has a sidebar: Home, User, Apps, and System run down the window's left, its full height, with the close and minimize buttons on top.
 - App authors: `<Sidebar>`, with `requires="sidebar"`, gives a window a sidebar of its own.
 
-## 0.3.8
+## 0.3.9
 
 - Window titles sit in the middle of the title bar.
 - Files' address reads as the window's title until you click it or press Ctrl+L, then becomes a field. Press Enter to go there; the Go button is gone. A long path keeps its end in view.
 
-## 0.3.7
+## 0.3.8
 
 - New app: Terminal, the shell in a window, in Fira Code. Each window has its own current folder; `exit` closes it, and Shell ▸ Clear (Ctrl+K) empties it. `desktop` and the interactive `lua` prompt only work on the text console, and say so.
 - A window gets its typing back where it was when you bring it forward again.
 
-## 0.3.6
+## 0.3.7
 
 - New app: TextEdit, in your apps. Type a path in its title bar and press Enter to open a file, or Save (Ctrl+S) to create one.
 - Double-clicking a text file in Files opens it in TextEdit.

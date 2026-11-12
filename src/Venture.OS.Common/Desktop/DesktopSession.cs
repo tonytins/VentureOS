@@ -50,7 +50,10 @@ public sealed class DesktopSession
         ], 0),
         MenuGroup.System);
 
-    private readonly int[] background;
+    private int[] background;
+
+    // The palette the sky was worked out in; a different one in use means working it out again.
+    private DesktopPalette backgroundPalette;
     private readonly AppManager? apps;
     private readonly string workingDirectory;
     private readonly HeldOutput appOutput;
@@ -110,7 +113,8 @@ public sealed class DesktopSession
         this.apps = apps;
         this.workingDirectory = workingDirectory;
         this.appOutput = appOutput ?? new HeldOutput();
-        background = DesktopBackground.Render(width, height);
+        backgroundPalette = DesktopTheme.Palette;
+        background = DesktopBackground.Render(width, height, backgroundPalette);
         last = new DesktopInput(width / 2, height / 2, false);
         Windows = windows ?? new WindowManager(width, height);
         Windows.SetScreenSize(width, height);
@@ -261,6 +265,7 @@ public sealed class DesktopSession
         RefreshMenus();
 
         var changed = !drawn || input.HasEvents || happened.Count > 0 || restarted || ticked
+            || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
             || x != last.PointerX || y != last.PointerY || input.PointerDown != last.PointerDown;
         last = new DesktopInput(x, y, input.PointerDown);
         if (released)
@@ -272,6 +277,13 @@ public sealed class DesktopSession
     public void Draw(IPainter painter)
     {
         ArgumentNullException.ThrowIfNull(painter);
+
+        // A new palette needs a new sky; working it out allocates, so only then.
+        if (!ReferenceEquals(DesktopTheme.Palette, backgroundPalette))
+        {
+            backgroundPalette = DesktopTheme.Palette;
+            background = DesktopBackground.Render(Width, Height, backgroundPalette);
+        }
 
         painter.DrawPixels(background, 0, 0, Width, Height);
         Windows.Draw(painter);

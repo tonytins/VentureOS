@@ -5,101 +5,118 @@ namespace Venture.OS.Desktop;
 /// <summary>
 /// The desktop's look: colors and sizes after early Aqua (Mac OS X Tiger), by way of Distro Tycoon 2's appearance.
 /// </summary>
-/// <remarks>A document's <c>&lt;Style&gt;</c> wins over these for the controls that name it.</remarks>
+/// <remarks>
+/// <para>The colors come from the <see cref="Palette"/> in use, so switching it, such as to dark, reaches every
+/// window and app on the next frame with no change to them. Everything that draws reads its colors here each time
+/// it draws, rather than keeping them.</para>
+/// <para>A document's <c>&lt;Style&gt;</c> wins over these for the controls that name it.</para>
+/// </remarks>
 public static class DesktopTheme
 {
+    /// <summary>The palette the desktop draws with: the standard light one until something switches it.</summary>
+    public static DesktopPalette Palette { get; private set; } = DesktopPalette.Light;
+
+    /// <summary>
+    /// Switches the palette. The desktop notices on its next frame and draws everything again, its sky included.
+    /// </summary>
+    public static void Use(DesktopPalette palette)
+    {
+        ArgumentNullException.ThrowIfNull(palette);
+        Palette = palette;
+    }
+
     /// <summary>The accent, a clear sky blue, for focus and selection.</summary>
-    public static readonly UIColor Accent = new(30, 120, 220);
+    public static UIColor Accent => Palette.Accent;
 
     /// <summary>Text on light backgrounds.</summary>
-    public static readonly UIColor Text = new(24, 28, 36);
+    public static UIColor Text => Palette.Text;
 
     /// <summary>Placeholders and other quieter text.</summary>
-    public static readonly UIColor SecondaryText = new(110, 116, 126);
+    public static UIColor SecondaryText => Palette.SecondaryText;
 
     /// <summary>Text on a control that's turned off.</summary>
-    public static readonly UIColor DisabledText = new(150, 154, 160);
+    public static UIColor DisabledText => Palette.DisabledText;
 
     /// <summary>A window's content background.</summary>
-    public static readonly UIColor Panel = new(240, 243, 247);
+    public static UIColor Panel => Palette.Panel;
 
     /// <summary>Lines around windows and controls.</summary>
-    public static readonly UIColor Border = new(120, 126, 136);
+    public static UIColor Border => Palette.Border;
 
     /// <summary>The inside of text fields and lists.</summary>
-    public static readonly UIColor InputBackground = new(255, 255, 255);
+    public static UIColor InputBackground => Palette.InputBackground;
 
     /// <summary>A selected list item.</summary>
-    public static readonly UIColor Selection = new(158, 200, 242);
+    public static UIColor Selection => Palette.Selection;
 
     /// <summary>A window's sidebar, a shade cooler than its content, from the top of the window to the bottom.</summary>
-    public static readonly UIColor SidebarBackground = new(224, 231, 240);
+    public static UIColor SidebarBackground => Palette.SidebarBackground;
 
     /// <summary>The selected place in a sidebar, softer than a list's selection.</summary>
-    public static readonly UIColor SidebarSelection = new(190, 210, 236);
+    public static UIColor SidebarSelection => Palette.SidebarSelection;
 
     /// <summary>The place in a sidebar under the pointer, fainter than the selected one.</summary>
-    public static readonly UIColor SidebarHover = new(210, 221, 236);
+    public static UIColor SidebarHover => Palette.SidebarHover;
 
     /// <summary>The bottom of a button or toolbar item under the pointer, lighter than its usual gradient.</summary>
-    public static readonly UIColor ButtonHover = new(218, 230, 244);
+    public static UIColor ButtonHover => Palette.ButtonHover;
 
     /// <summary>The top and bottom of a title bar, and of a button.</summary>
-    public static readonly UIColor TitleBarTop = new(250, 251, 253);
+    public static UIColor TitleBarTop => Palette.TitleBarTop;
 
     /// <inheritdoc cref="TitleBarTop"/>
-    public static readonly UIColor TitleBarBottom = new(196, 210, 226);
+    public static UIColor TitleBarBottom => Palette.TitleBarBottom;
 
     /// <summary>The close button, and the mark on it.</summary>
-    public static readonly UIColor CloseButton = new(236, 95, 86);
+    public static UIColor CloseButton => Palette.CloseButton;
 
     /// <inheritdoc cref="CloseButton"/>
-    public static readonly UIColor CloseMark = new(90, 20, 16);
+    public static UIColor CloseMark => Palette.CloseMark;
 
     /// <summary>The minimize button's fill.</summary>
-    public static readonly UIColor MinimizeButton = new(245, 178, 50);
+    public static UIColor MinimizeButton => Palette.MinimizeButton;
 
     /// <summary>The minimize button's rim.</summary>
-    public static readonly UIColor MinimizeMark = new(120, 82, 12);
+    public static UIColor MinimizeMark => Palette.MinimizeMark;
 
     /// <summary>A button while the pointer is down on it.</summary>
-    public static readonly UIColor ButtonPressed = new(170, 196, 228);
+    public static UIColor ButtonPressed => Palette.ButtonPressed;
 
     /// <summary>The red outline where an image couldn't be drawn, as Hudini draws it.</summary>
-    public static readonly UIColor MissingImage = new(220, 30, 30);
+    public static UIColor MissingImage => Palette.MissingImage;
 
     /// <summary>The drop shadow under windows.</summary>
-    public static readonly UIColor Shadow = new(0, 0, 0, 60);
+    public static UIColor Shadow => Palette.Shadow;
 
     /// <summary>White laid over a window that isn't in front, as early Aqua faded background windows.</summary>
-    public static readonly UIColor InactiveFade = new(255, 255, 255, 90);
+    public static UIColor InactiveFade => Palette.InactiveFade;
 
     /// <summary>The bottom of the menu bar's gradient, which starts from <see cref="TitleBarTop"/>.</summary>
-    public static readonly UIColor MenuBarBottom = new(222, 228, 236);
+    public static UIColor MenuBarBottom => Palette.MenuBarBottom;
 
     /// <summary>A menu's background.</summary>
-    public static readonly UIColor MenuBackground = new(250, 251, 253);
+    public static UIColor MenuBackground => Palette.MenuBackground;
 
     /// <summary>Text on the accent color, such as a highlighted menu item.</summary>
-    public static readonly UIColor HighlightedText = new(255, 255, 255);
+    public static UIColor HighlightedText => Palette.HighlightedText;
 
     /// <summary>The line between groups of menu items.</summary>
-    public static readonly UIColor Separator = new(214, 218, 224);
+    public static UIColor Separator => Palette.Separator;
 
     /// <summary>The dock's glassy shelf, laid over the sky.</summary>
-    public static readonly UIColor DockShelf = new(255, 255, 255, 70);
+    public static UIColor DockShelf => Palette.DockShelf;
 
     /// <summary>The dock shelf's bright edge.</summary>
-    public static readonly UIColor DockEdge = new(255, 255, 255, 150);
+    public static UIColor DockEdge => Palette.DockEdge;
 
     /// <summary>The dot under an open app's icon.</summary>
-    public static readonly UIColor OpenAppDot = new(24, 28, 36);
+    public static UIColor OpenAppDot => Palette.OpenAppDot;
 
     /// <summary>The label that names the icon under the pointer.</summary>
-    public static readonly UIColor DockLabel = new(0, 0, 0, 150);
+    public static UIColor DockLabel => Palette.DockLabel;
 
     /// <summary>The shade over an icon while it's pressed.</summary>
-    public static readonly UIColor IconPressed = new(0, 0, 0, 60);
+    public static UIColor IconPressed => Palette.IconPressed;
 
     /// <summary>The height of a window's title bar, in pixels.</summary>
     public const int TitleBarHeight = 28;
