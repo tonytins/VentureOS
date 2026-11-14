@@ -1,6 +1,6 @@
 # Project Guidelines
 
-## Project structure
+## Project Structure
 
 VentureOS is a hobby operating system written in C# on the
 [Cosmos](https://github.com/CosmosOS/Cosmos) gen3 framework (`Cosmos.Sdk`
@@ -44,7 +44,7 @@ tests, and is listed in `src/Venture.slnx`:
 
 Never commit build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`).
 
-## Build and test
+## Build and Test
 
 ```sh
 dotnet test --project tests/Venture.OS.Common.Tests   # all tests must pass
@@ -65,15 +65,20 @@ cosmos build -p src/Venture.OS                      # no new warnings
 
 ## C# and Cosmos
 
-Follow the [.NET guidelines skill](.agents/skills/dotnet-guidelines/SKILL.md)
-and [.editorconfig](.editorconfig) for style, and the
-[Cosmos gen3 skill](.agents/skills/cosmos-gen3/SKILL.md) for the CLI and kernel
-APIs. Where they disagree with this file, this file wins.
+Follow the [.NET guidelines skill](.agents/skills/dotnet-guidelines/SKILL.md) and [.editorconfig](.editorconfig) for style, and the [Cosmos gen3 skill](.agents/skills/cosmos-gen3/SKILL.md) for the CLI and kernel APIs. Where they disagree with this file, this file wins.
 
-### Never crash
+## Golden Rules
 
-There is no host process underneath: an unhandled exception stops the machine
-with no explanation. Stability outranks features.
+### Design Process
+
+- **Iterate**. A first design or name is a draft. Rebuild clumsy parts as understanding improves.
+- **Ask when a decision is open**, and explain the reasoning behind what you suggest.
+- **Keep it simple**. The simplest approach that matches what the game does wins.
+- **Say what you're unsure of**: assumptions, unverified behaviour, and what needs testing.
+
+### Never Crash (Outranks Feature Work)
+
+There is no host process underneath: an unhandled exception stops the machine with no explanation. Stability outranks features.
 
 - **During boot**, `VentureKernel.BeforeRun` runs each step through
   `RunCriticalStep` or `RunOptionalStep`. A step is critical if the system
@@ -93,7 +98,7 @@ with no explanation. Stability outranks features.
 - Bound every loop and wait that depends on hardware or the network. Don't add
   `Thread.Sleep` to paths that don't already need it.
 
-### Cosmos constraints
+### Cosmos Constraints
 
 - The kernel is compiled ahead of time with no JIT. Avoid reflection, `dynamic`,
   runtime code generation, and BCL APIs Cosmos doesn't implement. Prefer simple
@@ -140,7 +145,7 @@ with no explanation. Stability outranks features.
 - Give public and internal APIs `///` doc comments that explain why, not what.
   Put shared usings in `GlobalUsings.cs`.
 
-## Keeping docs current
+## Keeping Docs Current
 
 Describe only what works today, and keep the tree building at every step.
 
