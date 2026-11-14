@@ -1,0 +1,370 @@
+{
+  "format": "anicraft",
+  "version": 3,
+  "generator": "AniCraft 0.2.1",
+  "paths": [
+    "M-0.36215973 -221.27763L0.36215973 221.27765",
+    "M-261.46936 1.4241333L261.46936 -1.4241409",
+    "M-261.46936 1.4241333L261.46936 -1.4241333",
+    "M-261.46936 1.4241333L261.46936 -1.4241333"
+  ],
+  "document": {
+    "stage": {
+      "width": 400,
+      "height": 400,
+      "fps": 24.0,
+      "background": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+      }
+    },
+    "scenes": [
+      {
+        "name": "Scene 1",
+        "timeline": {
+          "layers": [
+            {
+              "id": 10,
+              "name": "Layer 2",
+              "kind": "Normal",
+              "visible": true,
+              "locked": true,
+              "outline": false,
+              "color": {
+                "r": 0.4,
+                "g": 0.73333335,
+                "b": 0.41568628,
+                "a": 1.0
+              },
+              "keyframes": [
+                {
+                  "start": 0,
+                  "duration": 1,
+                  "elements": [
+                    {
+                      "id": 12,
+                      "name": "",
+                      "transform": {
+                        "m": [
+                          1.0,
+                          0.0,
+                          0.0,
+                          1.0,
+                          49.027885,
+                          210.32022
+                        ]
+                      },
+                      "color": {
+                        "alpha": 1.0,
+                        "tint": {
+                          "r": 1.0,
+                          "g": 1.0,
+                          "b": 1.0,
+                          "a": 1.0
+                        },
+                        "tint_amount": 0.0
+                      },
+                      "kind": {
+                        "Shape": {
+                          "path": 0,
+                          "fill": null,
+                          "stroke": {
+                            "color": {
+                              "r": 1.0,
+                              "g": 0.0,
+                              "b": 0.0,
+                              "a": 1.0
+                            },
+                            "width": 2.0
+                          },
+                          "fill_rule": "NonZero",
+                          "merge": true
+                        }
+                      }
+                    }
+                  ],
+                  "tween": null,
+                  "label": ""
+                }
+              ]
+            },
+            {
+              "id": 1,
+              "name": "Layer 1",
+              "kind": "Normal",
+              "visible": true,
+              "locked": false,
+              "outline": false,
+              "color": {
+                "r": 0.30980393,
+                "g": 0.6392157,
+                "b": 1.0,
+                "a": 1.0
+              },
+              "keyframes": [
+                {
+                  "start": 0,
+                  "duration": 1,
+                  "elements": [
+                    {
+                      "id": 4,
+                      "name": "",
+                      "transform": {
+                        "m": [
+                          1.0,
+                          0.0,
+                          0.0,
+                          1.0,
+                          200.0,
+                          60.0
+                        ]
+                      },
+                      "color": {
+                        "alpha": 1.0,
+                        "tint": {
+                          "r": 1.0,
+                          "g": 1.0,
+                          "b": 1.0,
+                          "a": 1.0
+                        },
+                        "tint_amount": 0.0
+                      },
+                      "kind": {
+                        "Shape": {
+                          "path": 1,
+                          "fill": null,
+                          "stroke": {
+                            "color": {
+                              "r": 0.63529414,
+                              "g": 0.63529414,
+                              "b": 0.63529414,
+                              "a": 1.0
+                            },
+                            "width": 2.0
+                          },
+                          "fill_rule": "NonZero",
+                          "merge": true
+                        }
+                      }
+                    },
+                    {
+                      "id": 5,
+                      "name": "",
+                      "transform": {
+                        "m": [
+                          1.0,
+                          0.0,
+                          0.0,
+                          1.0,
+                          210.0,
+                          120.0
+                        ]
+                      },
+                      "color": {
+                        "alpha": 1.0,
+                        "tint": {
+                          "r": 1.0,
+                          "g": 1.0,
+                          "b": 1.0,
+                          "a": 1.0
+                        },
+                        "tint_amount": 0.0
+                      },
+                      "kind": {
+                        "Shape": {
+                          "path": 1,
+                          "fill": null,
+                          "stroke": {
+                            "color": {
+                              "r": 0.63529414,
+                              "g": 0.63529414,
+                              "b": 0.63529414,
+                              "a": 1.0
+                            },
+                            "width": 2.0
+                          },
+                          "fill_rule": "NonZero",
+                          "merge": true
+                        }
+                      }
+                    },
+                    {
+                      "id": 8,
+                      "name": "",
+                      "transform": {
+                        "m": [
+                          1.0,
+                          0.0,
+                          0.0,
+                          1.0,
+                          181.29944,
+                          182.42413
+                        ]
+                      },
+                      "color": {
+                        "alpha": 1.0,
+                        "tint": {
+                          "r": 1.0,
+                          "g": 1.0,
+                          "b": 1.0,
+                          "a": 1.0
+                        },
+                        "tint_amount": 0.0
+                      },
+                      "kind": {
+                        "Shape": {
+                          "path": 2,
+                          "fill": null,
+                          "stroke": {
+                            "color": {
+                              "r": 0.63529414,
+                              "g": 0.63529414,
+                              "b": 0.63529414,
+                              "a": 1.0
+                            },
+                            "width": 2.0
+                          },
+                          "fill_rule": "NonZero",
+                          "merge": true
+                        }
+                      }
+                    },
+                    {
+                      "id": 9,
+                      "name": "",
+                      "transform": {
+                        "m": [
+                          1.0,
+                          0.0,
+                          0.0,
+                          1.0,
+                          191.29944,
+                          242.42413
+                        ]
+                      },
+                      "color": {
+                        "alpha": 1.0,
+                        "tint": {
+                          "r": 1.0,
+                          "g": 1.0,
+                          "b": 1.0,
+                          "a": 1.0
+                        },
+                        "tint_amount": 0.0
+                      },
+                      "kind": {
+                        "Shape": {
+                          "path": 3,
+                          "fill": null,
+                          "stroke": {
+                            "color": {
+                              "r": 0.63529414,
+                              "g": 0.63529414,
+                              "b": 0.63529414,
+                              "a": 1.0
+                            },
+                            "width": 2.0
+                          },
+                          "fill_rule": "NonZero",
+                          "merge": true
+                        }
+                      }
+                    },
+                    {
+                      "id": 13,
+                      "name": "",
+                      "transform": {
+                        "m": [
+                          1.0,
+                          0.0,
+                          0.0,
+                          1.0,
+                          191.29944,
+                          302.42413
+                        ]
+                      },
+                      "color": {
+                        "alpha": 1.0,
+                        "tint": {
+                          "r": 1.0,
+                          "g": 1.0,
+                          "b": 1.0,
+                          "a": 1.0
+                        },
+                        "tint_amount": 0.0
+                      },
+                      "kind": {
+                        "Shape": {
+                          "path": 2,
+                          "fill": null,
+                          "stroke": {
+                            "color": {
+                              "r": 0.63529414,
+                              "g": 0.63529414,
+                              "b": 0.63529414,
+                              "a": 1.0
+                            },
+                            "width": 2.0
+                          },
+                          "fill_rule": "NonZero",
+                          "merge": true
+                        }
+                      }
+                    },
+                    {
+                      "id": 14,
+                      "name": "",
+                      "transform": {
+                        "m": [
+                          1.0,
+                          0.0,
+                          0.0,
+                          1.0,
+                          201.29944,
+                          362.42413
+                        ]
+                      },
+                      "color": {
+                        "alpha": 1.0,
+                        "tint": {
+                          "r": 1.0,
+                          "g": 1.0,
+                          "b": 1.0,
+                          "a": 1.0
+                        },
+                        "tint_amount": 0.0
+                      },
+                      "kind": {
+                        "Shape": {
+                          "path": 3,
+                          "fill": null,
+                          "stroke": {
+                            "color": {
+                              "r": 0.63529414,
+                              "g": 0.63529414,
+                              "b": 0.63529414,
+                              "a": 1.0
+                            },
+                            "width": 2.0
+                          },
+                          "fill_rule": "NonZero",
+                          "merge": true
+                        }
+                      }
+                    }
+                  ],
+                  "tween": null,
+                  "label": ""
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "library": [],
+    "next_id": 15
+  }
+}
