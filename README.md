@@ -1,7 +1,7 @@
 # VentureOS
 
 <p align="center">
-<img src="./ventureos-screenshot.png" width="450"/>
+<img src="./screenshot.png" width="450"/>
 </p>
 <hr>
 <p align="center">
