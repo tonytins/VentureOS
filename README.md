@@ -1,17 +1,17 @@
-# VentureOS
 
 <p align="center">
 <img src="./screenshot.png" width="450"/>
 </p>
 <hr>
 <p align="center">
+  <b>a fun hobby operating system written in C# using the Cosmos framework</b><br>
+  macOS-style interface with <a href="https://en.wikipedia.org/wiki/Bundle_(macOS)">bundled</a> Lua desktop applications
+</p>
+
+<p align="center">
   <a href="https://github.com/tonytins/VentureOS/blob/main/UNLICENSE"><img src="https://img.shields.io/github/license/tonytins/VentureOS" alt="GitHub license"></a>
   <img src="https://img.shields.io/github/commit-activity/w/tonytins/VentureOS" alt="GitHub commit activity">
 </p>
-
-Named after the Siemens' [passenger cars](https://en.wikipedia.org/wiki/Siemens_Venture), VentureOS is my hobby operating
-system written in C# and based on the [Cosmos](https://github.com/CosmosOS/Cosmos) framework. It is the spiritual successor to my earlier project, [TOMAS](https://github.com/tonytins/tomas/).
-
 
 ## 🚀Getting Started
 
