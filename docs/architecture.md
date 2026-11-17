@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (994 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,002 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -794,8 +794,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   document through `AppWindows.LoadImage` (the kernel's `PngLoader`); a
   path that climbs out, or a file that can't be read, is reported in the
   app's messages and stays outlined; the About window's `icon` visual
-  shows the app's icon, and is hidden for an app without one and for
-  VentureOS. Buttons' images aren't drawn yet.
+  shows the app's icon, or VentureOS's, and is hidden for an app without
+  one. Buttons' images aren't drawn yet.
 - **Translucency.** The canvas's own drawing doesn't blend, so
   `CanvasPainter` blends a translucent fill (window shadows, the fade over
   inactive windows) into the canvas's buffer itself.
@@ -804,11 +804,19 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   kept on screen far enough to grab again; its close button closes it on
   release.
 - **The unified title bar** (`DesktopWindow`), after CityLimits' window
-  frame: one 28 px band with a red close button and an orange minimize
-  button on the left, then the title, then the document's toolbar items
-  (`<ToolbarItem>`) along the right end, which report `pressed` on release.
+  frame: one band (`BarHeight`: 30 px, or 42 with a subtitle or toolbar
+  images) with a red close button and an orange minimize button on the
+  left, then the document's toolbar items (`<ToolbarItem>`) with
+  `placement="start"`, the title, and the rest along the right end, each
+  end in document order; they report `pressed` on release. Items are flat,
+  as GNOME's header bar buttons are, shaded only under the pointer or while
+  held. An item with an `image` is a square showing it as a 16-pixel
+  symbol: the key cleared, scaled, and drawn as a silhouette in the text
+  color (`DesktopIcon.Symbol`, `DesktopImage.Silhouette`), dimmed when
+  disabled, made once for each color, so it follows light and dark; its
+  title is its hover text. One whose image wasn't supplied shows its title.
   The title is centred in the window when it fits clear of both ends of
-  the bar, and otherwise in the room between them, cut with an ellipsis.
+  the bar, and otherwise in the room between the items at each end, cut with an ellipsis.
   A `<TitleField>` makes the title editable, as Files' address bar is,
   after CityLimits' city name: it reads as a plain centred title, keeping
   its end when cut, and only that text takes clicks, so the bar around it

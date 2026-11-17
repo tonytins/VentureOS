@@ -228,6 +228,9 @@ public sealed class UIView
     /// <summary>Image resources nothing has been supplied for, sorted.</summary>
     public IReadOnlyList<string> MissingImages => missingImages;
 
+    /// <summary>The picture supplied for one of the document's <c>&lt;Image&gt;</c>s, or <see langword="null"/>.</summary>
+    public DesktopImage? Image(string name) => images.GetValueOrDefault(name);
+
     /// <summary>
     /// Supplies the picture for one of the document's <c>&lt;Image&gt;</c> resources, or takes it away with
     /// <see langword="null"/>, which outlines it again.

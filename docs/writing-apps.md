@@ -245,7 +245,12 @@ new number. `roll` still works in the shell, since both live in the same app.
   `<TitleField name="address"/>` makes the title editable, as Files'
   address bar is: it reads as the title until it's clicked or given focus,
   then becomes a field that reports `submitted` on Enter. Notes uses
-  toolbar items for Add and Remove.
+  toolbar items for Add and Remove. Items sit at the right end; give one
+  `placement="start"` to put it after the window's buttons instead. Give
+  one `image="addIcon"`, naming an `<Image>`, and it shows that image as a
+  symbol in the text's color, so it follows light and dark, with its title
+  as hover text and a taller bar. Draw symbols as dark shapes, with
+  `#00FF01` or transparency where they're clear.
 - **Images:** declare one with `<Image name="logo" path="images/logo.png"/>`,
   its path beside the `.uix` file, and show it with
   `<Visual name="banner" image="logo" x="10" y="10" width="64" height="64"/>`,

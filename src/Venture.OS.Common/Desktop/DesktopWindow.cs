@@ -80,7 +80,10 @@ public sealed class DesktopWindow
 
     private const int ButtonInset = 9;
     private const int ButtonGap = 8;
-    private const int ItemHeight = 20;
+    private const int ItemHeight = 22;
+    private const int TallItemHeight = 30;
+    private const int ItemRadius = 5;
+    private const int SymbolSize = 16;
     private const int ItemPadding = 10;
     private const int ItemGap = 6;
     private const int Margin = 8;
@@ -94,6 +97,13 @@ public sealed class DesktopWindow
     private const string Ellipsis = "…";
 
     private readonly List<UIRect> itemBounds = [];
+
+    // Where the items at the start end and those at the end begin, as last laid out; before the first layout, none.
+    private int startItemsRight = int.MinValue / 2;
+    private int endItemsLeft = int.MaxValue / 2;
+
+    // Each toolbar item's symbol, by its name, with the image and color it was made from.
+    private readonly Dictionary<string, (DesktopImage Source, UIColor Color, DesktopImage Symbol)> symbols = [];
     private string savedTitle = "";
     // The caret and selection in the title field while it's being edited.
     private readonly TextCursor cursor = new();
@@ -224,12 +234,12 @@ public sealed class DesktopWindow
         }
     }
 
-    // The room the title has: over the content, after the buttons, and before the toolbar.
+    // The room the title has: over the content, after the buttons and the items at the start, and before those at
+    // the end, as last laid out.
     private (int Left, int Right) TitleRoom()
     {
-        var left = Math.Max(X + (IsClosable ? ButtonInset + (2 * ButtonSize) + ButtonGap + 12 : Margin),
-            X + View.SidebarWidth + Margin);
-        var right = itemBounds.Count > 0 ? (int)itemBounds[0].X - Margin : X + Width - Margin;
+        var left = Math.Max(StartOfBar, startItemsRight + Margin);
+        var right = Math.Min(X + Width - Margin, endItemsLeft - Margin);
         return (left, Math.Max(left, right));
     }
 
@@ -256,10 +266,19 @@ public sealed class DesktopWindow
         return (FramePart.Bar, -1);
     }
 
-    /// <summary>The hover text at a point on the screen, from the content under it, or <see langword="null"/>.</summary>
+    /// <summary>
+    /// The hover text at a point on the screen, from the content under it, or a toolbar item's title when it shows a
+    /// symbol, or <see langword="null"/>.
+    /// </summary>
     public string? TooltipAt(int x, int y)
     {
-        if (!Bounds.Contains(x, y) || Hit(x, y).Part != FramePart.None)
+        if (!Bounds.Contains(x, y))
+            return null;
+
+        var (part, index) = Hit(x, y);
+        if (part == FramePart.ToolbarItem && View.Script.ToolbarItems[index] is var item && HasSymbol(item))
+            return item.Title;
+        if (part != FramePart.None)
             return null;
 
         var (left, top) = ContentOrigin;
@@ -496,39 +515,104 @@ public sealed class DesktopWindow
     {
         const int Size = DesktopTheme.TextSize;
         var items = View.Script.ToolbarItems;
+        LayOutToolbar(painter);
+
+        for (var index = 0; index < items.Count; index++)
+        {
+            var item = items[index];
+            var bounds = itemBounds[index];
+            var (x, y, width, height) = ((int)bounds.X, (int)bounds.Y, (int)bounds.Width, (int)bounds.Height);
+            var disabled = View.IsDisabled(item.Name);
+            var held = !disabled && (index == pressedItem || View.IsSelected(item.Name));
+
+            // Flat, as GNOME's header bar buttons are, until the pointer's over one or it's held.
+            if (held || (!disabled && index == hoveredItem))
+            {
+                var shade = held ? DesktopTheme.ButtonPressed : DesktopTheme.ButtonHover;
+                DesktopTheme.FillRoundedGradient(painter, x, y, width, height, ItemRadius, shade, shade);
+            }
+
+            var ink = disabled ? DesktopTheme.DisabledText : DesktopTheme.Text;
+            if (Symbol(item, ink) is { } symbol)
+            {
+                painter.DrawImage(symbol, x + ((width - symbol.Width) / 2), y + ((height - symbol.Height) / 2));
+                continue;
+            }
+
+            painter.DrawText(item.Title, x + ((width - painter.MeasureText(item.Title, Size)) / 2),
+                y + ((height - (int)MathF.Ceiling(Size * 1.35f)) / 2), ink, Size);
+        }
+    }
+
+    /// <summary>
+    /// Places the toolbar items: those at the start left to right after the buttons, and those at the end right to
+    /// left from the bar's right end, each in document order, and the room left between them for the title.
+    /// </summary>
+    private void LayOutToolbar(IPainter painter)
+    {
+        const int Size = DesktopTheme.TextSize;
+        var items = View.Script.ToolbarItems;
+        var height = BarHeight == DesktopTheme.TallTitleBarHeight ? TallItemHeight : ItemHeight;
+        var top = Y + ((BarHeight - height) / 2);
         itemBounds.Clear();
 
-        // Right to left, so the last item sits at the right end.
+        var left = StartOfBar;
+        for (var index = 0; index < items.Count; index++)
+        {
+            var width = ItemWidth(painter, items[index], height, Size);
+            if (items[index].Placement == UIToolbarPlacement.Start)
+            {
+                itemBounds.Add(new UIRect(left, top, width, height));
+                left += width + ItemGap;
+            }
+            else
+            {
+                itemBounds.Add(new UIRect(0, top, width, height));
+            }
+        }
+
         var right = X + Width - Margin;
-        var top = Y + ((BarHeight - ItemHeight) / 2);
-        UIRect[] placed = new UIRect[items.Count];
         for (var index = items.Count - 1; index >= 0; index--)
         {
-            var width = painter.MeasureText(items[index].Title, Size) + (2 * ItemPadding);
-            right -= width;
-            placed[index] = new UIRect(right, top, width, ItemHeight);
+            if (items[index].Placement != UIToolbarPlacement.End)
+                continue;
+
+            var bounds = itemBounds[index];
+            right -= (int)bounds.Width;
+            itemBounds[index] = bounds with { X = right };
             right -= ItemGap;
         }
 
-        itemBounds.AddRange(placed);
-        for (var index = 0; index < items.Count; index++)
-        {
-            var bounds = placed[index];
-            var (x, y, width) = ((int)bounds.X, (int)bounds.Y, (int)bounds.Width);
-            var disabled = View.IsDisabled(items[index].Name);
-            var held = !disabled && (index == pressedItem || View.IsSelected(items[index].Name));
-            var bottom = held ? DesktopTheme.ButtonPressed
-                : !disabled && index == hoveredItem ? DesktopTheme.ButtonHover
-                : DesktopTheme.TitleBarBottom;
+        // With none at one end, the title's room reaches the bar's own edge there.
+        startItemsRight = left > StartOfBar ? left - ItemGap : int.MinValue / 2;
+        endItemsLeft = right < X + Width - Margin ? right + ItemGap : int.MaxValue / 2;
+    }
 
-            DesktopTheme.FillGradient(painter, x, y, width, ItemHeight,
-                held ? DesktopTheme.ButtonPressed : DesktopTheme.InputBackground, bottom);
-            DesktopTheme.Outline(painter, x, y, width, ItemHeight, DesktopTheme.Border);
-            var title = items[index].Title;
-            painter.DrawText(title, x + ((width - painter.MeasureText(title, Size)) / 2),
-                y + ((ItemHeight - (int)MathF.Ceiling(Size * 1.35f)) / 2),
-                disabled ? DesktopTheme.DisabledText : DesktopTheme.Text, Size);
-        }
+    private int ItemWidth(IPainter painter, UIToolbarItem item, int height, int size) =>
+        HasSymbol(item) ? height : painter.MeasureText(item.Title, size) + (2 * ItemPadding);
+
+    // Where the bar's own room starts: after the buttons, and past the sidebar, whose top they sit on.
+    private int StartOfBar => Math.Max(
+        X + (IsClosable ? ButtonInset + (2 * ButtonSize) + ButtonGap + 12 : Margin), X + View.SidebarWidth + Margin);
+
+    private bool HasSymbol(UIToolbarItem item) => item.Image is { } name && View.Image(name) is not null;
+
+    /// <summary>
+    /// A toolbar item's image as a symbol in the text's color, so it follows light and dark, made once for each
+    /// color and kept; <see langword="null"/> when the item has no image, or its image wasn't supplied, so its title
+    /// shows instead.
+    /// </summary>
+    private DesktopImage? Symbol(UIToolbarItem item, UIColor color)
+    {
+        if (item.Image is not { } name || View.Image(name) is not { } source)
+            return null;
+
+        if (symbols.TryGetValue(item.Name, out var kept) && ReferenceEquals(kept.Source, source) && kept.Color == color)
+            return kept.Symbol;
+
+        var symbol = DesktopIcon.Symbol(source, SymbolSize).Silhouette(color.Red, color.Green, color.Blue);
+        symbols[item.Name] = (source, color, symbol);
+        return symbol;
     }
 
     /// <summary>

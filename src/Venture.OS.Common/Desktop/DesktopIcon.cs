@@ -66,6 +66,18 @@ public sealed class DesktopIcon
         return new DesktopIcon(isTile ? MaskToTile(scaled) : shadow ? WithShadow(scaled) : scaled, isTile);
     }
 
+    /// <summary>
+    /// A symbolic icon, such as a toolbar item's, at a size: the key cleared and its edges unmixed, then scaled, with
+    /// no tile and no shadow, ready to be drawn as a silhouette in the text's color.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The size isn't one a picture can have.</exception>
+    public static DesktopImage Symbol(DesktopImage picture, int size)
+    {
+        ArgumentNullException.ThrowIfNull(picture);
+        DesktopImage.CheckSize(size, size);
+        return ClearTheKey(picture).Scaled(size, size);
+    }
+
     private static DesktopImage ClearTheKey(DesktopImage picture)
     {
         var key = unchecked((int)0xFF000000) | ClearKey;
