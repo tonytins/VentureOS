@@ -42,7 +42,7 @@ stage to the next, and add a line to the revision history.
 |---|---|---|---|
 | 0.3 | (the desktop) | released 2026-11-11, `v0.3.18`; [notes](./releases/0.3.md) | The desktop, its apps, Settings, and the look |
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
-| 0.5 | (a sleeper train, when it's planned) | considered | Nothing chosen yet; see Ideas |
+| 0.5 | Cassiopeia | considered | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 
 ## 0.4, Pere Marquette
 
@@ -87,6 +87,48 @@ its own.
 - [x] Edit's Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z), dimmed when there's
   nothing to undo or redo.
 
+## 0.5, Cassiopeia
+
+Named after the luxury sleeper, for the release that makes the desktop look
+its best, after the goals in my notes: unified GNOME-style header bars and
+sidebars, a glossy Tiger-style menu bar, rounded corners, wallpapers, and
+automatic dark mode. Window buttons stay on the left, macOS-style.
+
+**0.5.1xx, images**
+
+- [ ] Draw PNG images: app icons in the dock and About, and wallpapers.
+- [ ] Icons exported from AniCraft as PNG at the sizes they're drawn at;
+  symbolic icons (toolbar and sidebar) recolored to the text color, so they
+  follow light and dark.
+- [ ] The Earthset wallpaper, as a PNG, pre-scaled to the screen.
+
+**0.5.2xx, the menu bar**
+
+- [ ] Tiger's gloss: a bright band and a sheen line.
+- [ ] Status items on the right, starting with a clock, once VentureOS
+  knows the time.
+
+**0.5.3xx, header bars**
+
+- [ ] Toolbar items with icons, flat until the pointer's over them, at the
+  start or the end of the bar.
+- [ ] A subtitle under the title.
+- [ ] A taller bar when it holds toolbar items.
+- [ ] The green zoom button for resizable windows.
+
+**0.5.4xx, sidebars**
+
+- [ ] An icon on each row, and a rounded selection.
+- [ ] Separators between groups of rows.
+
+**0.5.5xx, look options**
+
+- [ ] Rounded corners on all four corners of a window, on or off in
+  Settings.
+- [ ] Wallpapers to choose from in Settings, with light and dark variants,
+  and the sky kept as one.
+- [ ] Automatic dark mode, dark from sunset to sunrise.
+
 ## Ideas
 
 Worth doing someday, in no order, and not yet given a release.
@@ -127,6 +169,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.5 is Cassiopeia, the first Japanese sleeper train: the desktop's look, in five bands, from my notes' desktop goals. |
 | 2026-11-17 | minor | 0.4, Pere Marquette, is released as `v0.4.500`. 0.5 is next, being planned. |
 | 2026-11-12 | minor | 0.4.5xx done: Undo and Redo for every text field, area, and title field. Every band of 0.4 is done. |
 | 2026-11-12 | major | The roadmap starts over for an evolving OS, by my decision: releases and their stages, bands without hour estimates, an Ideas list, and 1.0 whenever I'm ready. The route milestones and their history moved to [docs/history](./history/roadmap-2026.md). 0.4 gains a fifth band, Undo and Redo. Code names from 0.5 are Japanese sleeper trains, then Japanese limited expresses. |
