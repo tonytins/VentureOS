@@ -91,6 +91,9 @@ public sealed class UIView
     private readonly Dictionary<string, DesktopImage> images = [];
     private readonly List<string> missingImages;
     private readonly Dictionary<string, DesktopImage> scaledImages = [];
+
+    // Sidebar rows' icons as symbols, by image name and color, with the image they were made from.
+    private readonly Dictionary<(string Name, UIColor Color), (DesktopImage Source, DesktopImage Symbol)> sidebarSymbols = [];
     private const int Inset = 4;
     private const string Ellipsis = "…";
 
@@ -99,6 +102,10 @@ public sealed class UIView
     private const int SidebarInset = 6;
     private const int SidebarRowExtra = 8;
     private const int SidebarSelectionInset = 6;
+    private const int SidebarSelectionRadius = 6;
+    private const int SidebarSeparatorRoom = 9;
+    private const int SidebarIconSize = 16;
+    private const int SidebarIconGap = 8;
 
     private readonly UIScript script;
 
@@ -715,7 +722,7 @@ public sealed class UIView
 
             case UIControlType.List when hit.IsSelectable:
                 var list = state.List!;
-                var index = list.FirstVisible + (int)((y - Place(hit.Frame, false).Y - 1) / RowHeight(hit));
+                var index = RowAt(hit, list, y - Place(hit.Frame, false).Y);
                 if (index < 0 || index >= list.Items.Count)
                 {
                     lastListClick = null;
@@ -803,7 +810,7 @@ public sealed class UIView
     {
         var state = states[control.Name];
         if (state.List is { } list)
-            return (list.FirstVisible, Math.Max(0, list.Items.Count - VisibleRows(control)));
+            return (list.FirstVisible, LastFirstRow(control, list));
 
         var lines = state.Lines?.Count ?? 1;
         return (state.FirstLine, Math.Max(0, lines - VisibleLines(control)));
@@ -1182,7 +1189,7 @@ public sealed class UIView
     private void FollowList(UIControl control, UIListState list)
     {
         var visible = VisibleRows(control);
-        var last = Math.Max(0, list.Items.Count - visible);
+        var last = LastFirstRow(control, list);
         if (!control.IsSelectable && list.Items.Count != list.LastCount
             && list.FirstVisible >= Math.Max(0, list.LastCount - visible))
             list.FirstVisible = last;
@@ -1327,36 +1334,89 @@ public sealed class UIView
         }
     }
 
-    /// <summary>Draws the sidebar's rows, without a box, over the shade the frame drew; the selected row is marked.</summary>
+    /// <summary>
+    /// Draws the sidebar's rows, without a box, over the shade the frame drew, as Nautilus does: the selected row and
+    /// the one under the pointer get a rounded shade, a row's icon shows as a symbol in the text's color before its
+    /// text, and a faint line splits one group from the next.
+    /// </summary>
     private void DrawSidebar(IPainter painter, UIControl control, State state, UIRect bounds)
     {
-        var (x, y, width, _) = Ints(bounds);
+        var (x, y, width, height) = Ints(bounds);
         var list = state.List!;
         var size = DesktopTheme.TextSize;
         var rowHeight = RowHeight(control);
-        var rows = VisibleRows(control);
-        var room = width - (4 * SidebarSelectionInset);
+        var ink = state.Disabled ? DesktopTheme.DisabledText : DesktopTheme.Text;
+
+        // Every row's text lines up, after an icon's room when any row shows one.
+        var iconRoom = AnySidebarIcon(list) ? SidebarIconSize + SidebarIconGap : 0;
+        var textX = x + (2 * SidebarSelectionInset) + iconRoom;
+        var room = width - (4 * SidebarSelectionInset) - iconRoom;
 
         // The row under the pointer, by the same arithmetic a click uses.
         var hovered = -1;
         var place = Place(control.Frame, false);
         if (!state.Disabled && hover is { } at && place.Contains(at.X, at.Y))
-            hovered = list.FirstVisible + (int)((at.Y - place.Y - 1) / rowHeight);
+            hovered = RowAt(control, list, at.Y - place.Y);
 
-        for (var row = 0; row < rows && list.FirstVisible + row < list.Items.Count; row++)
+        var top = 1;
+        for (var index = list.FirstVisible; index < list.Items.Count; index++)
         {
-            var index = list.FirstVisible + row;
-            var rowY = y + 1 + (row * rowHeight);
-            if (index == list.SelectedIndex || index == hovered)
+            if (index > list.FirstVisible && list.GroupStarts.Contains(index))
             {
-                painter.FillRectangle(x + SidebarSelectionInset, rowY, width - (2 * SidebarSelectionInset), rowHeight,
-                    index == list.SelectedIndex ? DesktopTheme.SidebarSelection : DesktopTheme.SidebarHover);
+                if (top + SidebarSeparatorRoom > height)
+                    break;
+                painter.FillRectangle(x + (2 * SidebarSelectionInset), y + top + (SidebarSeparatorRoom / 2),
+                    width - (4 * SidebarSelectionInset), 1, DesktopTheme.Separator);
+                top += SidebarSeparatorRoom;
             }
 
+            if (top + rowHeight > height)
+                break;
+
+            var rowY = y + top;
+            if (index == list.SelectedIndex || index == hovered)
+            {
+                var shade = index == list.SelectedIndex ? DesktopTheme.SidebarSelection : DesktopTheme.SidebarHover;
+                DesktopTheme.FillRoundedGradient(painter, x + SidebarSelectionInset, rowY, width - (2 * SidebarSelectionInset),
+                    rowHeight, SidebarSelectionRadius, shade, shade);
+            }
+
+            if (SidebarSymbol(list, index, ink) is { } symbol)
+                painter.DrawImage(symbol, x + (2 * SidebarSelectionInset), rowY + ((rowHeight - symbol.Height) / 2));
+
             var text = Fit(painter, list.Items[index], size, room);
-            painter.DrawText(text, x + (2 * SidebarSelectionInset), rowY + ((rowHeight - LineHeight(size)) / 2),
-                state.Disabled ? DesktopTheme.DisabledText : DesktopTheme.Text, size);
+            painter.DrawText(text, textX, rowY + ((rowHeight - LineHeight(size)) / 2), ink, size);
+            top += rowHeight;
         }
+    }
+
+    /// <summary>Whether any of a list's rows shows an icon: one named, and supplied.</summary>
+    private bool AnySidebarIcon(UIListState list)
+    {
+        for (var index = 0; index < list.Icons.Count; index++)
+        {
+            if (list.Icons[index] is { } name && images.ContainsKey(name))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// A sidebar row's icon as a symbol in a color, made once for each image and color and kept, or
+    /// <see langword="null"/> when the row has none or its image wasn't supplied.
+    /// </summary>
+    private DesktopImage? SidebarSymbol(UIListState list, int index, UIColor color)
+    {
+        if (index >= list.Icons.Count || list.Icons[index] is not { } name || !images.TryGetValue(name, out var source))
+            return null;
+
+        if (sidebarSymbols.TryGetValue((name, color), out var kept) && ReferenceEquals(kept.Source, source))
+            return kept.Symbol;
+
+        var symbol = DesktopIcon.Symbol(source, SidebarIconSize).Silhouette(color.Red, color.Green, color.Blue);
+        sidebarSymbols[(name, color)] = (source, symbol);
+        return symbol;
     }
 
     private void DrawSlider(IPainter painter, UIControl control, State state, UIRect bounds)
@@ -1496,6 +1556,44 @@ public sealed class UIView
 
     private int VisibleRows(UIControl control) =>
         Math.Max(1, (int)((Place(control.Frame, false).Height - 2) / RowHeight(control)));
+
+    /// <summary>
+    /// The row at a height from a list's top, counting the room a separator takes before a group, or -1 for none.
+    /// Only a sidebar has separators, so for any other list this is plain division.
+    /// </summary>
+    private int RowAt(UIControl control, UIListState list, float y)
+    {
+        var rowHeight = RowHeight(control);
+        var top = 1;
+        for (var index = list.FirstVisible; index < list.Items.Count; index++)
+        {
+            if (index > list.FirstVisible && list.GroupStarts.Contains(index))
+                top += SidebarSeparatorRoom;
+            if (y < top)
+                return -1;
+            if (y < top + rowHeight)
+                return index;
+            top += rowHeight;
+        }
+
+        return y >= 1 ? list.FirstVisible + (int)((y - 1) / rowHeight) : -1;
+    }
+
+    /// <summary>The furthest a list can scroll: the first row from which every later row, and its separators, fits.</summary>
+    private int LastFirstRow(UIControl control, UIListState list)
+    {
+        var rowHeight = RowHeight(control);
+        var room = Place(control.Frame, false).Height - 2;
+        var used = 0f;
+        for (var first = list.Items.Count - 1; first >= 0; first--)
+        {
+            used += rowHeight + (list.GroupStarts.Contains(first + 1) && first + 1 < list.Items.Count ? SidebarSeparatorRoom : 0);
+            if (used > room)
+                return Math.Min(first + 1, list.Items.Count - 1);
+        }
+
+        return 0;
+    }
 
     private static (float Minimum, float Maximum) Range(UIControl control) => control.ValueRange ?? (0, 1);
 

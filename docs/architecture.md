@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,023 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,030 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -1195,6 +1195,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Sidebar rows (§9): rounded shades for the selection and hover, rows' icons as 16-pixel symbols in the text color with every row's text lined up after them, and faint lines between groups; clicks, hover, and scrolling count the room the lines take. |
 | 2026-11-17 | minor | Sidebars begin (§9): `window:setItems` takes a sidebar's rows as tables with `text`, an `icon` naming an `<Image>`, or `separator = true`, kept in `UIListState.Icons` and `GroupStarts`; separators aren't rows. Not drawn yet; a plain list refuses them. |
 | 2026-11-17 | minor | Layout (§2): the kernel project is `src/Venture.OS.Kernel` (`Venture.OS.Kernel.csproj`), named for what it is; its assembly stays `Venture` and its namespaces `Venture.OS`. |
 | 2026-11-17 | minor | Version (§2, §10): `GitInfo.txt` moved to the repository root, so every commit counts toward the patch, not only the kernel's. |
