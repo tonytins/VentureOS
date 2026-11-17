@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.300
+
+- Title bars are 30 pixels tall, from 28, which leaves more room to grab and drag a window.
+- Apps: images in an app's `.uix` files show, from PNG files beside them, such as `<Image name="logo" path="images/logo.png"/>` shown with a `<Visual>`.
+
 ## 0.5.201
 
 - The menu bar shows the time on its right, as Tiger did: `Tue 3:45 PM`.

@@ -157,7 +157,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         {
             // Keep the title bar on the screen, where it can be grabbed again.
             moving.Window.X = Math.Clamp(x - moving.OffsetX, 40 - moving.Window.Width, screenWidth - 40);
-            moving.Window.Y = Math.Clamp(y - moving.OffsetY, TopInset, screenHeight - DesktopTheme.TitleBarHeight);
+            moving.Window.Y = Math.Clamp(y - moving.OffsetY, TopInset, screenHeight - moving.Window.BarHeight);
         }
 
         // Resizing keeps the frame on the screen; the window keeps itself no smaller than its document allows.

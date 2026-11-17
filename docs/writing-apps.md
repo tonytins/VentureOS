@@ -246,6 +246,11 @@ new number. `roll` still works in the shell, since both live in the same app.
   address bar is: it reads as the title until it's clicked or given focus,
   then becomes a field that reports `submitted` on Enter. Notes uses
   toolbar items for Add and Remove.
+- **Images:** declare one with `<Image name="logo" path="images/logo.png"/>`,
+  its path beside the `.uix` file, and show it with
+  `<Visual name="banner" image="logo" x="10" y="10" width="64" height="64"/>`,
+  scaled to the visual's size. Images are PNG. One that can't be read stays
+  a red outline, and the reason shows in a message window.
 - **Styles:** say what a color or size is for, and your app follows the
   desktop's light or dark look and accent: `textColor="secondaryText"`,
   `backgroundColor="inputBackground"`, `fontSize="title"`. A hex color such

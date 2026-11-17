@@ -134,7 +134,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
             Bootstrap.LibraryDirectoryPath,
             RunShellLine,
             () => ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(Bootstrap.AppStartupLimit)),
-            new AppWindows(windows, desktopOutput, () => ScriptStop.After(Bootstrap.UiEventLimit)),
+            new AppWindows(windows, desktopOutput, () => ScriptStop.After(Bootstrap.UiEventLimit)) { LoadImage = PngLoader.Load },
             Bootstrap.UserAppsDirectoryPath,
             (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false });
 

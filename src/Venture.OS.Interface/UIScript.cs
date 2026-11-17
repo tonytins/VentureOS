@@ -66,11 +66,11 @@ public sealed record UIEdgeOffsets(float? Left, float? Right, float? Top, float?
 public sealed record UIFrame(float X, float Y, float? Width, float? Height, UIEdgeOffsets? EdgeOffsets);
 
 /// <summary>
-/// The interface's size, the smallest size it lays out at, and whether the desktop lets people resize it, which
-/// VentureOS adds. A reader that skips <c>resizable</c> shows a fixed window that still lays out correctly, so it
-/// isn't a required feature.
+/// The interface's size, the smallest size it lays out at, whether the desktop lets people resize it, and a line
+/// shown under the title, which VentureOS adds. A reader that skips <c>resizable</c> or <c>subtitle</c> shows a fixed
+/// window, or one without the line, that still lays out correctly, so neither is a required feature.
 /// </summary>
-public sealed record UIWindow(UISize Size, UISize? MinimumSize, bool IsResizable = false);
+public sealed record UIWindow(UISize Size, UISize? MinimumSize, bool IsResizable = false, string? Subtitle = null);
 
 /// <summary>An image the host loads, by path, asset ID, or both, with 1, 4, or 6 equal-width states.</summary>
 public sealed record UIImageResource(string Name, string? Path, string? AssetId, int StateCount);
@@ -256,9 +256,26 @@ public sealed record UIShortcut(bool Control, bool Shift, bool Alt, char Key)
 
 /// <summary>
 /// A button in the window's unified title bar, such as Add, or a tab when one is shown as selected. The host draws
-/// the bar; items run along its right end in document order.
+/// the bar; items run in document order along its end, or its start with <c>placement="start"</c>.
 /// </summary>
-public sealed record UIToolbarItem(string Name, string Title, int Line);
+/// <remarks>
+/// <c>image</c> and <c>placement</c> are VentureOS's, drafted for Hudini. With an image, the item shows it as a
+/// symbol and its title as hover text. A reader that skips both shows a text item at the end, which still works, so
+/// neither is a required feature.
+/// </remarks>
+/// <param name="Image">The <c>&lt;Image&gt;</c> it shows, by name, or <see langword="null"/> for its title.</param>
+public sealed record UIToolbarItem(
+    string Name, string Title, int Line, string? Image = null, UIToolbarPlacement Placement = UIToolbarPlacement.End);
+
+/// <summary>Which end of the title bar a toolbar item sits at, as GNOME's header bars pack them.</summary>
+public enum UIToolbarPlacement
+{
+    /// <summary>The right end, the default.</summary>
+    End,
+
+    /// <summary>The left, after the window's buttons.</summary>
+    Start,
+}
 
 /// <summary>
 /// Makes the window's title editable in place, as an address bar is: the host draws it as a field in the title bar,
@@ -510,7 +527,15 @@ public sealed class UIScript
                     break;
 
                 case "ToolbarItem":
-                    toolbar.Add(new UIToolbarItem(reader.RequiredString("name"), reader.RequiredString("title"), element.Line));
+                    toolbar.Add(new UIToolbarItem(
+                        reader.RequiredString("name"), reader.RequiredString("title"), element.Line, reader.String("image"),
+                        reader.String("placement") switch
+                        {
+                            null or "end" => UIToolbarPlacement.End,
+                            "start" => UIToolbarPlacement.Start,
+                            var other => throw new UIScriptException(
+                                $"A toolbar item's placement is start or end, not \"{other}\".", element.Line),
+                        }));
                     break;
 
                 case "TitleField":
@@ -591,10 +616,11 @@ public sealed class UIScript
         var minimumWidth = reader.Number("minWidth");
         var minimumHeight = reader.Number("minHeight");
         var resizable = reader.Boolean("resizable") ?? false;
+        var subtitle = reader.String("subtitle");
         return (minimumWidth, minimumHeight) switch
         {
-            (null, null) => new UIWindow(size, null, resizable),
-            ({ } width, { } height) => new UIWindow(size, new UISize(width, height), resizable),
+            (null, null) => new UIWindow(size, null, resizable, subtitle),
+            ({ } width, { } height) => new UIWindow(size, new UISize(width, height), resizable, subtitle),
             (null, _) => throw reader.Missing("minWidth"),
             _ => throw reader.Missing("minHeight"),
         };
@@ -753,6 +779,12 @@ public sealed class UIScript
                 if (entry.Shortcut is { } shortcut && !shortcuts.Add(shortcut.ToString()))
                     throw new UIScriptException($"Two menu items use the shortcut {shortcut}.", entry.Line);
             }
+        }
+
+        foreach (var item in ToolbarItems)
+        {
+            if (item.Image is { } itemImage && !Images.ContainsKey(itemImage))
+                throw Unknown(item.Name, "image", itemImage, item.Line);
         }
 
         foreach (var visual in Visuals)

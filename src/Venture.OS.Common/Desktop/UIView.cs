@@ -187,6 +187,7 @@ public sealed class UIView
             }
         }
 
+        Subtitle = script.Window.Subtitle;
         missingImages = [.. script.Images.Keys];
         missingImages.Sort(StringComparer.Ordinal);
     }
@@ -217,6 +218,12 @@ public sealed class UIView
 
     /// <summary>The document this view shows.</summary>
     public UIScript Script => script;
+
+    /// <summary>
+    /// The line under the window's title, from <c>subtitle</c> on <c>&lt;Window&gt;</c>, which the owner may change;
+    /// <see langword="null"/> or empty for none.
+    /// </summary>
+    public string? Subtitle { get; set; }
 
     /// <summary>Image resources nothing has been supplied for, sorted.</summary>
     public IReadOnlyList<string> MissingImages => missingImages;

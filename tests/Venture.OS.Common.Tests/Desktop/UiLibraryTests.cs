@@ -338,6 +338,43 @@ public sealed class UiLibraryTests : IDisposable
         Assert.Contains(output.Lines, line => line.Contains(VentureLibrary.NotAppMessage));
     }
 
+    [Fact]
+    public void LoadsTheImagesADocumentNamesFromBesideIt()
+    {
+        List<string> asked = [];
+        AppWindows withImages = new(windows, events)
+        {
+            LoadImage = path =>
+            {
+                asked.Add(path);
+                return path.EndsWith("icons/add.png") ? new DesktopImage(1, 1, [unchecked((int)0xFF000000)]) : null;
+            },
+        };
+        CommandRegistry registry = new();
+        AppManager apps = new(Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: withImages);
+        Write("""venture.ui.open("main.uix")""");
+        var resources = Path.Combine(root, "apps", "Pad.app", "Contents", "Resources");
+        File.WriteAllText(Path.Combine(resources, "main.uix"), """
+            <UIScript version="1">
+              <Window width="200" height="120"/>
+              <Image name="add" path="icons/add.png"/>
+              <Image name="gone" path="icons/gone.png"/>
+              <Image name="outside" path="../Info.xml"/>
+              <Image name="tso" assetID="0x1234"/>
+              <ToolbarItem name="addItem" title="Add" image="add"/>
+            </UIScript>
+            """);
+
+        Assert.True(apps.OpenApp("Pad", root, output), string.Join('\n', output.Lines));
+
+        var view = Assert.Single(windows.Windows).View;
+        Assert.Equal(["gone", "outside", "tso"], view.MissingImages);
+        Assert.Equal([$"{resources}/icons/add.png", $"{resources}/icons/gone.png"], asked);
+        Assert.Contains(events.Lines, line => line.Contains("\"gone\" couldn't be read from icons/gone.png"));
+        Assert.Contains(events.Lines, line => line.Contains("\"outside\" has path=\"../Info.xml\", which isn't a path beside the document"));
+        apps.CloseApp("Pad", new RecordingOutput());
+    }
+
     private static void Send(DesktopWindow window, UIEvent uiEvent) => window.EventHandler!(window, uiEvent);
 
     private void Open(string main)

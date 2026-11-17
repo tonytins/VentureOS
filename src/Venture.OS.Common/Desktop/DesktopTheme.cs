@@ -122,8 +122,11 @@ public static class DesktopTheme
     /// <summary>The shade over an icon while it's pressed.</summary>
     public static UIColor IconPressed => Palette.IconPressed;
 
-    /// <summary>The height of a window's title bar, in pixels.</summary>
-    public const int TitleBarHeight = 28;
+    /// <summary>The height of a window's title bar, in pixels, with room to grab it beside the title.</summary>
+    public const int TitleBarHeight = 30;
+
+    /// <summary>The height of a title bar with a subtitle or toolbar icons.</summary>
+    public const int TallTitleBarHeight = 42;
 
     /// <summary>The size of title and body text, in pixels.</summary>
     public const int TextSize = 13;

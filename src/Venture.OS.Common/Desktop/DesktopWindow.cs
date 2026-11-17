@@ -49,6 +49,29 @@ public enum FramePart
 /// </remarks>
 public sealed class DesktopWindow
 {
+    /// <summary>
+    /// The title bar's height: the theme's, or taller when it holds a subtitle or toolbar items with images, as a
+    /// GNOME header bar is.
+    /// </summary>
+    /// <remarks>It's asked many times a frame, so whether the document has toolbar images is worked out once.</remarks>
+    public int BarHeight =>
+        View.Subtitle is { Length: > 0 } || HasImageItems ? DesktopTheme.TallTitleBarHeight : DesktopTheme.TitleBarHeight;
+
+    private bool HasImageItems => hasImageItems ??= AnyImageItems(View.Script.ToolbarItems);
+
+    private bool? hasImageItems;
+
+    private static bool AnyImageItems(IReadOnlyList<UIToolbarItem> items)
+    {
+        for (var index = 0; index < items.Count; index++)
+        {
+            if (items[index].Image is not null)
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>The close and minimize buttons' size.</summary>
     public const int ButtonSize = 12;
 
@@ -144,7 +167,7 @@ public sealed class DesktopWindow
     public int Width => View.SidebarWidth + (int)MathF.Ceiling(View.WindowSize.Width);
 
     /// <summary>The frame's height: the title bar and the content.</summary>
-    public int Height => DesktopTheme.TitleBarHeight + (int)MathF.Ceiling(View.WindowSize.Height);
+    public int Height => BarHeight + (int)MathF.Ceiling(View.WindowSize.Height);
 
     /// <summary>Called with each of the view's events, and the bar's; set by whoever opened the window.</summary>
     public Action<DesktopWindow, UIEvent>? EventHandler { get; set; }
@@ -162,24 +185,24 @@ public sealed class DesktopWindow
     public void Resize(int width, int height)
     {
         if (IsResizable)
-            View.SetWindowSize(new UISize(width - View.SidebarWidth, height - DesktopTheme.TitleBarHeight));
+            View.SetWindowSize(new UISize(width - View.SidebarWidth, height - BarHeight));
     }
 
     /// <summary>The whole frame.</summary>
     public UIRect Bounds => new(X, Y, Width, Height);
 
     /// <summary>The title bar.</summary>
-    public UIRect TitleBar => new(X, Y, Width, DesktopTheme.TitleBarHeight);
+    public UIRect TitleBar => new(X, Y, Width, BarHeight);
 
     /// <summary>The red close button.</summary>
-    public UIRect CloseButton => new(X + ButtonInset, Y + ((DesktopTheme.TitleBarHeight - ButtonSize) / 2), ButtonSize, ButtonSize);
+    public UIRect CloseButton => new(X + ButtonInset, Y + ((BarHeight - ButtonSize) / 2), ButtonSize, ButtonSize);
 
     /// <summary>The orange minimize button.</summary>
     public UIRect MinimizeButton =>
-        new(X + ButtonInset + ButtonSize + ButtonGap, Y + ((DesktopTheme.TitleBarHeight - ButtonSize) / 2), ButtonSize, ButtonSize);
+        new(X + ButtonInset + ButtonSize + ButtonGap, Y + ((BarHeight - ButtonSize) / 2), ButtonSize, ButtonSize);
 
     /// <summary>Where the view's corner is.</summary>
-    public (int X, int Y) ContentOrigin => (X + View.SidebarWidth, Y + DesktopTheme.TitleBarHeight);
+    public (int X, int Y) ContentOrigin => (X + View.SidebarWidth, Y + BarHeight);
 
     /// <summary>Where a toolbar item was last drawn, by its position in the document.</summary>
     public UIRect ToolbarItemBounds(int index) => index >= 0 && index < itemBounds.Count ? itemBounds[index] : default;
@@ -192,7 +215,7 @@ public sealed class DesktopWindow
     {
         get
         {
-            var top = Y + ((DesktopTheme.TitleBarHeight - ItemHeight) / 2);
+            var top = Y + ((BarHeight - ItemHeight) / 2);
             if (!IsEditingTitle)
                 return new UIRect(X + shownLeft, top, shownWidth, ItemHeight);
 
@@ -423,7 +446,7 @@ public sealed class DesktopWindow
     {
         ArgumentNullException.ThrowIfNull(painter);
         const int Shadow = DesktopTheme.ShadowSize;
-        const int Bar = DesktopTheme.TitleBarHeight;
+        var bar = BarHeight;
 
         painter.FillRectangle(X + Shadow, Y + Shadow, Width, Height, DesktopTheme.Shadow);
 
@@ -435,8 +458,8 @@ public sealed class DesktopWindow
             painter.FillRectangle(X + side - 1, Y, 1, Height, DesktopTheme.Border);
         }
 
-        DesktopTheme.FillGradient(painter, X + side, Y, Width - side, Bar, DesktopTheme.TitleBarTop, DesktopTheme.TitleBarBottom);
-        painter.FillRectangle(X + side, Y + Bar - 1, Width - side, 1, DesktopTheme.Border);
+        DesktopTheme.FillGradient(painter, X + side, Y, Width - side, bar, DesktopTheme.TitleBarTop, DesktopTheme.TitleBarBottom);
+        painter.FillRectangle(X + side, Y + bar - 1, Width - side, 1, DesktopTheme.Border);
 
         var (hovered, hoveredIndex) = pointer is { } at ? Hit(at.X, at.Y) : (FramePart.None, -1);
         if (IsClosable)
@@ -458,7 +481,7 @@ public sealed class DesktopWindow
 
         var (contentX, contentY) = ContentOrigin;
         View.SetHover(pointer is { } point && hovered == FramePart.None ? (point.X - contentX, point.Y - contentY) : null);
-        painter.FillRectangle(contentX, contentY, Width - side, Height - Bar, DesktopTheme.Panel);
+        painter.FillRectangle(contentX, contentY, Width - side, Height - bar, DesktopTheme.Panel);
         View.Draw(painter, contentX, contentY);
         if (IsResizable)
             DrawGrip(painter);
@@ -477,7 +500,7 @@ public sealed class DesktopWindow
 
         // Right to left, so the last item sits at the right end.
         var right = X + Width - Margin;
-        var top = Y + ((DesktopTheme.TitleBarHeight - ItemHeight) / 2);
+        var top = Y + ((BarHeight - ItemHeight) / 2);
         UIRect[] placed = new UIRect[items.Count];
         for (var index = items.Count - 1; index >= 0; index--)
         {
@@ -536,7 +559,7 @@ public sealed class DesktopWindow
         var (start, width) = Centre(wanted, left, right);
         (shownLeft, shownWidth) = field is null ? (0, 0) : (start - X, width);
 
-        var textY = Y + ((DesktopTheme.TitleBarHeight - (int)MathF.Ceiling(Size * 1.35f)) / 2);
+        var textY = Y + ((BarHeight - (int)MathF.Ceiling(Size * 1.35f)) / 2);
         painter.DrawText(shown, start + ((width - textWidth) / 2), textY, color, Size);
     }
 

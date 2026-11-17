@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (987 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (994 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -789,10 +789,13 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   `MenuBarGloss` over the top half and `MenuBarSheen` along the top row,
   both translucent white from the palette, fainter in dark.
   A `.uix` `<Visual>` draws an image its owner supplies with
-  `UIView.SetImage`, scaled to its frame; the About window's `icon` visual
+  `UIView.SetImage`, scaled to its frame. An app's documents get theirs
+  from `venture.ui.open`, which reads each `<Image path>` beside the
+  document through `AppWindows.LoadImage` (the kernel's `PngLoader`); a
+  path that climbs out, or a file that can't be read, is reported in the
+  app's messages and stays outlined; the About window's `icon` visual
   shows the app's icon, and is hidden for an app without one and for
-  VentureOS, which has no icon yet. Apps can't supply images to their own
-  documents yet, and buttons' images aren't drawn.
+  VentureOS. Buttons' images aren't drawn yet.
 - **Translucency.** The canvas's own drawing doesn't blend, so
   `CanvasPainter` blends a translucent fill (window shadows, the fade over
   inactive windows) into the canvas's buffer itself.
@@ -1162,6 +1165,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
 | 2026-11-17 | minor | Menu bar (§9): VentureOS's icon in place of the VentureOS menu's name, a silhouette while open, and in About VentureOS; icons' smoothed edges unmixed from the key. |
 | 2026-11-17 | minor | Pictures (§9): `DesktopImage`, `IPainter.DrawImage`, and the kernel's `PngLoader`; apps' icons in the dock and About (`DesktopIcon`: full backgrounds rounded to a tile, `#00FF01` clear for shaped icons), a `<Visual>`'s supplied image, and the Earthset wallpaper over the sky. |
