@@ -100,6 +100,8 @@ public static class DesktopTheme
 
     public static UIColor MenuBarGloss => Palette.MenuBarGloss;
 
+    public static UIColor HeaderBar => Palette.HeaderBar;
+
     public static UIColor MenuBarSheen => Palette.MenuBarSheen;
 
     /// <summary>A menu's background.</summary>

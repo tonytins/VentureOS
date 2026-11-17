@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,013 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,015 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -804,9 +804,11 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   kept on screen far enough to grab again; its close button closes it on
   release.
 - **The unified title bar** (`DesktopWindow`), after CityLimits' window
-  frame: one band (`BarHeight`: 30 px, or 42 with a subtitle or toolbar
-  images) with a red close button and an orange minimize button on the
-  left, then the document's toolbar items (`<ToolbarItem>`) with
+  frame and GNOME's header bars: one flat band (`BarHeight`: 30 px, or 42
+  with a subtitle or toolbar images) in `HeaderBar`, which blends with the
+  content, with a faint `Separator` line under it and beside any sidebar.
+  It has a red close button, an orange minimize button, and on resizable
+  windows a green zoom button on the left, then the document's toolbar items (`<ToolbarItem>`) with
   `placement="start"`, the title, and the rest along the right end, each
   end in document order; they report `pressed` on release. Items are flat,
   as GNOME's header bar buttons are, shaded only under the pointer or while
@@ -1184,6 +1186,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Flat header bar (§9): one color, `HeaderBar`, with faint separators under it and beside the sidebar, in place of the gradient and borders. |
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |

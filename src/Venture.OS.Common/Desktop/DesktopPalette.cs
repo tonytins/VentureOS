@@ -81,6 +81,9 @@ public sealed record DesktopPalette
     public UIColor InactiveFade { get; private init; }
     public UIColor MenuBarBottom { get; private init; }
 
+    /// <summary>A window's flat header bar, which blends with the content under it.</summary>
+    public UIColor HeaderBar { get; private init; }
+
     /// <summary>The menu bar's gloss: white laid over its top half, Tiger's bright band.</summary>
     public UIColor MenuBarGloss { get; private init; }
 
@@ -139,6 +142,7 @@ public sealed record DesktopPalette
                 SecondaryText = new UIColor(150, 156, 166),
                 DisabledText = new UIColor(100, 105, 113),
                 Panel = new UIColor(38, 41, 46),
+                HeaderBar = new UIColor(38, 41, 46),
                 Border = new UIColor(88, 94, 104),
                 InputBackground = new UIColor(26, 28, 32),
                 Separator = new UIColor(66, 70, 78),
@@ -168,6 +172,7 @@ public sealed record DesktopPalette
                 SecondaryText = new UIColor(110, 116, 126),
                 DisabledText = new UIColor(150, 154, 160),
                 Panel = new UIColor(240, 243, 247),
+                HeaderBar = new UIColor(240, 243, 247),
                 Border = new UIColor(120, 126, 136),
                 InputBackground = White,
                 Separator = new UIColor(214, 218, 224),

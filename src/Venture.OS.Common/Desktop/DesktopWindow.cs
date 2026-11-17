@@ -498,11 +498,13 @@ public sealed class DesktopWindow
         if (side > 0)
         {
             painter.FillRectangle(X, Y, side, Height, DesktopTheme.SidebarBackground);
-            painter.FillRectangle(X + side - 1, Y, 1, Height, DesktopTheme.Border);
+            painter.FillRectangle(X + side - 1, Y, 1, Height, DesktopTheme.Separator);
         }
 
-        DesktopTheme.FillGradient(painter, X + side, Y, Width - side, bar, DesktopTheme.TitleBarTop, DesktopTheme.TitleBarBottom);
-        painter.FillRectangle(X + side, Y + bar - 1, Width - side, 1, DesktopTheme.Border);
+        // Flat, in the header bar's color, with a faint line under it, as GNOME's header bars are, so the window reads
+        // as one surface with the sidebar beside it.
+        painter.FillRectangle(X + side, Y, Width - side, bar, DesktopTheme.HeaderBar);
+        painter.FillRectangle(X + side, Y + bar - 1, Width - side, 1, DesktopTheme.Separator);
 
         var (hovered, hoveredIndex) = pointer is { } at ? Hit(at.X, at.Y) : (FramePart.None, -1);
         if (IsClosable)

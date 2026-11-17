@@ -62,15 +62,18 @@ public sealed class HoverTests
     }
 
     [Fact]
-    public void AToolbarItemLightens()
+    public void AToolbarItemIsShaded()
     {
+        // On a flat bar, the hovered item takes the hover shade, darker than the bar in light, as GNOME's does.
         var add = window.ToolbarItemBounds(0);
         var (x, y) = ((int)add.X + 3, (int)(add.Y + add.Height) - 3);
         var plain = painter.At(x, y);
 
         Hover((int)add.X + 3, (int)add.Y + 3);
 
-        Assert.True(Brightness(painter.At(x, y)) > Brightness(plain));
+        var hover = DesktopImage.Pack(255, DesktopTheme.ButtonHover.Red, DesktopTheme.ButtonHover.Green, DesktopTheme.ButtonHover.Blue);
+        Assert.NotEqual(hover, plain);
+        Assert.Equal(hover, painter.At(x, y));
     }
 
     [Fact]
