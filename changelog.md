@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.200
+
+- The VentureOS menu shows VentureOS's icon in place of its name, as Tiger showed the Apple, and takes less room. Open, it turns white.
+- About VentureOS shows the icon too.
+- Icons smoothed against `#00FF01` come out clean: their edges keep the shape's color, partly clear, with no green fringe. Files and Terminal now have shapes of their own.
+
 ## 0.5.100
 
 - The desktop has a wallpaper: Earthset, the Earth setting behind the Moon.

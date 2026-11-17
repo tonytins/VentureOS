@@ -10,7 +10,8 @@ namespace Venture.OS.Desktop;
 /// of its own, such as a folder, from a tool without transparency; an icon whose corners are clear, by the key or
 /// by a real alpha channel, keeps its shape and gets a shadow.</para>
 /// <para>The key is applied before scaling, and scaling weighs pixels by opacity, so a shape's hard edge comes out
-/// smooth with no fringe of the key's green.</para>
+/// smooth with no fringe of the key's green. A tool that smooths edges mixes them with the key, so pixels near it
+/// that are a mix of the key and the color inside them are unmixed: that color, partly clear.</para>
 /// </remarks>
 public sealed class DesktopIcon
 {
@@ -22,6 +23,14 @@ public sealed class DesktopIcon
 
     /// <summary>A tile's corner radius at the dock's 48 pixels; other sizes scale it.</summary>
     private const int RadiusAt48 = 10;
+
+    // How many pixels in from the key a tool's smoothing may reach, and how far, per channel, a pixel may be from
+    // an exact mix of the key and the color inside it and still count as one.
+    private const int FringeWidth = 3;
+    private const int MixTolerance = 24;
+
+    // How close, per channel, a pixel near the key may be to it and be taken for it.
+    private const int NearKey = 40;
 
     // The shadow under a shaped icon: how far down it falls and how dark it is at most.
     private const int ShadowDrop = 2;
@@ -43,8 +52,10 @@ public sealed class DesktopIcon
     public static int Radius(int size) => (int)MathF.Round(size * RadiusAt48 / 48f);
 
     /// <summary>Makes an app's icon at a size from the picture its bundle names.</summary>
+    /// <param name="shadow">Whether a shaped icon gets a shadow; too small an icon, such as one in the menu bar,
+    /// reads better without.</param>
     /// <exception cref="ArgumentOutOfRangeException">The size isn't one a picture can have.</exception>
-    public static DesktopIcon From(DesktopImage picture, int size)
+    public static DesktopIcon From(DesktopImage picture, int size, bool shadow = true)
     {
         ArgumentNullException.ThrowIfNull(picture);
         DesktopImage.CheckSize(size, size);
@@ -52,7 +63,7 @@ public sealed class DesktopIcon
         var keyed = ClearTheKey(picture);
         var isTile = CornersOpaque(keyed);
         var scaled = keyed.Scaled(size, size);
-        return new DesktopIcon(isTile ? MaskToTile(scaled) : WithShadow(scaled), isTile);
+        return new DesktopIcon(isTile ? MaskToTile(scaled) : shadow ? WithShadow(scaled) : scaled, isTile);
     }
 
     private static DesktopImage ClearTheKey(DesktopImage picture)
@@ -61,14 +72,116 @@ public sealed class DesktopIcon
         if (Array.IndexOf(picture.Pixels, key) < 0)
             return picture;
 
+        var (width, height) = (picture.Width, picture.Height);
         var pixels = (int[])picture.Pixels.Clone();
+
+        // How far each pixel is from the key, in steps of eight neighbors, up to the widest fringe unmixed; the key
+        // itself is 0 and anything farther stays at int.MaxValue.
+        var distance = new int[pixels.Length];
+        Array.Fill(distance, int.MaxValue);
+        Queue<int> next = new();
         for (var index = 0; index < pixels.Length; index++)
         {
             if (pixels[index] == key)
+            {
                 pixels[index] = 0;
+                distance[index] = 0;
+                next.Enqueue(index);
+            }
         }
 
-        return new DesktopImage(picture.Width, picture.Height, pixels);
+        while (next.Count > 0)
+        {
+            var index = next.Dequeue();
+            if (distance[index] == FringeWidth)
+                continue;
+
+            foreach (var neighbor in Neighbors(index, width, height))
+            {
+                if (distance[neighbor] == int.MaxValue)
+                {
+                    distance[neighbor] = distance[index] + 1;
+                    next.Enqueue(neighbor);
+                }
+            }
+        }
+
+        // Unmix the fringe from the inside out, so each ring compares itself with the color just inside it,
+        // already unmixed.
+        for (var ring = FringeWidth; ring >= 1; ring--)
+        {
+            for (var index = 0; index < pixels.Length; index++)
+            {
+                if (distance[index] == ring)
+                    pixels[index] = Unmix(pixels, distance, index, width, height);
+            }
+        }
+
+        return new DesktopImage(width, height, pixels);
+    }
+
+    /// <summary>
+    /// An edge pixel that's partly the key, as a tool's smoothing leaves it, as the color inside it at the opacity
+    /// that matches; a pixel that isn't such a mix, such as a dark outline, stays as it is.
+    /// </summary>
+    private static int Unmix(int[] pixels, int[] distance, int index, int width, int height)
+    {
+        // The color inside: the average of the neighbors farther from the key.
+        int red = 0, green = 0, blue = 0, count = 0;
+        foreach (var neighbor in Neighbors(index, width, height))
+        {
+            if (distance[neighbor] > distance[index] && ((pixels[neighbor] >> 24) & 0xFF) != 0)
+            {
+                red += (pixels[neighbor] >> 16) & 0xFF;
+                green += (pixels[neighbor] >> 8) & 0xFF;
+                blue += pixels[neighbor] & 0xFF;
+                count++;
+            }
+        }
+
+        // A pixel that's almost the key is all key, even with nothing inside it to compare with.
+        var pixel = pixels[index];
+        var (keyRed, keyGreen, keyBlue) = ((ClearKey >> 16) & 0xFF, (ClearKey >> 8) & 0xFF, ClearKey & 0xFF);
+        var (pixelRed, pixelGreen, pixelBlue) = ((pixel >> 16) & 0xFF, (pixel >> 8) & 0xFF, pixel & 0xFF);
+        if (Math.Max(Math.Abs(pixelRed - keyRed), Math.Max(Math.Abs(pixelGreen - keyGreen), Math.Abs(pixelBlue - keyBlue))) <= NearKey)
+            return 0;
+        if (count == 0)
+            return pixel;
+
+        // The pixel as a point on the line from the key to the inside color: how far along it is the opacity.
+        var (insideRed, insideGreen, insideBlue) = ((float)red / count, (float)green / count, (float)blue / count);
+        var (lineRed, lineGreen, lineBlue) = (insideRed - keyRed, insideGreen - keyGreen, insideBlue - keyBlue);
+        var length = (lineRed * lineRed) + (lineGreen * lineGreen) + (lineBlue * lineBlue);
+        if (length < 1)
+            return pixel;
+
+        var along = (((pixelRed - keyRed) * lineRed) + ((pixelGreen - keyGreen) * lineGreen) + ((pixelBlue - keyBlue) * lineBlue)) / length;
+        along = Math.Clamp(along, 0, 1);
+        if (along > 0.98f)
+            return pixel;
+
+        var off = Math.Max(
+            Math.Abs(pixelRed - (keyRed + (along * lineRed))),
+            Math.Max(Math.Abs(pixelGreen - (keyGreen + (along * lineGreen))), Math.Abs(pixelBlue - (keyBlue + (along * lineBlue)))));
+        if (off > MixTolerance)
+            return pixel;
+
+        return DesktopImage.Pack(
+            (int)MathF.Round(along * 255), (int)MathF.Round(insideRed), (int)MathF.Round(insideGreen), (int)MathF.Round(insideBlue));
+    }
+
+    private static IEnumerable<int> Neighbors(int index, int width, int height)
+    {
+        var (x, y) = (index % width, index / width);
+        for (var dy = -1; dy <= 1; dy++)
+        {
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                var (nx, ny) = (x + dx, y + dy);
+                if ((dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < width && ny < height)
+                    yield return (ny * width) + nx;
+            }
+        }
     }
 
     private static bool CornersOpaque(DesktopImage picture)

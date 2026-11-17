@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (926 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (935 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -755,7 +755,18 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   four opaque corners is masked to the dock's rounded tile
   (`DesktopTheme.RoundedInset`, shared with the tiles), and any other keeps
   its shape over a soft shadow worked out once. The key applies to icons
-  only, never wallpapers.
+  only, never wallpapers. Tools smooth edges into the key, so pixels up to
+  three in from it are unmixed, from the inside out: one that lies, within
+  24 per channel, on the line from the key to the color just inside it
+  becomes that color at the matching opacity; one within 40 of the key is
+  clear; anything else, such as a dark outline, is kept.
+- **VentureOS's icon** (`DesktopSession.SystemIcon`,
+  `/mnt/system/icons/VentureOS.png`) takes the VentureOS menu's title in
+  the bar at 16 pixels, without a shadow, as Tiger's Apple did, and shows in
+  About VentureOS. While the menu is open it's drawn as a silhouette in the
+  highlighted text color, its light parts left clear
+  (`DesktopImage.Silhouette`), so it reads as a symbol on the accent.
+  Without it, the title is the name.
   A `.uix` `<Visual>` draws an image its owner supplies with
   `UIView.SetImage`, scaled to its frame; the About window's `icon` visual
   shows the app's icon, and is hidden for an app without one and for
@@ -1130,6 +1141,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Menu bar (§9): VentureOS's icon in place of the VentureOS menu's name, a silhouette while open, and in About VentureOS; icons' smoothed edges unmixed from the key. |
 | 2026-11-17 | minor | Pictures (§9): `DesktopImage`, `IPainter.DrawImage`, and the kernel's `PngLoader`; apps' icons in the dock and About (`DesktopIcon`: full backgrounds rounded to a tile, `#00FF01` clear for shaped icons), a `<Visual>`'s supplied image, and the Earthset wallpaper over the sky. |
 | 2026-11-17 | minor | Platform: Cosmos 3.0.97, from 3.0.94. |
 | 2026-11-12 | minor | Undo and Redo (§9): `TextChange` and `TextHistory` on every `TextCursor`, with typing grouped into steps and 100 steps a control; Edit's Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z). |

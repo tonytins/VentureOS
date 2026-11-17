@@ -1,9 +1,7 @@
 # Review Guide
 
 Use this checklist when reviewing a change to VentureOS. It is adapted from the
-contributor and review practices in [NVIDIA FLARE's contribution guide](https://github.com/NVIDIA/NVFlare/blob/main/CONTRIBUTING.md),
-by way of [Hudini](https://github.com/tonytins/Hudini), with checks tailored to
-a Cosmos gen3 kernel. The rules it checks against are in [AGENTS.md](AGENTS.md).
+contributor and review practices in [NVIDIA FLARE's contribution guide](https://github.com/NVIDIA/NVFlare/blob/main/CONTRIBUTING.md), by way of [Hudini](https://github.com/tonytins/Hudini), with checks tailored to a Cosmos gen3 kernel. The rules it checks against are in [AGENTS.md](AGENTS.md).
 
 ## Before reviewing
 

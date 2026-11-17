@@ -51,6 +51,55 @@ public sealed class DesktopIconTests
     }
 
     [Fact]
+    public void SmoothedEdgesMixedWithTheKeyAreUnmixed()
+    {
+        // A row of key, a smoothed edge that's 75% blue and 25% key, then blue, as AniCraft exports a shape.
+        var edge = DesktopImage.Pack(255, 46, 168, 190);
+        var pixels = Enumerable.Repeat(Blue, 8 * 8).ToArray();
+        for (var y = 0; y < 8; y++)
+        {
+            pixels[y * 8] = Key;
+            pixels[(y * 8) + 1] = edge;
+        }
+
+        var icon = DesktopIcon.From(new DesktopImage(8, 8, pixels), 8, shadow: false);
+
+        // The edge becomes the blue inside it, about three-quarters opaque, with none of the key's green.
+        var unmixed = At(icon, 1, 4);
+        Assert.InRange((unmixed >> 24) & 0xFF, 180, 200);
+        Assert.Equal(Blue & 0xFFFFFF, unmixed & 0xFFFFFF);
+    }
+
+    [Fact]
+    public void APixelNextToTheKeyThatsAlmostTheKeyIsClear()
+    {
+        var pixels = Enumerable.Repeat(Blue, 4 * 4).ToArray();
+        pixels[0] = Key;
+        pixels[1] = DesktopImage.Pack(255, 7, 241, 31);
+
+        var icon = DesktopIcon.From(new DesktopImage(4, 4, pixels), 4, shadow: false);
+
+        Assert.Equal(0, At(icon, 1, 0));
+    }
+
+    [Fact]
+    public void AnOutlineThatIsntAMixStays()
+    {
+        // A black outline between the key and blue isn't on the line from the key to blue, so it's kept.
+        const int Black = unchecked((int)0xFF000000);
+        var pixels = Enumerable.Repeat(Blue, 8 * 8).ToArray();
+        for (var y = 0; y < 8; y++)
+        {
+            pixels[y * 8] = Key;
+            pixels[(y * 8) + 1] = Black;
+        }
+
+        var icon = DesktopIcon.From(new DesktopImage(8, 8, pixels), 8, shadow: false);
+
+        Assert.Equal(Black, At(icon, 1, 4));
+    }
+
+    [Fact]
     public void OnlyTheExactKeyIsClear()
     {
         // Pure green, one step from the key, stays.

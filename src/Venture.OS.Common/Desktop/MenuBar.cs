@@ -39,7 +39,7 @@ public enum MenuGroup
 /// </param>
 public sealed record BarMenu(
     UIMenu Menu, MenuGroup Group, UIView? View = null, bool Emphasized = false, IReadOnlyList<UIMenuEntry>? Own = null,
-    Func<UIMenuEntry, bool>? OwnEnabled = null)
+    Func<UIMenuEntry, bool>? OwnEnabled = null, DesktopImage? Icon = null)
 {
     /// <summary>Whether an entry can be chosen: an item that isn't disabled.</summary>
     public bool IsEnabled(UIMenuEntry entry) =>
@@ -100,6 +100,10 @@ public sealed class MenuBar
 
     private IReadOnlyList<BarMenu> menus = [];
     private readonly List<(int X, int Width)> titles = [];
+
+    // An icon title's silhouette in the open title's text color, made when first shown and kept until the icon
+    // or the color changes.
+    private (DesktopImage Icon, UIColor Color, DesktopImage Silhouette)? silhouette;
     private readonly List<(int Y, int Height)> rows = [];
     private UIRect dropdown;
     private int open = -1;
@@ -316,7 +320,7 @@ public sealed class MenuBar
         for (var index = 0; index < menus.Count; index++)
         {
             var menu = menus[index];
-            var width = painter.MeasureText(menu.Menu.Title, Size) + (2 * TitlePadding) + (menu.Emphasized ? 1 : 0);
+            var width = (menu.Icon?.Width ?? painter.MeasureText(menu.Menu.Title, Size)) + (2 * TitlePadding) + (menu.Emphasized ? 1 : 0);
             titles.Add((x, width));
 
             var color = DesktopTheme.Text;
@@ -326,12 +330,31 @@ public sealed class MenuBar
                 color = DesktopTheme.HighlightedText;
             }
 
-            DrawLabel(painter, menu.Menu.Title, menu.Menu.Hotkey, x + TitlePadding, textY, color, menu.Emphasized);
+            if (menu.Icon is { } icon)
+            {
+                // Open, it turns the title's color, as Tiger's Apple menu turned white.
+                var iconY = (Height - 1 - icon.Height) / 2;
+                painter.DrawImage(index == open ? Silhouette(icon, color) : icon, x + TitlePadding, iconY);
+            }
+            else
+            {
+                DrawLabel(painter, menu.Menu.Title, menu.Menu.Hotkey, x + TitlePadding, textY, color, menu.Emphasized);
+            }
             x += width;
         }
 
         if (open >= 0)
             DrawMenu(painter);
+    }
+
+    private DesktopImage Silhouette(DesktopImage icon, UIColor color)
+    {
+        if (silhouette is { } kept && ReferenceEquals(kept.Icon, icon) && kept.Color == color)
+            return kept.Silhouette;
+
+        var made = icon.Silhouette(color.Red, color.Green, color.Blue);
+        silhouette = (icon, color, made);
+        return made;
     }
 
     private void DrawMenu(IPainter painter)

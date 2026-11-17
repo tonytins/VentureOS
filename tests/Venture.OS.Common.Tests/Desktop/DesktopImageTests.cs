@@ -102,6 +102,16 @@ public sealed class DesktopImageTests
     }
 
     [Fact]
+    public void ASilhouetteColorsTheDarkPartsAndClearsTheLight()
+    {
+        DesktopImage image = new(3, 1, [Blue, White, Clear]);
+
+        var silhouette = image.Silhouette(255, 255, 255);
+
+        Assert.Equal([White, Clear, Clear], silhouette.Pixels);
+    }
+
+    [Fact]
     public void DrawingNeedsAFrameItsWidthDivides() =>
         Assert.Throws<ArgumentOutOfRangeException>(() => new DesktopImage(1, 1, [Red]).DrawOnto(new int[5], 2, 0, 0));
 

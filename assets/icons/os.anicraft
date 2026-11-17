@@ -14,9 +14,9 @@
       "height": 400,
       "fps": 24.0,
       "background": {
-        "r": 1.0,
+        "r": 0.0,
         "g": 1.0,
-        "b": 1.0,
+        "b": 0.003921569,
         "a": 1.0
       }
     },
@@ -156,7 +156,7 @@
               "name": "Layer 1",
               "kind": "Normal",
               "visible": true,
-              "locked": true,
+              "locked": false,
               "outline": false,
               "color": {
                 "r": 0.30980393,
@@ -198,8 +198,8 @@
                           "fill": {
                             "Solid": {
                               "r": 0.0,
-                              "g": 0.0,
-                              "b": 0.0,
+                              "g": 0.47058824,
+                              "b": 0.6431373,
                               "a": 1.0
                             }
                           },
@@ -334,6 +334,68 @@
         }
       }
     ],
+    "publish": {
+      "html": {
+        "enabled": false,
+        "output": "{name}.html",
+        "title": "",
+        "sound": true,
+        "fit": true
+      },
+      "gif": {
+        "enabled": false,
+        "output": "{name}.gif",
+        "range": {},
+        "scale": 1.0,
+        "loop": true
+      },
+      "video": {
+        "enabled": false,
+        "output": "{name}.webm",
+        "range": {},
+        "scale": 1.0,
+        "audio": true
+      },
+      "lottie": {
+        "enabled": false,
+        "output": "{name}.json",
+        "range": {},
+        "background": false
+      },
+      "sprite_sheet": {
+        "enabled": false,
+        "output": "{name}_sheet.png",
+        "range": {},
+        "scale": 1.0,
+        "columns": 0,
+        "padding": 0,
+        "background": false
+      },
+      "png_sequence": {
+        "enabled": false,
+        "output": "{name}_frames",
+        "range": {},
+        "scale": 1.0
+      },
+      "png": {
+        "enabled": true,
+        "output": "{name}.png",
+        "frame": 0,
+        "scale": 0.16
+      },
+      "svg": {
+        "enabled": false,
+        "output": "{name}.svg",
+        "frame": 0
+      },
+      "audio": {
+        "enabled": false,
+        "output": "{name}.wav",
+        "range": {},
+        "rate": 44100,
+        "bits": 16
+      }
+    },
     "next_id": 113
   }
 }

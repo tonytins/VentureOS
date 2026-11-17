@@ -82,6 +82,7 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
             {
                 AboutDocument = LoadAbout,
                 Wallpaper = Bootstrap.WallpaperPath,
+                SystemIcon = Bootstrap.SystemIconPath,
                 SystemVersion = $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})",
                 FallbackApp = FilesApp,
             };

@@ -2,44 +2,40 @@
 
 ## Project Structure
 
-VentureOS is a hobby operating system written in C# on the
-[Cosmos](https://github.com/CosmosOS/Cosmos) gen3 framework (`Cosmos.Sdk`
-3.0.94, .NET 10). Cosmos compiles the kernel ahead of time to an ELF, which
-Limine boots from an ISO. It targets x64 and ARM64 and runs in QEMU. Write the
-name as **VentureOS** in prose; the project is `Venture.OS`, the assembly is
+VentureOS is a hobby operating system written in C# on the  
+[Cosmos](https://github.com/CosmosOS/Cosmos) gen3 framework (`Cosmos.Sdk` 3.0.97, .NET 10). Cosmos compiles the kernel ahead of time to an ELF, which Limine boots from an ISO. It targets x64 and ARM64 and runs in QEMU. Write the name as **VentureOS** in prose; the project is `Venture.OS`, the assembly is  
 `Venture`, and namespaces start with `Venture.OS`.
 
-Every .NET project lives in its own folder, under `src/`, or `tests/` for
-tests, and is listed in `src/Venture.slnx`:
+Every .NET project lives in its own folder, under `src/`, or `tests/` for tests, and is listed in `src/Venture.slnx`:
 
-- `src/Venture.OS` is the kernel. `Kernel/` holds the entry point
-  (`VentureKernel`), `KernelPanic`, and `KernelLog`; `Startup/` holds the boot
-  steps and the RAM disk; `Shell/Commands/` holds one class per shell command.
+- `src/Venture.OS` is the kernel. `Kernel/` holds the entry point  
+  (`VentureKernel`), `KernelPanic`, and `KernelLog`; `Startup/` holds the boot  
+  steps and the RAM disk; `Shell/Commands/` holds one class per shell command.  
   `CosmosKernelClass` and the package versions are in `Venture.OS.csproj`.
-- `rootfs/` holds the files the kernel is built with and installs at boot.
-  `rootfs/system/` holds the system files (Lua scripts, apps, fonts, and the
-  desktop's `.uix` interfaces), which the build turns into C# and boot
-  installs to `/mnt/system`, where nothing may change them; `rootfs/user/`
-  holds the user's files, such as `apps/Calculator.app` and
-  `settings/appearance.xml`, installed to `/mnt/user`, where the user may;
+- `rootfs/` holds the files the kernel is built with and installs at boot.  
+  `rootfs/system/` holds the system files (Lua scripts, apps, fonts, icons,  
+  wallpapers, and the desktop's `.uix` interfaces), which the build turns into C# and boot  
+  installs to `/mnt/system`, where nothing may change them; `rootfs/user/`  
+  holds the user's files, such as `apps/Calculator.app` and  
+  `settings/appearance.xml`, installed to `/mnt/user`, where the user may;  
   `rootfs/system/init.lua` runs once after boot.
-- `src/Venture.OS.Common` is kernel-free code: the shell framework
-  (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and
-  Lua system support (`Scripting/`), bundles (`Bundles/`), and the desktop's
-  drawing logic (`Desktop/`, drawn through `IPainter`). It must never
-  reference the Cosmos kernel; `Cosmos.Executable.Lua` is allowed, since it
+- `src/Venture.OS.Common` is kernel-free code: the shell framework  
+  (`CommandLine`, `CommandRegistry`, `CommandShell`, and its interfaces) and  
+  Lua system support (`Scripting/`), bundles (`Bundles/`), and the desktop's  
+  drawing logic (`Desktop/`, drawn through `IPainter`). It must never  
+  reference the Cosmos kernel; `Cosmos.Executable.Lua` is allowed, since it  
   runs on ordinary .NET.
-- `src/Venture.OS.Interface` holds the formats interfaces are written in:
-  the UIScript reader (`UIScript.cs`), which must keep matching Hudini's (its
-  examples are copied into the tests), the flat XML reader (`Xml/`), and a
-  transitional reader for CST string tables (`Strings/`), until CST.NET
+- `src/Venture.OS.Interface` holds the formats interfaces are written in:  
+  the UIScript reader (`UIScript.cs`), which must keep matching Hudini's (its  
+  examples are copied into the tests), the flat XML reader (`Xml/`), and a  
+  transitional reader for CST string tables (`Strings/`), until CST.NET  
   follows the new CST specification. It references nothing but the BCL.
-- `tests/Venture.OS.Common.Tests` covers `Venture.OS.Common` and
+- `tests/Venture.OS.Common.Tests` covers `Venture.OS.Common` and  
   `Venture.OS.Interface` with xUnit v3.
 
-[docs/architecture.md](docs/architecture.md) explains how the system works,
-[docs/ROADMAP.md](docs/ROADMAP.md) tracks releases and ideas, and
-[docs/scorecard.md](docs/scorecard.md) records verified status. Read
+[docs/architecture.md](docs/architecture.md) explains how the system works,  
+[docs/ROADMAP.md](docs/ROADMAP.md) tracks releases and ideas, and  
+[docs/scorecard.md](docs/scorecard.md) records verified status. Read  
 `docs/architecture.md` before changing boot, storage, networking, or the shell.
 
 Never commit build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`).
@@ -53,14 +49,14 @@ cosmos build -p src/Venture.OS                      # no new warnings
 ./run.sh                                            # boots x64 in QEMU; --headless for serial only
 ```
 
-- `cosmos check` also reports updates to the Cosmos CLI. Mention one to the
+- `cosmos check` also reports updates to the Cosmos CLI. Mention one to the  
   owner after the build succeeds.
-- Kernel code has no unit tests; it is checked by booting. If you touch boot,
-  storage, or networking, boot it and read the console or serial log. If you
+- Kernel code has no unit tests; it is checked by booting. If you touch boot,  
+  storage, or networking, boot it and read the console or serial log. If you  
   can't boot, say so.
-- If you touch architecture-sensitive code, also build ARM64 with
+- If you touch architecture-sensitive code, also build ARM64 with  
   `cosmos build -a arm64 -p src/Venture.OS`.
-- If you change `Venture.OS.Common`, add or update its tests in the same change
+- If you change `Venture.OS.Common`, add or update its tests in the same change  
   and check that a new test fails without the fix.
 
 ## C# and Cosmos
@@ -73,113 +69,113 @@ Follow the [.NET guidelines skill](.agents/skills/dotnet-guidelines/SKILL.md) an
 
 - **Iterate**. A first design or name is a draft. Rebuild clumsy parts as understanding improves.
 - **Ask when a decision is open**, and explain the reasoning behind what you suggest.
-- **Keep it simple**. The simplest approach that matches what the game does wins.
+- **Keep it simple**. The simplest approach that matches what the operating system does wins.
 - **Say what you're unsure of**: assumptions, unverified behaviour, and what needs testing.
 
 ### Never Crash (Outranks Feature Work)
 
 There is no host process underneath: an unhandled exception stops the machine with no explanation. Stability outranks features.
 
-- **During boot**, `VentureKernel.BeforeRun` runs each step through
-  `RunCriticalStep` or `RunOptionalStep`. A step is critical if the system
-  can't do its job without it; it returns `bool`, and a failure panics. An
-  optional step reports its failure and boot continues. When you add a step,
+- **During boot**, `VentureKernel.BeforeRun` runs each step through  
+  `RunCriticalStep` or `RunOptionalStep`. A step is critical if the system  
+  can't do its job without it; it returns `bool`, and a failure panics. An  
+  optional step reports its failure and boot continues. When you add a step,  
   decide which it is and say so in the change.
-- **After boot**, nothing may halt the system except the user's `halt`,
-  `reboot`, or `shutdown`. Commands report errors and return to the prompt.
-  `Run` catches everything as a last resort; don't rely on it in place of
+- **After boot**, nothing may halt the system except the user's `halt`,  
+  `reboot`, or `shutdown`. Commands report errors and return to the prompt.  
+  `Run` catches everything as a last resort; don't rely on it in place of  
   handling errors where they happen.
 - Panic only through `KernelPanic.Halt`, and only during boot.
-- Validate everything that crosses a boundary: shell input, disk contents,
-  network packets, device-reported values, and sizes passed to constructors.
+- Validate everything that crosses a boundary: shell input, disk contents,  
+  network packets, device-reported values, and sizes passed to constructors.  
   Check `ulong` sizes and offsets before narrowing to `int` or slicing.
-- Report failures explicitly. Don't swallow one, substitute a silent default,
+- Report failures explicitly. Don't swallow one, substitute a silent default,  
   or print success for a skipped step.
-- Bound every loop and wait that depends on hardware or the network. Don't add
+- Bound every loop and wait that depends on hardware or the network. Don't add  
   `Thread.Sleep` to paths that don't already need it.
 
 ### Cosmos Constraints
 
-- The kernel is compiled ahead of time with no JIT. Avoid reflection, `dynamic`,
-  runtime code generation, and BCL APIs Cosmos doesn't implement. Prefer simple
+- The kernel is compiled ahead of time with no JIT. Avoid reflection, `dynamic`,  
+  runtime code generation, and BCL APIs Cosmos doesn't implement. Prefer simple  
   types, `Span<T>`, and explicit control flow.
-- The Cosmos docs track the latest release. Check that an API exists in the
+- The Cosmos docs track the latest release. Check that an API exists in the  
   pinned version before using it, and say so when you can't confirm it.
-- Put anything that doesn't need hardware (parsing, formatting, validation) in
-  `Venture.OS.Common`, or `Venture.OS.Interface` for the interface formats,
-  which build with the AOT analyzers and warnings as errors, so problems the
+- Put anything that doesn't need hardware (parsing, formatting, validation) in  
+  `Venture.OS.Common`, or `Venture.OS.Interface` for the interface formats,  
+  which build with the AOT analyzers and warnings as errors, so problems the  
   kernel couldn't compile fail there first.
 - Keep both architectures building. Guard and note any x64-only code.
-- Bump the `Cosmos.*` package versions only in a change of their own. New NuGet
+- Bump the `Cosmos.*` package versions only in a change of their own. New NuGet  
   dependencies need the owner's approval and must work under Cosmos's compiler.
 
 ### Code
 
-- Keep `VentureKernel.cs` thin. Put boot steps in `Startup/` and new subsystems
+- Keep `VentureKernel.cs` thin. Put boot steps in `Startup/` and new subsystems  
   in their own folder and namespace under `Venture.OS`.
-- Prefer writing a new command in Lua, as `rootfs/system/commands/<name>.lua`:
-  its first `--` comment is its summary, a `-- Usage:` comment its usage, a
-  `-- Needs:` comment the scopes it uses (`system`, `network`, `shell`, `files`; `ui` is for apps), and it gets its
-  arguments as `...`. It reaches the kernel through the `venture` table
-  (`VentureLibrary`, backed by `ISystemInfo`); extend that table when a script
-  needs more, and put each new function under a scope (`ScriptScopes`). A
-  command that takes options should use `require("venture.args")` rather than
-  reading `...` by hand. Shared Lua modules go in `rootfs/system/lib/`,
+- Prefer writing a new command in Lua, as `rootfs/system/commands/<name>.lua`:  
+  its first `--` comment is its summary, a `-- Usage:` comment its usage, a  
+  `-- Needs:` comment the scopes it uses (`system`, `network`, `shell`, `files`; `ui` is for apps), and it gets its  
+  arguments as `...`. It reaches the kernel through the `venture` table  
+  (`VentureLibrary`, backed by `ISystemInfo`); extend that table when a script  
+  needs more, and put each new function under a scope (`ScriptScopes`). A  
+  command that takes options should use `require("venture.args")` rather than  
+  reading `...` by hand. Shared Lua modules go in `rootfs/system/lib/`,  
   namespaced under `venture.`.
-- Write a command in C# only when it must control the kernel, as a class in
-  `src/Venture.OS/Shell/Commands/` registered in `VentureKernel.CreateShell`;
-  built-in commands win any name clash. `help` is generated from both. C#
-  commands write through `IShellOutput` and ask for power changes through
+- Write a command in C# only when it must control the kernel, as a class in  
+  `src/Venture.OS/Shell/Commands/` registered in `VentureKernel.CreateShell`;  
+  built-in commands win any name clash. `help` is generated from both. C#  
+  commands write through `IShellOutput` and ask for power changes through  
   `IShellHost`.
-- Apps are `.app` bundles in `rootfs/system/apps/` (apps the system
-  relies on, such as Files) or `rootfs/user/apps/` (the rest). Follow
-  [docs/writing-apps.md](docs/writing-apps.md) to write one, and keep it
-  accurate: `WritingAppsTutorialTests` builds and runs its Dice example, so
+- Apps are `.app` bundles in `rootfs/system/apps/` (apps the system  
+  relies on, such as Files) or `rootfs/user/apps/` (the rest). Follow  
+  [docs/writing-apps.md](docs/writing-apps.md) to write one, and keep it  
+  accurate: `WritingAppsTutorialTests` builds and runs its Dice example, so  
   change the guide and the code together.
-- Anything Lua code sets up that should outlive a single run goes through a
-  `LuaOwner` and registers its undo with `AddUndo`, so ending the owner
+- Anything Lua code sets up that should outlive a single run goes through a  
+  `LuaOwner` and registers it's undo with `AddUndo`, so ending the owner  
   removes it.
-- Use `KernelLog.WriteLine` for messages a headless boot should be able to
-  check (boot results, the banner, failures). Ordinary command output goes to
+- Use `KernelLog.WriteLine` for messages a headless boot should be able to  
+  check (boot results, the banner, failures). Ordinary command output goes to  
   the console only.
-- Give public and internal APIs `///` doc comments that explain why, not what.
+- Give public and internal APIs `///` doc comments that explain why, not what.  
   Put shared usings in `GlobalUsings.cs`.
 
 ## Keeping Docs Current
 
 Describe only what works today, and keep the tree building at every step.
 
-- [changelog.md](changelog.md): only changes a user would notice, under the
-  version the kernel reports for that commit. `GitInfo.txt` holds the base
-  version, and the patch number rises with each commit that touches
-  `src/Venture.OS/`, so the changelog is expected to lag. When work on the
-  next milestone in a release begins, set `GitInfo.txt` to its feature band
-  (`0.4.200` for the second), in the commit that starts it, as
-  [the roadmap](docs/ROADMAP.md) lays out. Starting a new release, such as
+- [changelog.md](changelog.md): only changes a user would notice, under the  
+  version the kernel reports for that commit. `GitInfo.txt` holds the base  
+  version, and the patch number rises with each commit that touches  
+  `src/Venture.OS/`, so the changelog is expected to lag. When work on the  
+  next milestone in a release begins, set `GitInfo.txt` to its feature band  
+  (`0.4.200` for the second), in the commit that starts it, as  
+  [the roadmap](docs/ROADMAP.md) lays out. Starting a new release, such as  
   `0.5.100`, needs the owner's word.
-- `docs/architecture.md`: update the section, the current-state summary, and
+- `docs/architecture.md`: update the section, the current-state summary, and  
   the revision history when behavior, layout, or a principle changes.
-- `docs/scorecard.md`: flip the rows you moved, with evidence, and update the
+- `docs/scorecard.md`: flip the rows you moved, with evidence, and update the  
   summary counts.
-- `docs/ROADMAP.md`: tick a band's checklist items, move a release to its next
-  stage, and add a revision-history row. Leave scope decisions, such as what a
-  release holds or when it ships, to the owner. When a release ships, write its
+- `docs/ROADMAP.md`: tick a band's checklist items, move a release to its next  
+  stage, and add a revision-history row. Leave scope decisions, such as what a  
+  release holds or when it ships, to the owner. When a release ships, write its  
   notes in `docs/releases/`.
-- [README.md](README.md) when setup or build steps change, and this file when
+- [README.md](README.md) when setup or build steps change, and this file when  
   the layout or rules change.
 
-State breaking changes, package bumps, new dependencies, and boot-order changes
-in the summary or commit message, along with anything you couldn't verify. If
+State breaking changes, package bumps, new dependencies, and boot-order changes  
+in the summary or commit message, along with anything you couldn't verify. If  
 you notice a risk outside your task, report it rather than fixing it quietly.
 
 See [REVIEW.md](REVIEW.md) for the project's review checklist.
 
 ## Personal Configuration
 
-Keep personal preferences and machine-specific guidance in git-ignored
-`*.local` files or directories (such as `AGENTS.local.md`), rather than in
-shared project instructions. Check for relevant local guidance before
-environment-specific work. You can create or update these files for details
+Keep personal preferences and machine-specific guidance in git-ignored  
+`*.local` files or directories (such as `AGENTS.local.md`), rather than in  
+shared project instructions. Check for relevant local guidance before  
+environment-specific work. You can create or update these files for details  
 such as:
 
 - Coding preferences

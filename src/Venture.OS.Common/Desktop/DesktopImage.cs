@@ -176,6 +176,27 @@ public sealed class DesktopImage
     }
 
     /// <summary>
+    /// The picture's shape in one color, as a symbol: its dark parts take the color and its light parts are left
+    /// clear, so a white windshield on a blue train reads as a hole in it, not a solid block.
+    /// </summary>
+    public DesktopImage Silhouette(byte red, byte green, byte blue)
+    {
+        var pixels = new int[Pixels.Length];
+        for (var index = 0; index < pixels.Length; index++)
+        {
+            var pixel = Pixels[index];
+
+            // Perceived lightness from 0 to 1; fully dark to 0.45, fading to clear at 0.75.
+            var light = ((0.2126f * ((pixel >> 16) & 0xFF)) + (0.7152f * ((pixel >> 8) & 0xFF)) + (0.0722f * (pixel & 0xFF))) / 255f;
+            var ink = Math.Clamp((0.75f - light) / 0.3f, 0f, 1f);
+            var alpha = (int)MathF.Round(Alpha(pixel) * ink);
+            pixels[index] = alpha == 0 ? 0 : Pack(alpha, red, green, blue);
+        }
+
+        return new DesktopImage(Width, Height, pixels);
+    }
+
+    /// <summary>
     /// Lays the picture over a frame of 0xAARRGGBB pixels with its corner at (<paramref name="x"/>,
     /// <paramref name="y"/>), blending by each pixel's opacity and leaving out whatever falls off the frame.
     /// </summary>

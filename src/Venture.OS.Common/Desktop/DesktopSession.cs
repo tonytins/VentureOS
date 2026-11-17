@@ -60,14 +60,16 @@ public sealed class DesktopSession
     // Help's item when no app is in front, so Help is never empty.
     private static readonly UIMenuEntry AboutSystemEntry = new("about", "About VentureOS", 'A', null, 0);
 
-    private static readonly BarMenu SystemMenu = new(
+    private static readonly UIMenu SystemMenuItems =
         new UIMenu("venture", "VentureOS", null,
         [
             new UIMenuEntry(AboutItem, "About VentureOS", 'A', null, 0),
             new UIMenuEntry(null, null, null, null, 0),
             new UIMenuEntry(ReturnToShellItem, "Return to Shell", 'R', new UIShortcut(Control: true, Shift: true, Alt: false, 'Q'), 0),
-        ], 0),
-        MenuGroup.System);
+        ], 0);
+
+    /// <summary>The VentureOS menu's icon in the bar, in place of its name.</summary>
+    public const int SystemIconSize = 16;
 
     // The sky or the wallpaper as the screen shows it, worked out on the first draw rather than when the desktop
     // opens, since the wallpaper is only known once the properties are set.
@@ -79,7 +81,11 @@ public sealed class DesktopSession
     // Wallpapers and icons read so far, by path and the size they're drawn at, including those that couldn't be
     // read, so a missing icon isn't looked for on every refresh of the dock.
     private readonly Dictionary<(string Path, int Width, int Height), DesktopImage?> wallpapers = [];
-    private readonly Dictionary<(string Path, int Size), DesktopIcon?> icons = [];
+    private readonly Dictionary<(string Path, int Size, bool Shadow), DesktopIcon?> icons = [];
+
+    // The VentureOS menu, made on first use, with its icon when there's one.
+    private BarMenu? systemMenu;
+    private readonly string? systemIcon;
 
     // The hover text last drawn, so its showing or going redraws the desktop.
     private string? drawnTooltip;
@@ -204,6 +210,23 @@ public sealed class DesktopSession
     /// </summary>
     public string? Wallpaper { get; init; }
 
+    /// <summary>
+    /// The full path of VentureOS's own icon, which the menu bar shows in place of the VentureOS menu's name, as
+    /// Tiger shows the Apple, and About VentureOS shows; <see langword="null"/>, or one that can't be read, keeps
+    /// the name.
+    /// </summary>
+    public string? SystemIcon
+    {
+        get => systemIcon;
+        init
+        {
+            // The bar was built when the desktop opened; build it again with the icon.
+            systemIcon = value;
+            systemMenu = null;
+            menuSource = default;
+        }
+    }
+
     /// <summary>VentureOS's version as About VentureOS shows it, such as <c>Version 0.4.101 (Build 1234)</c>.</summary>
     public string? SystemVersion { get; init; }
 
@@ -283,17 +306,20 @@ public sealed class DesktopSession
     /// An app's icon at a size, read and made the first time and kept after, or <see langword="null"/> when it has
     /// none or it couldn't be read.
     /// </summary>
-    private DesktopIcon? Icon(string? path, int size)
+    private DesktopIcon? Icon(string? path, int size, bool shadow = true)
     {
         if (path is null || loadImage is null)
             return null;
-        if (icons.TryGetValue((path, size), out var known))
+        if (icons.TryGetValue((path, size, shadow), out var known))
             return known;
 
-        var icon = loadImage(path) is { } picture ? DesktopIcon.From(picture, size) : null;
-        icons[(path, size)] = icon;
+        var icon = loadImage(path) is { } picture ? DesktopIcon.From(picture, size, shadow) : null;
+        icons[(path, size, shadow)] = icon;
         return icon;
     }
+
+    private BarMenu SystemMenu =>
+        systemMenu ??= new BarMenu(SystemMenuItems, MenuGroup.System, Icon: Icon(systemIcon, SystemIconSize, shadow: false)?.Image);
 
     private DesktopWindow? MakeAbout(string? app)
     {
@@ -304,7 +330,7 @@ public sealed class DesktopSession
         if (app is null)
         {
             view.SetText("version", SystemVersion ?? "");
-            ShowAboutIcon(view, null);
+            ShowAboutIcon(view, systemIcon);
         }
         else
         {
@@ -337,7 +363,7 @@ public sealed class DesktopSession
 
     /// <summary>
     /// Puts an app's icon in About's <c>icon</c> visual, at the visual's size, or hides the visual when the app has
-    /// none. VentureOS has no icon of its own yet, so its About hides it too.
+    /// none.
     /// </summary>
     private void ShowAboutIcon(UIView view, string? iconPath)
     {

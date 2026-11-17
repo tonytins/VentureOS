@@ -36,6 +36,9 @@ internal static class Bootstrap
     /// <summary>The About VentureOS window's interface.</summary>
     public const string AboutInterfacePath = SystemDirectoryPath + "/interfaces/about.uix";
 
+    /// <summary>VentureOS's own icon, for the menu bar and About VentureOS.</summary>
+    public const string SystemIconPath = SystemDirectoryPath + "/icons/VentureOS.png";
+
     /// <summary>The picture behind the desktop's windows: Earthset, Earth setting behind the Moon.</summary>
     public const string WallpaperPath = SystemDirectoryPath + "/wallpapers/earthset.png";
 
