@@ -287,8 +287,23 @@ new number. `roll` still works in the shell, since both live in the same app.
   `<Sidebar name="places" width="120"/>`, and the window gets a list of
   places down its left, its full height, as Files has. Fill and read it like
   a selectable list: `setItems`, `select`, `selected`, and a `selected`
-  event. It sits beside the content, so the window's size and your
-  controls' positions don't change. See [UIScript sidebar](./uiscript-sidebar.md).
+  event. A row can be a table with an icon, naming an `<Image>`, and
+  `{ separator = true }` puts a line between groups, as Files sets System
+  apart:
+
+  ```lua
+  window:setItems("places", {
+    { text = "Home", icon = "homeIcon" },
+    { separator = true },
+    { text = "System", icon = "driveIcon" },
+  })
+  ```
+
+  Separators aren't rows, so System is row 2. Icons show in the text's
+  color, as toolbar icons do; draw them as dark shapes. Only a sidebar
+  takes tables; a plain list takes strings. The sidebar sits beside the
+  content, so the window's size and your controls' positions don't change.
+  See [UIScript sidebar](./uiscript-sidebar.md).
 - **Resizing:** `resizable="true"` on `<Window>` puts a grip in the window's
   bottom-right corner. The window starts at its `width` and `height` and
   shrinks no further than `minWidth` and `minHeight` (or its starting size,

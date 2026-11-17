@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.402
+
+- Sidebars mark the selected row, and the one under the pointer, with a rounded shade, as Nautilus does.
+- Files sets System apart from Home, User, and Apps with a faint line.
+- Apps: a sidebar's rows can have icons, drawn in the text's color, and be split into groups, with tables in `window:setItems`, such as `{ text = "Home", icon = "homeIcon" }` and `{ separator = true }`.
+
 ## 0.5.300
 
 - Title bars are 30 pixels tall, from 28, which leaves more room to grab and drag a window.

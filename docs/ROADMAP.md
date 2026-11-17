@@ -129,8 +129,9 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 
 **0.5.4xx, sidebars**
 
-- [ ] An icon on each row, and a rounded selection.
-- [ ] Separators between groups of rows.
+- [x] An icon on each row, and a rounded selection; icons are symbols in
+  the text color, as the toolbar's are.
+- [x] Separators between groups of rows; Files sets System apart.
 
 **0.5.5xx, look options**
 
@@ -204,6 +205,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.5.4xx done, in three phases: sidebar rows with icons, a rounded selection, and separators between groups. Shipped sidebars keep text until their icons are drawn. |
 | 2026-11-17 | minor | 0.5.3xx done again: VentureOS takes GNOME's colors and nine accents. |
 | 2026-11-17 | minor | 0.5.3xx reopens, by my decision, for two more phases: a flat header bar, then GNOME's colors. |
 | 2026-11-17 | minor | 0.5.3xx done, in four phases: flat toolbar items with symbols at either end, the subtitle, taller bars, and zoom. The bar grows only for a subtitle or icons, by my decision. Shipped apps keep text items until their icons are drawn. |

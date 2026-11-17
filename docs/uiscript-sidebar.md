@@ -49,3 +49,8 @@ window that has lost its way around.
   `<List selectable="true">`.
 - Set it apart from the content, such as with its own shade, and mark the
   selected row.
+- A host may let rows carry an icon, naming an `<Image>`, and split them
+  into groups. VentureOS does both through `window:setItems`: rows show
+  their icons as symbols in the text color, and a faint line splits
+  groups. A separator isn't a row, so row numbers don't change with
+  them. A host that does neither still shows every row.

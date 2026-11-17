@@ -63,6 +63,7 @@ public sealed class FilesAppTests : IDisposable
         Assert.True(Window.View.IsDisabled("openItem"));
         Assert.True(Window.View.IsDisabled("lookItem"));
         Assert.Equal(["Home", "User", "Apps", "System"], Window.View.List("bookmarks")!.Items);
+        Assert.Equal([3], Window.View.List("bookmarks")!.GroupStarts);
         Assert.Equal(-1, Window.View.List("bookmarks")!.SelectedIndex);
         Assert.Empty(events.Lines);
     }
@@ -104,6 +105,16 @@ public sealed class FilesAppTests : IDisposable
         Send(new UIEvent(UIEventKind.Submitted, "address", root));
         Assert.Equal(root, Window.View.Text("address"));
         Assert.Equal("3 items", Window.View.Subtitle);
+    }
+
+    [Fact]
+    public void TheBookmarkPastTheLineIsStillTheFourthRow()
+    {
+        // System, set apart by a separator, is row 4 (index 3), so choosing it goes to /mnt/system; there's none in
+        // a test, so Files says so.
+        Send(new UIEvent(UIEventKind.Selected, "bookmarks", Index: 3));
+
+        Assert.Contains("/mnt/system", Window.View.Text("status"));
     }
 
     [Fact]

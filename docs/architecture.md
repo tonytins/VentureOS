@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,030 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,031 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -887,7 +887,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   top, and the title bar spans only the content, whose corner moves right
   by the sidebar's width. `UIView` keeps it as a selectable list placed left
   of that corner, so selection, scrolling, and Lua's list calls serve it
-  unchanged; only its drawing differs, with taller rows and no box.
+  unchanged; only its drawing differs: taller rows, no box, a rounded
+  shade for the selection and hover, rows' icons as 16-pixel symbols in
+  the text color (`UIListState.Icons`), and faint lines between groups
+  (`GroupStarts`, which `window:setItems` fills from `{ separator = true }`;
+  separators aren't rows). Clicks, hover, and scrolling count the lines'
+  room. Files sets System apart from its places with one.
 - **Zoom.** A resizable window has a green third button, which zooms it
   to fill the screen below the menu bar (`TopInset`), over the dock, as
   macOS does, and a second click puts it back where it was, at its old
@@ -1195,6 +1200,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Sidebars done (§9): Files sets System apart from its places; the app guide and the sidebar draft describe icons and groups. |
 | 2026-11-17 | minor | Sidebar rows (§9): rounded shades for the selection and hover, rows' icons as 16-pixel symbols in the text color with every row's text lined up after them, and faint lines between groups; clicks, hover, and scrolling count the room the lines take. |
 | 2026-11-17 | minor | Sidebars begin (§9): `window:setItems` takes a sidebar's rows as tables with `text`, an `icon` naming an `<Image>`, or `separator = true`, kept in `UIListState.Icons` and `GroupStarts`; separators aren't rows. Not drawn yet; a plain list refuses them. |
 | 2026-11-17 | minor | Layout (§2): the kernel project is `src/Venture.OS.Kernel` (`Venture.OS.Kernel.csproj`), named for what it is; its assembly stays `Venture` and its namespaces `Venture.OS`. |

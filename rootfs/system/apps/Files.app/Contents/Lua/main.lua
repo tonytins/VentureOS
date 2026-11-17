@@ -7,12 +7,13 @@
 
 local files = venture.files
 
--- The folders in every window's sidebar.
+-- The folders in every window's sidebar: places, then, past a line, the
+-- system's own folder, set apart as Nautilus sets apart its drives.
 local BOOKMARKS = {
   { name = "Home", path = "/mnt" },
   { name = "User", path = "/mnt/user" },
   { name = "Apps", path = "/mnt/user/apps" },
-  { name = "System", path = "/mnt/system" },
+  { name = "System", path = "/mnt/system", separated = true },
 }
 
 -- Files with these extensions open in TextEdit, when it's installed; anything
@@ -47,9 +48,13 @@ local function openWindow(start)
   local folder = start
   local entries = {}
 
-  local names = {}
-  for number, bookmark in ipairs(BOOKMARKS) do names[number] = bookmark.name end
-  window:setItems("bookmarks", names)
+  -- Separators aren't rows, so a bookmark's number is still its row.
+  local rows = {}
+  for _, bookmark in ipairs(BOOKMARKS) do
+    if bookmark.separated then rows[#rows + 1] = { separator = true } end
+    rows[#rows + 1] = bookmark.name
+  end
+  window:setItems("bookmarks", rows)
 
   local function selected()
     local number = window:selected("entries")
