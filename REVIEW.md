@@ -11,7 +11,7 @@ contributor and review practices in [NVIDIA FLARE's contribution guide](https://
   that the change addresses that context.
 - Check the available test and CI results. Run `dotnet test --project
   tests/Venture.OS.Common.Tests`, `cosmos check`, and `cosmos build -p
-  src/Venture.OS` when the change or its verification warrants it. For changes
+  src/Venture.OS.Kernel` when the change or its verification warrants it. For changes
   to boot, storage, networking, or commands, boot it with `./run.sh` (or
   `./run.sh --headless` to read the serial log). Report checks that couldn't be
   run, such as an ARM64 build or a boot.

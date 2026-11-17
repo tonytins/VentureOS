@@ -30,8 +30,8 @@ proven by a build or a boot. Boots were run headless under the QEMU that
 Cosmos bundles:
 
 ```sh
-cosmos run -p src/Venture.OS --headless            # default e1000e NIC
-cosmos run -p src/Venture.OS --headless --nic none # no network card
+cosmos run -p src/Venture.OS.Kernel --headless            # default e1000e NIC
+cosmos run -p src/Venture.OS.Kernel --headless --nic none # no network card
 ```
 
 VentureOS's system messages reach the serial log with a `[Venture] ` prefix
@@ -97,9 +97,9 @@ output stays on the console.
 
 | Id | Target | Status | Evidence |
 |---|---|---|---|
-| PLAT-1 | Builds for x64 with no warnings | done | `cosmos build -v -p src/Venture.OS`: 0 warnings, 0 errors |
-| PLAT-2 | Builds for ARM64 | done | `cosmos build -a arm64 -p src/Venture.OS`: build completed |
-| PLAT-3 | Pinned to the latest Cosmos release | done | `Venture.OS.csproj`: `Cosmos.Sdk` 3.0.97, moved from 3.0.94 on 2026-11-17 |
+| PLAT-1 | Builds for x64 with no warnings | done | `cosmos build -v -p src/Venture.OS.Kernel`: 0 warnings, 0 errors |
+| PLAT-2 | Builds for ARM64 | done | `cosmos build -a arm64 -p src/Venture.OS.Kernel`: build completed |
+| PLAT-3 | Pinned to the latest Cosmos release | done | `Venture.OS.Kernel.csproj`: `Cosmos.Sdk` 3.0.97, moved from 3.0.94 on 2026-11-17 |
 | PLAT-4 | Boots on ARM64 | missing | Not booted; ARM64 needs `-a arm64` and a virtio NIC to test networking |
 | PLAT-5 | Lua scripting | done | `Cosmos.Executable.Lua` 4.0.1 builds for x64 and ARM64 with no warnings. x64 boot test 2026-11-05: `lua` printed `Hello from Lua 5.5`, reported a runtime error with its traceback and `os.exit(3)` as a status, ran a script written to `/mnt` through `dofile`, and returned to the prompt each time |
 

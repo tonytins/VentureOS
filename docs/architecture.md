@@ -112,9 +112,9 @@ grow):
 |---|---|---|
 | **Namespaces** | Cosmos namespaces are imported once, in `GlobalUsings.cs`. A rename is a one-file fix. | `GlobalUsings.cs` |
 | **Cosmos calls** | Hardware and subsystem setup goes through `Startup/` steps, not scattered through commands. | `Startup/Bootstrap.cs` |
-| **Version pins** | `Cosmos.Sdk` and the `Cosmos.*` packages move together, in a change of their own, with a build and a headless boot. | `Venture.OS.csproj` |
+| **Version pins** | `Cosmos.Sdk` and the `Cosmos.*` packages move together, in a change of their own, with a build and a headless boot. | `Venture.OS.Kernel.csproj` |
 | **Docs drift** | Check an API exists in the pinned version before using it; the build is the quickest check. | [cosmos-gen3 skill](../.agents/skills/cosmos-gen3/SKILL.md) |
-| **Experimental APIs** | Each one needs an explicit `<NoWarn>` and a deliberate decision from me, so a seam can't creep in unnoticed. | `Venture.OS.csproj` |
+| **Experimental APIs** | Each one needs an explicit `<NoWarn>` and a deliberate decision from me, so a seam can't creep in unnoticed. | `Venture.OS.Kernel.csproj` |
 | **Missing runtime pieces** | Not all of .NET links under Cosmos. `System.Xml` doesn't in 3.0.94 (it needs `RhGetMaxGcGeneration`, which Cosmos's runtime lacks), so VentureOS reads XML with its own `FlatXml`. Prefer explicit code over reflection-backed helpers such as `Enum.GetValues`. The kernel build, not `Venture.OS.Common`'s analyzers, is what finds these. | `Venture.OS.Interface/Xml/` |
 
 The test: **a Cosmos upgrade should touch `GlobalUsings.cs`, `Startup/`,
@@ -128,7 +128,7 @@ and the project file, and nothing in the shell.**
 VentureOS/
 ├─ src/
 │  ├─ Venture.slnx                 the solution: the three projects below and the tests
-│  ├─ Venture.OS/                  the kernel (Cosmos SDK): package pins and CosmosKernelClass in Venture.OS.csproj
+│  ├─ Venture.OS.Kernel/           the kernel (Cosmos SDK): package pins and CosmosKernelClass in Venture.OS.Kernel.csproj
 │  │  ├─ Kernel/                   Venture.OS.Kernel: VentureKernel (boot and the shell loop), KernelLog, KernelPanic
 │  │  ├─ Startup/                  Venture.OS.Startup: Bootstrap (the boot steps) and BootRamDisk
 │  │  ├─ Shell/                    Venture.OS.Shell: ConsoleShellOutput, and Commands/, one class per built-in command
@@ -400,7 +400,7 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
 - `/` is Cosmos's read-only virtual root, so files live under `/mnt`.
 - **System files.** Everything under `rootfs/system/` is turned
   into byte arrays in generated C# at build time (`GenerateSystemFiles` in
-  `Venture.OS.csproj`), because Cosmos 3.0.94 doesn't expose Limine's
+  `Venture.OS.Kernel.csproj`), because Cosmos 3.0.94 doesn't expose Limine's
   modules, so the ISO can't hand the kernel loose files. At boot,
   `SystemDirectory.Install` checks every path, then writes the files to
   `/mnt/system`. The RAM disk starts empty, so the system files always match
@@ -1126,7 +1126,7 @@ builds and runs its example, so it can't drift from what works.
   finds by looking up from the kernel project, and adds the number of
   commits since that file changed. At the root, every commit counts, docs
   included; GitInfo counts only commits under the file's folder otherwise,
-  which is why it moved there in 0.5: in `src/Venture.OS/`, it missed the
+  which is why it moved there in 0.5: in the kernel project's folder, it missed the
   library, the apps, and everything else that changes most now. A build
   needs the full history.
 - **Moving `GitInfo.txt` resets the count.** GitInfo finds the file's last
@@ -1150,8 +1150,8 @@ builds and runs its example, so it can't drift from what works.
 
 - **Locally:** `dotnet test --project tests/Venture.OS.Common.Tests`, then
   `cosmos check` (always first before building: tool status and CLI updates),
-  `cosmos build -p src/Venture.OS`, then `./run.sh` (add `--headless`
-  for serial only) or `cosmos run -p src/Venture.OS --headless`. `--nic none`
+  `cosmos build -p src/Venture.OS.Kernel`, then `./run.sh` (add `--headless`
+  for serial only) or `cosmos run -p src/Venture.OS.Kernel --headless`. `--nic none`
   boots without a network card.
 - **CI:** none for now. The kernel needs Cosmos's toolchain and doesn't build
   like a typical .NET project, so the workflow was removed (2026-11-11).
@@ -1195,6 +1195,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Layout (§2): the kernel project is `src/Venture.OS.Kernel` (`Venture.OS.Kernel.csproj`), named for what it is; its assembly stays `Venture` and its namespaces `Venture.OS`. |
 | 2026-11-17 | minor | Version (§2, §10): `GitInfo.txt` moved to the repository root, so every commit counts toward the patch, not only the kernel's. |
 | 2026-11-17 | minor | GNOME's colors (§9): libadwaita's neutral surfaces, text, and faint lines in light and dark, a neutral menu bar, and GNOME's nine accents, blue the standard, in place of Distro Tycoon 2's tinted palette and eight swatches. |
 | 2026-11-17 | minor | Flat header bar (§9): one color, `HeaderBar`, with faint separators under it and beside the sidebar, in place of the gradient and borders. |

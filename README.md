@@ -52,8 +52,8 @@ To run each step yourself, point the Cosmos CLI at the kernel project:
 ```
 dotnet test --project tests/Venture.OS.Common.Tests
 cosmos check
-cosmos build -p src/Venture.OS
-cosmos run -p src/Venture.OS
+cosmos build -p src/Venture.OS.Kernel
+cosmos run -p src/Venture.OS.Kernel
 ```
 
 ### Using it

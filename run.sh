@@ -9,7 +9,7 @@ set -e
 cd "$(dirname "$0")"
 
 ARCHITECTURE="x64" # Bit of a workaround for macOS on Apple Silicon
-PROJECT="src/Venture.OS"
+PROJECT="src/Venture.OS.Kernel"
 
 case "${1:-}" in
     "") HEADLESS="" ;;

@@ -8,10 +8,10 @@ VentureOS is a hobby operating system written in C# on the
 
 Every .NET project lives in its own folder, under `src/`, or `tests/` for tests, and is listed in `src/Venture.slnx`:
 
-- `src/Venture.OS` is the kernel. `Kernel/` holds the entry point  
+- `src/Venture.OS.Kernel` is the kernel. `Kernel/` holds the entry point  
   (`VentureKernel`), `KernelPanic`, and `KernelLog`; `Startup/` holds the boot  
   steps and the RAM disk; `Shell/Commands/` holds one class per shell command.  
-  `CosmosKernelClass` and the package versions are in `Venture.OS.csproj`.
+  `CosmosKernelClass` and the package versions are in `Venture.OS.Kernel.csproj`.
 - `rootfs/` holds the files the kernel is built with and installs at boot.  
   `rootfs/system/` holds the system files (Lua scripts, apps, fonts, icons,  
   wallpapers, and the desktop's `.uix` interfaces), which the build turns into C# and boot  
@@ -45,7 +45,7 @@ Never commit build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`).
 ```sh
 dotnet test --project tests/Venture.OS.Common.Tests   # all tests must pass
 cosmos check                                        # always before building
-cosmos build -p src/Venture.OS                      # no new warnings
+cosmos build -p src/Venture.OS.Kernel               # no new warnings
 ./run.sh                                            # boots x64 in QEMU; --headless for serial only
 ```
 
@@ -55,7 +55,7 @@ cosmos build -p src/Venture.OS                      # no new warnings
   storage, or networking, boot it and read the console or serial log. If you  
   can't boot, say so.
 - If you touch architecture-sensitive code, also build ARM64 with  
-  `cosmos build -a arm64 -p src/Venture.OS`.
+  `cosmos build -a arm64 -p src/Venture.OS.Kernel`.
 - If you change `Venture.OS.Common`, add or update its tests in the same change  
   and check that a new test fails without the fix.
 
@@ -123,7 +123,7 @@ There is no host process underneath: an unhandled exception stops the machine wi
   reading `...` by hand. Shared Lua modules go in `rootfs/system/lib/`,  
   namespaced under `venture.`.
 - Write a command in C# only when it must control the kernel, as a class in  
-  `src/Venture.OS/Shell/Commands/` registered in `VentureKernel.CreateShell`;  
+  `src/Venture.OS.Kernel/Shell/Commands/` registered in `VentureKernel.CreateShell`;  
   built-in commands win any name clash. `help` is generated from both. C#  
   commands write through `IShellOutput` and ask for power changes through  
   `IShellHost`.
