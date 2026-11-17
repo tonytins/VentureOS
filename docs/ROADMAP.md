@@ -107,8 +107,9 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 - [x] VentureOS's icon in place of its name, as Tiger's Apple, white while
   its menu is open.
 - [x] Tiger's gloss: a bright band and a sheen line.
-- [ ] Status items on the right, starting with a clock, once VentureOS
-  knows the time.
+- [x] Status items on the right, starting with a clock: the hardware
+  clock with an offset from UTC set in Settings or with `clock`, and no
+  daylight saving.
 
 **0.5.3xx, header bars**
 
@@ -197,6 +198,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.5.2xx done: Tiger's gloss, and the time on the right of the menu bar, with an offset from UTC I chose over a time zone database. |
 | 2026-11-17 | minor | 0.5.2xx begins with VentureOS's icon in the menu bar, an item added at my request. Smoothed icon edges are unmixed from the key. |
 | 2026-11-17 | minor | 0.5.1xx done: icons with full backgrounds are rounded to a tile, and `#00FF01` is clear in a shaped one. Symbolic icons move to 0.5.3xx. |
 | 2026-11-17 | minor | 0.5, Cassiopeia, is in development. 0.5.1xx draws PNG pictures: apps' icons in the dock and About, and the Earthset wallpaper. Symbolic icons wait for toolbar and sidebar icons. |

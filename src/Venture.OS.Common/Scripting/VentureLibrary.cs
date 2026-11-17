@@ -1,5 +1,6 @@
 using Cosmos.Executable.Lua;
 using Venture.OS.Network;
+using Venture.OS.Time;
 
 namespace Venture.OS.Scripting;
 
@@ -19,8 +20,12 @@ namespace Venture.OS.Scripting;
 /// <c>venture.setAppearance(mode, accent)</c>, which switches it to <c>"light"</c> or <c>"dark"</c> with an optional
 /// <c>#RRGGBB</c> accent and saves it, returning <c>true</c> (and why it wasn't saved, if it wasn't), or <c>nil</c>
 /// and why.</description></item>
+/// <item><description><c>venture.time()</c>: the clock, <c>{ set, offset, zone }</c>, and when the hardware clock is
+/// set, also <c>text</c> (as the menu bar shows it), <c>year</c>, <c>month</c>, <c>day</c>, <c>hour</c>, <c>minute</c>,
+/// <c>second</c>, <c>weekday</c>, and <c>utc</c>; <c>nil</c> without a clock. <c>venture.setUtcOffset(offset)</c>
+/// takes an offset such as <c>"-05:00"</c> and saves it, returning as <c>setAppearance</c> does.</description></item>
 /// </list>
-/// <para>The functions other than <c>setAppearance</c> take no arguments and ignore any they're given. An exception from
+/// <para>The functions other than <c>setAppearance</c> and <c>setUtcOffset</c> take no arguments and ignore any they're given. An exception from
 /// <see cref="ISystemInfo"/> becomes a Lua error, which <c>pcall</c> can catch, so a failing device can't stop the
 /// system.</para>
 /// </remarks>
@@ -52,6 +57,8 @@ public static class VentureLibrary
             Gated("ping", ScriptScopes.Network, scopes, lua => Ping(lua, system.NetworkTools)),
             Gated("appearance", ScriptScopes.System, scopes, lua => PushAppearance(lua, system.Appearance)),
             Gated("setAppearance", ScriptScopes.System, scopes, lua => SetAppearance(lua, system.Appearance)),
+            Gated("time", ScriptScopes.System, scopes, lua => PushTime(lua, system.WallClock)),
+            Gated("setUtcOffset", ScriptScopes.System, scopes, lua => SetUtcOffset(lua, system.WallClock)),
 
             // Replaced by ShellLibrary where the code has a lasting owner; elsewhere they explain why they can't work.
             Gated("command", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "command")),
@@ -181,6 +188,64 @@ public static class VentureLibrary
             return 1;
 
         lua.PushString(LuaText.Encode(change.Unsaved));
+        return 2;
+    }
+
+    /// <summary>
+    /// <c>venture.time()</c>: the offset always, and the time with it when the hardware clock is set, so a script can
+    /// tell "not set" from a time; <c>nil</c> without a clock.
+    /// </summary>
+    private static int PushTime(ILuaState lua, WallClock? clock)
+    {
+        if (clock is null)
+        {
+            lua.PushNil();
+            return 1;
+        }
+
+        var offset = clock.UtcOffset;
+        lua.NewTable();
+        SetString(lua, "offset", WallClock.FormatOffset(offset));
+        SetString(lua, "zone", WallClock.FormatZone(offset));
+        if (clock.UtcNow is not { } utc)
+        {
+            SetBoolean(lua, "set", false);
+            return 1;
+        }
+
+        var now = utc + offset;
+        SetBoolean(lua, "set", true);
+        SetString(lua, "text", WallClock.FormatMenuTime(now));
+        SetString(lua, "weekday", WallClock.DayName(now));
+        SetInteger(lua, "year", (ulong)now.Year);
+        SetInteger(lua, "month", (ulong)now.Month);
+        SetInteger(lua, "day", (ulong)now.Day);
+        SetInteger(lua, "hour", (ulong)now.Hour);
+        SetInteger(lua, "minute", (ulong)now.Minute);
+        SetInteger(lua, "second", (ulong)now.Second);
+        SetString(lua, "utc", string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{utc.Year:0000}-{utc.Month:00}-{utc.Day:00}T{utc.Hour:00}:{utc.Minute:00}:{utc.Second:00}Z"));
+        return 1;
+    }
+
+    /// <summary>
+    /// <c>venture.setUtcOffset(offset)</c>: sets the clock's offset, written like <c>"-05:00"</c>, <c>"+5:30"</c>, or
+    /// <c>"UTC"</c>, and saves it. Returns as <c>setAppearance</c> does. The menu bar shows it on its next frame.
+    /// </summary>
+    private static int SetUtcOffset(ILuaState lua, WallClock? clock)
+    {
+        var written = LuaText.Decode(lua.L_CheckString(1));
+        if (!WallClock.TryParseOffset(written, out var offset, out var problem))
+            return Refuse(lua, problem!);
+        if (clock is null)
+            return Refuse(lua, "this system has no clock to set");
+
+        lua.PushBoolean(true);
+        if (clock.SetUtcOffset(offset) is not { } unsaved)
+            return 1;
+
+        lua.PushString(LuaText.Encode(unsaved));
         return 2;
     }
 

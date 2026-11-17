@@ -57,6 +57,12 @@ public interface ISystemInfo
     /// <see langword="null"/> without a network adapter.
     /// </summary>
     INetworkTools? NetworkTools { get; }
+
+    /// <summary>
+    /// The clock, which <c>venture.time</c> reads and <c>venture.setUtcOffset</c> changes, or
+    /// <see langword="null"/> on a system without one.
+    /// </summary>
+    Time.WallClock? WallClock { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>

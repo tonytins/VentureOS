@@ -23,7 +23,8 @@
 -- short name. Their type is "flag" (on or off; the default), "string", or
 -- "number"; a default of a string or number implies that type. Short flags
 -- can be combined, as -lv. --help or -h prints the help, and -- ends the
--- options, so later words count as arguments even if they start with -.
+-- options, so later words count as arguments even if they start with -. A
+-- word that's a dash then a digit, such as -5 or -05:00, is an argument too.
 --
 -- parse returns one table with every argument and option by name. When the
 -- user gets something wrong, or asks for --help, it prints that and returns
@@ -225,7 +226,8 @@ local function read(argv, prepared)
     local word = argv[index]
     index = index + 1
 
-    if only_arguments or word == "-" or word:sub(1, 1) ~= "-" or tonumber(word) then
+    -- A dash then a digit is a value, such as -5 or -05:00, since options start with a letter.
+    if only_arguments or word == "-" or word:sub(1, 1) ~= "-" or word:match("^%-%d") then
       positional[#positional + 1] = word
     elseif word == "--" then
       only_arguments = true

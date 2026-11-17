@@ -31,6 +31,10 @@ internal sealed class FakeSystemInfo : ISystemInfo
     /// <summary>The desktop's own, by default, so scripts read and change the real palette.</summary>
     public IAppearance? Appearance { get; init; } = new ScriptAppearance();
 
+    /// <summary>A clock reading Tuesday 17 November 2026, 20:45:30 UTC, on UTC, kept nowhere, by default.</summary>
+    public Venture.OS.Time.WallClock? WallClock { get; init; } =
+        new(() => new DateTime(2026, 11, 17, 20, 45, 30, DateTimeKind.Utc));
+
     /// <summary>When set, reading <see cref="Uptime"/> throws it, as a failing device might.</summary>
     public Exception? UptimeFailure { get; init; }
 

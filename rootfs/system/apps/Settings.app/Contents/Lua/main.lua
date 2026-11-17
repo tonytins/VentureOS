@@ -1,6 +1,6 @@
--- Settings: the desktop's look, light or dark, and its accent color. Each
--- choice applies at once, to every window, and is saved in
--- /mnt/user/settings/appearance.xml, as the appearance command's are.
+-- Settings: the desktop's look, light or dark, and its accent color, and the
+-- clock's offset from UTC. Each choice applies at once and is saved in
+-- /mnt/user/settings, as the appearance and clock commands' are.
 
 local window = venture.ui.open("main.uix")
 
@@ -47,4 +47,31 @@ window:on("custom", function()
   if choose(venture.appearance().mode, typed) then window:setText("custom", "") end
 end)
 
+-- Shows the clock: the time and its offset from UTC, or that the hardware clock isn't set.
+local function showClock(problem)
+  if problem then
+    window:setText("clockShown", problem)
+    return
+  end
+
+  local time = venture.time()
+  if not time then
+    window:setText("clockShown", "This system has no clock.")
+  elseif time.set then
+    window:setText("clockShown", time.text .. ", " .. time.zone)
+  else
+    window:setText("clockShown", "Not set, " .. time.zone)
+  end
+end
+
+window:on("utcOffset", function()
+  local ok, problem = venture.setUtcOffset(window:text("utcOffset"))
+  if ok then window:setText("utcOffset", "") end
+  showClock(problem)
+end)
+
+-- The time shown keeps up, as the menu bar's does.
+window:every(30, function() showClock() end)
+
 show()
+showClock()

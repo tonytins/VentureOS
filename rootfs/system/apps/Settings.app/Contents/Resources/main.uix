@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The Settings window. main.lua applies and saves each choice. -->
+<!-- The Settings window: the look and the clock. main.lua applies and saves each choice. -->
 <UIScript version="1">
-  <Window width="380" height="222"/>
+  <Window width="380" height="292"/>
 
 
   <Style name="heading" fontSize="title"/>
@@ -26,6 +26,7 @@
   <String name="swatch6Name" table="1" index="6"/>
   <String name="swatch7Name" table="1" index="7"/>
   <String name="swatch8Name" table="1" index="8"/>
+  <String name="utcOffsetHint" table="1" index="9"/>
 
   <Text name="appearanceHeading" x="12" y="10" width="356" height="24" style="heading" text="Appearance"/>
   <Button name="light" x="12" y="40" width="84" height="26" text="Light"/>
@@ -44,4 +45,9 @@
   <Text name="accentName" x="12" y="152" width="356" height="20" style="quiet"/>
   <TextField name="custom" x="12" y="182" width="120" height="26" placeholder="#RRGGBB"/>
   <Text name="status" x="142" y="185" width="226" height="20" style="quiet"/>
+
+  <!-- The clock's offset from UTC; there's no daylight saving, so it's changed when the clocks change. -->
+  <Text name="clockHeading" x="12" y="220" width="356" height="24" style="heading" text="Clock"/>
+  <TextField name="utcOffset" x="12" y="252" width="120" height="26" placeholder="UTC-05:00" tooltip="utcOffsetHint"/>
+  <Text name="clockShown" x="142" y="255" width="226" height="20" style="quiet"/>
 </UIScript>

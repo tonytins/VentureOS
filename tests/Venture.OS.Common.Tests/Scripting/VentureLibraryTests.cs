@@ -172,6 +172,60 @@ public sealed class VentureLibraryTests
     }
 
     [Fact]
+    public void GivesTheTimeWithTheOffset()
+    {
+        FakeSystemInfo system = new();
+        system.WallClock!.SetUtcOffset(TimeSpan.FromHours(-5));
+
+        Run(system, """
+            local t = venture.time()
+            print(t.set, t.text, t.offset, t.zone)
+            print(t.year, t.month, t.day, t.hour, t.minute, t.second, t.weekday, t.utc)
+            """);
+
+        Assert.Equal(
+            ["true\tTue 3:45 PM\t-05:00\tUTC-05:00", "2026\t11\t17\t15\t45\t30\tTue\t2026-11-17T20:45:30Z"],
+            output.Lines);
+    }
+
+    [Fact]
+    public void SaysWhenTheHardwareClockIsntSet()
+    {
+        Run(new FakeSystemInfo { WallClock = new(() => DateTime.UnixEpoch) }, "local t = venture.time() print(t.set, t.text, t.zone)");
+        Run(new FakeSystemInfo { WallClock = null }, "print(venture.time())");
+
+        Assert.Equal(["false\tnil\tUTC", "nil"], output.Lines);
+    }
+
+    [Fact]
+    public void SetsTheOffsetOrSaysWhyNot()
+    {
+        FakeSystemInfo system = new();
+
+        Run(system, """
+            print(venture.setUtcOffset("+5:30"))
+            print(venture.setUtcOffset("EST"))
+            print(venture.time().offset)
+            """);
+        Run(new FakeSystemInfo { WallClock = null }, """print(venture.setUtcOffset("-05:00"))""");
+
+        Assert.Equal(TimeSpan.FromMinutes(330), system.WallClock!.UtcOffset);
+        Assert.Equal(
+            ["true", "nil\tan offset from UTC is written like -05:00 or +5:30, not \"EST\"", "+05:30", "nil\tthis system has no clock to set"],
+            output.Lines);
+    }
+
+    [Theory]
+    [InlineData("time")]
+    [InlineData("setUtcOffset")]
+    public void TheClockNeedsTheSystemScope(string function)
+    {
+        Run(new FakeSystemInfo(), $"print(pcall(venture.{function}, \"0\"))", ScriptScopes.All & ~ScriptScopes.System);
+
+        Assert.Equal([$"false\t{VentureLibrary.UndeclaredMessage(function, ScriptScopes.System)}"], output.Lines);
+    }
+
+    [Fact]
     public void AlwaysGivesTheVersion()
     {
         Run(new FakeSystemInfo(), "print(venture.version().version)", ScriptScopes.None);

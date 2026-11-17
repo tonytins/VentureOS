@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Venture.OS.Bundles;
 using Venture.OS.Interface;
+using Venture.OS.Time;
 
 namespace Venture.OS.Desktop;
 
@@ -82,6 +83,9 @@ public sealed class DesktopSession
     // read, so a missing icon isn't looked for on every refresh of the dock.
     private readonly Dictionary<(string Path, int Width, int Height), DesktopImage?> wallpapers = [];
     private readonly Dictionary<(string Path, int Size, bool Shadow), DesktopIcon?> icons = [];
+
+    // The minute the bar's time shows, with the offset, or -1 for none.
+    private long shownMinute = -1;
 
     // The VentureOS menu, made on first use, with its icon when there's one.
     private BarMenu? systemMenu;
@@ -226,6 +230,12 @@ public sealed class DesktopSession
             menuSource = default;
         }
     }
+
+    /// <summary>
+    /// The clock, whose time shows on the right of the menu bar, as Tiger's did; <see langword="null"/>, or a hardware
+    /// clock that isn't set, shows none.
+    /// </summary>
+    public WallClock? WallClock { get; init; }
 
     /// <summary>VentureOS's version as About VentureOS shows it, such as <c>Version 0.4.101 (Build 1234)</c>.</summary>
     public string? SystemVersion { get; init; }
@@ -467,7 +477,9 @@ public sealed class DesktopSession
         LastEvents = happened.Count == 0 ? [] : [.. happened];
         RefreshMenus();
 
-        var changed = !drawn || input.HasEvents || happened.Count > 0 || restarted || ticked
+        // The clock is brought up to date every frame, even when something else already calls for a redraw.
+        var clockChanged = UpdateClock();
+        var changed = !drawn || clockChanged || input.HasEvents || happened.Count > 0 || restarted || ticked
             || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
             || !ReferenceEquals(Windows.Tooltip, drawnTooltip)
             || x != last.PointerX || y != last.PointerY || input.PointerDown != last.PointerDown;
@@ -475,6 +487,23 @@ public sealed class DesktopSession
         if (released)
             owner = PointerOwner.None;
         return changed;
+    }
+
+    /// <summary>
+    /// Shows the time on the right of the menu bar when the minute changes, or the offset does, so the frame loop
+    /// redraws once a minute for it and an idle frame allocates nothing.
+    /// </summary>
+    /// <returns>Whether the bar's time changed.</returns>
+    private bool UpdateClock()
+    {
+        var now = WallClock?.Now;
+        var minute = now is { } time ? time.Ticks / TimeSpan.TicksPerMinute : -1;
+        if (minute == shownMinute)
+            return false;
+
+        shownMinute = minute;
+        MenuBar.Status = now is { } shown ? WallClock.FormatMenuTime(shown) : null;
+        return true;
     }
 
     /// <summary>Draws the whole desktop: the sky, the windows, the dock, the menu bar, then the pointer on top.</summary>

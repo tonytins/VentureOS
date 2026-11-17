@@ -21,6 +21,7 @@ public sealed class SettingsAppTests : IDisposable
     private readonly RecordingOutput events = new();
     private readonly WindowManager windows = new(1024, 768);
     private readonly AppManager manager;
+    private readonly FakeSystemInfo system = new();
 
     public SettingsAppTests()
     {
@@ -29,7 +30,7 @@ public sealed class SettingsAppTests : IDisposable
         manager = new AppManager(
             Path.Combine(AppContext.BaseDirectory, "system", "apps"),
             new RuntimeCommands(registry.IsBuiltIn),
-            new FakeSystemInfo(),
+            system,
             windows: new AppWindows(windows, events));
         Assert.True(manager.OpenApp("Settings", Path.GetTempPath(), output), string.Join('\n', output.Lines));
     }
@@ -133,6 +134,31 @@ public sealed class SettingsAppTests : IDisposable
         Assert.Contains("#RRGGBB", Window.View.Text("status"));
         Assert.Equal("blue", Window.View.Text("custom"));
         Assert.Equal("Sky Blue", Window.View.Text("accentName"));
+    }
+
+    [Fact]
+    public void ShowsTheClock() => Assert.Equal("Tue 8:45 PM, UTC", Window.View.Text("clockShown"));
+
+    [Fact]
+    public void AnOffsetSetsTheClock()
+    {
+        Window.View.SetText("utcOffset", "UTC-05:00");
+        Send(new UIEvent(UIEventKind.Submitted, "utcOffset", "UTC-05:00"));
+
+        Assert.Equal(TimeSpan.FromHours(-5), system.WallClock!.UtcOffset);
+        Assert.Equal("Tue 3:45 PM, UTC-05:00", Window.View.Text("clockShown"));
+        Assert.Equal("", Window.View.Text("utcOffset"));
+    }
+
+    [Fact]
+    public void AWrongOffsetSaysWhyAndChangesNothing()
+    {
+        Window.View.SetText("utcOffset", "EST");
+        Send(new UIEvent(UIEventKind.Submitted, "utcOffset", "EST"));
+
+        Assert.Equal(TimeSpan.Zero, system.WallClock!.UtcOffset);
+        Assert.Contains("written like -05:00", Window.View.Text("clockShown"));
+        Assert.Equal("EST", Window.View.Text("utcOffset"));
     }
 
     private void Send(UIEvent uiEvent) => Window.EventHandler!(Window, uiEvent);

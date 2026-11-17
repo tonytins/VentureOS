@@ -1,5 +1,6 @@
 using Venture.OS.Scripting;
 using Venture.OS.Desktop;
+using Venture.OS.Time;
 
 namespace Venture.OS.Startup;
 
@@ -29,6 +30,15 @@ internal static class Bootstrap
 
     /// <summary>Where the user's apps are, such as Calculator. They say what they need when they open.</summary>
     public const string UserAppsDirectoryPath = UserDirectoryPath + "/apps";
+
+    /// <summary>The clock's saved offset from UTC, which Settings and the <c>clock</c> command write.</summary>
+    public const string ClockPath = UserDirectoryPath + "/settings/time.xml";
+
+    /// <summary>
+    /// The system's clock: the hardware clock, through Cosmos's <see cref="DateTime.UtcNow"/> (CMOS on x64, PL031 on
+    /// ARM64), moved by the saved offset. The menu bar, Settings, and scripts share it.
+    /// </summary>
+    public static WallClock WallClock { get; } = new(() => DateTime.UtcNow, ClockPath);
 
     /// <summary>The desktop's saved look, which Settings and the <c>appearance</c> command write.</summary>
     public const string AppearancePath = UserDirectoryPath + "/settings/appearance.xml";
@@ -203,6 +213,18 @@ internal static class Bootstrap
 
         KernelLog.WriteLine("Time manager setup failed.");
         return false;
+    }
+
+    /// <summary>Restores the clock's saved offset from <see cref="ClockPath"/>, and says what time it is.</summary>
+    /// <remarks>
+    /// It's optional, and it runs after the time manager, which the hardware clock needs. Without a file the clock
+    /// stays on UTC; a file that can't be read is reported, and the offset stays. A hardware clock that isn't set is
+    /// reported, and the menu bar shows no time.
+    /// </remarks>
+    public static void LoadClock()
+    {
+        var result = WallClock.Load();
+        KernelLog.WriteLine(result.Problem is { } problem ? $"Clock: {problem}" : $"Clock: {result.Description}.");
     }
 
     /// <summary>

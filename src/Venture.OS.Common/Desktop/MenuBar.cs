@@ -91,6 +91,7 @@ public sealed class MenuBar
 
     private const int FirstTitleX = 10;
     private const int TitlePadding = 9;
+    private const int StatusMargin = 14;
     private const int ItemHeight = 20;
     private const int SeparatorHeight = 9;
     private const int MenuPadding = 4;
@@ -100,6 +101,12 @@ public sealed class MenuBar
 
     private IReadOnlyList<BarMenu> menus = [];
     private readonly List<(int X, int Width)> titles = [];
+
+    /// <summary>
+    /// Text on the right of the bar, such as the time, or <see langword="null"/> for none. It's a status item: it
+    /// shows, and takes no clicks.
+    /// </summary>
+    public string? Status { get; set; }
 
     // An icon title's silhouette in the open title's text color, made when first shown and kept until the icon
     // or the color changes.
@@ -345,6 +352,9 @@ public sealed class MenuBar
             }
             x += width;
         }
+
+        if (Status is { Length: > 0 } status)
+            painter.DrawText(status, painter.Width - StatusMargin - painter.MeasureText(status, Size), textY, DesktopTheme.Text, Size);
 
         if (open >= 0)
             DrawMenu(painter);

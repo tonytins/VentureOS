@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (935 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (987 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -21,15 +21,16 @@ the code wins and this page is out of date.
 - **Platform:** Cosmos gen3 3.0.97 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
-- **Boot:** eight steps, three critical (RAM filesystem, timer, shell) and five
-  optional (system files, user files, the saved appearance, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
+- **Boot:** nine steps, three critical (RAM filesystem, timer, shell) and six
+  optional (system files, user files, the saved appearance, the clock's
+  offset, network, and `init.lua` after the banner). A critical failure panics with a report; an optional
   one is reported and boot continues. Both paths are proven in headless
   boots.
 - **Shell:** a command registry with eleven built-in commands (`help`, `desktop`,
   `clear`, `cd`, `lua`, `open`, `close`, `apps`, `halt`, `reboot`,
   `shutdown`), a current folder the prompt shows, `.app` bundles that open
   and close as owners, plus Lua script commands
-  from `/mnt/system/commands` (`echo`, `info`, `net`, and the file commands
+  from `/mnt/system/commands` (`echo`, `info`, `net`, `clock`, and the file commands
   `ls`, `cat`, `write`, `mkdir`, `rm`, `df`, `pwd`) that reach the kernel
   through the `venture` table, and input split into a command and arguments
   with quoting. A failing command reports its error and
@@ -285,7 +286,9 @@ flowchart TD
         Fs["filesystem<br/>Bootstrap.BootIntoRam"]
         SysFiles["system files<br/>Bootstrap.InstallSystemFiles"]
         UserFiles["user files<br/>Bootstrap.InstallUserFiles"]
+        Look["appearance<br/>Bootstrap.LoadAppearance"]
         Timer["time manager<br/>Bootstrap.CheckTimeManager"]
+        Clock["clock<br/>Bootstrap.LoadClock"]
         Net["network<br/>Bootstrap.ConnectToNetwork"]
         ShellStep["shell<br/>VentureKernel.CreateShell"]
         Banner["&lt;version&gt; booted successfully!"]
@@ -293,8 +296,10 @@ flowchart TD
         Version --> Fs
         Fs -- ok --> SysFiles
         SysFiles -- "ok, or failure reported" --> UserFiles
-        UserFiles -- "ok, or failure reported" --> Timer
-        Timer -- ok --> Net
+        UserFiles -- "ok, or failure reported" --> Look
+        Look -- "ok, or failure reported" --> Timer
+        Timer -- ok --> Clock
+        Clock -- "ok, or failure reported" --> Net
         Net -- "ok, or failure reported" --> ShellStep
         ShellStep -- ok --> Banner
         Banner --> Init
@@ -313,7 +318,7 @@ flowchart TD
 ```
 
 The filesystem, time manager, and shell steps are critical
-(`RunCriticalStep`); the system files, user files, appearance, network, and init script steps are
+(`RunCriticalStep`); the system files, user files, appearance, clock, network, and init script steps are
 optional (`RunOptionalStep`). `init.lua` prints through `KernelLogOutput`, so
 its output reaches serial too, and it can use the `venture` table. Ctrl+C or
 Esc stops it, and so does a 10-second limit, so a script that never finishes
@@ -325,6 +330,7 @@ can't keep the shell from starting, even in a headless boot.
 | System files | optional | Every file under `rootfs/system/` is written to `/mnt/system` | An invalid path or I/O error is reported and boot continues; the built-in C# commands still work |
 | Appearance | optional | `/mnt/user/settings/appearance.xml` is read and its look used, or there's no file and the standard look stays; it runs after the user files, which ship the default | A file that can't be read is reported with why, and the standard look stays |
 | Time manager | critical | Cosmos reports `TimerManager.IsInitialized` | Reports it, then panics |
+| Clock | optional | `/mnt/user/settings/time.xml` is read and its offset used, or there's no file and the clock stays on UTC; it logs the time, or that the hardware clock isn't set. It runs after the time manager, which Cosmos's clock needs | A file that can't be read is reported with why, and the offset stays |
 | Shell | critical | Every command registers | Registration only fails on a programming error, such as two commands with one name; it panics |
 | Network | optional | Always returns; records the MAC and DHCP address when it can | No NIC, a DHCP timeout, or no address is reported; an exception is reported and boot continues |
 | Init script | optional | `/mnt/system/init.lua` runs to the end, after the banner so the screen clear doesn't hide its output | A missing script or a Lua error (with its traceback) is reported, and the shell starts anyway |
@@ -566,8 +572,8 @@ if not options then return end
 ```
 
 It reads `--name value`, `--name=value`, `-s value`, combined short flags
-(`-lq`), and `--` before words that start with a dash; negative numbers count
-as arguments. Option types are `flag`, `string`, and `number`. A user's
+(`-lq`), and `--` before words that start with a dash; a dash then a digit
+(a negative number, or an offset such as `-05:00`) counts as an argument. Option types are `flag`, `string`, and `number`. A user's
 mistake prints the problem and the usage line and returns `nil`; a mistake in
 the declaration is a Lua error, since it's the command's bug. It's opt-in, so
 the shell's contract with commands doesn't change: they still get their words
@@ -586,6 +592,8 @@ scripts do the formatting:
 | `venture.memory()` | `system` | `{ free, total }` in bytes, or `nil` |
 | `venture.appearance()` | `system` | The desktop's look, `{ mode, accent }`: `"light"` or `"dark"`, and the accent as `#RRGGBB` |
 | `venture.setAppearance(mode, accent)` | `system` | Switches to `"light"` or `"dark"`, with an optional `#RRGGBB` accent (the current one otherwise), and saves it; `true` (and why it wasn't saved, if it wasn't), or `nil` and why |
+| `venture.time()` | `system` | The clock, `{ set, offset, zone }` (such as `"-05:00"` and `"UTC-05:00"`), and when the hardware clock is set, also `text` (`"Tue 3:45 PM"`), `year`, `month`, `day`, `hour`, `minute`, `second`, `weekday`, and `utc`; `nil` without a clock |
+| `venture.setUtcOffset(offset)` | `system` | Sets the offset, written `-05:00`, `+5:30`, `-5`, or `UTC`, in quarter hours from -12:00 to +14:00, and saves it; returns as `setAppearance` does |
 | `venture.command{...}` | `shell` | Registers a command for as long as its owner lasts; see **Owners** below |
 | `venture.shell(line)` | `shell` | Runs a line as if typed at the shell; in `init.lua` and at the `lua` prompt |
 | `venture.files.*` | `files` | Lists, reads, writes, and changes files; see **Files** below |
@@ -767,6 +775,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   highlighted text color, its light parts left clear
   (`DesktopImage.Silhouette`), so it reads as a symbol on the accent.
   Without it, the title is the name.
+- **The clock** (`Venture.OS.Time.WallClock`) is the hardware clock, read
+  through Cosmos's `DateTime.UtcNow` (CMOS on x64, PL031 on ARM64), moved
+  by an offset from UTC the user sets in Settings, with the `clock` command,
+  or `venture.setUtcOffset`, saved to `/mnt/user/settings/time.xml`
+  (`<Time version="1" utcOffset="-05:00"/>`, read like `appearance.xml`).
+  There's no time zone database, so no daylight saving: the offset is
+  changed by hand. A hardware clock before 2000, as an unset one reads, is
+  taken as not set. The menu bar shows the time on its right as Tiger did
+  (`Tue 3:45 PM`, a status item, `MenuBar.Status`); the session checks the
+  minute each frame, allocating nothing, and redraws only when it changes.
 - **The menu bar's glass,** after Tiger: its gradient, then
   `MenuBarGloss` over the top half and `MenuBarSheen` along the top row,
   both translucent white from the palette, fainter in dark.
@@ -1144,6 +1162,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
 | 2026-11-17 | minor | Menu bar (§9): VentureOS's icon in place of the VentureOS menu's name, a silhouette while open, and in About VentureOS; icons' smoothed edges unmixed from the key. |
 | 2026-11-17 | minor | Pictures (§9): `DesktopImage`, `IPainter.DrawImage`, and the kernel's `PngLoader`; apps' icons in the dock and About (`DesktopIcon`: full backgrounds rounded to a tile, `#00FF01` clear for shaped icons), a `<Visual>`'s supplied image, and the Earthset wallpaper over the sky. |
 | 2026-11-17 | minor | Platform: Cosmos 3.0.97, from 3.0.94. |

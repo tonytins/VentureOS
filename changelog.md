@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.201
+
+- The menu bar shows the time on its right, as Tiger did: `Tue 3:45 PM`.
+- Set how far your clock is from UTC in Settings ▸ Clock, or with the new `clock` command (`clock -05:00`); the choice is saved. There's no daylight saving, so change it when the clocks change.
+- Commands take values that start with a dash and a digit, such as `-05:00`, as arguments rather than options.
+- Scripts: `venture.time()` and `venture.setUtcOffset(offset)`, with `system` in `-- Needs:`.
+
 ## 0.5.200
 
 - The VentureOS menu shows VentureOS's icon in place of its name, as Tiger showed the Apple, and takes less room. Open, it turns white.

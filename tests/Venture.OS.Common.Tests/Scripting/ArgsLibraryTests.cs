@@ -108,6 +108,15 @@ public sealed class ArgsLibraryTests
         Assert.Contains("times=-2", output.Lines);
     }
 
+    [Fact]
+    public void TakesWordsStartingWithADashAndADigitAsArguments()
+    {
+        // An offset from UTC isn't a number, but options start with a letter, so it can't be one.
+        Show("'-05:00'");
+
+        Assert.Contains("name=-05:00", output.Lines);
+    }
+
     [Theory]
     [InlineData("", "greet: missing <name>")]
     [InlineData("'Tony', '--shout'", "greet: unknown option --shout")]
