@@ -8,7 +8,10 @@ namespace Venture.OS.Desktop;
 /// <param name="IsOpen">Whether the app is open, which puts a dot under its icon.</param>
 /// <param name="IsUser">Whether it's one of the user's apps, which sit after the system's, past a divider.</param>
 /// <param name="Window">The minimized window this tile restores, after the apps, past another divider.</param>
-public sealed record DockItem(string Name, string Target, bool IsOpen, bool IsUser = false, DesktopWindow? Window = null)
+/// <param name="Icon">The app's icon, at <see cref="Dock.IconSize"/>, or <see langword="null"/> for a tile with its
+/// initial.</param>
+public sealed record DockItem(
+    string Name, string Target, bool IsOpen, bool IsUser = false, DesktopWindow? Window = null, DesktopImage? Icon = null)
 {
     /// <summary>Which group it's in, left to right: the system's apps, the user's, then minimized windows.</summary>
     public int Group => Window is not null ? 2 : IsUser ? 1 : 0;
@@ -22,8 +25,8 @@ public sealed record DockItem(string Name, string Target, bool IsOpen, bool IsUs
 /// <para>Clicking an icon reports its item, so the desktop can open the app; a press that leaves the icon before the
 /// button comes up does nothing. The icon under the pointer shows the app's name above it, and an open app has a dot
 /// below.</para>
-/// <para>Apps have no icon images yet, since the desktop doesn't draw images, so each icon is a colored tile with
-/// the app's initial. The color comes from the name, so an app keeps its color.</para>
+/// <para>An app shows the icon its <c>Info.xml</c> names. One without, or whose icon couldn't be read, is a colored
+/// tile with its initial, its color from its name, so an app keeps its color.</para>
 /// </remarks>
 public sealed class Dock(int screenWidth, int screenHeight)
 {
@@ -159,6 +162,13 @@ public sealed class Dock(int screenWidth, int screenHeight)
         var item = items[index];
         var icon = IconBounds(index);
         var (x, y) = ((int)icon.X, (int)icon.Y);
+        if (item.Icon is { } image)
+        {
+            painter.DrawImage(image, x, y);
+            DrawPressedAndOpen(painter, index, item, x, y);
+            return;
+        }
+
         // A minimized window is a pale tile, so it reads as a window rather than an app.
         var color = item.Window is not null ? DesktopTheme.TitleBarBottom : ColorFor(item.Name);
         var light = DesktopTheme.Blend(color, new UIColor(255, 255, 255), 0.45f);
@@ -177,6 +187,11 @@ public sealed class Dock(int screenWidth, int screenHeight)
         if (item.Window is not null)
             DesktopTheme.Outline(painter, x + 4, y + 4, IconSize - 8, IconSize - 8, DesktopTheme.Border);
 
+        DrawPressedAndOpen(painter, index, item, x, y);
+    }
+
+    private void DrawPressedAndOpen(IPainter painter, int index, DockItem item, int x, int y)
+    {
         if (index == pressed && index == hovered)
             DesktopTheme.FillRoundedGradient(painter, x, y, IconSize, IconSize, 10, DesktopTheme.IconPressed, DesktopTheme.IconPressed);
 

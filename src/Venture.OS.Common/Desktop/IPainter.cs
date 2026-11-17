@@ -28,6 +28,12 @@ public interface IPainter
     void DrawPixels(int[] pixels, int x, int y, int width, int height);
 
     /// <summary>
+    /// Draws a picture with its corner at (<paramref name="x"/>, <paramref name="y"/>), at its own size, blending
+    /// it over what's there by each pixel's opacity, so an icon's rounded corners show what's behind them.
+    /// </summary>
+    void DrawImage(DesktopImage image, int x, int y);
+
+    /// <summary>
     /// Fills a rectangle with a color, blending it over what's there when its alpha is below 255, as for shadows.
     /// </summary>
     void FillRectangle(int x, int y, int width, int height, UIColor color);

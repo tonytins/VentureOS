@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-17 · **Latest release:** 0.4, Pere Marquette · **Next:** 0.5, being planned
+> **Last updated:** 2026-11-17 · **Latest release:** 0.4, Pere Marquette · **Next:** 0.5, Cassiopeia, in development
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -42,7 +42,7 @@ stage to the next, and add a line to the revision history.
 |---|---|---|---|
 | 0.3 | (the desktop) | released 2026-11-11, `v0.3.18`; [notes](./releases/0.3.md) | The desktop, its apps, Settings, and the look |
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
-| 0.5 | Cassiopeia | considered | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
+| 0.5 | Cassiopeia | in development | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 
 ## 0.4, Pere Marquette
 
@@ -96,11 +96,11 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 
 **0.5.1xx, images**
 
-- [ ] Draw PNG images: app icons in the dock and About, and wallpapers.
+- [x] Draw PNG images: app icons in the dock and About, and wallpapers.
 - [ ] Icons exported from AniCraft as PNG at the sizes they're drawn at;
   symbolic icons (toolbar and sidebar) recolored to the text color, so they
   follow light and dark.
-- [ ] The Earthset wallpaper, as a PNG, pre-scaled to the screen.
+- [x] The Earthset wallpaper, as a PNG, pre-scaled to the screen.
 
 **0.5.2xx, the menu bar**
 
@@ -193,6 +193,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.5, Cassiopeia, is in development. 0.5.1xx draws PNG pictures: apps' icons in the dock and About, and the Earthset wallpaper. Symbolic icons wait for toolbar and sidebar icons. |
 | 2026-11-17 | minor | Roundhouse, VentureOS's IDE, is planned after 0.5: a desktop version on Avalonia first, in this repository, with VentureOS's own drawing and a built-in simulator; the native version after it. |
 | 2026-11-17 | minor | 0.5 is Cassiopeia, the first Japanese sleeper train: the desktop's look, in five bands, from my notes' desktop goals. |
 | 2026-11-17 | minor | 0.4, Pere Marquette, is released as `v0.4.500`. 0.5 is next, being planned. |

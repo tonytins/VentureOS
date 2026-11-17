@@ -66,13 +66,19 @@ public sealed class UIListState
 /// <para>A document's <c>&lt;Sidebar&gt;</c> is a selectable list the view keeps and draws to the left of its corner,
 /// <see cref="SidebarWidth"/> wide, so it reads, fills, and reports like a <c>&lt;List&gt;</c> of its name; the
 /// window frame draws the shade behind it.</para>
-/// <para>Images aren't drawn yet: like Hudini when a host can't supply one, a control or visual with an image shows
-/// a red outline, at 24 pixels when it leaves out its size, and the image is listed in
-/// <see cref="MissingImages"/>.</para>
+/// <para>A view doesn't read image files: its owner supplies each image with <see cref="SetImage"/>, and a
+/// <c>&lt;Visual&gt;</c> draws it, scaled to the visual's frame. Like Hudini when a host can't supply one, a visual
+/// whose image is missing shows a red outline, at 24 pixels when it leaves out its size, and the image is listed
+/// in <see cref="MissingImages"/>. Buttons' images aren't drawn yet, so a button with one is always outlined.</para>
 /// </remarks>
 public sealed class UIView
 {
     private const int FallbackImageSize = 24;
+
+    // Images supplied by name, those not yet supplied, and each visual's image at the size it was last drawn.
+    private readonly Dictionary<string, DesktopImage> images = [];
+    private readonly List<string> missingImages;
+    private readonly Dictionary<string, DesktopImage> scaledImages = [];
     private const int Inset = 4;
     private const string Ellipsis = "…";
 
@@ -181,9 +187,8 @@ public sealed class UIView
             }
         }
 
-        List<string> images = [.. script.Images.Keys];
-        images.Sort(StringComparer.Ordinal);
-        MissingImages = images;
+        missingImages = [.. script.Images.Keys];
+        missingImages.Sort(StringComparer.Ordinal);
     }
 
     /// <summary>
@@ -213,8 +218,44 @@ public sealed class UIView
     /// <summary>The document this view shows.</summary>
     public UIScript Script => script;
 
-    /// <summary>Image resources that couldn't be drawn, sorted. Every image, until the desktop draws them.</summary>
-    public IReadOnlyList<string> MissingImages { get; }
+    /// <summary>Image resources nothing has been supplied for, sorted.</summary>
+    public IReadOnlyList<string> MissingImages => missingImages;
+
+    /// <summary>
+    /// Supplies the picture for one of the document's <c>&lt;Image&gt;</c> resources, or takes it away with
+    /// <see langword="null"/>, which outlines it again.
+    /// </summary>
+    /// <returns>Whether the document has an image of that name.</returns>
+    public bool SetImage(string name, DesktopImage? image)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (!script.Images.ContainsKey(name))
+            return false;
+
+        if (image is null)
+        {
+            images.Remove(name);
+            if (!missingImages.Contains(name))
+            {
+                missingImages.Add(name);
+                missingImages.Sort(StringComparer.Ordinal);
+            }
+        }
+        else
+        {
+            images[name] = image;
+            missingImages.Remove(name);
+        }
+
+        // Visuals showing it are scaled again on the next draw.
+        foreach (var visual in script.Visuals)
+        {
+            if (visual.Image == name)
+                scaledImages.Remove(visual.Name);
+        }
+
+        return true;
+    }
 
     /// <summary>String resources there was no text for, which show their table and index instead.</summary>
     public IReadOnlyCollection<string> MissingStrings => missingStrings;
@@ -539,6 +580,24 @@ public sealed class UIView
         return events.Count == 0 ? [] : [.. events];
     }
 
+    /// <summary>
+    /// A visual's image at the size it's drawn, scaled once and kept, since scaling is slow; <see langword="null"/>
+    /// when it has none or the frame is empty.
+    /// </summary>
+    private DesktopImage? ScaledImage(UIVisual visual, int width, int height)
+    {
+        if (!images.TryGetValue(visual.Image, out var image) || width <= 0 || height <= 0
+            || width > DesktopImage.MaxSide || height > DesktopImage.MaxSide)
+            return null;
+
+        if (scaledImages.TryGetValue(visual.Name, out var scaled) && scaled.Width == width && scaled.Height == height)
+            return scaled;
+
+        scaled = image.Scaled(width, height);
+        scaledImages[visual.Name] = scaled;
+        return scaled;
+    }
+
     /// <summary>Draws the visuals, then the controls in document order, with the view's corner at the origin.</summary>
     public void Draw(IPainter painter, int originX, int originY)
     {
@@ -551,7 +610,11 @@ public sealed class UIView
                 continue;
 
             var bounds = Offset(Place(visual.Frame, hasImage: true), originX, originY);
-            DesktopTheme.Outline(painter, (int)bounds.X, (int)bounds.Y, (int)bounds.Width, (int)bounds.Height, DesktopTheme.MissingImage);
+            var (x, y, width, height) = ((int)bounds.X, (int)bounds.Y, (int)bounds.Width, (int)bounds.Height);
+            if (ScaledImage(visual, width, height) is { } image)
+                painter.DrawImage(image, x, y);
+            else
+                DesktopTheme.Outline(painter, x, y, width, height, DesktopTheme.MissingImage);
         }
 
         foreach (var control in script.Controls)
@@ -1532,6 +1595,8 @@ public sealed class UIView
         public int Height => inner.Height;
 
         public void DrawPixels(int[] pixels, int x, int y, int width, int height) => inner.DrawPixels(pixels, x, y, width, height);
+
+        public void DrawImage(DesktopImage image, int x, int y) => inner.DrawImage(image, x, y);
 
         public void FillRectangle(int x, int y, int width, int height, UIColor color) => inner.FillRectangle(x, y, width, height, color);
 

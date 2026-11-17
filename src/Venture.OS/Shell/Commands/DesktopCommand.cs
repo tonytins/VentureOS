@@ -78,9 +78,10 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
         try
         {
             var opening = Stopwatch.GetTimestamp();
-            session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, appOutput, windows)
+            session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, appOutput, windows, PngLoader.Load)
             {
                 AboutDocument = LoadAbout,
+                Wallpaper = Bootstrap.WallpaperPath,
                 SystemVersion = $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})",
                 FallbackApp = FilesApp,
             };

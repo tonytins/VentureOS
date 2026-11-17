@@ -23,7 +23,7 @@ public sealed class StandardMenusTests : IDisposable
 
     public StandardMenusTests()
     {
-        App("Writer", """version="1.0" description="Writes things down." """, """
+        App("Writer", """version="1.0" description="Writes things down." icon="Contents/Resources/AppIcon.png" """, """
             <Menu name="fileMenu" title="File" hotkey="F"/>
             <MenuItem menu="fileMenu" name="saveItem" title="Save" shortcut="Ctrl+S"/>
             <Menu name="tools" title="Tools" hotkey="T"/>
@@ -42,7 +42,7 @@ public sealed class StandardMenusTests : IDisposable
             Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(),
             windows: new AppWindows(windows, held));
         var about = Path.Combine(AppContext.BaseDirectory, "system", "interfaces", "about.uix");
-        session = new DesktopSession(1024, 768, apps, root, held, windows)
+        session = new DesktopSession(1024, 768, apps, root, held, windows, LoadImage)
         {
             AboutDocument = () => UIScript.Load(about),
             SystemVersion = "Version 9.9.9 (Build 1)",
@@ -142,6 +142,15 @@ public sealed class StandardMenusTests : IDisposable
         Assert.Equal("Version 1.0", about.View.Text("version"));
         Assert.Equal("Writes things down.", about.View.Text("blurb"));
         Assert.False(about.View.IsHidden("blurb"));
+        Assert.False(about.View.IsHidden(DesktopSession.AboutIcon));
+        Assert.Empty(about.View.MissingImages);
+
+        // The icon is scaled to the visual and drawn.
+        RecordingPainter painter = new(1024, 768);
+        session.Draw(painter);
+        var (icon, iconX, iconY) = Assert.Single(painter.Images, drawn => drawn.Image.Width == 64);
+        Assert.Equal(64, icon.Height);
+        Assert.Equal(unchecked((int)0xFFFF0000), painter.At(iconX + 32, iconY + 32));
 
         // It belongs to the app, so the app's menus stay, and it goes when the app quits.
         Assert.Equal("Writer", session.ActiveApp);
@@ -161,6 +170,7 @@ public sealed class StandardMenusTests : IDisposable
         Assert.Equal("About Plain", about.Title);
         Assert.Equal("", about.View.Text("version"));
         Assert.True(about.View.IsHidden("blurb"));
+        Assert.True(about.View.IsHidden(DesktopSession.AboutIcon));
     }
 
     [Fact]
@@ -172,8 +182,57 @@ public sealed class StandardMenusTests : IDisposable
         var about = windows.Focused!;
         Assert.Equal("About VentureOS", about.Title);
         Assert.Equal("Version 9.9.9 (Build 1)", about.View.Text("version"));
+        Assert.True(about.View.IsHidden(DesktopSession.AboutIcon));
         Assert.False(about.View.IsHidden("blurb"));
         Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
+    }
+
+    [Fact]
+    public void TheDockShowsAnAppsIconAndATileForOneWithout()
+    {
+        var items = session.Dock.Items;
+        var writer = items.Single(item => item.Name == "Writer");
+        Assert.NotNull(writer.Icon);
+        Assert.Equal((Dock.IconSize, Dock.IconSize), (writer.Icon.Width, writer.Icon.Height));
+        Assert.Null(items.Single(item => item.Name == "Plain").Icon);
+
+        RecordingPainter painter = new(1024, 768);
+        session.Draw(painter);
+
+        var bounds = session.Dock.IconBounds(items.ToList().IndexOf(writer));
+        Assert.Contains(painter.Images, drawn => ReferenceEquals(drawn.Image, writer.Icon) && drawn.X == (int)bounds.X && drawn.Y == (int)bounds.Y);
+        Assert.DoesNotContain(painter.Texts, text => text.Text == "W");
+        Assert.Contains(painter.Texts, text => text.Text == "P");
+    }
+
+    [Fact]
+    public void AWallpaperCoversTheScreenAndAMissingOneShowsTheSky()
+    {
+        var wallpaper = Path.Combine(root, "wallpaper.png");
+        File.WriteAllText(wallpaper, "a red square");
+        DesktopSession withWallpaper = new(1024, 768, loadImage: LoadImage) { Wallpaper = wallpaper };
+        DesktopSession withoutOne = new(1024, 768, loadImage: LoadImage) { Wallpaper = Path.Combine(root, "missing.png") };
+        RecordingPainter painted = new(1024, 768);
+        RecordingPainter sky = new(1024, 768);
+
+        withWallpaper.Draw(painted);
+        withoutOne.Draw(sky);
+
+        Assert.Equal(unchecked((int)0xFFFF0000), painted.At(10, 300));
+        Assert.Equal(unchecked((int)0xFFFF0000), painted.At(1013, 500));
+        Assert.Equal(DesktopBackground.Render(1024, 768)[(300 * 1024) + 10], sky.At(10, 300));
+    }
+
+    [Fact]
+    public void AWallpapersClearPartsShowTheSky()
+    {
+        DesktopSession session = new(100, 100, loadImage: _ => new DesktopImage(1, 1, [0])) { Wallpaper = "/clear.png" };
+        RecordingPainter painter = new(100, 100);
+
+        session.Draw(painter);
+
+        // Below the menu bar and away from the pointer, with no dock or windows over it.
+        Assert.Equal(DesktopBackground.Render(100, 100)[(80 * 100) + 10], painter.At(10, 80));
     }
 
     private void App(string name, string info, string menus)
@@ -191,7 +250,13 @@ public sealed class StandardMenusTests : IDisposable
             </UIScript>
             """);
         File.WriteAllText(Path.Combine(contents, "Lua", "main.lua"), "venture.ui.open(\"main.uix\")\n");
+        if (info.Contains("icon="))
+            File.WriteAllText(Path.Combine(contents, "Resources", "AppIcon.png"), "a red square");
     }
+
+    /// <summary>Stands in for the kernel's PNG decoder: any file that exists is a 2x2 red square.</summary>
+    private static DesktopImage? LoadImage(string path) =>
+        File.Exists(path) ? new DesktopImage(2, 2, [unchecked((int)0xFFFF0000), unchecked((int)0xFFFF0000), unchecked((int)0xFFFF0000), unchecked((int)0xFFFF0000)]) : null;
 
     private void Open(string app)
     {

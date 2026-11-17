@@ -1,8 +1,8 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Cosmos 3.0.97) · **Target:** Cosmos gen3 3.0.97, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-17 · **Change:** minor (pictures) · **Target:** Cosmos gen3 3.0.97, x64 (ARM64 builds)
 
-## Current state (2026-11-11)
+## Current state (2026-11-17)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (901 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (920 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -42,7 +42,8 @@ the code wins and this page is out of date.
   network after boot.
 - **Desktop:** `desktop` opens a graphical desktop with a menu bar, a dock
   that opens the system's apps, and movable windows that show `.uix`
-  interfaces. Files is the desktop's own app, and Quick Look previews files.
+  interfaces, over the Earthset wallpaper, with apps' icons in the dock and
+  About. Files is the desktop's own app, and Quick Look previews files.
   Apps open windows through `venture.ui`; `Notes.app` has one.
 - **Not built yet:** keeping files across reboots,
   and published ISOs, which are ideas without a release. See the
@@ -731,10 +732,29 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
 
 - **Screen.** Limine is asked for 1024x768 in `limine.conf`; without it,
   QEMU's framebuffer is 1280x800. The text console uses the same screen.
-- **Drawing.** The canvas doesn't blend, and the sky's glow is
-  translucent, so `DesktopBackground` works the whole sky out once, as
-  pixels (85 ms at 1024x768 under QEMU), and each frame copies it, then draws
-  on top. `Canvas.Display` shows the finished frame at once.
+- **Drawing.** The canvas doesn't blend, so the background is worked out
+  once, as pixels, on the first frame, and each frame copies it, then draws
+  on top. It's the wallpaper (`DesktopSession.Wallpaper`,
+  `/mnt/system/wallpapers/earthset.png`), scaled to cover the screen and cut
+  from the middle, or, without one, the sky, which `DesktopBackground` works
+  out again when the palette changes (85 ms at 1024x768 under QEMU). A
+  wallpaper's clear parts show the sky. `Canvas.Display` shows the finished
+  frame at once.
+- **Pictures.** A `DesktopImage` holds a picture's 0xAARRGGBB pixels and
+  scales it by averaging (weighted by opacity, so clear pixels don't bleed),
+  all in `Venture.OS.Common`. Decoding is the kernel's: the session is given
+  a loader, `PngLoader`, which checks the size in the PNG header (up to 4096
+  a side and 8 megapixels) before Cosmos's `Graphics.Png` decodes it, and
+  says on serial why a picture couldn't be read. The session keeps each
+  picture at the size it's drawn, read and scaled once, including those that
+  failed. The Earthset wallpaper ships pre-scaled to 1024x768, so it isn't
+  scaled at boot. `IPainter.DrawImage` blends by opacity; `CanvasPainter`
+  copies an opaque picture and blends any other into the canvas's buffer.
+  A `.uix` `<Visual>` draws an image its owner supplies with
+  `UIView.SetImage`, scaled to its frame; the About window's `icon` visual
+  shows the app's icon, and is hidden for an app without one and for
+  VentureOS, which has no icon yet. Apps can't supply images to their own
+  documents yet, and buttons' images aren't drawn.
 - **Translucency.** The canvas's own drawing doesn't blend, so
   `CanvasPainter` blends a translucent fill (window shadows, the fade over
   inactive windows) into the canvas's buffer itself.
@@ -852,7 +872,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   out when drawn, so the pointer hits what was last on screen.
 - **Dock.** `Dock` shows the system's apps, then the user's after a divider
   (`AppManager.Available`), as
-  colored tiles with their initial, since images aren't drawn yet, with a
+  the icon each app's `Info.xml` names, scaled to 48 pixels, or a colored
+  tile with its initial for an app without one, with a
   dot under open ones and the name over the one under the pointer. A click
   opens the app from the current folder, or brings an open one forward. A
   user app opens by its path, so it can't be mistaken for a system app with
@@ -1102,6 +1123,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Pictures (§9): `DesktopImage`, `IPainter.DrawImage`, and the kernel's `PngLoader`; apps' icons in the dock and About, a `<Visual>`'s supplied image, and the Earthset wallpaper over the sky. |
 | 2026-11-17 | minor | Platform: Cosmos 3.0.97, from 3.0.94. |
 | 2026-11-12 | minor | Undo and Redo (§9): `TextChange` and `TextHistory` on every `TextCursor`, with typing grouped into steps and 100 steps a control; Edit's Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z). |
 | 2026-11-12 | minor | Docs: the roadmap is planned in releases now, and the route-milestone roadmap moved to `docs/history`; "Blue Water" and the alpha gate are no longer named here. |

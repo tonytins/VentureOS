@@ -26,6 +26,9 @@ public sealed class DesktopSession
     /// <summary>The VentureOS menu's items, by name.</summary>
     public const string AboutItem = "about";
 
+    /// <summary>The About document's visual, and its image, that show the app's icon.</summary>
+    public const string AboutIcon = "icon";
+
     /// <summary>The item that closes the desktop.</summary>
     public const string ReturnToShellItem = "returnToShell";
 
@@ -66,7 +69,16 @@ public sealed class DesktopSession
         ], 0),
         MenuGroup.System);
 
-    private int[] background;
+    // The sky or the wallpaper as the screen shows it, worked out on the first draw rather than when the desktop
+    // opens, since the wallpaper is only known once the properties are set.
+    private int[]? background;
+
+    // Reads a picture file, or gives null having said why; null for a desktop without pictures.
+    private readonly Func<string, DesktopImage?>? loadImage;
+
+    // Pictures read so far, by path and the size they're drawn at, including those that couldn't be read, so a
+    // missing icon isn't looked for on every refresh of the dock.
+    private readonly Dictionary<(string Path, int Width, int Height), DesktopImage?> pictures = [];
 
     // The hover text last drawn, so its showing or going redraws the desktop.
     private string? drawnTooltip;
@@ -128,13 +140,16 @@ public sealed class DesktopSession
     /// <param name="workingDirectory">Where apps opened from the dock run from.</param>
     /// <param name="appOutput">Where apps opened from the dock write; what they write shows in a window.</param>
     /// <param name="windows">The system's windows, which last between visits, or <see langword="null"/> for new ones.</param>
+    /// <param name="loadImage">Reads a picture file by its full path, such as an app's icon, or gives
+    /// <see langword="null"/> when it can't, having said why. Without it, apps show tiles and the desktop the sky.</param>
     public DesktopSession(
         int width,
         int height,
         AppManager? apps = null,
         string workingDirectory = "/",
         HeldOutput? appOutput = null,
-        WindowManager? windows = null)
+        WindowManager? windows = null,
+        Func<string, DesktopImage?>? loadImage = null)
     {
         ArgumentNullException.ThrowIfNull(workingDirectory);
         ownEnabled = IsOwnEnabled;
@@ -143,8 +158,8 @@ public sealed class DesktopSession
         this.apps = apps;
         this.workingDirectory = workingDirectory;
         this.appOutput = appOutput ?? new HeldOutput();
+        this.loadImage = loadImage;
         backgroundPalette = DesktopTheme.Palette;
-        background = DesktopBackground.Render(width, height, backgroundPalette);
         last = new DesktopInput(width / 2, height / 2, false);
         Windows = windows ?? new WindowManager(width, height);
         Windows.SetScreenSize(width, height);
@@ -181,6 +196,12 @@ public sealed class DesktopSession
     /// until something is copied. It lasts while the desktop is open.
     /// </summary>
     public string? Clipboard { get; private set; }
+
+    /// <summary>
+    /// The full path of the picture behind the windows, which is scaled to cover the screen; <see langword="null"/>,
+    /// or a picture that can't be read, shows the sky.
+    /// </summary>
+    public string? Wallpaper { get; init; }
 
     /// <summary>VentureOS's version as About VentureOS shows it, such as <c>Version 0.4.101 (Build 1234)</c>.</summary>
     public string? SystemVersion { get; init; }
@@ -226,6 +247,40 @@ public sealed class DesktopSession
         Windows.Open(window);
     }
 
+    /// <summary>
+    /// The wallpaper, or the sky without one. A wallpaper with clear parts shows the sky through them, since the
+    /// background is copied to the screen without blending.
+    /// </summary>
+    private int[] RenderBackground()
+    {
+        var wallpaper = Picture(Wallpaper, Width, Height, cover: true);
+        if (wallpaper is { IsOpaque: true })
+            return wallpaper.Pixels;
+
+        var sky = DesktopBackground.Render(Width, Height, backgroundPalette);
+        wallpaper?.DrawOnto(sky, Width, 0, 0);
+        return sky;
+    }
+
+    /// <summary>
+    /// A picture at the size it's drawn, read and scaled the first time it's asked for and kept after, or
+    /// <see langword="null"/> when there's no path or it couldn't be read. A wallpaper covers the size, cut to fit;
+    /// anything else is scaled to it.
+    /// </summary>
+    private DesktopImage? Picture(string? path, int width, int height, bool cover = false)
+    {
+        if (path is null || loadImage is null)
+            return null;
+        if (pictures.TryGetValue((path, width, height), out var known))
+            return known;
+
+        DesktopImage? picture = null;
+        if (loadImage(path) is { } loaded)
+            picture = cover ? loaded.Covering(width, height) : loaded.Scaled(width, height);
+        pictures[(path, width, height)] = picture;
+        return picture;
+    }
+
     private DesktopWindow? MakeAbout(string? app)
     {
         if (AboutDocument?.Invoke() is not { } script)
@@ -235,6 +290,7 @@ public sealed class DesktopSession
         if (app is null)
         {
             view.SetText("version", SystemVersion ?? "");
+            ShowAboutIcon(view, null);
         }
         else
         {
@@ -246,6 +302,7 @@ public sealed class DesktopSession
             }
 
             view.SetText("name", app);
+            ShowAboutIcon(view, bundle?.Icon);
             view.SetText("version", bundle?.Version is { } version ? $"Version {version}" : "");
             if (bundle?.Description is { } description)
                 view.SetText("blurb", description);
@@ -262,6 +319,20 @@ public sealed class DesktopSession
                     about.RequestClose();
             },
         };
+    }
+
+    /// <summary>
+    /// Puts an app's icon in About's <c>icon</c> visual, at the visual's size, or hides the visual when the app has
+    /// none. VentureOS has no icon of its own yet, so its About hides it too.
+    /// </summary>
+    private void ShowAboutIcon(UIView view, string? iconPath)
+    {
+        if (view.Bounds(AboutIcon) is not { } bounds)
+            return;
+
+        var icon = Picture(iconPath, (int)bounds.Width, (int)bounds.Height);
+        view.SetImage(AboutIcon, icon);
+        view.SetHidden(icon is null, AboutIcon);
     }
 
     /// <summary>
@@ -370,11 +441,11 @@ public sealed class DesktopSession
     {
         ArgumentNullException.ThrowIfNull(painter);
 
-        // A new palette needs a new sky; working it out allocates, so only then.
-        if (!ReferenceEquals(DesktopTheme.Palette, backgroundPalette))
+        // Working the background out allocates, so only on the first draw and when the palette changes.
+        if (background is null || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette))
         {
             backgroundPalette = DesktopTheme.Palette;
-            background = DesktopBackground.Render(Width, Height, backgroundPalette);
+            background = RenderBackground();
         }
 
         painter.DrawPixels(background, 0, 0, Width, Height);
@@ -672,7 +743,9 @@ public sealed class DesktopSession
             var target = listing.IsUser ? listing.Path
                 : listing.Folder.EndsWith(extension, StringComparison.OrdinalIgnoreCase) ? listing.Folder[..^extension.Length]
                 : listing.Folder;
-            DockItem item = new(bundle.Name, target, apps!.IsOpen(bundle.Identifier), listing.IsUser);
+            DockItem item = new(
+                bundle.Name, target, apps!.IsOpen(bundle.Identifier), listing.IsUser,
+                Icon: Picture(bundle.Icon, Dock.IconSize, Dock.IconSize));
             if (bundle.Name == FallbackApp)
                 items.Insert(0, item);
             else

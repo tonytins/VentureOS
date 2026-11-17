@@ -30,7 +30,10 @@ public sealed class SystemInterfacesTests
 
         Assert.Equal("Version 0.3.0 (Build 1)", view.Text("version"));
         Assert.Equal(UIControlType.Button, view.Script.Control("ok")?.Type);
-        Assert.Empty(view.MissingImages);
         Assert.Empty(view.MissingStrings);
+
+        // The desktop supplies the app's icon itself.
+        Assert.Equal([DesktopSession.AboutIcon], view.MissingImages);
+        Assert.NotNull(view.Bounds(DesktopSession.AboutIcon));
     }
 }

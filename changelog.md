@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.100
+
+- The desktop has a wallpaper: Earthset, the Earth setting behind the Moon.
+- Apps show their icons in the dock and in their About window. Files, Terminal, Notes, and TextEdit have icons; other apps keep their colored tile.
+- Apps: `icon` in `Info.xml` names a PNG inside the bundle, drawn at 48 pixels in the dock and 64 in About.
+
 ## 0.4.500
 
 - VentureOS 0.4, Pere Marquette, is released. See [the release notes](docs/releases/0.4.md).

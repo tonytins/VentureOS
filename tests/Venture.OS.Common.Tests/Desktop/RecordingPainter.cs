@@ -28,6 +28,15 @@ internal sealed class RecordingPainter(int width, int height) : IPainter
         }
     }
 
+    public List<(DesktopImage Image, int X, int Y)> Images { get; } = [];
+
+    public void DrawImage(DesktopImage image, int x, int y)
+    {
+        Calls++;
+        Images.Add((image, x, y));
+        image.DrawOnto(Pixels, Width, x, y);
+    }
+
     public void FillRectangle(int x, int y, int width, int height, UIColor color)
     {
         Calls++;
