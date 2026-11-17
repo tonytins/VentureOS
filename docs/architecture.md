@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,085 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,090 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -796,7 +796,11 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   path that climbs out, or a file that can't be read, is reported in the
   app's messages and stays outlined; the About window's `icon` visual
   shows the app's icon, or VentureOS's, and is hidden for an app without
-  one. Buttons' images aren't drawn yet.
+  one. A button with an image shows it scaled to the button (an image
+  with several states, its first), ringed in the accent while checked.
+  `window:setImage(name, path)` supplies one at run time, from beside the
+  document, the app's bundle, or the system's folder
+  (`AppWindows.SystemFolder`), or anywhere with the `files` scope.
 - **Translucency.** The canvas's own drawing doesn't blend, so
   `CanvasPainter` blends a translucent fill (window shadows, the fade over
   inactive windows) into the canvas's buffer itself.
@@ -1217,6 +1221,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Image buttons (§9): buttons draw their images, ringed in the accent when checked, and `window:setImage` supplies one at run time, from where an app may look. |
 | 2026-11-17 | minor | Rounded corners (§9): windows' four corners and shadows rounded to 10 pixels when the look says so, by reading back what's under them (`IPainter.ReadPixels`); Settings switches them. |
 | 2026-11-17 | minor | Look options begin (§9): `DesktopLook` with `auto` and its schedule, corners, and the wallpaper's name, saved in `appearance.xml` and read and set from Lua (`setAppearance` takes a table); `.wallpaper` bundles with `-light` and `-dark` variants, and Earthset in one. Corners, wallpapers, and the schedule aren't used yet. |
 | 2026-11-17 | minor | Settings' panes (§9): Settings gets a sidebar with Appearance and Clock, the offset typed after a "UTC" label; an offset without a sign is ahead of UTC; the contrast test draws stacked controls one at a time. |

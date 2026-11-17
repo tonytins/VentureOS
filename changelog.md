@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.502
+
+- Apps: buttons with an `image` show it, ringed in the accent while checked, and `window:setImage(name, path)` changes a picture while the app runs.
+
 ## 0.5.501
 
 - Windows have rounded corners, all four, and rounded shadows. Settings ▸ Appearance ▸ Window corners switches them to square.
