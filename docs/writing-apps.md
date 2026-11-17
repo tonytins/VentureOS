@@ -257,8 +257,14 @@ new number. `roll` still works in the shell, since both live in the same app.
 - **Images:** declare one with `<Image name="logo" path="images/logo.png"/>`,
   its path beside the `.uix` file, and show it with
   `<Visual name="banner" image="logo" x="10" y="10" width="64" height="64"/>`,
-  scaled to the visual's size. Images are PNG. One that can't be read stays
-  a red outline, and the reason shows in a message window.
+  scaled to the visual's size. A `<Button>` with `image="logo"` shows the
+  picture in place of a label, ringed in the accent while it's checked
+  (`setChecked`), as a picker marks its choice. Images are PNG. One that
+  can't be read stays a red outline, and the reason shows in a message
+  window. `window:setImage("logo", path)` changes a picture while the app
+  runs, from beside the document, the app's bundle, or the system's
+  folder; anywhere else needs the `files` scope. It returns `true`, or
+  `nil` and why.
 - **Styles:** say what a color or size is for, and your app follows the
   desktop's light or dark look and accent: `textColor="secondaryText"`,
   `backgroundColor="inputBackground"`, `fontSize="title"`. A hex color such

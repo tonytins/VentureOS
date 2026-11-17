@@ -393,6 +393,49 @@ public sealed class UiLibraryTests : IDisposable
         apps.CloseApp("Pad", new RecordingOutput());
     }
 
+    [Fact]
+    public void SetImageShowsPicturesFromWhereAnAppMayLook()
+    {
+        var system = Path.Combine(root, "system");
+        Directory.CreateDirectory(system);
+        File.WriteAllText(Path.Combine(system, "sky.png"), "a picture");
+        File.WriteAllText(Path.Combine(root, "private.png"), "a picture");
+        AppWindows withImages = new(windows, events)
+        {
+            SystemFolder = system,
+            LoadImage = path => File.Exists(path) ? new DesktopImage(1, 1, [unchecked((int)0xFF000000)]) : null,
+        };
+        CommandRegistry registry = new();
+        AppManager apps = new(Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: withImages);
+        Write($$"""
+            local window = venture.ui.open("main.uix")
+            print(window:setImage("thumb", "{{system}}/sky.png"))
+            print(window:setImage("thumb", "{{root}}/private.png"))
+            print(window:setImage("thumb", "nowhere.png"))
+            print(window:setImage("thumb", "../Info.xml"))
+            print(pcall(window.setImage, window, "nope", "sky.png"))
+            """);
+        var resources = Path.Combine(root, "apps", "Pad.app", "Contents", "Resources");
+        File.WriteAllText(Path.Combine(resources, "main.uix"), """
+            <UIScript version="1">
+              <Window width="200" height="120"/>
+              <Image name="thumb" path="thumb.png"/>
+              <Button name="pick" x="10" y="10" width="40" height="30" image="thumb"/>
+            </UIScript>
+            """);
+
+        Assert.True(apps.OpenApp("Pad", root, output), string.Join('\n', output.Lines));
+
+        Assert.Equal("true", output.Lines[0]);
+        Assert.Contains("needs the files scope", output.Lines[1]);
+        Assert.Contains("couldn't be read as a picture", output.Lines[2]);
+        Assert.Contains("isn't a path beside the document", output.Lines[3]);
+        Assert.StartsWith("false", output.Lines[4]);
+        Assert.Contains("isn't an <Image>", output.Lines[4]);
+        Assert.Empty(Assert.Single(windows.Windows).View.MissingImages);
+        apps.CloseApp("Pad", new RecordingOutput());
+    }
+
     private static void Send(DesktopWindow window, UIEvent uiEvent) => window.EventHandler!(window, uiEvent);
 
     private void Open(string main)

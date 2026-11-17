@@ -105,6 +105,21 @@ public sealed class DesktopImage
         return ((int)width, (int)height);
     }
 
+    /// <summary>A copy of part of the picture, such as one state of a strip of several.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The part isn't inside the picture.</exception>
+    public DesktopImage Cropped(int x, int y, int width, int height)
+    {
+        if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > Width || y + height > Height)
+            throw new ArgumentOutOfRangeException(nameof(width), $"{width}x{height} at ({x}, {y}) isn't inside a {Width}x{Height} picture.");
+        if (x == 0 && y == 0 && width == Width && height == Height)
+            return this;
+
+        var pixels = new int[width * height];
+        for (var row = 0; row < height; row++)
+            Array.Copy(Pixels, ((y + row) * Width) + x, pixels, row * width, width);
+        return new DesktopImage(width, height, pixels);
+    }
+
     /// <summary>A copy at another size, each new pixel the average of the ones it covers.</summary>
     /// <remarks>
     /// Averaging keeps a shrunken icon's edges smooth, where picking pixels would leave them jagged. Colors are

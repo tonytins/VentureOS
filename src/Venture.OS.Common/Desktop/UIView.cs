@@ -81,7 +81,8 @@ public sealed class UIListState
 /// <para>A view doesn't read image files: its owner supplies each image with <see cref="SetImage"/>, and a
 /// <c>&lt;Visual&gt;</c> draws it, scaled to the visual's frame. Like Hudini when a host can't supply one, a visual
 /// whose image is missing shows a red outline, at 24 pixels when it leaves out its size, and the image is listed
-/// in <see cref="MissingImages"/>. Buttons' images aren't drawn yet, so a button with one is always outlined.</para>
+/// in <see cref="MissingImages"/>. A button with an image shows it the same way, ringed in the accent when it's
+/// checked.</para>
 /// </remarks>
 public sealed class UIView
 {
@@ -279,11 +280,17 @@ public sealed class UIView
             missingImages.Remove(name);
         }
 
-        // Visuals showing it are scaled again on the next draw.
+        // Visuals and buttons showing it are scaled again on the next draw.
         foreach (var visual in script.Visuals)
         {
             if (visual.Image == name)
                 scaledImages.Remove(visual.Name);
+        }
+
+        foreach (var control in script.Controls)
+        {
+            if (control.Image == name)
+                scaledImages.Remove(control.Name);
         }
 
         return true;
@@ -616,17 +623,27 @@ public sealed class UIView
     /// A visual's image at the size it's drawn, scaled once and kept, since scaling is slow; <see langword="null"/>
     /// when it has none or the frame is empty.
     /// </summary>
-    private DesktopImage? ScaledImage(UIVisual visual, int width, int height)
+    private DesktopImage? ScaledImage(UIVisual visual, int width, int height) => ScaledImage(visual.Name, visual.Image, width, height);
+
+    /// <summary>
+    /// A visual's or button's image at the size it's drawn, by the owner's name, scaled once and kept; an image with
+    /// several states shows its first, the leftmost of its equal-width strips.
+    /// </summary>
+    private DesktopImage? ScaledImage(string owner, string imageName, int width, int height)
     {
-        if (!images.TryGetValue(visual.Image, out var image) || width <= 0 || height <= 0
+        if (!images.TryGetValue(imageName, out var image) || width <= 0 || height <= 0
             || width > DesktopImage.MaxSide || height > DesktopImage.MaxSide)
             return null;
 
-        if (scaledImages.TryGetValue(visual.Name, out var scaled) && scaled.Width == width && scaled.Height == height)
+        if (scaledImages.TryGetValue(owner, out var scaled) && scaled.Width == width && scaled.Height == height)
             return scaled;
 
+        var states = script.Images.TryGetValue(imageName, out var resource) ? Math.Max(1, resource.StateCount) : 1;
+        if (states > 1 && image.Width >= states)
+            image = image.Cropped(0, 0, image.Width / states, image.Height);
+
         scaled = image.Scaled(width, height);
-        scaledImages[visual.Name] = scaled;
+        scaledImages[owner] = scaled;
         return scaled;
     }
 
@@ -1232,13 +1249,13 @@ public sealed class UIView
     private void DrawButton(IPainter painter, UIControl control, State state, UIRect bounds)
     {
         var (x, y, width, height) = Ints(bounds);
-        if (control.Image is not null)
+        var place = Place(control.Frame, control.Image is not null);
+        if (control.Image is { } imageName)
         {
-            DesktopTheme.Outline(painter, x, y, width, height, DesktopTheme.MissingImage);
+            DrawImageButton(painter, control, state, place, imageName, x, y, width, height);
             return;
         }
 
-        var place = Place(control.Frame, control.Image is not null);
         var held = state.Selected || (armed == control.Name && place.Contains(pointer.X, pointer.Y));
         var hovered = !held && !state.Disabled && hover is { } at && place.Contains(at.X, at.Y);
         var style = Style(control);
@@ -1260,6 +1277,36 @@ public sealed class UIView
         var size = TextSize(control);
         var text = Fit(painter, state.Text, size, width - (2 * Inset));
         painter.DrawText(text, x + ((width - painter.MeasureText(text, size)) / 2), y + ((height - LineHeight(size)) / 2), color, size);
+    }
+
+    /// <summary>
+    /// A button showing its image, scaled to it: shaded while held, faded when disabled, and ringed in the accent when
+    /// it's checked, as a picker marks its choice; a faint ring shows under the pointer. Without its image, it's
+    /// outlined in red, as Hudini shows a missing one.
+    /// </summary>
+    private void DrawImageButton(IPainter painter, UIControl control, State state, UIRect place, string imageName, int x, int y, int width, int height)
+    {
+        if (ScaledImage(control.Name, imageName, width, height) is not { } image)
+        {
+            DesktopTheme.Outline(painter, x, y, width, height, DesktopTheme.MissingImage);
+            return;
+        }
+
+        painter.DrawImage(image, x, y);
+        var held = armed == control.Name && place.Contains(pointer.X, pointer.Y);
+        var hovered = !held && !state.Disabled && hover is { } at && place.Contains(at.X, at.Y);
+        if (held)
+            painter.FillRectangle(x, y, width, height, DesktopTheme.IconPressed);
+        if (state.Disabled)
+            painter.FillRectangle(x, y, width, height, DesktopTheme.InactiveFade);
+
+        // A two-pixel ring just outside it: the accent when chosen, a faint one under the pointer.
+        if (state.Selected || hovered)
+        {
+            var ring = state.Selected ? DesktopTheme.Accent : DesktopTheme.Border;
+            DesktopTheme.Outline(painter, x - 2, y - 2, width + 4, height + 4, ring);
+            DesktopTheme.Outline(painter, x - 3, y - 3, width + 6, height + 6, ring);
+        }
     }
 
     private void DrawField(IPainter painter, UIControl control, State state, UIRect bounds)

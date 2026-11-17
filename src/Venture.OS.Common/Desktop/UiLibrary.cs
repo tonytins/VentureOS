@@ -40,6 +40,12 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     /// </summary>
     public Func<string, DesktopImage?>? LoadImage { get; init; }
 
+    /// <summary>
+    /// The system's own folder, such as <c>/mnt/system</c>, which any app may show pictures from with
+    /// <c>window:setImage</c>, since nothing there is private; <see langword="null"/> for none.
+    /// </summary>
+    public string? SystemFolder { get; init; }
+
     /// <summary>Whether an app said how to open a new window, which puts New Window in its app menu.</summary>
     public bool HasNewWindow(string app) => newWindowHandlers.ContainsKey(app);
 
@@ -491,7 +497,7 @@ public static class UiLibrary
             host.Output.WriteLine($"{app.Name}: {given}: no text for the string \"{missing}\" in its tables.");
         LoadImages(view, Path.GetDirectoryName(path) ?? "/", host, $"{app.Name}: {given}");
 
-        Handle handle = new(owner, host, view, Path.GetFileName(path));
+        Handle handle = new(owner, host, view, Path.GetFileName(path)) { Folder = Path.GetDirectoryName(path) ?? "/", App = app };
         handle.Window = new DesktopWindow(title, handle.View)
         {
             App = app.Name,
@@ -636,6 +642,7 @@ public static class UiLibrary
             h.Window!.Title = LuaText.Decode(state.L_CheckString(2));
             return 0;
         });
+        Method(lua, "setImage", handle, SetImage);
         Method(lua, "setSubtitle", handle, (state, h) =>
         {
             // nil or an empty string takes the line away, and the bar goes back to its usual height.
@@ -756,6 +763,64 @@ public static class UiLibrary
         return 0;
     }
 
+    /// <summary>
+    /// <c>window:setImage(name, path)</c>: shows a picture for one of the document's <c>&lt;Image&gt;</c>s, from a
+    /// PNG beside the document, in the app's bundle, or in the system's folder, or anywhere with the <c>files</c>
+    /// scope, since a picture shows what a file holds; <c>nil</c> takes it away. Returns <see langword="true"/>, or
+    /// <see langword="nil"/> and why, so a picture that can't be read doesn't stop the app.
+    /// </summary>
+    private static int SetImage(ILuaState lua, Handle handle)
+    {
+        if (lua.Type(2) != LuaType.LUA_TSTRING)
+            return Fail(lua, "window:setImage needs an <Image>'s name, such as window:setImage(\"thumbnail\", \"pictures/beach.png\")");
+
+        var name = LuaText.Decode(lua.ToString(2));
+        if (!handle.View.Script.Images.ContainsKey(name))
+            return Fail(lua, $"window:setImage: \"{name}\" isn't an <Image> in {handle.Document}");
+
+        if (lua.IsNoneOrNil(3))
+        {
+            handle.View.SetImage(name, null);
+            lua.PushBoolean(true);
+            return 1;
+        }
+
+        var given = LuaText.Decode(lua.L_CheckString(3));
+        string path;
+        if (given.StartsWith('/'))
+        {
+            path = given;
+            var allowed = (handle.App is { } app && (ShellPaths.IsWithin(path, app.Path) || app.Needs.HasFlag(ScriptScopes.Files)))
+                || (handle.Host.SystemFolder is { } system && ShellPaths.IsWithin(path, system));
+            if (!allowed)
+                return Refuse(lua, $"{given} isn't in the app or the system's folder; showing it needs the files scope");
+        }
+        else if (SystemDirectory.IsValidPath(given))
+        {
+            path = $"{handle.Folder}/{given}";
+        }
+        else
+        {
+            return Refuse(lua, $"\"{given}\" isn't a path beside the document");
+        }
+
+        if (handle.Host.LoadImage is not { } load)
+            return Refuse(lua, "this desktop can't show pictures");
+        if (load(path) is not { } picture)
+            return Refuse(lua, $"{given} couldn't be read as a picture");
+
+        handle.View.SetImage(name, picture);
+        lua.PushBoolean(true);
+        return 1;
+    }
+
+    private static int Refuse(ILuaState lua, string reason)
+    {
+        lua.PushNil();
+        lua.PushString(LuaText.Encode(reason));
+        return 2;
+    }
+
     private static void Method(ILuaState lua, string name, Handle handle, Func<ILuaState, Handle, int> body)
     {
         lua.PushCSharpFunction(state =>
@@ -839,6 +904,14 @@ public static class UiLibrary
 
         /// <summary>The document's file name, for messages.</summary>
         public string Document { get; }
+
+        /// <summary>The folder the document is in, which relative image paths start from.</summary>
+        public string Folder { get; init; } = "/";
+
+        /// <summary>The app that opened the window.</summary>
+        public Bundle? App { get; init; }
+
+        public AppWindows Host => host;
 
         public HashSet<string> Names { get; } = [];
 
