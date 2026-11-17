@@ -11,7 +11,7 @@ namespace Venture.OS.Desktop;
 /// <param name="Icon">The app's icon, at <see cref="Dock.IconSize"/>, or <see langword="null"/> for a tile with its
 /// initial.</param>
 public sealed record DockItem(
-    string Name, string Target, bool IsOpen, bool IsUser = false, DesktopWindow? Window = null, DesktopImage? Icon = null)
+    string Name, string Target, bool IsOpen, bool IsUser = false, DesktopWindow? Window = null, DesktopIcon? Icon = null)
 {
     /// <summary>Which group it's in, left to right: the system's apps, the user's, then minimized windows.</summary>
     public int Group => Window is not null ? 2 : IsUser ? 1 : 0;
@@ -25,8 +25,9 @@ public sealed record DockItem(
 /// <para>Clicking an icon reports its item, so the desktop can open the app; a press that leaves the icon before the
 /// button comes up does nothing. The icon under the pointer shows the app's name above it, and an open app has a dot
 /// below.</para>
-/// <para>An app shows the icon its <c>Info.xml</c> names. One without, or whose icon couldn't be read, is a colored
-/// tile with its initial, its color from its name, so an app keeps its color.</para>
+/// <para>An app shows the icon its <c>Info.xml</c> names, as a rounded tile or a shape of its own
+/// (<see cref="DesktopIcon"/>). One without, or whose icon couldn't be read, is a colored tile with its initial, its
+/// color from its name, so an app keeps its color.</para>
 /// </remarks>
 public sealed class Dock(int screenWidth, int screenHeight)
 {
@@ -162,9 +163,12 @@ public sealed class Dock(int screenWidth, int screenHeight)
         var item = items[index];
         var icon = IconBounds(index);
         var (x, y) = ((int)icon.X, (int)icon.Y);
-        if (item.Icon is { } image)
+        if (item.Icon is { } appIcon)
         {
-            painter.DrawImage(image, x, y);
+            // A shaped icon carries its own shadow; a tile gets the same one the letter tiles have.
+            if (appIcon.IsTile)
+                DesktopTheme.FillRoundedGradient(painter, x, y + 2, IconSize, IconSize, 10, DesktopTheme.Shadow, DesktopTheme.Shadow);
+            painter.DrawImage(appIcon.Image, x, y);
             DrawPressedAndOpen(painter, index, item, x, y);
             return;
         }

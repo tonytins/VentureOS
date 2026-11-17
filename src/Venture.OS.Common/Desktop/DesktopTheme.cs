@@ -195,20 +195,27 @@ public static class DesktopTheme
         if (width <= 0 || height <= 0)
             return;
 
-        radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
         for (var row = 0; row < height; row++)
         {
-            var inset = 0;
-            var fromEdge = Math.Min(row, height - 1 - row);
-            if (fromEdge < radius)
-            {
-                var dy = radius - fromEdge - 0.5f;
-                inset = (int)MathF.Round(radius - MathF.Sqrt(Math.Max(0, (radius * radius) - (dy * dy))));
-            }
-
+            var inset = RoundedInset(row, width, height, radius);
             var along = height == 1 ? 0 : (float)row / (height - 1);
             painter.FillRectangle(x + inset, y + row, width - (2 * inset), 1, Mix(top, bottom, along));
         }
+    }
+
+    /// <summary>
+    /// How far a row of a rounded rectangle starts in from each side, so everything with rounded corners, such as
+    /// a tile and the icon masked to it, has the same outline.
+    /// </summary>
+    public static int RoundedInset(int row, int width, int height, int radius)
+    {
+        radius = Math.Clamp(radius, 0, Math.Min(width, height) / 2);
+        var fromEdge = Math.Min(row, height - 1 - row);
+        if (fromEdge >= radius)
+            return 0;
+
+        var dy = radius - fromEdge - 0.5f;
+        return (int)MathF.Round(radius - MathF.Sqrt(Math.Max(0, (radius * radius) - (dy * dy))));
     }
 
     /// <summary>A color part of the way from one color to another.</summary>

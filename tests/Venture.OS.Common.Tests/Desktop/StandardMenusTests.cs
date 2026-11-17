@@ -193,14 +193,15 @@ public sealed class StandardMenusTests : IDisposable
         var items = session.Dock.Items;
         var writer = items.Single(item => item.Name == "Writer");
         Assert.NotNull(writer.Icon);
-        Assert.Equal((Dock.IconSize, Dock.IconSize), (writer.Icon.Width, writer.Icon.Height));
+        Assert.Equal((Dock.IconSize, Dock.IconSize), (writer.Icon.Image.Width, writer.Icon.Image.Height));
+        Assert.True(writer.Icon.IsTile);
         Assert.Null(items.Single(item => item.Name == "Plain").Icon);
 
         RecordingPainter painter = new(1024, 768);
         session.Draw(painter);
 
         var bounds = session.Dock.IconBounds(items.ToList().IndexOf(writer));
-        Assert.Contains(painter.Images, drawn => ReferenceEquals(drawn.Image, writer.Icon) && drawn.X == (int)bounds.X && drawn.Y == (int)bounds.Y);
+        Assert.Contains(painter.Images, drawn => ReferenceEquals(drawn.Image, writer.Icon.Image) && drawn.X == (int)bounds.X && drawn.Y == (int)bounds.Y);
         Assert.DoesNotContain(painter.Texts, text => text.Text == "W");
         Assert.Contains(painter.Texts, text => text.Text == "P");
     }

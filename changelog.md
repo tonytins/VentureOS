@@ -4,6 +4,7 @@
 
 - The desktop has a wallpaper: Earthset, the Earth setting behind the Moon.
 - Apps show their icons in the dock and in their About window. Files, Terminal, Notes, and TextEdit have icons; other apps keep their colored tile.
+- Icons with a full background are rounded to a tile, as the letter tiles are. An icon can have a shape of its own, such as a folder, by painting what should be clear in exactly `#00FF01`; it gets a soft shadow.
 - Apps: `icon` in `Info.xml` names a PNG inside the bundle, drawn at 48 pixels in the dock and 64 in About.
 
 ## 0.4.500

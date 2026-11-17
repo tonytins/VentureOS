@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (920 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (926 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -750,6 +750,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   failed. The Earthset wallpaper ships pre-scaled to 1024x768, so it isn't
   scaled at boot. `IPainter.DrawImage` blends by opacity; `CanvasPainter`
   copies an opaque picture and blends any other into the canvas's buffer.
+  An app's icon is a `DesktopIcon`: pixels in exactly `#00FF01` are made
+  clear first, at full size, so scaling smooths the edge; then an icon with
+  four opaque corners is masked to the dock's rounded tile
+  (`DesktopTheme.RoundedInset`, shared with the tiles), and any other keeps
+  its shape over a soft shadow worked out once. The key applies to icons
+  only, never wallpapers.
   A `.uix` `<Visual>` draws an image its owner supplies with
   `UIView.SetImage`, scaled to its frame; the About window's `icon` visual
   shows the app's icon, and is hidden for an app without one and for
@@ -872,7 +878,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   out when drawn, so the pointer hits what was last on screen.
 - **Dock.** `Dock` shows the system's apps, then the user's after a divider
   (`AppManager.Available`), as
-  the icon each app's `Info.xml` names, scaled to 48 pixels, or a colored
+  the icon each app's `Info.xml` names, scaled to 48 pixels, as a rounded
+  tile with a tile's shadow or a shape with its own, or a colored
   tile with its initial for an app without one, with a
   dot under open ones and the name over the one under the pointer. A click
   opens the app from the current folder, or brings an open one forward. A
@@ -1123,7 +1130,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-11-17 | minor | Pictures (§9): `DesktopImage`, `IPainter.DrawImage`, and the kernel's `PngLoader`; apps' icons in the dock and About, a `<Visual>`'s supplied image, and the Earthset wallpaper over the sky. |
+| 2026-11-17 | minor | Pictures (§9): `DesktopImage`, `IPainter.DrawImage`, and the kernel's `PngLoader`; apps' icons in the dock and About (`DesktopIcon`: full backgrounds rounded to a tile, `#00FF01` clear for shaped icons), a `<Visual>`'s supplied image, and the Earthset wallpaper over the sky. |
 | 2026-11-17 | minor | Platform: Cosmos 3.0.97, from 3.0.94. |
 | 2026-11-12 | minor | Undo and Redo (§9): `TextChange` and `TextHistory` on every `TextCursor`, with typing grouped into steps and 100 steps a control; Edit's Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z). |
 | 2026-11-12 | minor | Docs: the roadmap is planned in releases now, and the route-milestone roadmap moved to `docs/history`; "Blue Water" and the alpha gate are no longer named here. |

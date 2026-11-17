@@ -97,9 +97,9 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 **0.5.1xx, images**
 
 - [x] Draw PNG images: app icons in the dock and About, and wallpapers.
-- [ ] Icons exported from AniCraft as PNG at the sizes they're drawn at;
-  symbolic icons (toolbar and sidebar) recolored to the text color, so they
-  follow light and dark.
+- [x] Icons with full backgrounds rounded to a tile, as on modern macOS,
+  and a key color (`#00FF01`) for what's clear in a shaped icon, which
+  gets a shadow, so AniCraft's PNGs work as they are.
 - [x] The Earthset wallpaper, as a PNG, pre-scaled to the screen.
 
 **0.5.2xx, the menu bar**
@@ -112,6 +112,8 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 
 - [ ] Toolbar items with icons, flat until the pointer's over them, at the
   start or the end of the bar.
+- [ ] Symbolic icons (toolbar and sidebar) recolored to the text color, so
+  they follow light and dark.
 - [ ] A subtitle under the title.
 - [ ] A taller bar when it holds toolbar items.
 - [ ] The green zoom button for resizable windows.
@@ -193,6 +195,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.5.1xx done: icons with full backgrounds are rounded to a tile, and `#00FF01` is clear in a shaped one. Symbolic icons move to 0.5.3xx. |
 | 2026-11-17 | minor | 0.5, Cassiopeia, is in development. 0.5.1xx draws PNG pictures: apps' icons in the dock and About, and the Earthset wallpaper. Symbolic icons wait for toolbar and sidebar icons. |
 | 2026-11-17 | minor | Roundhouse, VentureOS's IDE, is planned after 0.5: a desktop version on Avalonia first, in this repository, with VentureOS's own drawing and a built-in simulator; the native version after it. |
 | 2026-11-17 | minor | 0.5 is Cassiopeia, the first Japanese sleeper train: the desktop's look, in five bands, from my notes' desktop goals. |

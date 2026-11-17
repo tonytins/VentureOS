@@ -76,9 +76,10 @@ public sealed class DesktopSession
     // Reads a picture file, or gives null having said why; null for a desktop without pictures.
     private readonly Func<string, DesktopImage?>? loadImage;
 
-    // Pictures read so far, by path and the size they're drawn at, including those that couldn't be read, so a
-    // missing icon isn't looked for on every refresh of the dock.
-    private readonly Dictionary<(string Path, int Width, int Height), DesktopImage?> pictures = [];
+    // Wallpapers and icons read so far, by path and the size they're drawn at, including those that couldn't be
+    // read, so a missing icon isn't looked for on every refresh of the dock.
+    private readonly Dictionary<(string Path, int Width, int Height), DesktopImage?> wallpapers = [];
+    private readonly Dictionary<(string Path, int Size), DesktopIcon?> icons = [];
 
     // The hover text last drawn, so its showing or going redraws the desktop.
     private string? drawnTooltip;
@@ -253,7 +254,7 @@ public sealed class DesktopSession
     /// </summary>
     private int[] RenderBackground()
     {
-        var wallpaper = Picture(Wallpaper, Width, Height, cover: true);
+        var wallpaper = WallpaperPicture();
         if (wallpaper is { IsOpaque: true })
             return wallpaper.Pixels;
 
@@ -263,22 +264,35 @@ public sealed class DesktopSession
     }
 
     /// <summary>
-    /// A picture at the size it's drawn, read and scaled the first time it's asked for and kept after, or
-    /// <see langword="null"/> when there's no path or it couldn't be read. A wallpaper covers the size, cut to fit;
-    /// anything else is scaled to it.
+    /// The wallpaper covering the screen, read and scaled the first time and kept after, or <see langword="null"/>
+    /// when there's none or it couldn't be read.
     /// </summary>
-    private DesktopImage? Picture(string? path, int width, int height, bool cover = false)
+    private DesktopImage? WallpaperPicture()
+    {
+        if (Wallpaper is not { } path || loadImage is null)
+            return null;
+        if (wallpapers.TryGetValue((path, Width, Height), out var known))
+            return known;
+
+        var picture = loadImage(path)?.Covering(Width, Height);
+        wallpapers[(path, Width, Height)] = picture;
+        return picture;
+    }
+
+    /// <summary>
+    /// An app's icon at a size, read and made the first time and kept after, or <see langword="null"/> when it has
+    /// none or it couldn't be read.
+    /// </summary>
+    private DesktopIcon? Icon(string? path, int size)
     {
         if (path is null || loadImage is null)
             return null;
-        if (pictures.TryGetValue((path, width, height), out var known))
+        if (icons.TryGetValue((path, size), out var known))
             return known;
 
-        DesktopImage? picture = null;
-        if (loadImage(path) is { } loaded)
-            picture = cover ? loaded.Covering(width, height) : loaded.Scaled(width, height);
-        pictures[(path, width, height)] = picture;
-        return picture;
+        var icon = loadImage(path) is { } picture ? DesktopIcon.From(picture, size) : null;
+        icons[(path, size)] = icon;
+        return icon;
     }
 
     private DesktopWindow? MakeAbout(string? app)
@@ -330,7 +344,8 @@ public sealed class DesktopSession
         if (view.Bounds(AboutIcon) is not { } bounds)
             return;
 
-        var icon = Picture(iconPath, (int)bounds.Width, (int)bounds.Height);
+        // The visual is square, so the icon is made at its size and the view needn't scale it again.
+        var icon = Icon(iconPath, (int)Math.Min(bounds.Width, bounds.Height))?.Image;
         view.SetImage(AboutIcon, icon);
         view.SetHidden(icon is null, AboutIcon);
     }
@@ -745,7 +760,7 @@ public sealed class DesktopSession
                 : listing.Folder;
             DockItem item = new(
                 bundle.Name, target, apps!.IsOpen(bundle.Identifier), listing.IsUser,
-                Icon: Picture(bundle.Icon, Dock.IconSize, Dock.IconSize));
+                Icon: Icon(bundle.Icon, Dock.IconSize));
             if (bundle.Name == FallbackApp)
                 items.Insert(0, item);
             else

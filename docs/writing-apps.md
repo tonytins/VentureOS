@@ -54,7 +54,7 @@ The folder name, `Dice.app`, is how `open dice` finds it.
 | `version` | No | Your app's own version, shown by `apps`. |
 | `needs` | No | The scopes the app's code may use, separated by spaces. Without one, the code can only call `venture.version()`. |
 | `main` | No | The script to run when the app opens. Defaults to `Contents/Lua/main.lua`. |
-| `icon` | No | A PNG inside the bundle, such as `Contents/Resources/AppIcon.png`, shown in the dock and in About. Make it 64 pixels square; the dock shrinks it to 48. Without one, the dock shows a tile with the app's initial. |
+| `icon` | No | A PNG inside the bundle, such as `Contents/Resources/AppIcon.png`, shown in the dock and in About. Make it 64 pixels square; the dock shrinks it to 48. A full background is rounded to a tile; paint what should be clear in exactly `#00FF01` (or leave it transparent) for a shape of its own, such as a folder, which gets a soft shadow. Without an icon, the dock shows a tile with the app's initial. |
 | `description` | No | What the app is for, in a sentence, shown in its About window. |
 
 The scopes for `needs`:
