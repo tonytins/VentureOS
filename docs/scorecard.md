@@ -16,7 +16,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Storage](#storage) | 4 | 0 | 1 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system`, read-only to file commands |
 | [Network](#network) | 4 | 0 | 0 | DHCP lease 10.0.2.15 under QEMU; `resolve` and `ping` |
 | [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 13 Lua script commands; `Notes.app` ships |
-| [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.94, .NET 10; x64 ISO 10.6 MB |
+| [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.97, .NET 10; x64 ISO 10.6 MB |
 | [Reliability](#reliability) | 3 | 1 | 1 | 901 tests, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 6 | 0 | 0 | Version 0.3; opens in 48 ms at 1024x768 |
@@ -99,7 +99,7 @@ output stays on the console.
 |---|---|---|---|
 | PLAT-1 | Builds for x64 with no warnings | done | `cosmos build -v -p src/Venture.OS`: 0 warnings, 0 errors |
 | PLAT-2 | Builds for ARM64 | done | `cosmos build -a arm64 -p src/Venture.OS`: build completed |
-| PLAT-3 | Pinned to the latest Cosmos release | done | `Venture.OS.csproj`: `Cosmos.Sdk` 3.0.94; `cosmos update --check` reported nothing newer on 2026-10-15 |
+| PLAT-3 | Pinned to the latest Cosmos release | done | `Venture.OS.csproj`: `Cosmos.Sdk` 3.0.97, moved from 3.0.94 on 2026-11-17 |
 | PLAT-4 | Boots on ARM64 | missing | Not booted; ARM64 needs `-a arm64` and a virtio NIC to test networking |
 | PLAT-5 | Lua scripting | done | `Cosmos.Executable.Lua` 4.0.1 builds for x64 and ARM64 with no warnings. x64 boot test 2026-11-05: `lua` printed `Hello from Lua 5.5`, reported a runtime error with its traceback and `os.exit(3)` as a status, ran a script written to `/mnt` through `dofile`, and returned to the prompt each time |
 

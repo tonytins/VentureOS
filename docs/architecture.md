@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Undo and Redo) · **Target:** Cosmos gen3 3.0.94, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-11 · **Change:** minor (Cosmos 3.0.97) · **Target:** Cosmos gen3 3.0.97, x64 (ARM64 builds)
 
 ## Current state (2026-11-11)
 
@@ -18,7 +18,7 @@ the code wins and this page is out of date.
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
-- **Platform:** Cosmos gen3 3.0.94 on .NET 10, compiled ahead of time to an
+- **Platform:** Cosmos gen3 3.0.97 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
 - **Boot:** eight steps, three critical (RAM filesystem, timer, shell) and five
@@ -1102,6 +1102,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Platform: Cosmos 3.0.97, from 3.0.94. |
 | 2026-11-12 | minor | Undo and Redo (§9): `TextChange` and `TextHistory` on every `TextCursor`, with typing grouped into steps and 100 steps a control; Edit's Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z). |
 | 2026-11-12 | minor | Docs: the roadmap is planned in releases now, and the route-milestone roadmap moved to `docs/history`; "Blue Water" and the alpha gate are no longer named here. |
 | 2026-11-12 | minor | Network (§8, §9): `net` shows the DNS server DHCP registered; `venture.resolve` and `venture.ping` (`network`), through `INetworkTools`, and the `resolve` and `ping` commands. |
