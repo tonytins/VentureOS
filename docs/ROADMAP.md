@@ -129,6 +129,30 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
   and the sky kept as one.
 - [ ] Automatic dark mode, dark from sunset to sunrise.
 
+## After 0.5: Roundhouse
+
+Roundhouse is VentureOS's IDE, named after where locomotives are built and
+serviced. It comes after 0.5, so its canvas shows the finished look.
+
+**The desktop version** is a C# app on Avalonia, for macOS, Linux, and
+Windows, in this repository. It edits an app's bundle: a navigator for its
+files, a Lua editor with highlighting (AvaloniaEdit), a form for `Info.xml`,
+and an Xcode-style interface builder for `.uix` files (a canvas, selection
+handles, an outline, an inspector, a library of controls, window settings,
+and menus). The canvas is drawn by VentureOS's own `UIView` through an
+Avalonia painter, so it looks exactly as VentureOS draws it, and Run starts
+the app in a simulated VentureOS desktop built from the same code, with no
+QEMU. Avalonia and AvaloniaEdit are approved, for Roundhouse only.
+
+It needs a UIScript writer that keeps what it doesn't understand: comments,
+unknown attributes, and element order. A document with an element it
+refuses opens read-only, saying why.
+
+**The native version,** an app on VentureOS itself, comes after the desktop
+one. It needs from the platform: a `<Region>` that hosts and draws another
+`.uix`, pointer input in regions, UIScript to and from Lua, text with more
+than one style, and persistence.
+
 ## Ideas
 
 Worth doing someday, in no order, and not yet given a release.
@@ -169,6 +193,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Roundhouse, VentureOS's IDE, is planned after 0.5: a desktop version on Avalonia first, in this repository, with VentureOS's own drawing and a built-in simulator; the native version after it. |
 | 2026-11-17 | minor | 0.5 is Cassiopeia, the first Japanese sleeper train: the desktop's look, in five bands, from my notes' desktop goals. |
 | 2026-11-17 | minor | 0.4, Pere Marquette, is released as `v0.4.500`. 0.5 is next, being planned. |
 | 2026-11-12 | minor | 0.4.5xx done: Undo and Redo for every text field, area, and title field. Every band of 0.4 is done. |
