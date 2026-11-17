@@ -17,9 +17,9 @@ releases, which are what people get.
 - **Versions** follow the .NET SDK's feature bands: `0.4` is the release, each
   milestone in it takes a band (`0.4.1xx`, `0.4.2xx`, ...), and the last two
   digits count builds within the band. A build's version is the one the kernel
-  reports, from `GitInfo.txt` and the commits since. `GitInfo.txt` moves to a
-  milestone's band (`0.4.500`) when work on it begins; a new release
-  (`0.5.100`) waits for my word.
+  reports, from `GitInfo.txt` at the repository root and every commit since.
+  `GitInfo.txt` moves to a milestone's band (`0.4.500`) when work on it
+  begins; a new release (`0.5.100`) waits for my word.
 - **Stages.** A release is *considered* (a theme and candidate features),
   then *in development* (bands with checklists), then *released*: tagged
   (`v0.3.18`), with notes in [docs/releases](./releases/). Published ISOs come

@@ -146,9 +146,9 @@ There is no host process underneath: an unhandled exception stops the machine wi
 Describe only what works today, and keep the tree building at every step.
 
 - [changelog.md](changelog.md): only changes a user would notice, under the  
-  version the kernel reports for that commit. `GitInfo.txt` holds the base  
-  version, and the patch number rises with each commit that touches  
-  `src/Venture.OS/`, so the changelog is expected to lag. When work on the  
+  version the kernel reports for that commit. `GitInfo.txt`, at the  
+  repository root, holds the base version, and the patch number rises with  
+  every commit, docs included. When work on the  
   next milestone in a release begins, set `GitInfo.txt` to its feature band  
   (`0.4.200` for the second), in the commit that starts it, as  
   [the roadmap](docs/ROADMAP.md) lays out. Starting a new release, such as  

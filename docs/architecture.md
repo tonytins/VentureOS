@@ -136,7 +136,6 @@ VentureOS/
 │  │  ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
 │  │  ├─ HostInfo.cs               name, version, and build number
 │  │  ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
-│  │  ├─ GitInfo.txt               the base version
 │  │  ├─ Bootloader/limine.conf    the Limine boot entry; asks for a 1024x768 framebuffer
 │  │  └─ src/C/                    reserved for native C sources (empty)
 │  ├─ Venture.OS.Common/           kernel-free code: no Cosmos, AOT-compatible, warnings as errors
@@ -165,6 +164,7 @@ VentureOS/
 │  └─ Venture.OS.Common.Tests/     xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with rootfs/ copied in
 ├─ docs/                          architecture, roadmap, scorecard, the app guide, and the UIScript drafts
 ├─ .agents/skills/                C# and Cosmos guidance for agents
+├─ GitInfo.txt                    the base version, which every commit counts up from
 ├─ global.json                    opts dotnet test into Microsoft.Testing.Platform
 ├─ changelog.md                   user-facing history
 └─ run.sh                         check, build, and run x64 locally (--headless for serial only)
@@ -1122,14 +1122,19 @@ builds and runs its example, so it can't drift from what works.
 ## 10. Version and build identity
 
 - **Version:** [GitInfo](https://github.com/devlooped/GitInfo) reads
-  `GitInfo.txt` (base `major.minor.patch`) and adds the number of commits
-  that changed the `src/Venture.OS/` folder since that file changed. Commits
-  that only touch docs don't change the version, and a build needs the full
-  history.
+  `GitInfo.txt` at the repository root (base `major.minor.patch`), which it
+  finds by looking up from the kernel project, and adds the number of
+  commits since that file changed. At the root, every commit counts, docs
+  included; GitInfo counts only commits under the file's folder otherwise,
+  which is why it moved there in 0.5: in `src/Venture.OS/`, it missed the
+  library, the apps, and everything else that changes most now. A build
+  needs the full history.
 - **Moving `GitInfo.txt` resets the count.** GitInfo finds the file's last
   change with `git log` without following renames, so a move looks like a
-  new base. Set a new base version in the same commit as any move: moving
-  the project into `src/` started 0.2.0. The desktop started 0.3.0.
+  new base. Set a new base version in the same commit as any move, unless
+  the count was 0 anyway: moving the project into `src/` started 0.2.0, the
+  desktop started 0.3.0, and the move to the root kept 0.5.300, which no
+  kernel commit had yet counted past.
 - **Build number:** derived from the commit hash: its first four characters
   read as a number and reduced to at most six digits. It identifies a build
   but doesn't increase over time.
@@ -1190,6 +1195,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Version (§2, §10): `GitInfo.txt` moved to the repository root, so every commit counts toward the patch, not only the kernel's. |
 | 2026-11-17 | minor | GNOME's colors (§9): libadwaita's neutral surfaces, text, and faint lines in light and dark, a neutral menu bar, and GNOME's nine accents, blue the standard, in place of Distro Tycoon 2's tinted palette and eight swatches. |
 | 2026-11-17 | minor | Flat header bar (§9): one color, `HeaderBar`, with faint separators under it and beside the sidebar, in place of the gradient and borders. |
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |

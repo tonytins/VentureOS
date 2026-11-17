@@ -7,7 +7,8 @@
     <!-- The kernel class lives in Venture.OS.Kernel, not the default <RootNamespace>.Kernel. -->
     <CosmosKernelClass>Venture.OS.Kernel.VentureKernel</CosmosKernelClass>
     <!--
-      The version comes from GitInfo.txt alone, plus the commits since it changed. Release tags such as v0.3.18 mark
+      The version comes from GitInfo.txt alone, at the repository root, where GitInfo finds it by looking up from here,
+      plus every commit since it changed. Release tags such as v0.3.18 mark
       what was released; left to itself, GitInfo would take its version from the latest tag instead and ignore a new
       base in GitInfo.txt, and a branch named like a version could do the same.
     -->
