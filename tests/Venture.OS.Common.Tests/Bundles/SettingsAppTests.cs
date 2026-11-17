@@ -196,6 +196,28 @@ public sealed class SettingsAppTests : IDisposable
     }
 
     [Fact]
+    public void AutoAndItsTimesSetTheSchedule()
+    {
+        Assert.Equal("19:00", Window.View.Text("darkFrom"));
+        Assert.Equal("07:00", Window.View.Text("darkUntil"));
+
+        Send(new UIEvent(UIEventKind.Pressed, "auto"));
+        Window.View.SetText("darkFrom", "21:30");
+        Send(new UIEvent(UIEventKind.Submitted, "darkFrom", "21:30"));
+
+        Assert.Equal(LookMode.Auto, DesktopAppearance.Current.Mode);
+        Assert.Equal(new TimeSpan(21, 30, 0), DesktopAppearance.Current.DarkFrom);
+        Assert.True(Window.View.IsSelected("auto"));
+        Assert.False(Window.View.IsSelected("light"));
+
+        // A time it can't read says why, and the field shows the time in use again.
+        Window.View.SetText("darkUntil", "7am");
+        Send(new UIEvent(UIEventKind.Submitted, "darkUntil", "7am"));
+        Assert.Contains("HH:MM", Window.View.Text("status"));
+        Assert.Equal("07:00", Window.View.Text("darkUntil"));
+    }
+
+    [Fact]
     public void SquareAndRoundedSwitchEveryWindowsCorners()
     {
         Assert.True(Window.View.IsSelected("rounded"));

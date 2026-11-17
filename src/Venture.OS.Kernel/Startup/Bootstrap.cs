@@ -149,6 +149,9 @@ internal static class Bootstrap
     {
         DesktopAppearance.SettingsPath = AppearancePath;
         DesktopAppearance.WallpapersFolder = WallpapersDirectoryPath;
+
+        // A look on a schedule follows the clock; until the clock step loads its offset, that's UTC.
+        DesktopAppearance.TimeOfDay = () => WallClock.Now?.TimeOfDay;
         var result = DesktopAppearance.Load();
         KernelLog.WriteLine(result.Problem is { } problem ? $"Appearance: {problem}" : $"Appearance: {result.Description}.");
     }

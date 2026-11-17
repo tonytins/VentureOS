@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,096 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,102 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -516,7 +516,7 @@ flowchart LR
 | `df [folder]` | Lua script: free and total space where a folder is stored |
 | `pwd` | Lua script: the current folder |
 | `info` | Lua script: version and build, commit, Cosmos version, uptime, and free and total memory |
-| `appearance [light\|dark] [--accent #RRGGBB]` | Lua script: shows or switches the desktop's look, and saves it, as Settings does |
+| `appearance [light\|dark\|auto] [--accent #RRGGBB] [--from HH:MM] [--until HH:MM]` | Lua script: shows or switches the desktop's look, and saves it, as Settings does; auto is dark on the schedule |
 | `lua [code]` | Runs one chunk of Lua 5.5 in a fresh interpreter, or with no code, opens a Lua prompt |
 | `net` | Lua script: device, MAC, link, readiness, and IPv4 address, subnet, gateway, and DNS server |
 | `resolve <name>` | Lua script: the address a host name has, through the DNS server DHCP gave |
@@ -872,7 +872,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   (dark from `darkFrom` until `darkUntil`, overnight when it's earlier),
   the accent, rounded or square corners, and the wallpaper by name or
   `sky`. Every attribute is optional, with the standard look's value, so a
-  0.4 file reads as it did. A newer version, an
+  0.4 file reads as it did. An `auto` look follows the clock
+  (`DesktopAppearance.TimeOfDay`, the kernel's `WallClock`, with its
+  offset): the desktop calls `DesktopAppearance.Refresh` as each minute
+  turns, which switches the palette when the schedule says, and keeps it,
+  allocating nothing, otherwise. Settings' Style row has Auto and the two
+  times. A newer version, an
   unknown mode, or a bad accent refuses the file and keeps the standard look;
   unknown attributes are skipped, and dropped when it's saved again. The
   file lives in RAM like the rest, so a change lasts until reboot, and the
@@ -1225,6 +1230,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Automatic dark mode (§9): an `auto` look switches light and dark by the clock as each minute turns; Settings and `appearance auto --from --until` set it. Every band of 0.5 is done. |
 | 2026-11-17 | minor | Wallpapers (§9): the desktop shows the look's wallpaper from its bundle, light or dark, and follows a change; `venture.wallpapers()` lists them, and Settings picks one from thumbnails, the sky first. |
 | 2026-11-17 | minor | Image buttons (§9): buttons draw their images, ringed in the accent when checked, and `window:setImage` supplies one at run time, from where an app may look. |
 | 2026-11-17 | minor | Rounded corners (§9): windows' four corners and shadows rounded to 10 pixels when the look says so, by reading back what's under them (`IPainter.ReadPixels`); Settings switches them. |

@@ -31,6 +31,9 @@ local function show()
   local look = venture.appearance()
   window:setChecked("light", look.mode == "light")
   window:setChecked("dark", look.mode == "dark")
+  window:setChecked("auto", look.mode == "auto")
+  window:setText("darkFrom", look.darkFrom)
+  window:setText("darkUntil", look.darkUntil)
   window:setChecked("rounded", look.corners == "rounded")
   window:setChecked("square", look.corners == "square")
 
@@ -84,6 +87,19 @@ window:on("rounded", function() corners("rounded") end)
 window:on("square", function() corners("square") end)
 window:on("light", function() choose("light") end)
 window:on("dark", function() choose("dark") end)
+window:on("auto", function() choose("auto") end)
+
+-- Auto's times, typed HH:MM and set with Enter; a wrong one says why and the
+-- field goes back to the time in use.
+local function schedule(field, key)
+  local typed = window:text(field):match("^%s*(.-)%s*$")
+  local ok, problem = venture.setAppearance({ [key] = typed })
+  window:setText("status", problem or "")
+  show()
+end
+
+window:on("darkFrom", function() schedule("darkFrom", "darkFrom") end)
+window:on("darkUntil", function() schedule("darkUntil", "darkUntil") end)
 for number, swatch in ipairs(SWATCHES) do
   window:on("swatch" .. number, function() choose(venture.appearance().mode, swatch.accent) end)
 end
@@ -124,7 +140,7 @@ local PANES = {
   {
     name = "Appearance",
     controls = {
-      "styleHeading", "light", "dark", "accentHeading", "swatch1", "swatch2", "swatch3", "swatch4", "swatch5",
+      "styleHeading", "light", "dark", "auto", "darkFromLabel", "darkFrom", "darkUntilLabel", "darkUntil", "accentHeading", "swatch1", "swatch2", "swatch3", "swatch4", "swatch5",
       "swatch6", "swatch7", "swatch8", "swatch9", "accentName", "custom", "status", "cornersHeading", "rounded",
       "square", "wallpaperHeading", "wallpaper1", "wallpaper2", "wallpaper3", "wallpaper4", "wallpaper5",
       "wallpaperName",

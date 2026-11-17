@@ -142,7 +142,9 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 - [x] Wallpapers to choose from in Settings, with light and dark variants,
   and the sky kept as one. Wallpapers are bundles; the variants are read,
   but none ships yet.
-- [ ] Automatic dark mode, dark from sunset to sunrise.
+- [x] Automatic dark mode, on a schedule set in Settings or with
+  `appearance auto --from 19:00 --until 07:00`. Real sunset and sunrise,
+  from a location, could follow.
 
 ## After 0.5: Roundhouse
 
@@ -208,6 +210,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.5.5xx done, in four phases: the look grows, rounded corners, wallpapers with a picker, and automatic dark mode on a schedule, which I chose over sunset times for now. Every band of 0.5 is done. |
 | 2026-11-17 | minor | 0.5.4xx gains a fourth phase at my suggestion: Settings' panes in a sidebar. |
 | 2026-11-17 | minor | 0.5.4xx done, in three phases: sidebar rows with icons, a rounded selection, and separators between groups. Shipped sidebars keep text until their icons are drawn. |
 | 2026-11-17 | minor | 0.5.3xx done again: VentureOS takes GNOME's colors and nine accents. |

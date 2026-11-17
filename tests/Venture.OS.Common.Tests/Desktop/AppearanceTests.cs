@@ -248,6 +248,17 @@ public sealed class AppearanceTests : IDisposable
     }
 
     [Fact]
+    public void TheCommandSetsAutoAndItsSchedule()
+    {
+        Command("appearance", "auto", "--from", "20:00", "--until", "06:30");
+
+        var look = DesktopAppearance.Current;
+        Assert.Equal(LookMode.Auto, look.Mode);
+        Assert.Equal((new TimeSpan(20, 0, 0), new TimeSpan(6, 30, 0)), (look.DarkFrom, look.DarkUntil));
+        Assert.Equal(["Appearance: auto, dark from 20:00 until 06:30 (light now)", "Accent:     #3584E4"], output.Lines);
+    }
+
+    [Fact]
     public void TheCommandChangesOnlyTheAccent()
     {
         Command("appearance", "--accent", "#E8922A");

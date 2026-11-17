@@ -521,6 +521,10 @@ public sealed class DesktopSession
 
         shownMinute = minute;
         MenuBar.Status = now is { } shown ? WallClock.FormatMenuTime(shown) : null;
+
+        // A look on a schedule turns light or dark as the minute it's set for comes; the frame redraws for the
+        // palette as it does for any change of look.
+        DesktopAppearance.Refresh();
         return true;
     }
 

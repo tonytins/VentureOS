@@ -60,6 +60,18 @@ public static class DesktopAppearance
             DesktopTheme.Use(look.PaletteAt(TimeOfDay()));
     }
 
+    /// <summary>
+    /// Switches a look on a schedule to light or dark when the time says so; any other look stays as it is. The
+    /// desktop calls it as each minute turns. It allocates nothing unless the palette changes.
+    /// </summary>
+    /// <returns>Whether the palette changed.</returns>
+    public static bool Refresh()
+    {
+        var showing = DesktopTheme.Palette;
+        Use(Current);
+        return !ReferenceEquals(showing, DesktopTheme.Palette);
+    }
+
     /// <summary>Uses a look and saves it. The look applies even when saving fails.</summary>
     /// <returns>Why it couldn't be saved, or <see langword="null"/> when it was, or there's nowhere to save it.</returns>
     public static string? Apply(DesktopLook look)

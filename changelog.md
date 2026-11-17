@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.505
+
+- Automatic dark mode: choose Auto in Settings ▸ Appearance ▸ Style, and the desktop is dark from 7 PM until 7 AM, by the clock, switching on the minute. Change the times beside it, or with `appearance auto --from 20:00 --until 06:30`.
+
 ## 0.5.504
 
 - Choose the wallpaper in Settings ▸ Appearance ▸ Wallpaper, from thumbnails: the sky, which follows the accent, or Earthset. The desktop changes at once.
