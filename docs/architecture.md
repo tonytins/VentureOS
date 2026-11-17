@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,036 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,080 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -858,7 +858,13 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   Settings, `venture.setAppearance`, and the `appearance` command switch
   it, and `DesktopAppearance` saves each change to
   `/mnt/user/settings/appearance.xml` (`<Appearance version="1" mode=...
-  accent=.../>`), which the appearance boot step reads. A newer version, an
+  accent=... corners=... wallpaper=... darkFrom=... darkUntil=.../>`), which
+  the appearance boot step reads. The look as chosen is a `DesktopLook`
+  (`DesktopAppearance.Current`): light, dark, or `auto` on a schedule
+  (dark from `darkFrom` until `darkUntil`, overnight when it's earlier),
+  the accent, rounded or square corners, and the wallpaper by name or
+  `sky`. Every attribute is optional, with the standard look's value, so a
+  0.4 file reads as it did. A newer version, an
   unknown mode, or a bad accent refuses the file and keeps the standard look;
   unknown attributes are skipped, and dropped when it's saved again. The
   file lives in RAM like the rest, so a change lasts until reboot, and the
@@ -1205,6 +1211,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Look options begin (§9): `DesktopLook` with `auto` and its schedule, corners, and the wallpaper's name, saved in `appearance.xml` and read and set from Lua (`setAppearance` takes a table); `.wallpaper` bundles with `-light` and `-dark` variants, and Earthset in one. Corners, wallpapers, and the schedule aren't used yet. |
 | 2026-11-17 | minor | Settings' panes (§9): Settings gets a sidebar with Appearance and Clock, the offset typed after a "UTC" label; an offset without a sign is ahead of UTC; the contrast test draws stacked controls one at a time. |
 | 2026-11-17 | minor | Sidebars done (§9): Files sets System apart from its places; the app guide and the sidebar draft describe icons and groups. |
 | 2026-11-17 | minor | Sidebar rows (§9): rounded shades for the selection and hover, rows' icons as 16-pixel symbols in the text color with every row's text lined up after them, and faint lines between groups; clicks, hover, and scrolling count the room the lines take. |

@@ -20,7 +20,7 @@ public sealed class ShippedContrastTests : IDisposable
 {
     private const double Minimum = 3;
 
-    public void Dispose() => DesktopTheme.Use(DesktopPalette.Light);
+    public void Dispose() => DesktopAppearance.Use(DesktopLook.Standard);
 
     public static TheoryData<string> Interfaces()
     {

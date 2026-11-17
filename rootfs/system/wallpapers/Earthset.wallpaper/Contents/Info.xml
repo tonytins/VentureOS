@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Earthset: the Earth setting behind the Moon. Earthset-light.png or Earthset-dark.png beside the image would be
+     shown in that mode instead. -->
+<Wallpaper version="1">
+  <Info identifier="dev.tonytins.ventureos.wallpaper.earthset" name="Earthset" image="Contents/Resources/Earthset.png"
+        description="The Earth setting behind the Moon."/>
+</Wallpaper>

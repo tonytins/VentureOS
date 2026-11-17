@@ -1,23 +1,48 @@
 namespace Venture.OS.Scripting;
 
 /// <summary>
-/// The desktop's look as scripts read and change it: light or dark, and an accent color. The desktop implements it,
-/// and the kernel hands it over through <see cref="ISystemInfo.Appearance"/>, so the Lua library doesn't depend on
-/// how palettes, themes, or saving work.
+/// The desktop's look as scripts see it, through <c>venture.appearance</c> and <c>venture.setAppearance</c>. The
+/// desktop implements it; scripting only knows this shape, so it doesn't depend on the desktop.
 /// </summary>
 public interface IAppearance
 {
-    /// <summary>Whether the look is dark.</summary>
+    /// <summary>Whether the look showing is dark, which for <c>auto</c> depends on the time.</summary>
     bool IsDark { get; }
+
+    /// <summary>The mode as chosen: <c>light</c>, <c>dark</c>, or <c>auto</c>.</summary>
+    string Mode { get; }
 
     /// <summary>The accent as chosen, written <c>#RRGGBB</c>.</summary>
     string Accent { get; }
 
-    /// <summary>Switches the look and saves it.</summary>
-    /// <param name="dark">Dark rather than light.</param>
-    /// <param name="accent">The accent, written <c>#RRGGBB</c>, or <see langword="null"/> to keep the current one.</param>
-    AppearanceChange Set(bool dark, string? accent);
+    /// <summary>Whether windows have rounded corners.</summary>
+    bool RoundedCorners { get; }
+
+    /// <summary>The wallpaper's name, such as <c>Earthset</c>, or <c>sky</c>.</summary>
+    string Wallpaper { get; }
+
+    /// <summary>When <c>auto</c> turns dark, written <c>HH:MM</c>.</summary>
+    string DarkFrom { get; }
+
+    /// <summary>When <c>auto</c> turns light again, written <c>HH:MM</c>.</summary>
+    string DarkUntil { get; }
+
+    /// <summary>Changes what the request names, keeps the rest, and saves the look.</summary>
+    AppearanceChange Set(AppearanceRequest request);
 }
+
+/// <summary>
+/// A change to the look: each part that isn't <see langword="null"/> changes, as scripts write it.
+/// </summary>
+/// <param name="Mode"><c>light</c>, <c>dark</c>, or <c>auto</c>.</param>
+/// <param name="Accent">Written <c>#RRGGBB</c>.</param>
+/// <param name="Corners"><c>rounded</c> or <c>square</c>.</param>
+/// <param name="Wallpaper">A wallpaper's name, or <c>sky</c>.</param>
+/// <param name="DarkFrom">When <c>auto</c> turns dark, written <c>HH:MM</c>.</param>
+/// <param name="DarkUntil">When it turns light again, written <c>HH:MM</c>.</param>
+public sealed record AppearanceRequest(
+    string? Mode = null, string? Accent = null, string? Corners = null, string? Wallpaper = null,
+    string? DarkFrom = null, string? DarkUntil = null);
 
 /// <summary>
 /// What <see cref="IAppearance.Set"/> did: <see cref="Refused"/> says why nothing changed, and otherwise the look

@@ -16,10 +16,10 @@ namespace Venture.OS.Scripting;
 /// <item><description><c>venture.net()</c>: <c>nil</c> without a network adapter, otherwise
 /// <c>{ device, mac, link_up, ready, address, subnet, gateway }</c>, where the last three are <c>nil</c> until
 /// IPv4 is configured.</description></item>
-/// <item><description><c>venture.appearance()</c>: the desktop's look, <c>{ mode, accent }</c>, and
-/// <c>venture.setAppearance(mode, accent)</c>, which switches it to <c>"light"</c> or <c>"dark"</c> with an optional
-/// <c>#RRGGBB</c> accent and saves it, returning <c>true</c> (and why it wasn't saved, if it wasn't), or <c>nil</c>
-/// and why.</description></item>
+/// <item><description><c>venture.appearance()</c>: the desktop's look, <c>{ mode, dark, accent, corners, wallpaper,
+/// darkFrom, darkUntil }</c>, and <c>venture.setAppearance(mode, accent)</c> or <c>venture.setAppearance{ ... }</c>
+/// with any of those but <c>dark</c>, which changes them and saves the look, returning <c>true</c> (and why it
+/// wasn't saved, if it wasn't), or <c>nil</c> and why.</description></item>
 /// <item><description><c>venture.time()</c>: the clock, <c>{ set, offset, zone }</c>, and when the hardware clock is
 /// set, also <c>text</c> (as the menu bar shows it), <c>year</c>, <c>month</c>, <c>day</c>, <c>hour</c>, <c>minute</c>,
 /// <c>second</c>, <c>weekday</c>, and <c>utc</c>; <c>nil</c> without a clock. <c>venture.setUtcOffset(offset)</c>
@@ -146,8 +146,9 @@ public static class VentureLibrary
     }
 
     /// <summary>
-    /// <c>venture.appearance()</c>: the desktop's look, as <c>{ mode = "light" or "dark", accent = "#RRGGBB" }</c>,
-    /// or <c>nil</c> on a system without one.
+    /// <c>venture.appearance()</c>: the desktop's look as chosen, <c>mode</c> (<c>"light"</c>, <c>"dark"</c>, or
+    /// <c>"auto"</c>), <c>accent</c>, <c>corners</c>, <c>wallpaper</c>, <c>darkFrom</c>, and <c>darkUntil</c>, and
+    /// whether it's <c>dark</c> now; or <c>nil</c> on a system without one.
     /// </summary>
     private static int PushAppearance(ILuaState lua, IAppearance? appearance)
     {
@@ -158,28 +159,57 @@ public static class VentureLibrary
         }
 
         lua.NewTable();
-        SetString(lua, "mode", appearance.IsDark ? "dark" : "light");
+        SetString(lua, "mode", appearance.Mode);
+        SetBoolean(lua, "dark", appearance.IsDark);
         SetString(lua, "accent", appearance.Accent);
+        SetString(lua, "corners", appearance.RoundedCorners ? "rounded" : "square");
+        SetString(lua, "wallpaper", appearance.Wallpaper);
+        SetString(lua, "darkFrom", appearance.DarkFrom);
+        SetString(lua, "darkUntil", appearance.DarkUntil);
         return 1;
     }
 
     /// <summary>
-    /// <c>venture.setAppearance(mode, accent)</c>: switches the desktop to <c>"light"</c> or <c>"dark"</c>, with an
-    /// accent written <c>#RRGGBB</c>, or the current one when it's left out, and saves the choice. Returns
+    /// <c>venture.setAppearance(mode, accent)</c>, or <c>venture.setAppearance{ mode, accent, corners, wallpaper,
+    /// darkFrom, darkUntil }</c>: changes what's given, keeps the rest, and saves the look. Returns
     /// <see langword="true"/>, with why it couldn't be saved when that failed, or <see langword="nil"/> and why,
-    /// changing nothing, when either is wrong. The desktop shows it on its next frame.
+    /// changing nothing, when anything is wrong. The desktop shows it on its next frame.
     /// </summary>
     private static int SetAppearance(ILuaState lua, IAppearance? appearance)
     {
-        var mode = LuaText.Decode(lua.L_CheckString(1));
-        if (mode is not ("light" or "dark"))
-            return Refuse(lua, $"the appearance is light or dark, not \"{mode}\"");
+        AppearanceRequest request;
+        if (lua.Type(1) == LuaType.LUA_TTABLE)
+        {
+            string? Field(string name)
+            {
+                lua.GetField(1, name);
+                var value = lua.Type(-1) == LuaType.LUA_TSTRING ? LuaText.Decode(lua.ToString(-1)) : null;
+                var given = !lua.IsNoneOrNil(-1);
+                lua.Pop(1);
+                return given && value is null ? throw new ArgumentException($"{name} must be a string") : value;
+            }
 
-        var accent = lua.IsNoneOrNil(2) ? null : LuaText.Decode(lua.L_CheckString(2));
+            try
+            {
+                request = new AppearanceRequest(
+                    Field("mode"), Field("accent"), Field("corners"), Field("wallpaper"), Field("darkFrom"), Field("darkUntil"));
+            }
+            catch (ArgumentException exception)
+            {
+                return Refuse(lua, exception.Message);
+            }
+        }
+        else
+        {
+            var mode = LuaText.Decode(lua.L_CheckString(1));
+            var accent = lua.IsNoneOrNil(2) ? null : LuaText.Decode(lua.L_CheckString(2));
+            request = new AppearanceRequest(mode, accent);
+        }
+
         if (appearance is null)
             return Refuse(lua, "this system has no desktop appearance to change");
 
-        var change = appearance.Set(mode == "dark", accent);
+        var change = appearance.Set(request);
         if (change.Refused is { } refused)
             return Refuse(lua, refused);
 

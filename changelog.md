@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.500
+
+- Scripts: `venture.appearance()` also gives `dark` (whether the look showing is dark), `corners`, `wallpaper`, `darkFrom`, and `darkUntil`, and its `mode` can be `auto`; `venture.setAppearance{ ... }` changes any of them. VentureOS doesn't use the new ones yet.
+- Wallpapers are bundles, such as `Earthset.wallpaper`, and can carry a light and a dark picture.
+
 ## 0.5.403
 
 - Settings has a sidebar with two panes, Appearance and Clock, as GNOME Settings does, and opens on Appearance.

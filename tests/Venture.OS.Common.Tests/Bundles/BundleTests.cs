@@ -138,4 +138,48 @@ public sealed class BundleTests : IDisposable
         File.WriteAllText(Path.Combine(path, "Contents", "Info.xml"), info);
         return path;
     }
+
+    [Fact]
+    public void ReadsTheShippedWallpaper()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "system", "wallpapers", "Earthset.wallpaper");
+
+        var wallpaper = Bundle.Read(path, BundleKind.Wallpaper);
+
+        Assert.Equal("Earthset", wallpaper.Name);
+        Assert.Equal($"{path}/Contents/Resources/Earthset.png", wallpaper.Image);
+        Assert.Empty(wallpaper.IgnoredAttributes);
+    }
+
+    [Fact]
+    public void AWallpaperNeedsAnImageThatsThere()
+    {
+        var folder = Path.Combine(root, "Plain.wallpaper", "Contents");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "Info.xml"), """<Wallpaper version="1"><Info identifier="dev.example.plain" name="Plain"/></Wallpaper>""");
+
+        Assert.Contains("needs image=", Assert.Throws<BundleException>(() => Bundle.Read(Path.Combine(root, "Plain.wallpaper"), BundleKind.Wallpaper)).Message);
+
+        File.WriteAllText(Path.Combine(folder, "Info.xml"), """<Wallpaper version="1"><Info identifier="dev.example.plain" name="Plain" image="Contents/Resources/Plain.png"/></Wallpaper>""");
+        Assert.Contains("has no Contents/Resources/Plain.png", Assert.Throws<BundleException>(() => Bundle.Read(Path.Combine(root, "Plain.wallpaper"), BundleKind.Wallpaper)).Message);
+    }
+
+    [Fact]
+    public void AWallpapersVariantsSitBesideItsImage()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "system", "wallpapers", "Earthset.wallpaper");
+        var wallpaper = Bundle.Read(path, BundleKind.Wallpaper);
+        var image = wallpaper.Image!;
+        var dark = $"{path}/Contents/Resources/Earthset-dark.png";
+        var light = $"{path}/Contents/Resources/Earthset-light.png";
+
+        // Earthset ships one picture, which serves both.
+        Assert.Equal(image, wallpaper.ImageFor(dark: true));
+        Assert.Equal(image, wallpaper.ImageFor(dark: false));
+
+        // With variants beside it, each mode gets its own; with only one, the other mode keeps the image.
+        Assert.Equal(dark, wallpaper.ImageFor(dark: true, exists: file => file == dark || file == light));
+        Assert.Equal(light, wallpaper.ImageFor(dark: false, exists: file => file == dark || file == light));
+        Assert.Equal(image, wallpaper.ImageFor(dark: false, exists: file => file == dark));
+    }
 }

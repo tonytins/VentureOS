@@ -19,7 +19,7 @@ public sealed class DesktopAppearanceTests : IDisposable
     public void Dispose()
     {
         DesktopAppearance.SettingsPath = null;
-        DesktopTheme.Use(DesktopPalette.Light);
+        DesktopAppearance.Use(DesktopLook.Standard);
         if (Directory.Exists(root))
             Directory.Delete(root, recursive: true);
     }
@@ -31,14 +31,16 @@ public sealed class DesktopAppearanceTests : IDisposable
 
         Assert.Null(problem);
         Assert.True(DesktopTheme.Palette.IsDark);
-        Assert.Contains("""<Appearance version="1" mode="dark" accent="#E8922A"/>""", File.ReadAllText(SettingsFile));
+        Assert.Contains(
+            """<Appearance version="1" mode="dark" accent="#E8922A" corners="rounded" wallpaper="Earthset" darkFrom="19:00" darkUntil="07:00"/>""",
+            File.ReadAllText(SettingsFile));
     }
 
     [Fact]
     public void LoadingRestoresASavedLook()
     {
         DesktopAppearance.Apply(DesktopPalette.Create(new UIColor(232, 146, 42), isDark: true));
-        DesktopTheme.Use(DesktopPalette.Light);
+        DesktopAppearance.Use(DesktopLook.Standard);
 
         var result = DesktopAppearance.Load();
 

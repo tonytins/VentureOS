@@ -39,7 +39,7 @@ public sealed class SettingsAppTests : IDisposable
     {
         manager.CloseApp("Settings", new RecordingOutput());
         DesktopAppearance.SettingsPath = null;
-        DesktopTheme.Use(DesktopPalette.Light);
+        DesktopAppearance.Use(DesktopLook.Standard);
         if (Directory.Exists(root))
             Directory.Delete(root, recursive: true);
     }

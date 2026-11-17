@@ -48,7 +48,7 @@ public sealed class ToolbarTests : IDisposable
         manager.Draw(painter);
     }
 
-    public void Dispose() => DesktopTheme.Use(DesktopPalette.Light);
+    public void Dispose() => DesktopAppearance.Use(DesktopLook.Standard);
 
     [Fact]
     public void PacksItemsAtTheStartAndTheEndInDocumentOrder()

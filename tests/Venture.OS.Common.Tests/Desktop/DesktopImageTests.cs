@@ -154,7 +154,7 @@ public sealed class DesktopImageTests
             Assert.Equal((64, 64), DesktopImage.ReadPngSize(File.ReadAllBytes(icon), out _));
 
         // Pre-scaled to the screen QEMU gives, so the desktop needn't scale it at boot.
-        var wallpaper = Path.Combine(system, "wallpapers", "earthset.png");
+        var wallpaper = Path.Combine(system, "wallpapers", "Earthset.wallpaper", "Contents", "Resources", "Earthset.png");
         Assert.Equal((1024, 768), DesktopImage.ReadPngSize(File.ReadAllBytes(wallpaper), out _));
     }
 

@@ -23,7 +23,7 @@ public sealed class AppearanceTests : IDisposable
     public void Dispose()
     {
         DesktopAppearance.SettingsPath = null;
-        DesktopTheme.Use(DesktopPalette.Light);
+        DesktopAppearance.Use(DesktopLook.Standard);
     }
 
     [Fact]
@@ -96,9 +96,50 @@ public sealed class AppearanceTests : IDisposable
     }
 
     [Fact]
+    public void ScriptsReadTheWholeLook()
+    {
+        Run("""
+            local look = venture.appearance()
+            print(look.mode, look.dark, look.accent, look.corners, look.wallpaper, look.darkFrom, look.darkUntil)
+            """);
+
+        Assert.Equal(["light\tfalse\t#3584E4\trounded\tEarthset\t19:00\t07:00"], output.Lines);
+    }
+
+    [Fact]
+    public void ATableChangesOnlyWhatItNames()
+    {
+        Run("""print(venture.setAppearance{ mode = "auto", corners = "square", wallpaper = "sky", darkFrom = "20:00" })""");
+
+        var look = DesktopAppearance.Current;
+        Assert.Equal(["true"], output.Lines);
+        Assert.Equal(LookMode.Auto, look.Mode);
+        Assert.False(look.RoundedCorners);
+        Assert.Equal("sky", look.Wallpaper);
+        Assert.Equal(TimeSpan.FromHours(20), look.DarkFrom);
+        Assert.Equal(TimeSpan.FromHours(7), look.DarkUntil);
+        Assert.Equal(DesktopPalette.StandardAccent, look.Accent);
+    }
+
+    [Theory]
+    [InlineData("""print(venture.setAppearance{ corners = "round" })""", "rounded or square")]
+    [InlineData("""print(venture.setAppearance{ wallpaper = "../x" })""", "isn't a wallpaper's name")]
+    [InlineData("""print(venture.setAppearance{ darkFrom = "7pm" })""", "HH:MM")]
+    [InlineData("""print(venture.setAppearance{ darkFrom = "07:00" })""", "never dark")]
+    [InlineData("""print(venture.setAppearance{ corners = true })""", "corners must be a string")]
+    public void ATableWithAMistakeChangesNothing(string code, string reason)
+    {
+        Run(code);
+
+        Assert.StartsWith("nil\t", output.Lines.Single());
+        Assert.Contains(reason, output.Lines.Single());
+        Assert.Equal(DesktopLook.Standard, DesktopAppearance.Current);
+    }
+
+    [Fact]
     public void LeavingOutTheAccentKeepsIt()
     {
-        DesktopTheme.Use(DesktopPalette.Create(new UIColor(232, 146, 42), isDark: false));
+        DesktopAppearance.Use(DesktopLook.Standard with { Accent = new UIColor(232, 146, 42) });
 
         Run("""venture.setAppearance("dark")""");
 
@@ -106,7 +147,7 @@ public sealed class AppearanceTests : IDisposable
     }
 
     [Theory]
-    [InlineData("""print(venture.setAppearance("dim"))""", "light or dark")]
+    [InlineData("""print(venture.setAppearance("dim"))""", "light, dark, or auto")]
     [InlineData("""print(venture.setAppearance("light", "blue"))""", "#RRGGBB")]
     public void ScriptsHearWhyALookIsWrong(string code, string reason)
     {
@@ -222,7 +263,7 @@ public sealed class AppearanceTests : IDisposable
 
         Assert.Single(output.Lines);
         Assert.StartsWith("appearance: ", output.Lines[0]);
-        Assert.Contains("light or dark", output.Lines[0]);
+        Assert.Contains("light, dark, or auto", output.Lines[0]);
         Assert.Same(DesktopPalette.Light, DesktopTheme.Palette);
     }
 

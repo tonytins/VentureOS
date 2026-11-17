@@ -50,7 +50,7 @@ internal static class Bootstrap
     public const string SystemIconPath = SystemDirectoryPath + "/icons/VentureOS.png";
 
     /// <summary>The picture behind the desktop's windows: Earthset, Earth setting behind the Moon.</summary>
-    public const string WallpaperPath = SystemDirectoryPath + "/wallpapers/earthset.png";
+    public const string WallpaperPath = SystemDirectoryPath + "/wallpapers/Earthset.wallpaper/Contents/Resources/Earthset.png";
 
     /// <summary>Where the desktop's fonts are, with their licenses.</summary>
     public const string FontsDirectoryPath = SystemDirectoryPath + "/fonts";
