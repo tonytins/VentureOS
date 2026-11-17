@@ -675,24 +675,82 @@ public static class UiLibrary
         return 0;
     }
 
+    /// <summary>
+    /// <c>window:setItems(name, items)</c>: a list's items, each a string, or, for the sidebar, a table with
+    /// <c>text</c> and an optional <c>icon</c> naming an <c>&lt;Image&gt;</c>, or <c>{ separator = true }</c> between
+    /// groups. Separators aren't items, so indexes count items only. Nothing changes when an entry is wrong.
+    /// </summary>
     private static int SetItems(ILuaState lua, Handle handle)
     {
+        var name = Name(lua, handle, "setItems");
         var list = List(lua, handle, "setItems");
         if (lua.Type(3) != LuaType.LUA_TTABLE)
             return Fail(lua, "window:setItems needs a list of items, such as { \"Milk\", \"Eggs\" }");
 
+        var isSidebar = name == handle.View.SidebarName;
         List<string> items = [];
+        List<string?> icons = [];
+        List<int> groupStarts = [];
         var count = lua.RawLen(3);
         for (var index = 1; index <= count; index++)
         {
             lua.RawGetI(3, index);
-            var item = lua.L_ToString(-1);
-            lua.Pop(2); // L_ToString pushes its result on top of the value.
-            items.Add(LuaText.Decode(item));
+            if (lua.Type(-1) != LuaType.LUA_TTABLE)
+            {
+                var item = lua.L_ToString(-1);
+                lua.Pop(2); // L_ToString pushes its result on top of the value.
+                items.Add(LuaText.Decode(item));
+                icons.Add(null);
+                continue;
+            }
+
+            if (!isSidebar)
+            {
+                lua.Pop(1);
+                return Fail(lua, $"window:setItems: item {index} is a table, but only a sidebar's items can have icons or separators; \"{name}\" takes strings");
+            }
+
+            lua.GetField(-1, "separator");
+            var separator = lua.ToBoolean(-1);
+            lua.Pop(1);
+            if (separator)
+            {
+                // A separator only splits rows: one at either end, or beside another, splits nothing.
+                if (items.Count > 0 && (groupStarts.Count == 0 || groupStarts[^1] != items.Count))
+                    groupStarts.Add(items.Count);
+                lua.Pop(1);
+                continue;
+            }
+
+            lua.GetField(-1, "text");
+            var text = lua.Type(-1) == LuaType.LUA_TSTRING ? LuaText.Decode(lua.ToString(-1)) : null;
+            lua.Pop(1);
+            lua.GetField(-1, "icon");
+            var icon = lua.Type(-1) == LuaType.LUA_TSTRING ? LuaText.Decode(lua.ToString(-1)) : null;
+            var iconGiven = !lua.IsNoneOrNil(-1);
+            lua.Pop(2);
+
+            if (text is null)
+                return Fail(lua, $"window:setItems: item {index} needs text, such as {{ text = \"Home\", icon = \"homeIcon\" }}, or separator = true");
+            if (iconGiven && icon is null)
+                return Fail(lua, $"window:setItems: item {index}'s icon must be the name of an <Image>");
+            if (icon is not null && !handle.View.Script.Images.ContainsKey(icon))
+                return Fail(lua, $"window:setItems: item {index}'s icon \"{icon}\" isn't an <Image> in {handle.Document}");
+
+            items.Add(text);
+            icons.Add(icon);
         }
+
+        // A separator after the last item splits nothing.
+        if (groupStarts.Count > 0 && groupStarts[^1] >= items.Count)
+            groupStarts.RemoveAt(groupStarts.Count - 1);
 
         list.Items.Clear();
         list.Items.AddRange(items);
+        list.Icons.Clear();
+        list.Icons.AddRange(icons);
+        list.GroupStarts.Clear();
+        list.GroupStarts.AddRange(groupStarts);
         if (list.SelectedIndex >= items.Count)
             list.SelectedIndex = -1;
         return 0;

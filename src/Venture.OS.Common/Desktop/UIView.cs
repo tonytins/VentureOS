@@ -47,6 +47,18 @@ public sealed class UIListState
     /// <summary>The items, in order. Change them freely; the list keeps up on the next frame.</summary>
     public List<string> Items { get; } = [];
 
+    /// <summary>
+    /// Each item's icon, by the name of an <c>&lt;Image&gt;</c> in the document, or <see langword="null"/>; a
+    /// sidebar shows them. Items past the end have none.
+    /// </summary>
+    public List<string?> Icons { get; } = [];
+
+    /// <summary>
+    /// The items a separator comes before, in order, splitting a sidebar's rows into groups, as Nautilus splits its
+    /// places from its drives. Separators aren't items, so indexes count items only.
+    /// </summary>
+    public List<int> GroupStarts { get; } = [];
+
     /// <summary>The selected item's index, or -1. Setting it reports no event.</summary>
     public int SelectedIndex { get; set; } = -1;
 
@@ -212,6 +224,9 @@ public sealed class UIView
             float.IsFinite(size.Width) ? Math.Max(size.Width, minimum.Width) : minimum.Width,
             float.IsFinite(size.Height) ? Math.Max(size.Height, minimum.Height) : minimum.Height);
     }
+
+    /// <summary>The sidebar's name, which reads and fills like a list's, or <see langword="null"/> without one.</summary>
+    public string? SidebarName => sidebar?.Name;
 
     /// <summary>How wide the sidebar is, in whole pixels, or 0 without one.</summary>
     public int SidebarWidth { get; }
