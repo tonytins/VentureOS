@@ -17,6 +17,9 @@ public enum FramePart
     /// <summary>The orange button, which sends the window to the dock.</summary>
     Minimize,
 
+    /// <summary>The green button, on resizable windows, which zooms the window to fill the screen and back.</summary>
+    Zoom,
+
     /// <summary>One of the document's toolbar items.</summary>
     ToolbarItem,
 
@@ -212,6 +215,22 @@ public sealed class DesktopWindow
     public UIRect MinimizeButton =>
         new(X + ButtonInset + ButtonSize + ButtonGap, Y + ((BarHeight - ButtonSize) / 2), ButtonSize, ButtonSize);
 
+    /// <summary>The green zoom button, which only a resizable window has.</summary>
+    public UIRect ZoomButton =>
+        new(X + ButtonInset + (2 * (ButtonSize + ButtonGap)), Y + ((BarHeight - ButtonSize) / 2), ButtonSize, ButtonSize);
+
+    /// <summary>Whether it has the green zoom button: a resizable window that can be closed.</summary>
+    public bool HasZoom => IsClosable && IsResizable;
+
+    /// <summary>
+    /// Whether it's zoomed to fill the screen, with the frame it had before kept to go back to. Moving or resizing it
+    /// forgets that, as on macOS, so the next zoom fills the screen again from where the user left it.
+    /// </summary>
+    public bool IsZoomed => unzoomed is not null;
+
+    // The frame before zooming, while zoomed.
+    internal UIRect? unzoomed;
+
     /// <summary>Where the view's corner is.</summary>
     public (int X, int Y) ContentOrigin => (X + View.SidebarWidth, Y + BarHeight);
 
@@ -257,6 +276,8 @@ public sealed class DesktopWindow
             return (FramePart.Close, -1);
         if (IsClosable && Grown(MinimizeButton).Contains(x, y))
             return (FramePart.Minimize, -1);
+        if (HasZoom && Grown(ZoomButton).Contains(x, y))
+            return (FramePart.Zoom, -1);
 
         for (var index = 0; index < itemBounds.Count; index++)
         {
@@ -487,9 +508,11 @@ public sealed class DesktopWindow
         if (IsClosable)
         {
             // Over either button, both show their marks, as macOS does.
-            var marked = hovered is FramePart.Close or FramePart.Minimize;
+            var marked = hovered is FramePart.Close or FramePart.Minimize or FramePart.Zoom;
             DrawDot(painter, CloseButton, DesktopTheme.CloseButton, DesktopTheme.CloseMark);
             DrawDot(painter, MinimizeButton, DesktopTheme.MinimizeButton, DesktopTheme.MinimizeMark);
+            if (HasZoom)
+                DrawDot(painter, ZoomButton, DesktopTheme.ZoomButton, DesktopTheme.ZoomMark);
             if (marked)
                 DrawMarks(painter);
         }
@@ -596,7 +619,10 @@ public sealed class DesktopWindow
 
     // Where the bar's own room starts: after the buttons, and past the sidebar, whose top they sit on.
     private int StartOfBar => Math.Max(
-        X + (IsClosable ? ButtonInset + (2 * ButtonSize) + ButtonGap + 12 : Margin), X + View.SidebarWidth + Margin);
+        X + (IsClosable ? ButtonInset + (Buttons * ButtonSize) + ((Buttons - 1) * ButtonGap) + 12 : Margin),
+        X + View.SidebarWidth + Margin);
+
+    private int Buttons => HasZoom ? 3 : 2;
 
     private bool HasSymbol(UIToolbarItem item) => item.Image is { } name && View.Image(name) is not null;
 
@@ -775,6 +801,14 @@ public sealed class DesktopWindow
         }
 
         painter.FillRectangle((int)MinimizeButton.X + 3, (int)MinimizeButton.Y + 5, 6, 2, DesktopTheme.MinimizeMark);
+
+        // A plus, as Tiger's zoom button showed.
+        if (HasZoom)
+        {
+            var (zoomX, zoomY) = ((int)ZoomButton.X, (int)ZoomButton.Y);
+            painter.FillRectangle(zoomX + 3, zoomY + 5, 6, 2, DesktopTheme.ZoomMark);
+            painter.FillRectangle(zoomX + 5, zoomY + 3, 2, 6, DesktopTheme.ZoomMark);
+        }
     }
 
     /// <summary>Six dots in a triangle against the bottom-right corner, as a resizable window's grip.</summary>

@@ -113,13 +113,15 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 
 **0.5.3xx, header bars**
 
-- [ ] Toolbar items with icons, flat until the pointer's over them, at the
+- [x] Toolbar items with icons, flat until the pointer's over them, at the
   start or the end of the bar.
-- [ ] Symbolic icons (toolbar and sidebar) recolored to the text color, so
-  they follow light and dark.
-- [ ] A subtitle under the title.
-- [ ] A taller bar when it holds toolbar items.
-- [ ] The green zoom button for resizable windows.
+- [x] Symbolic icons recolored to the text color, so they follow light and
+  dark, starting with the toolbar's; the sidebar's use them in 0.5.4xx.
+- [x] A subtitle under the title; Files shows its item count there.
+- [x] A taller bar when it holds a subtitle or toolbar icons, and a
+  slightly taller plain one, with more room to drag.
+- [x] The green zoom button for resizable windows, filling the screen
+  below the menu bar, as macOS does.
 
 **0.5.4xx, sidebars**
 
@@ -198,6 +200,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.5.3xx done, in four phases: flat toolbar items with symbols at either end, the subtitle, taller bars, and zoom. The bar grows only for a subtitle or icons, by my decision. Shipped apps keep text items until their icons are drawn. |
 | 2026-11-17 | minor | 0.5.2xx done: Tiger's gloss, and the time on the right of the menu bar, with an offset from UTC I chose over a time zone database. |
 | 2026-11-17 | minor | 0.5.2xx begins with VentureOS's icon in the menu bar, an item added at my request. Smoothed icon edges are unmixed from the key. |
 | 2026-11-17 | minor | 0.5.1xx done: icons with full backgrounds are rounded to a tile, and `#00FF01` is clear in a shaped one. Symbolic icons move to 0.5.3xx. |

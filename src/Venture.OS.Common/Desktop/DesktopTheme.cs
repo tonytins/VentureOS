@@ -79,6 +79,10 @@ public static class DesktopTheme
     /// <summary>The minimize button's rim.</summary>
     public static UIColor MinimizeMark => Palette.MinimizeMark;
 
+    public static UIColor ZoomButton => Palette.ZoomButton;
+
+    public static UIColor ZoomMark => Palette.ZoomMark;
+
     /// <summary>A button while the pointer is down on it.</summary>
     public static UIColor ButtonPressed => Palette.ButtonPressed;
 

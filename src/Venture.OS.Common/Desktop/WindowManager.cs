@@ -99,6 +99,31 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         windows.Add(window);
     }
 
+    /// <summary>
+    /// Zooms a resizable window to fill the screen below the menu bar, over the dock, as macOS does, or puts a zoomed
+    /// one back where it was, at its old size. A window can't be made smaller than its document allows.
+    /// </summary>
+    /// <returns>Whether it changed: a fixed window doesn't zoom.</returns>
+    public bool Zoom(DesktopWindow window)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        if (!window.IsResizable)
+            return false;
+
+        if (window.unzoomed is { } before)
+        {
+            window.unzoomed = null;
+            window.Resize((int)before.Width, (int)before.Height);
+            (window.X, window.Y) = ((int)before.X, (int)before.Y);
+            return true;
+        }
+
+        window.unzoomed = window.Bounds;
+        window.Resize(screenWidth, screenHeight - TopInset);
+        (window.X, window.Y) = (0, TopInset);
+        return true;
+    }
+
     /// <summary>Sends a window to the dock.</summary>
     /// <returns>Whether it was open and not already minimized.</returns>
     public bool Minimize(DesktopWindow window)
@@ -155,15 +180,20 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
 
         if (drag is { } moving && input.PointerDown)
         {
-            // Keep the title bar on the screen, where it can be grabbed again.
+            // Keep the title bar on the screen, where it can be grabbed again. Moving a zoomed window keeps its new
+            // place, so the next zoom fills the screen again.
+            var (oldX, oldY) = (moving.Window.X, moving.Window.Y);
             moving.Window.X = Math.Clamp(x - moving.OffsetX, 40 - moving.Window.Width, screenWidth - 40);
             moving.Window.Y = Math.Clamp(y - moving.OffsetY, TopInset, screenHeight - moving.Window.BarHeight);
+            if (moving.Window.X != oldX || moving.Window.Y != oldY)
+                moving.Window.unzoomed = null;
         }
 
         // Resizing keeps the frame on the screen; the window keeps itself no smaller than its document allows.
         if (resizing is { } sizing && input.PointerDown)
         {
             var window = sizing.Window;
+            window.unzoomed = null;
             window.Resize(
                 Math.Min(sizing.Width + x - sizing.StartX, screenWidth - window.X),
                 Math.Min(sizing.Height + y - sizing.StartY, screenHeight - window.Y));
@@ -321,7 +351,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var (part, index) = target.Hit(x, y);
         switch (part)
         {
-            case FramePart.Close or FramePart.Minimize:
+            case FramePart.Close or FramePart.Minimize or FramePart.Zoom:
                 armed = (target, part, index);
                 break;
             case FramePart.ToolbarItem when !target.View.IsDisabled(target.View.Script.ToolbarItems[index].Name):
@@ -354,6 +384,9 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
                 break;
             case FramePart.Minimize:
                 Minimize(window);
+                break;
+            case FramePart.Zoom:
+                Zoom(window);
                 break;
             case FramePart.ToolbarItem:
                 window.EndTitleEdit();

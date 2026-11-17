@@ -3,6 +3,8 @@
 ## 0.5.300
 
 - Title bars are 30 pixels tall, from 28, which leaves more room to grab and drag a window.
+- Resizable windows have a green zoom button: it fills the screen below the menu bar, and a second click puts the window back.
+- Files shows how many items a folder has under its address.
 - Toolbar items are flat, as GNOME's are, shaded only while the pointer's over one or it's pressed.
 - Apps: a subtitle under the window's title, with `subtitle` on `<Window>` or `window:setSubtitle(text)`; the bar grows taller for it.
 - Apps: toolbar items can sit at the start of the bar (`placement="start"`), and show an icon (`image`) drawn in the text's color, so it follows light and dark, with the item's title as hover text.

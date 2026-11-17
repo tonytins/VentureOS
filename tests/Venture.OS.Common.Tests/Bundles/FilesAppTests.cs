@@ -59,7 +59,7 @@ public sealed class FilesAppTests : IDisposable
         Assert.Equal(Path.GetFileName(root), Window.Title);
         Assert.Equal(root, Window.View.Text("address"));
         Assert.Equal(["Dice.app", "notes.txt", "photos/"], Window.View.List("entries")!.Items);
-        Assert.Equal("3 items", Window.View.Text("status"));
+        Assert.Equal("3 items", Window.View.Subtitle);
         Assert.True(Window.View.IsDisabled("openItem"));
         Assert.True(Window.View.IsDisabled("lookItem"));
         Assert.Equal(["Home", "User", "Apps", "System"], Window.View.List("bookmarks")!.Items);
@@ -76,7 +76,7 @@ public sealed class FilesAppTests : IDisposable
         Send(new UIEvent(UIEventKind.Pressed, "openItem"));
         Assert.Equal(["beach.txt"], Window.View.List("entries")!.Items);
         Assert.Equal("photos", Window.Title);
-        Assert.Equal("1 item", Window.View.Text("status"));
+        Assert.Equal("1 item", Window.View.Subtitle);
 
         Send(new UIEvent(UIEventKind.Pressed, "enclosing"));
         Assert.Equal(root, Window.View.Text("address"));
@@ -103,7 +103,7 @@ public sealed class FilesAppTests : IDisposable
         Window.View.SetText("address", root);
         Send(new UIEvent(UIEventKind.Submitted, "address", root));
         Assert.Equal(root, Window.View.Text("address"));
-        Assert.Equal("3 items", Window.View.Text("status"));
+        Assert.Equal("3 items", Window.View.Subtitle);
     }
 
     [Fact]
@@ -122,6 +122,12 @@ public sealed class FilesAppTests : IDisposable
         Assert.Equal(root, Window.View.Text("address"));
         Assert.Contains("nowhere", Window.View.Text("status"));
         Assert.Equal(3, Window.View.List("entries")!.Items.Count);
+        Assert.Equal("3 items", Window.View.Subtitle);
+
+        // The next folder shown clears the problem.
+        Window.View.SetText("address", root);
+        Send(new UIEvent(UIEventKind.Submitted, "address", root));
+        Assert.Equal("", Window.View.Text("status"));
     }
 
     [Fact]

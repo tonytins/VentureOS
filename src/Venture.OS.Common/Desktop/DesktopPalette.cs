@@ -73,6 +73,8 @@ public sealed record DesktopPalette
     public UIColor CloseMark { get; private init; }
     public UIColor MinimizeButton { get; private init; }
     public UIColor MinimizeMark { get; private init; }
+    public UIColor ZoomButton { get; private init; }
+    public UIColor ZoomMark { get; private init; }
     public UIColor ButtonPressed { get; private init; }
     public UIColor MissingImage { get; private init; }
     public UIColor Shadow { get; private init; }
@@ -124,6 +126,8 @@ public sealed record DesktopPalette
             CloseMark = new UIColor(90, 20, 16),
             MinimizeButton = new UIColor(245, 178, 50),
             MinimizeMark = new UIColor(120, 82, 12),
+            ZoomButton = new UIColor(98, 197, 85),
+            ZoomMark = new UIColor(22, 88, 20),
             MissingImage = new UIColor(220, 30, 30),
             IconPressed = new UIColor(0, 0, 0, 60),
             OpenAppDot = text,

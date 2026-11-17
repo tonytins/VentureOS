@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,007 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,013 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -882,6 +882,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   by the sidebar's width. `UIView` keeps it as a selectable list placed left
   of that corner, so selection, scrolling, and Lua's list calls serve it
   unchanged; only its drawing differs, with taller rows and no box.
+- **Zoom.** A resizable window has a green third button, which zooms it
+  to fill the screen below the menu bar (`TopInset`), over the dock, as
+  macOS does, and a second click puts it back where it was, at its old
+  size (`WindowManager.Zoom`). Moving or resizing a zoomed window forgets
+  the old frame, so the next zoom fills the screen again. Over any of the
+  three buttons, all show their marks; zoom's is a plus.
 - **Minimize.** The orange button sends a window to the dock: it stays in
   the window list but isn't drawn, takes no input, and can't be in front.
   The dock shows each minimized window as a pale tile after the apps, past
@@ -1178,6 +1184,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
 | 2026-11-17 | minor | Menu bar (§9): VentureOS's icon in place of the VentureOS menu's name, a silhouette while open, and in About VentureOS; icons' smoothed edges unmixed from the key. |

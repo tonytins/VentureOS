@@ -16,7 +16,8 @@
 
   <Style name="quiet" textColor="secondaryText"/>
 
-  <!-- Edge offsets keep these to the window's edges as it's resized; the status stays clear of the grip. -->
+  <!-- Edge offsets keep these to the window's edges as it's resized; the status, which says what went wrong
+       (the item count is the subtitle), stays clear of the grip. -->
   <List name="entries" x="10" y="10" width="350" height="256" selectable="true"
         edgeOffsetLeft="10" edgeOffsetTop="10" edgeOffsetRight="10" edgeOffsetBottom="34"/>
   <Text name="status" x="10" y="272" width="338" height="20" alignment="right" style="quiet"
