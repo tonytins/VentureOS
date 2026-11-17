@@ -30,6 +30,12 @@ public static class DesktopAppearance
     public static string? SettingsPath { get; set; }
 
     /// <summary>
+    /// Where the wallpaper bundles are, such as <c>/mnt/system/wallpapers</c>, which the desktop shows the look's from
+    /// and Settings offers; <see langword="null"/> for none, which shows the sky.
+    /// </summary>
+    public static string? WallpapersFolder { get; set; }
+
+    /// <summary>
     /// The time of day, for a look on a schedule, or <see langword="null"/> when it isn't known, which shows the light
     /// look. The kernel gives the clock's.
     /// </summary>

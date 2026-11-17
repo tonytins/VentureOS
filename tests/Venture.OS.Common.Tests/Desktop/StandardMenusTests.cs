@@ -206,36 +206,6 @@ public sealed class StandardMenusTests : IDisposable
         Assert.Contains(painter.Texts, text => text.Text == "P");
     }
 
-    [Fact]
-    public void AWallpaperCoversTheScreenAndAMissingOneShowsTheSky()
-    {
-        var wallpaper = Path.Combine(root, "wallpaper.png");
-        File.WriteAllText(wallpaper, "a red square");
-        DesktopSession withWallpaper = new(1024, 768, loadImage: LoadImage) { Wallpaper = wallpaper };
-        DesktopSession withoutOne = new(1024, 768, loadImage: LoadImage) { Wallpaper = Path.Combine(root, "missing.png") };
-        RecordingPainter painted = new(1024, 768);
-        RecordingPainter sky = new(1024, 768);
-
-        withWallpaper.Draw(painted);
-        withoutOne.Draw(sky);
-
-        Assert.Equal(unchecked((int)0xFFFF0000), painted.At(10, 300));
-        Assert.Equal(unchecked((int)0xFFFF0000), painted.At(1013, 500));
-        Assert.Equal(DesktopBackground.Render(1024, 768)[(300 * 1024) + 10], sky.At(10, 300));
-    }
-
-    [Fact]
-    public void AWallpapersClearPartsShowTheSky()
-    {
-        DesktopSession session = new(100, 100, loadImage: _ => new DesktopImage(1, 1, [0])) { Wallpaper = "/clear.png" };
-        RecordingPainter painter = new(100, 100);
-
-        session.Draw(painter);
-
-        // Below the menu bar and away from the pointer, with no dock or windows over it.
-        Assert.Equal(DesktopBackground.Render(100, 100)[(80 * 100) + 10], painter.At(10, 80));
-    }
-
     private void App(string name, string info, string menus)
     {
         var contents = Path.Combine(root, "apps", $"{name}.app", "Contents");

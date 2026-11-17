@@ -26,12 +26,18 @@ public sealed class SettingsAppTests : IDisposable
     public SettingsAppTests()
     {
         DesktopAppearance.SettingsPath = Path.Combine(root, "appearance.xml");
+        var systemFolder = Path.Combine(AppContext.BaseDirectory, "system");
+        DesktopAppearance.WallpapersFolder = Path.Combine(systemFolder, "wallpapers");
         CommandRegistry registry = new();
         manager = new AppManager(
-            Path.Combine(AppContext.BaseDirectory, "system", "apps"),
+            Path.Combine(systemFolder, "apps"),
             new RuntimeCommands(registry.IsBuiltIn),
             system,
-            windows: new AppWindows(windows, events));
+            windows: new AppWindows(windows, events)
+            {
+                SystemFolder = systemFolder,
+                LoadImage = path => File.Exists(path) ? new DesktopImage(1, 1, [unchecked((int)0xFF00FF00)]) : null,
+            });
         Assert.True(manager.OpenApp("Settings", Path.GetTempPath(), output), string.Join('\n', output.Lines));
     }
 
@@ -39,6 +45,7 @@ public sealed class SettingsAppTests : IDisposable
     {
         manager.CloseApp("Settings", new RecordingOutput());
         DesktopAppearance.SettingsPath = null;
+        DesktopAppearance.WallpapersFolder = null;
         DesktopAppearance.Use(DesktopLook.Standard);
         if (Directory.Exists(root))
             Directory.Delete(root, recursive: true);
@@ -159,6 +166,33 @@ public sealed class SettingsAppTests : IDisposable
         Assert.Equal(TimeSpan.Zero, system.WallClock!.UtcOffset);
         Assert.Contains("written like -05:00", Window.View.Text("clockShown"));
         Assert.Equal("EST", Window.View.Text("utcOffset"));
+    }
+
+    [Fact]
+    public void TheWallpaperPickerShowsTheSkyThenTheSystemsWallpapers()
+    {
+        // The sky, then Earthset, the only wallpaper the system ships; the other slots are hidden.
+        Assert.Empty(Window.View.MissingImages);
+        Assert.False(Window.View.IsHidden("wallpaper1"));
+        Assert.False(Window.View.IsHidden("wallpaper2"));
+        Assert.True(Window.View.IsHidden("wallpaper3"));
+        Assert.True(Window.View.IsHidden("wallpaper5"));
+        Assert.True(Window.View.IsSelected("wallpaper2"));
+        Assert.Equal("Earthset", Window.View.Text("wallpaperName"));
+        Assert.Equal("", Window.View.Text("status"));
+
+        Send(new UIEvent(UIEventKind.Pressed, "wallpaper1"));
+
+        Assert.Equal(DesktopLook.Sky, DesktopAppearance.Current.Wallpaper);
+        Assert.True(Window.View.IsSelected("wallpaper1"));
+        Assert.Equal("Sky", Window.View.Text("wallpaperName"));
+        Assert.Contains("wallpaper=\"sky\"", File.ReadAllText(DesktopAppearance.SettingsPath!));
+
+        // Coming back to Appearance from Clock keeps the unused slots hidden.
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 1));
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 0));
+        Assert.True(Window.View.IsHidden("wallpaper3"));
+        Assert.False(Window.View.IsHidden("wallpaper2"));
     }
 
     [Fact]

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.504
+
+- Choose the wallpaper in Settings ▸ Appearance ▸ Wallpaper, from thumbnails: the sky, which follows the accent, or Earthset. The desktop changes at once.
+- Scripts: `venture.wallpapers()` lists the wallpapers, and `venture.setAppearance{ wallpaper = "sky" }` chooses one.
+
 ## 0.5.502
 
 - Apps: buttons with an `image` show it, ringed in the accent while checked, and `window:setImage(name, path)` changes a picture while the app runs.

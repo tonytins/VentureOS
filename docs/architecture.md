@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,090 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,096 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -742,9 +742,13 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   QEMU's framebuffer is 1280x800. The text console uses the same screen.
 - **Drawing.** The canvas doesn't blend, so the background is worked out
   once, as pixels, on the first frame, and each frame copies it, then draws
-  on top. It's the wallpaper (`DesktopSession.Wallpaper`,
-  `/mnt/system/wallpapers/earthset.png`), scaled to cover the screen and cut
-  from the middle, or, without one, the sky, which `DesktopBackground` works
+  on top. It's the look's wallpaper, a `Name.wallpaper` bundle in
+  `DesktopAppearance.WallpapersFolder` (`/mnt/system/wallpapers`, found by
+  `WallpaperCatalog`), its `-light` or `-dark` picture when it has one for
+  the palette showing, scaled to cover the screen and cut from the middle;
+  a change to the look's wallpaper redraws it on the next frame. With
+  `sky`, a wallpaper that isn't there (said once in a message window), or a
+  picture that can't be read, it's the sky, which `DesktopBackground` works
   out again when the palette changes (85 ms at 1024x768 under QEMU). A
   wallpaper's clear parts show the sky. `Canvas.Display` shows the finished
   frame at once.
@@ -1221,6 +1225,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Wallpapers (§9): the desktop shows the look's wallpaper from its bundle, light or dark, and follows a change; `venture.wallpapers()` lists them, and Settings picks one from thumbnails, the sky first. |
 | 2026-11-17 | minor | Image buttons (§9): buttons draw their images, ringed in the accent when checked, and `window:setImage` supplies one at run time, from where an app may look. |
 | 2026-11-17 | minor | Rounded corners (§9): windows' four corners and shadows rounded to 10 pixels when the look says so, by reading back what's under them (`IPainter.ReadPixels`); Settings switches them. |
 | 2026-11-17 | minor | Look options begin (§9): `DesktopLook` with `auto` and its schedule, corners, and the wallpaper's name, saved in `appearance.xml` and read and set from Lua (`setAppearance` takes a table); `.wallpaper` bundles with `-light` and `-dark` variants, and Earthset in one. Corners, wallpapers, and the schedule aren't used yet. |

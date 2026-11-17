@@ -139,8 +139,9 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 
 - [x] Rounded corners on all four corners of a window, on or off in
   Settings; on by default, at 10 pixels.
-- [ ] Wallpapers to choose from in Settings, with light and dark variants,
-  and the sky kept as one.
+- [x] Wallpapers to choose from in Settings, with light and dark variants,
+  and the sky kept as one. Wallpapers are bundles; the variants are read,
+  but none ships yet.
 - [ ] Automatic dark mode, dark from sunset to sunrise.
 
 ## After 0.5: Roundhouse

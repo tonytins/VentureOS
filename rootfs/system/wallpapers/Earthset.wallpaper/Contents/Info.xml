@@ -3,5 +3,6 @@
      shown in that mode instead. -->
 <Wallpaper version="1">
   <Info identifier="dev.tonytins.ventureos.wallpaper.earthset" name="Earthset" image="Contents/Resources/Earthset.png"
+        icon="Contents/Resources/Thumbnail.png"
         description="The Earth setting behind the Moon."/>
 </Wallpaper>

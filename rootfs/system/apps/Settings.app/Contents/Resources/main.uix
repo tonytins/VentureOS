@@ -2,7 +2,7 @@
 <!-- The Settings window: a sidebar of panes, as GNOME Settings has, each pane's controls in one place, which
      main.lua shows one pane at a time. main.lua applies and saves each choice. -->
 <UIScript version="1" requires="sidebar">
-  <Window width="380" height="292"/>
+  <Window width="380" height="410"/>
   <Sidebar name="panes" width="130"/>
 
   <Style name="heading" fontSize="title"/>
@@ -54,6 +54,21 @@
   <Text name="cornersHeading" x="12" y="222" width="356" height="24" style="heading" text="Window corners"/>
   <Button name="rounded" x="12" y="252" width="84" height="26" text="Rounded"/>
   <Button name="square" x="102" y="252" width="84" height="26" text="Square"/>
+
+  <!-- The wallpapers, the sky first, as thumbnails; main.lua puts each wallpaper's in its slot and hides the slots
+       it doesn't use. Every slot starts with the sky's, which ships beside this file. -->
+  <Image name="thumb1" path="Sky.png"/>
+  <Image name="thumb2" path="Sky.png"/>
+  <Image name="thumb3" path="Sky.png"/>
+  <Image name="thumb4" path="Sky.png"/>
+  <Image name="thumb5" path="Sky.png"/>
+  <Text name="wallpaperHeading" x="12" y="296" width="356" height="24" style="heading" text="Wallpaper"/>
+  <Button name="wallpaper1" x="12" y="326" width="64" height="48" image="thumb1"/>
+  <Button name="wallpaper2" x="84" y="326" width="64" height="48" image="thumb2"/>
+  <Button name="wallpaper3" x="156" y="326" width="64" height="48" image="thumb3"/>
+  <Button name="wallpaper4" x="228" y="326" width="64" height="48" image="thumb4"/>
+  <Button name="wallpaper5" x="300" y="326" width="64" height="48" image="thumb5"/>
+  <Text name="wallpaperName" x="12" y="380" width="356" height="20" style="quiet"/>
 
   <!-- Clock: the offset from UTC, typed after the UTC label; there's no daylight saving, so it's changed when the
        clocks change. -->

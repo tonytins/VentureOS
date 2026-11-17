@@ -96,6 +96,10 @@ public sealed class DesktopSession
 
     // The palette the sky was worked out in; a different one in use means working it out again.
     private DesktopPalette backgroundPalette;
+
+    // The wallpaper the background was worked out with, by name, and each name's bundle, looked up once.
+    private string? backgroundWallpaper;
+    private readonly Dictionary<string, Wallpaper?> wallpaperBundles = [];
     private readonly AppManager? apps;
     private readonly string workingDirectory;
     private readonly HeldOutput appOutput;
@@ -208,11 +212,6 @@ public sealed class DesktopSession
     /// </summary>
     public string? Clipboard { get; private set; }
 
-    /// <summary>
-    /// The full path of the picture behind the windows, which is scaled to cover the screen; <see langword="null"/>,
-    /// or a picture that can't be read, shows the sky.
-    /// </summary>
-    public string? Wallpaper { get; init; }
 
     /// <summary>
     /// The full path of VentureOS's own icon, which the menu bar shows in place of the VentureOS menu's name, as
@@ -300,9 +299,27 @@ public sealed class DesktopSession
     /// The wallpaper covering the screen, read and scaled the first time and kept after, or <see langword="null"/>
     /// when there's none or it couldn't be read.
     /// </summary>
+    /// <remarks>
+    /// The picture is the look's wallpaper from <see cref="DesktopAppearance.WallpapersFolder"/>, its light or dark
+    /// one to match the palette when it has them. The sky, a wallpaper that isn't there, or a picture that can't be
+    /// read shows the sky; a missing wallpaper is said once in a message window.
+    /// </remarks>
     private DesktopImage? WallpaperPicture()
     {
-        if (Wallpaper is not { } path || loadImage is null)
+        var name = DesktopAppearance.Current.Wallpaper;
+        if (name == DesktopLook.Sky || DesktopAppearance.WallpapersFolder is not { } folder || loadImage is null)
+            return null;
+
+        if (!wallpaperBundles.TryGetValue(name, out var wallpaper))
+        {
+            List<string> problems = [];
+            wallpaper = WallpaperCatalog.Find(folder, name, problems);
+            wallpaperBundles[name] = wallpaper;
+            foreach (var problem in problems)
+                appOutput.WriteLine($"Wallpaper: {problem}; showing the sky.");
+        }
+
+        if (wallpaper?.Bundle.ImageFor(backgroundPalette.IsDark) is not { } path)
             return null;
         if (wallpapers.TryGetValue((path, Width, Height), out var known))
             return known;
@@ -479,7 +496,8 @@ public sealed class DesktopSession
 
         // The clock is brought up to date every frame, even when something else already calls for a redraw.
         var clockChanged = UpdateClock();
-        var changed = !drawn || clockChanged || input.HasEvents || happened.Count > 0 || restarted || ticked
+        var changed = !drawn || clockChanged || input.HasEvents
+            || !string.Equals(DesktopAppearance.Current.Wallpaper, backgroundWallpaper, StringComparison.Ordinal) || happened.Count > 0 || restarted || ticked
             || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
             || !ReferenceEquals(Windows.Tooltip, drawnTooltip)
             || x != last.PointerX || y != last.PointerY || input.PointerDown != last.PointerDown;
@@ -512,9 +530,12 @@ public sealed class DesktopSession
         ArgumentNullException.ThrowIfNull(painter);
 
         // Working the background out allocates, so only on the first draw and when the palette changes.
-        if (background is null || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette))
+        var wallpaper = DesktopAppearance.Current.Wallpaper;
+        if (background is null || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
+            || !string.Equals(wallpaper, backgroundWallpaper, StringComparison.Ordinal))
         {
             backgroundPalette = DesktopTheme.Palette;
+            backgroundWallpaper = wallpaper;
             background = RenderBackground();
         }
 

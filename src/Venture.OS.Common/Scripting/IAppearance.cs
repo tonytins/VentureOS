@@ -27,9 +27,19 @@ public interface IAppearance
     /// <summary>When <c>auto</c> turns light again, written <c>HH:MM</c>.</summary>
     string DarkUntil { get; }
 
+    /// <summary>The wallpapers there are to choose from, by name, sorted, without the sky.</summary>
+    IReadOnlyList<WallpaperChoice> Wallpapers();
+
     /// <summary>Changes what the request names, keeps the rest, and saves the look.</summary>
     AppearanceChange Set(AppearanceRequest request);
 }
+
+/// <summary>A wallpaper to choose from.</summary>
+/// <param name="Name">What the look keeps, such as <c>Earthset</c>.</param>
+/// <param name="Title">What people see, from its bundle.</param>
+/// <param name="Thumbnail">The full path of a small picture of it.</param>
+/// <param name="Description">What it shows, or <see langword="null"/>.</param>
+public sealed record WallpaperChoice(string Name, string Title, string Thumbnail, string? Description);
 
 /// <summary>
 /// A change to the look: each part that isn't <see langword="null"/> changes, as scripts write it.

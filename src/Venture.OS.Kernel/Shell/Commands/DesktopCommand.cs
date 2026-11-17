@@ -81,7 +81,6 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
             session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, appOutput, windows, PngLoader.Load)
             {
                 AboutDocument = LoadAbout,
-                Wallpaper = Bootstrap.WallpaperPath,
                 SystemIcon = Bootstrap.SystemIconPath,
                 WallClock = Bootstrap.WallClock,
                 SystemVersion = $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})",

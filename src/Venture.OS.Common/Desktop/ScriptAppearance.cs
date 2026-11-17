@@ -30,6 +30,18 @@ public sealed class ScriptAppearance : IAppearance
     public string DarkUntil => DesktopLook.FormatTime(DesktopAppearance.Current.DarkUntil);
 
     /// <inheritdoc/>
+    public IReadOnlyList<WallpaperChoice> Wallpapers()
+    {
+        if (DesktopAppearance.WallpapersFolder is not { } folder)
+            return [];
+
+        List<WallpaperChoice> choices = [];
+        foreach (var wallpaper in WallpaperCatalog.Read(folder))
+            choices.Add(new WallpaperChoice(wallpaper.Name, wallpaper.Bundle.Name, wallpaper.Thumbnail, wallpaper.Bundle.Description));
+        return choices;
+    }
+
+    /// <inheritdoc/>
     public AppearanceChange Set(AppearanceRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -60,6 +72,9 @@ public sealed class ScriptAppearance : IAppearance
         {
             if (!DesktopLook.IsWallpaperName(wallpaper))
                 return Refuse($"\"{wallpaper}\" isn't a wallpaper's name");
+            if (wallpaper != DesktopLook.Sky && DesktopAppearance.WallpapersFolder is { } folder
+                && WallpaperCatalog.Find(folder, wallpaper) is null)
+                return Refuse($"there's no wallpaper named {wallpaper}");
             look = look with { Wallpaper = wallpaper };
         }
 

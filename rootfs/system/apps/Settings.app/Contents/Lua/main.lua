@@ -18,6 +18,14 @@ local SWATCHES = {
   { name = "Slate", accent = "#6F8396" },
 }
 
+-- The wallpapers in the picker's slots, the sky first, then as many of the
+-- system's as there are slots for.
+local WALLPAPER_SLOTS = 5
+local wallpapers = { { name = "sky", title = "Sky" } }
+for _, wallpaper in ipairs(venture.wallpapers() or {}) do
+  if #wallpapers < WALLPAPER_SLOTS then wallpapers[#wallpapers + 1] = wallpaper end
+end
+
 -- Shows the look in use: which mode is checked, and the accent's name.
 local function show()
   local look = venture.appearance()
@@ -25,6 +33,13 @@ local function show()
   window:setChecked("dark", look.mode == "dark")
   window:setChecked("rounded", look.corners == "rounded")
   window:setChecked("square", look.corners == "square")
+
+  local shown = look.wallpaper
+  for slot, wallpaper in ipairs(wallpapers) do
+    window:setChecked("wallpaper" .. slot, wallpaper.name == look.wallpaper)
+    if wallpaper.name == look.wallpaper then shown = wallpaper.title end
+  end
+  window:setText("wallpaperName", shown)
 
   local name = "Custom, " .. look.accent
   for _, swatch in ipairs(SWATCHES) do
@@ -46,6 +61,23 @@ local function corners(shape)
   local ok, problem = venture.setAppearance({ corners = shape })
   window:setText("status", problem or "")
   if ok then show() end
+end
+
+-- Each slot shows its wallpaper's thumbnail, and choosing it shows it on the
+-- desktop; a thumbnail that can't be read says so, and the slot stays.
+for slot = 1, WALLPAPER_SLOTS do
+  local wallpaper = wallpapers[slot]
+  if wallpaper then
+    if wallpaper.thumbnail then
+      local ok, problem = window:setImage("thumb" .. slot, wallpaper.thumbnail)
+      if not ok then window:setText("status", problem) end
+    end
+    window:on("wallpaper" .. slot, function()
+      local ok, problem = venture.setAppearance({ wallpaper = wallpaper.name })
+      window:setText("status", problem or "")
+      if ok then show() end
+    end)
+  end
 end
 
 window:on("rounded", function() corners("rounded") end)
@@ -94,15 +126,22 @@ local PANES = {
     controls = {
       "styleHeading", "light", "dark", "accentHeading", "swatch1", "swatch2", "swatch3", "swatch4", "swatch5",
       "swatch6", "swatch7", "swatch8", "swatch9", "accentName", "custom", "status", "cornersHeading", "rounded",
-      "square",
+      "square", "wallpaperHeading", "wallpaper1", "wallpaper2", "wallpaper3", "wallpaper4", "wallpaper5",
+      "wallpaperName",
     },
   },
   { name = "Clock", controls = { "offsetHeading", "utcLabel", "utcOffset", "clockShown" } },
 }
 
+-- Wallpaper slots past the last wallpaper stay hidden on every pane.
+local function unused(control)
+  local slot = tonumber(control:match("^wallpaper(%d)$"))
+  return slot ~= nil and wallpapers[slot] == nil
+end
+
 local function showPane(number)
   for index, pane in ipairs(PANES) do
-    for _, control in ipairs(pane.controls) do window:setHidden(control, index ~= number) end
+    for _, control in ipairs(pane.controls) do window:setHidden(control, index ~= number or unused(control)) end
   end
   window:setTitle(PANES[number].name)
   window:select("panes", number)

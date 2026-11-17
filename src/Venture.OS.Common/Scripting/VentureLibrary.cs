@@ -57,6 +57,7 @@ public static class VentureLibrary
             Gated("ping", ScriptScopes.Network, scopes, lua => Ping(lua, system.NetworkTools)),
             Gated("appearance", ScriptScopes.System, scopes, lua => PushAppearance(lua, system.Appearance)),
             Gated("setAppearance", ScriptScopes.System, scopes, lua => SetAppearance(lua, system.Appearance)),
+            Gated("wallpapers", ScriptScopes.System, scopes, lua => PushWallpapers(lua, system.Appearance)),
             Gated("time", ScriptScopes.System, scopes, lua => PushTime(lua, system.WallClock)),
             Gated("setUtcOffset", ScriptScopes.System, scopes, lua => SetUtcOffset(lua, system.WallClock)),
 
@@ -166,6 +167,34 @@ public static class VentureLibrary
         SetString(lua, "wallpaper", appearance.Wallpaper);
         SetString(lua, "darkFrom", appearance.DarkFrom);
         SetString(lua, "darkUntil", appearance.DarkUntil);
+        return 1;
+    }
+
+    /// <summary>
+    /// <c>venture.wallpapers()</c>: the wallpapers to choose from, each <c>{ name, title, thumbnail, description }</c>,
+    /// sorted by name, without the sky; <c>nil</c> on a system without an appearance.
+    /// </summary>
+    private static int PushWallpapers(ILuaState lua, IAppearance? appearance)
+    {
+        if (appearance is null)
+        {
+            lua.PushNil();
+            return 1;
+        }
+
+        var wallpapers = appearance.Wallpapers();
+        lua.CreateTable(wallpapers.Count, 0);
+        for (var index = 0; index < wallpapers.Count; index++)
+        {
+            var wallpaper = wallpapers[index];
+            lua.NewTable();
+            SetString(lua, "name", wallpaper.Name);
+            SetString(lua, "title", wallpaper.Title);
+            SetString(lua, "thumbnail", wallpaper.Thumbnail);
+            SetString(lua, "description", wallpaper.Description);
+            lua.RawSetI(-2, index + 1);
+        }
+
         return 1;
     }
 
