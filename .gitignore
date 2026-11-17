@@ -489,3 +489,6 @@ $RECYCLE.BIN/
 # App bundles such as Notes.app are part of the system. A global ignore for
 # macOS applications (*.app) would otherwise leave them out of the repository.
 !*.app
+
+# Release notes, which the Visual Studio template above ignores as build output.
+!docs/releases/

@@ -2,6 +2,7 @@
 
 ## 0.4.500
 
+- VentureOS 0.4, Pere Marquette, is released. See [the release notes](docs/releases/0.4.md).
 - Undo (Ctrl+Z) and Redo (Ctrl+Shift+Z) in the Edit menu, for any text field, text area, or window address. Typing comes back a word at a time; a paste or cut, one at a time.
 
 ## 0.4.401

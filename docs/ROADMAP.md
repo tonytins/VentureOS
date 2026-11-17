@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-12 · **Release in development:** 0.4, Pere Marquette
+> **Last updated:** 2026-11-17 · **Latest release:** 0.4, Pere Marquette · **Next:** 0.5, being planned
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -41,7 +41,7 @@ stage to the next, and add a line to the revision history.
 | Release | Code name | Stage | Holds |
 |---|---|---|---|
 | 0.3 | (the desktop) | released 2026-11-11, `v0.3.18`; [notes](./releases/0.3.md) | The desktop, its apps, Settings, and the look |
-| 0.4 | Pere Marquette | in development; every band done, release is my call | Standard menus, text selection, Edit, networking, and Undo and Redo |
+| 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | (a sleeper train, when it's planned) | considered | Nothing chosen yet; see Ideas |
 
 ## 0.4, Pere Marquette
@@ -127,5 +127,6 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.4, Pere Marquette, is released as `v0.4.500`. 0.5 is next, being planned. |
 | 2026-11-12 | minor | 0.4.5xx done: Undo and Redo for every text field, area, and title field. Every band of 0.4 is done. |
 | 2026-11-12 | major | The roadmap starts over for an evolving OS, by my decision: releases and their stages, bands without hour estimates, an Ideas list, and 1.0 whenever I'm ready. The route milestones and their history moved to [docs/history](./history/roadmap-2026.md). 0.4 gains a fifth band, Undo and Redo. Code names from 0.5 are Japanese sleeper trains, then Japanese limited expresses. |
