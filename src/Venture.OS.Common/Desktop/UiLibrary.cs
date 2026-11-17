@@ -247,7 +247,7 @@ public sealed class WindowTimer
 /// <c>select(name, index)</c>: a list's items and its selection, counting from 1, or <c>nil</c> for none.</description></item>
 /// <item><description><c>setHidden</c>, <c>setDisabled</c>, <c>setChecked(name, on)</c>: hide, disable, or check a
 /// control or menu item.</description></item>
-/// <item><description><c>focus(name)</c>, <c>setTitle(text)</c>, <c>close()</c>. Focusing the title field starts an
+/// <item><description><c>focus(name)</c>, <c>setTitle(text)</c>, <c>setSubtitle(text or nil)</c>, <c>close()</c>. Focusing the title field starts an
 /// edit of it.</description></item>
 /// <item><description><c>every(seconds, fn)</c>: runs <c>fn</c> every so often, at least 0.1 seconds apart, while
 /// the desktop shows, until the returned timer's <c>stop()</c>, the window closing, or the app quitting. Time the
@@ -634,6 +634,12 @@ public static class UiLibrary
         Method(lua, "setTitle", handle, (state, h) =>
         {
             h.Window!.Title = LuaText.Decode(state.L_CheckString(2));
+            return 0;
+        });
+        Method(lua, "setSubtitle", handle, (state, h) =>
+        {
+            // nil or an empty string takes the line away, and the bar goes back to its usual height.
+            h.View.Subtitle = state.IsNoneOrNil(2) ? null : LuaText.Decode(state.L_CheckString(2));
             return 0;
         });
         Method(lua, "close", handle, (_, h) =>

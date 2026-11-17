@@ -339,6 +339,24 @@ public sealed class UiLibraryTests : IDisposable
     }
 
     [Fact]
+    public void SetsAndClearsTheSubtitle()
+    {
+        Open("""
+            local window = venture.ui.open("main.uix")
+            window:setSubtitle("3 notes")
+            window:on("ok", function() window:setSubtitle(nil) end)
+            """);
+        var window = Assert.Single(windows.Windows);
+
+        Assert.Equal("3 notes", window.View.Subtitle);
+        Assert.Equal(DesktopTheme.TallTitleBarHeight, window.BarHeight);
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "ok"));
+        Assert.Null(window.View.Subtitle);
+        Assert.Equal(DesktopTheme.TitleBarHeight, window.BarHeight);
+    }
+
+    [Fact]
     public void LoadsTheImagesADocumentNamesFromBesideIt()
     {
         List<string> asked = [];

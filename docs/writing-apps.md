@@ -238,7 +238,8 @@ new number. `roll` still works in the shell, since both live in the same app.
   when an item is double-clicked, after `selected` for the first click.
 - **Changing the window:** `setText`, `setValue`, `setItems` (a list's
   items), `select` (a list's selection), `setDisabled`, `setHidden`,
-  `setChecked`, `focus`, `setTitle`, and `close`, with readers `text`,
+  `setChecked`, `focus`, `setTitle`, `setSubtitle` (a line under the title,
+  or `nil` for none), and `close`, with readers `text`,
   `value`, `items`, and `selected`. Use a colon: `window:setText(...)`.
 - **The title bar:** `<ToolbarItem name="add" title="Add"/>` puts a button
   in the window's title bar, which reports `pressed` like any button, and
@@ -250,7 +251,9 @@ new number. `roll` still works in the shell, since both live in the same app.
   one `image="addIcon"`, naming an `<Image>`, and it shows that image as a
   symbol in the text's color, so it follows light and dark, with its title
   as hover text and a taller bar. Draw symbols as dark shapes, with
-  `#00FF01` or transparency where they're clear.
+  `#00FF01` or transparency where they're clear. `subtitle="3 notes"` on
+  `<Window>` puts a smaller line under the title, as `window:setSubtitle`
+  does.
 - **Images:** declare one with `<Image name="logo" path="images/logo.png"/>`,
   its path beside the `.uix` file, and show it with
   `<Visual name="banner" image="logo" x="10" y="10" width="64" height="64"/>`,

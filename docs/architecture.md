@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,002 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,007 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -815,6 +815,11 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   color (`DesktopIcon.Symbol`, `DesktopImage.Silhouette`), dimmed when
   disabled, made once for each color, so it follows light and dark; its
   title is its hover text. One whose image wasn't supplied shows its title.
+  A subtitle (`subtitle` on `<Window>`, or `window:setSubtitle`) shows
+  under the title in the caption size and the secondary text color, the
+  two centred together in the taller bar, the subtitle cut with an
+  ellipsis to the title's room; an idle title field stays on the title's
+  line, and an edited one takes the bar's middle.
   The title is centred in the window when it fits clear of both ends of
   the bar, and otherwise in the room between the items at each end, cut with an ellipsis.
   A `<TitleField>` makes the title editable, as Files' address bar is,

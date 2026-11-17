@@ -4,6 +4,7 @@
 
 - Title bars are 30 pixels tall, from 28, which leaves more room to grab and drag a window.
 - Toolbar items are flat, as GNOME's are, shaded only while the pointer's over one or it's pressed.
+- Apps: a subtitle under the window's title, with `subtitle` on `<Window>` or `window:setSubtitle(text)`; the bar grows taller for it.
 - Apps: toolbar items can sit at the start of the bar (`placement="start"`), and show an icon (`image`) drawn in the text's color, so it follows light and dark, with the item's title as hover text.
 - Apps: images in an app's `.uix` files show, from PNG files beside them, such as `<Image name="logo" path="images/logo.png"/>` shown with a `<Visual>`.
 

@@ -84,6 +84,7 @@ public sealed class DesktopWindow
     private const int TallItemHeight = 30;
     private const int ItemRadius = 5;
     private const int SymbolSize = 16;
+    private const int SubtitleSize = DesktopTheme.CaptionSize;
     private const int ItemPadding = 10;
     private const int ItemGap = 6;
     private const int Margin = 8;
@@ -225,9 +226,11 @@ public sealed class DesktopWindow
     {
         get
         {
-            var top = Y + ((BarHeight - ItemHeight) / 2);
+            // Idle, it's the title's line, which a subtitle moves up; edited, a field in the bar's middle.
             if (!IsEditingTitle)
-                return new UIRect(X + shownLeft, top, shownWidth, ItemHeight);
+                return new UIRect(X + shownLeft, TitleTextY - ((ItemHeight - TitleLineHeight) / 2), shownWidth, ItemHeight);
+
+            var top = Y + ((BarHeight - ItemHeight) / 2);
 
             var (left, right) = TitleRoom();
             return new UIRect(left, top, right - left, ItemHeight);
@@ -643,8 +646,42 @@ public sealed class DesktopWindow
         var (start, width) = Centre(wanted, left, right);
         (shownLeft, shownWidth) = field is null ? (0, 0) : (start - X, width);
 
-        var textY = Y + ((BarHeight - (int)MathF.Ceiling(Size * 1.35f)) / 2);
+        var textY = TitleTextY;
         painter.DrawText(shown, start + ((width - textWidth) / 2), textY, color, Size);
+        if (View.Subtitle is { Length: > 0 } subtitle)
+            DrawSubtitle(painter, subtitle, left, right, textY + TitleLineHeight);
+    }
+
+    private static int TitleLineHeight => (int)MathF.Ceiling(DesktopTheme.TextSize * 1.35f);
+
+    /// <summary>
+    /// Where the plain title's line starts: centred in the bar, or, with a subtitle, centred with it, the subtitle
+    /// under the title.
+    /// </summary>
+    private int TitleTextY
+    {
+        get
+        {
+            var subtitleHeight = View.Subtitle is { Length: > 0 } ? (int)MathF.Ceiling(SubtitleSize * 1.35f) : 0;
+            return Y + ((BarHeight - TitleLineHeight - subtitleHeight) / 2);
+        }
+    }
+
+    /// <summary>The subtitle: smaller and quieter than the title, centred under it, and cut to the title's room.</summary>
+    private void DrawSubtitle(IPainter painter, string subtitle, int left, int right, int y)
+    {
+        var room = right - left;
+        var shown = subtitle;
+        if (painter.MeasureText(shown, SubtitleSize) > room)
+        {
+            while (shown.Length > 0 && painter.MeasureText(shown + "…", SubtitleSize) > room)
+                shown = shown[..^1];
+            shown += "…";
+        }
+
+        var width = painter.MeasureText(shown, SubtitleSize);
+        var (start, _) = Centre(width, left, right);
+        painter.DrawText(shown, start, y, DesktopTheme.SecondaryText, SubtitleSize);
     }
 
     /// <summary>Draws the title field being edited: a field across all the room, showing the end that holds the caret.</summary>
