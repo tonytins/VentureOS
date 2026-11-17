@@ -124,7 +124,7 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
   below the menu bar, as macOS does.
 - [x] A flat header bar that blends with the content, with faint lines
   under it and beside the sidebar, after GNOME's.
-- [ ] GNOME's colors in place of Distro Tycoon's: neutral surfaces, a
+- [x] GNOME's colors in place of Distro Tycoon's: neutral surfaces, a
   neutral menu bar, and GNOME's nine accents in Settings.
 
 **0.5.4xx, sidebars**
@@ -204,6 +204,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | 0.5.3xx done again: VentureOS takes GNOME's colors and nine accents. |
 | 2026-11-17 | minor | 0.5.3xx reopens, by my decision, for two more phases: a flat header bar, then GNOME's colors. |
 | 2026-11-17 | minor | 0.5.3xx done, in four phases: flat toolbar items with symbols at either end, the subtitle, taller bars, and zoom. The bar grows only for a subtitle or icons, by my decision. Shipped apps keep text items until their icons are drawn. |
 | 2026-11-17 | minor | 0.5.2xx done: Tiger's gloss, and the time on the right of the menu bar, with an offset from UTC I chose over a time zone database. |

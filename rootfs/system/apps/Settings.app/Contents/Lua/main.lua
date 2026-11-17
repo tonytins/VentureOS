@@ -4,16 +4,17 @@
 
 local window = venture.ui.open("main.uix")
 
--- The swatches, in the order of the buttons and their styles in main.uix.
+-- GNOME's nine accents, in the order of the buttons and their styles in main.uix.
 local SWATCHES = {
-  { name = "Sky Blue", accent = "#1E78DC" },
-  { name = "Blueberry", accent = "#1D63BF" },
-  { name = "Grape", accent = "#8F4CBF" },
-  { name = "Strawberry", accent = "#E0435D" },
-  { name = "Tangerine", accent = "#F27E18" },
-  { name = "Lime", accent = "#71BF39" },
-  { name = "Teal", accent = "#21A6A1" },
-  { name = "Graphite", accent = "#7E848C" },
+  { name = "Blue", accent = "#3584E4" },
+  { name = "Teal", accent = "#2190A4" },
+  { name = "Green", accent = "#3A944A" },
+  { name = "Yellow", accent = "#C88800" },
+  { name = "Orange", accent = "#ED5B00" },
+  { name = "Red", accent = "#E62D42" },
+  { name = "Pink", accent = "#D56199" },
+  { name = "Purple", accent = "#9141AC" },
+  { name = "Slate", accent = "#6F8396" },
 }
 
 -- Shows the look in use: which mode is checked, and the accent's name.

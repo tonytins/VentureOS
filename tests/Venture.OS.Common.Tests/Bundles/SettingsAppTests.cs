@@ -51,7 +51,7 @@ public sealed class SettingsAppTests : IDisposable
     {
         Assert.True(Window.View.IsSelected("light"));
         Assert.False(Window.View.IsSelected("dark"));
-        Assert.Equal("Sky Blue", Window.View.Text("accentName"));
+        Assert.Equal("Blue", Window.View.Text("accentName"));
         Assert.Empty(output.Lines);
         Assert.Empty(events.Lines);
         Assert.Empty(Window.View.MissingStrings);
@@ -97,7 +97,7 @@ public sealed class SettingsAppTests : IDisposable
             Assert.True(DesktopTheme.Palette.IsDark);
         }
 
-        Assert.Equal("Graphite", Window.View.Text("accentName"));
+        Assert.Equal("Slate", Window.View.Text("accentName"));
     }
 
     [Fact]
@@ -133,7 +133,7 @@ public sealed class SettingsAppTests : IDisposable
         Assert.Same(DesktopPalette.Light, DesktopTheme.Palette);
         Assert.Contains("#RRGGBB", Window.View.Text("status"));
         Assert.Equal("blue", Window.View.Text("custom"));
-        Assert.Equal("Sky Blue", Window.View.Text("accentName"));
+        Assert.Equal("Blue", Window.View.Text("accentName"));
     }
 
     [Fact]

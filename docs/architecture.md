@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,015 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,016 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -843,13 +843,17 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
 - **Palettes.** Every color the desktop draws with comes from the
   `DesktopPalette` in use, which `DesktopTheme`'s colors read each time
   something draws, so switching it reaches every window and app on the next
-  frame. A palette is built from an accent, light or dark, after Distro
-  Tycoon 2: tinted colors (title bars, selection, the sidebar, the sky) take
-  the accent's hue and a share of its saturation, while text, panels, and
-  borders stay neutral. The standard light palette rebuilds the original
-  colors to within a shade. The accent is darkened on light and lightened on
-  dark until it reads, and `ChosenAccent` keeps it as chosen. The desktop
-  works out its sky again, once, when the palette changes.
+  frame. A palette is light or dark, with one accent, after GNOME's
+  libadwaita (until 0.5, Distro Tycoon 2's, which tinted every surface
+  with the accent): surfaces, text, and lines take libadwaita's neutral
+  values, its translucent ones worked out once over the surface they lie
+  on; the menu bar is neutral too. Only the accent and what it marks
+  (selection, the open menu's highlight, focus) take its color, and the
+  sky, shown without a wallpaper, takes its hue. The accents offered are
+  GNOME's nine, GNOME blue (`#3584E4`) first and the standard. The accent
+  is darkened on light and lightened on dark until it reads, and
+  `ChosenAccent` keeps it as chosen. The desktop works out its sky again,
+  once, when the palette changes.
   Settings, `venture.setAppearance`, and the `appearance` command switch
   it, and `DesktopAppearance` saves each change to
   `/mnt/user/settings/appearance.xml` (`<Appearance version="1" mode=...
@@ -1186,6 +1190,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | GNOME's colors (§9): libadwaita's neutral surfaces, text, and faint lines in light and dark, a neutral menu bar, and GNOME's nine accents, blue the standard, in place of Distro Tycoon 2's tinted palette and eight swatches. |
 | 2026-11-17 | minor | Flat header bar (§9): one color, `HeaderBar`, with faint separators under it and beside the sidebar, in place of the gradient and borders. |
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |

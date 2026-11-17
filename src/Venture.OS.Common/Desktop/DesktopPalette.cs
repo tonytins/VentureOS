@@ -4,21 +4,22 @@ using Venture.OS.Interface;
 namespace Venture.OS.Desktop;
 
 /// <summary>
-/// Every color the desktop draws with, built from one accent color, light or dark, after Distro Tycoon 2's
-/// appearance: tinted colors take the accent's hue and a share of its saturation, so any accent gives a matching
-/// desktop, and neutral ones (text, panels, borders) stay put.
+/// Every color the desktop draws with, light or dark, with one accent color, after GNOME's libadwaita: surfaces,
+/// text, and lines are neutral, a faint blue-gray, and only the accent carries color, where it marks something:
+/// selection, the open menu's highlight, and what the pointer can act on.
 /// </summary>
 /// <remarks>
-/// <para>The light palette for <see cref="StandardAccent"/> is the desktop's look from before palettes existed, to
-/// within a shade, so nothing changes for anyone who doesn't change it.</para>
+/// <para>Surfaces and text take libadwaita's values; where libadwaita lays a translucent color over a surface, such
+/// as its 15% borders, the color here is that blend, worked out once, since the canvas can't blend every line. Until
+/// 0.5, the palette followed Distro Tycoon 2, with the accent's hue tinting every surface.</para>
 /// <para>The accent itself is adjusted to stay readable: darkened on the light palette, so it reads on white, and
 /// lightened on the dark one, so it reads on the dark panel. <see cref="ChosenAccent"/> keeps the color as chosen,
-/// for showing and saving.</para>
+/// for showing and saving. Only the sky, which shows without a wallpaper, still takes the accent's hue.</para>
 /// </remarks>
 public sealed record DesktopPalette
 {
-    /// <summary>The accent the desktop starts with, a clear sky blue.</summary>
-    public static readonly UIColor StandardAccent = new(30, 120, 220);
+    /// <summary>The accent the desktop starts with: GNOME's blue.</summary>
+    public static readonly UIColor StandardAccent = new(0x35, 0x84, 0xE4);
 
     // How bright the accent may be on the light palette, and must be on the dark one, by DesktopPalette.Brightness.
     private const float LightAccentLimit = 150;
@@ -30,19 +31,20 @@ public sealed record DesktopPalette
     public static DesktopPalette Light { get; } = Create(StandardAccent, isDark: false);
 
     /// <summary>
-    /// Ready-made accents, after Distro Tycoon 2's: the standard sky blue, then colors after the fruit-colored
-    /// desktops of the era, and graphite.
+    /// Ready-made accents, GNOME's nine, in its order: blue (the standard), teal, green, yellow, orange, red, pink,
+    /// purple, and slate.
     /// </summary>
     public static IReadOnlyList<UIColor> Swatches { get; } =
     [
         StandardAccent,
-        FromHsv(214, 0.85f, 0.75f),
-        FromHsv(275, 0.6f, 0.75f),
-        FromHsv(350, 0.7f, 0.88f),
-        FromHsv(28, 0.9f, 0.95f),
-        FromHsv(95, 0.7f, 0.75f),
-        FromHsv(178, 0.8f, 0.65f),
-        FromHsv(215, 0.1f, 0.55f),
+        new(0x21, 0x90, 0xA4),
+        new(0x3A, 0x94, 0x4A),
+        new(0xC8, 0x88, 0x00),
+        new(0xED, 0x5B, 0x00),
+        new(0xE6, 0x2D, 0x42),
+        new(0xD5, 0x61, 0x99),
+        new(0x91, 0x41, 0xAC),
+        new(0x6F, 0x83, 0x96),
     ];
 
     private DesktopPalette()
@@ -113,18 +115,20 @@ public sealed record DesktopPalette
         accent = accent with { Alpha = 255 };
         var (hue, saturation, _) = ToHsv(accent);
 
-        // A tinted color: the accent's hue, a share of its saturation, and a brightness of its own.
+        // A tinted color, for the sky: the accent's hue, a share of its saturation, and a brightness of its own.
         UIColor Tint(float share, float value) => FromHsv(hue, saturation * share, value);
 
         var readable = Readable(accent, isDark);
-        var text = isDark ? new UIColor(228, 231, 236) : new UIColor(24, 28, 36);
+
+        // libadwaita's text: 80% of near-black on light, white on dark.
+        var text = isDark ? White : new UIColor(51, 51, 56);
         var common = new DesktopPalette
         {
             IsDark = isDark,
             ChosenAccent = accent,
             Accent = readable,
             Text = text,
-            HighlightedText = Brightness(readable) > 160 ? new UIColor(24, 28, 36) : White,
+            HighlightedText = Brightness(readable) > 160 ? new UIColor(51, 51, 56) : White,
             CloseButton = new UIColor(236, 95, 86),
             CloseMark = new UIColor(90, 20, 16),
             MinimizeButton = new UIColor(245, 178, 50),
@@ -136,30 +140,31 @@ public sealed record DesktopPalette
             OpenAppDot = text,
         };
 
+        // Each surface, then what's laid over it, as libadwaita names them; the comments give its translucent value.
         return isDark
             ? common with
             {
-                SecondaryText = new UIColor(150, 156, 166),
-                DisabledText = new UIColor(100, 105, 113),
-                Panel = new UIColor(38, 41, 46),
-                HeaderBar = new UIColor(38, 41, 46),
-                Border = new UIColor(88, 94, 104),
-                InputBackground = new UIColor(26, 28, 32),
-                Separator = new UIColor(66, 70, 78),
-                Selection = Tint(0.55f, 0.48f),
-                SidebarBackground = Tint(0.12f, 0.2f),
-                SidebarSelection = Tint(0.4f, 0.34f),
-                SidebarHover = Tint(0.22f, 0.27f),
-                ButtonHover = Tint(0.14f, 0.38f),
-                TitleBarTop = Tint(0.06f, 0.31f),
-                TitleBarBottom = Tint(0.1f, 0.23f),
-                ButtonPressed = Tint(0.45f, 0.4f),
-                MenuBarBottom = Tint(0.08f, 0.2f),
+                Panel = new UIColor(0x22, 0x22, 0x26),               // window-bg
+                HeaderBar = new UIColor(0x2E, 0x2E, 0x32),           // headerbar-bg
+                InputBackground = new UIColor(0x1D, 0x1D, 0x20),     // view-bg
+                SidebarBackground = new UIColor(0x2E, 0x2E, 0x32),   // sidebar-bg
+                MenuBackground = new UIColor(0x36, 0x36, 0x3A),      // popover-bg
+                SecondaryText = new UIColor(156, 156, 158),          // text at the dim opacity, 55%
+                DisabledText = new UIColor(145, 145, 147),           // text at the disabled opacity, 50%
+                Border = new UIColor(78, 78, 82),                    // text at 20%, for outlines
+                Separator = new UIColor(29, 29, 34),                 // headerbar-shade, 36% near-black
+                Selection = Mix(new UIColor(0x1D, 0x1D, 0x20), accent, 0.35f),
+                SidebarSelection = new UIColor(67, 67, 71),          // text at 10% on the sidebar
+                SidebarHover = new UIColor(61, 61, 65),              // text at 7%
+                ButtonHover = new UIColor(61, 61, 64),               // text at 7% on the header bar
+                ButtonPressed = new UIColor(79, 79, 82),             // text at 16%
+                TitleBarTop = new UIColor(64, 64, 68),               // buttons' and the menu bar's gradient
+                TitleBarBottom = new UIColor(52, 52, 56),
+                MenuBarBottom = new UIColor(0x2E, 0x2E, 0x32),
                 MenuBarGloss = new UIColor(255, 255, 255, 18),
                 MenuBarSheen = new UIColor(255, 255, 255, 46),
-                MenuBackground = Tint(0.05f, 0.21f),
                 Shadow = new UIColor(0, 0, 0, 120),
-                InactiveFade = new UIColor(24, 26, 30, 100),
+                InactiveFade = new UIColor(24, 24, 28, 100),
                 DockShelf = new UIColor(255, 255, 255, 40),
                 DockEdge = new UIColor(255, 255, 255, 90),
                 DockLabel = new UIColor(0, 0, 0, 170),
@@ -169,27 +174,25 @@ public sealed record DesktopPalette
             }
             : common with
             {
-                SecondaryText = new UIColor(110, 116, 126),
-                DisabledText = new UIColor(150, 154, 160),
-                Panel = new UIColor(240, 243, 247),
-                HeaderBar = new UIColor(240, 243, 247),
-                Border = new UIColor(120, 126, 136),
-                InputBackground = White,
-                Separator = new UIColor(214, 218, 224),
-
-                // The shares and brightnesses that give the standard accent the desktop's original colors.
-                Selection = Tint(0.402f, 0.949f),
-                SidebarBackground = Tint(0.077f, 0.941f),
-                SidebarSelection = Tint(0.226f, 0.925f),
-                SidebarHover = Tint(0.128f, 0.925f),
-                ButtonHover = Tint(0.123f, 0.957f),
-                TitleBarTop = Tint(0.014f, 0.992f),
-                TitleBarBottom = Tint(0.154f, 0.886f),
-                ButtonPressed = Tint(0.295f, 0.894f),
-                MenuBarBottom = Tint(0.069f, 0.925f),
+                Panel = new UIColor(0xFA, 0xFA, 0xFB),               // window-bg
+                HeaderBar = White,                                   // headerbar-bg
+                InputBackground = White,                             // view-bg
+                SidebarBackground = new UIColor(0xEB, 0xEB, 0xED),   // sidebar-bg
+                MenuBackground = White,                              // popover-bg
+                SecondaryText = new UIColor(143, 143, 146),          // text at the dim opacity, 55%
+                DisabledText = new UIColor(153, 153, 156),           // text at the disabled opacity, 50%
+                Border = new UIColor(205, 205, 208),                 // text at 20%, for outlines
+                Separator = new UIColor(224, 224, 225),              // headerbar-shade, 12% near-black
+                Selection = Mix(White, accent, 0.3f),
+                SidebarSelection = new UIColor(216, 216, 218),       // text at 10% on the sidebar
+                SidebarHover = new UIColor(222, 222, 224),           // text at 7%
+                ButtonHover = new UIColor(241, 241, 242),            // text at 7% on the header bar
+                ButtonPressed = new UIColor(222, 222, 223),          // text at 16%
+                TitleBarTop = new UIColor(252, 252, 253),            // buttons' and the menu bar's gradient
+                TitleBarBottom = new UIColor(227, 227, 229),
+                MenuBarBottom = new UIColor(222, 222, 224),          // low enough for the gloss's band to show
                 MenuBarGloss = new UIColor(255, 255, 255, 120),
                 MenuBarSheen = new UIColor(255, 255, 255, 230),
-                MenuBackground = Tint(0.014f, 0.992f),
                 Shadow = new UIColor(0, 0, 0, 60),
                 InactiveFade = new UIColor(255, 255, 255, 90),
                 DockShelf = new UIColor(255, 255, 255, 70),
@@ -200,6 +203,12 @@ public sealed record DesktopPalette
                 SkyGlow = 0.55f,
             };
     }
+
+    /// <summary>A color part of the way from one to another, as a translucent layer over a surface.</summary>
+    private static UIColor Mix(UIColor under, UIColor over, float amount) => new(
+        (byte)MathF.Round(under.Red + ((over.Red - under.Red) * amount)),
+        (byte)MathF.Round(under.Green + ((over.Green - under.Green) * amount)),
+        (byte)MathF.Round(under.Blue + ((over.Blue - under.Blue) * amount)));
 
     /// <summary>Reads a color written as <c>#RRGGBB</c>, as the <c>appearance</c> command and Settings take it.</summary>
     public static bool TryParseColor(string? text, out UIColor color)

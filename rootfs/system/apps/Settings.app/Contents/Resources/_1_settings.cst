@@ -1,11 +1,13 @@
 // Settings' text: the accent swatches' names, shown as hover text, in the
-// order of DesktopPalette.Swatches. A Lua table in main.lua shows the same names.
-1 ^Sky Blue^
-2 ^Blueberry^
-3 ^Grape^
-4 ^Strawberry^
-5 ^Tangerine^
-6 ^Lime^
-7 ^Teal^
-8 ^Graphite^
-9 ^Your offset from UTC, such as UTC-05:00 or +5:30. Press Enter to set it.^
+// order of DesktopPalette.Swatches (a Lua table in main.lua shows the same
+// names), then the clock's offset field's hover text.
+1 ^Blue^
+2 ^Teal^
+3 ^Green^
+4 ^Yellow^
+5 ^Orange^
+6 ^Red^
+7 ^Pink^
+8 ^Purple^
+9 ^Slate^
+10 ^Your offset from UTC, such as UTC-05:00 or +5:30. Press Enter to set it.^

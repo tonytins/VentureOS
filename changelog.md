@@ -3,6 +3,8 @@
 ## 0.5.300
 
 - Title bars are 30 pixels tall, from 28, which leaves more room to grab and drag a window.
+- The desktop takes GNOME's colors: neutral windows, sidebars, and menus in light and dark, with faint lines, and a neutral menu bar. Only the accent carries color.
+- Settings offers GNOME's nine accent colors, from Blue, the new standard, to Slate. An accent you chose before still works, shown as Custom.
 - Title bars are flat and blend with the window, with a faint line under them and beside the sidebar, as GNOME's do.
 - Resizable windows have a green zoom button: it fills the screen below the menu bar, and a second click puts the window back.
 - Files shows how many items a folder has under its address.

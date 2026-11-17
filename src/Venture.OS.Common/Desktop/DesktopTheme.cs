@@ -3,7 +3,7 @@ using Venture.OS.Interface;
 namespace Venture.OS.Desktop;
 
 /// <summary>
-/// The desktop's look: colors and sizes after early Aqua (Mac OS X Tiger), by way of Distro Tycoon 2's appearance.
+/// The desktop's look: GNOME's colors and header bars, with Mac OS X Tiger's glossy menu bar and window buttons.
 /// </summary>
 /// <remarks>
 /// <para>The colors come from the <see cref="Palette"/> in use, so switching it, such as to dark, reaches every

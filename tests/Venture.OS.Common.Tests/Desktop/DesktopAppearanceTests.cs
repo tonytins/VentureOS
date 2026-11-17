@@ -55,7 +55,7 @@ public sealed class DesktopAppearanceTests : IDisposable
 
         Assert.Null(result.Problem);
         Assert.Same(DesktopPalette.Light, DesktopTheme.Palette);
-        Assert.Equal("light, accent #1E78DC (nothing saved)", result.Description);
+        Assert.Equal("light, accent #3584E4 (nothing saved)", result.Description);
     }
 
     [Fact]

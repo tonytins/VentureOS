@@ -148,10 +148,11 @@ public sealed class WindowManagerTests
         manager.Draw(painter);
 
         var (frontX, frontY) = front.ContentOrigin;
-        Assert.Equal(DesktopBackground.Pack(240, 243, 247), painter.At(frontX + 150, frontY + 80));
+        var panel = DesktopTheme.Panel;
+        Assert.Equal(DesktopBackground.Pack(panel.Red, panel.Green, panel.Blue), painter.At(frontX + 150, frontY + 80));
         // The back window's corner sticks out from under the front one, faded toward white.
         var backPanel = painter.At(back.X + 2, back.Y + 40);
-        Assert.True((backPanel & 0xFF) > 247, "The back window should draw faded.");
+        Assert.True(((backPanel >> 16) & 0xFF) > panel.Red, "The back window should draw faded.");
     }
 
     [Fact]

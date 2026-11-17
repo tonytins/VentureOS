@@ -4,49 +4,67 @@ using Venture.OS.Interface;
 namespace Venture.OS.Tests.Desktop;
 
 /// <summary>
-/// Palettes built from an accent, light or dark, after Distro Tycoon 2's appearance. These build palettes without
-/// switching the desktop's, so they run alongside other tests.
+/// Palettes after GNOME's libadwaita: neutral surfaces and text, light or dark, with one accent. These build palettes
+/// without switching the desktop's, so they run alongside other tests.
 /// </summary>
 public sealed class DesktopPaletteTests
 {
     [Fact]
-    public void TheStandardLightPaletteKeepsTodaysLook()
+    public void TheLightPaletteTakesLibadwaitasColors()
     {
         var light = DesktopPalette.Light;
 
         Assert.False(light.IsDark);
-        Assert.Equal(new UIColor(30, 120, 220), light.Accent);
-        Assert.Equal(new UIColor(240, 243, 247), light.Panel);
-        Assert.Equal(new UIColor(24, 28, 36), light.Text);
+        Assert.Equal(new UIColor(0x35, 0x84, 0xE4), light.ChosenAccent);
+        Assert.Equal(new UIColor(0xFA, 0xFA, 0xFB), light.Panel);
+        Assert.Equal(new UIColor(255, 255, 255), light.HeaderBar);
         Assert.Equal(new UIColor(255, 255, 255), light.InputBackground);
-        AssertNear(new UIColor(196, 210, 226), light.TitleBarBottom);
-        AssertNear(new UIColor(158, 200, 242), light.Selection);
-        AssertNear(new UIColor(32, 86, 140), light.SkyTop);
-        AssertNear(new UIColor(180, 211, 242), light.SkyBottom);
+        Assert.Equal(new UIColor(0xEB, 0xEB, 0xED), light.SidebarBackground);
+        Assert.Equal(new UIColor(255, 255, 255), light.MenuBackground);
+        Assert.Equal(new UIColor(51, 51, 56), light.Text);
     }
 
     [Fact]
-    public void TintsFollowTheAccent()
-    {
-        var orange = DesktopPalette.Create(new UIColor(242, 132, 24), isDark: false);
-
-        Assert.True(orange.Selection.Red > orange.Selection.Blue);
-        Assert.True(orange.TitleBarBottom.Red > orange.TitleBarBottom.Blue);
-        Assert.True(orange.SkyTop.Red > orange.SkyTop.Blue);
-        Assert.Equal(DesktopPalette.Light.Panel, orange.Panel);
-    }
-
-    [Fact]
-    public void TheDarkPaletteIsDarkWithLightText()
+    public void TheDarkPaletteTakesLibadwaitasColors()
     {
         var dark = DesktopPalette.Create(DesktopPalette.StandardAccent, isDark: true);
 
         Assert.True(dark.IsDark);
-        Assert.True(Brightness(dark.Panel) < 70);
-        Assert.True(Brightness(dark.InputBackground) < Brightness(dark.Panel));
-        Assert.True(Brightness(dark.Text) > 200);
-        Assert.True(Brightness(dark.SkyTop) < Brightness(DesktopPalette.Light.SkyTop));
-        Assert.True(Brightness(dark.Selection) < Brightness(DesktopPalette.Light.Selection));
+        Assert.Equal(new UIColor(0x22, 0x22, 0x26), dark.Panel);
+        Assert.Equal(new UIColor(0x2E, 0x2E, 0x32), dark.HeaderBar);
+        Assert.Equal(new UIColor(0x1D, 0x1D, 0x20), dark.InputBackground);
+        Assert.Equal(new UIColor(0x2E, 0x2E, 0x32), dark.SidebarBackground);
+        Assert.Equal(new UIColor(0x36, 0x36, 0x3A), dark.MenuBackground);
+        Assert.Equal(new UIColor(255, 255, 255), dark.Text);
+    }
+
+    [Fact]
+    public void SurfacesStayNeutralWhateverTheAccent()
+    {
+        var orange = DesktopPalette.Create(new UIColor(0xED, 0x5B, 0x00), isDark: false);
+
+        // Only the accent and what it marks take its color; the sky, shown without a wallpaper, takes its hue.
+        Assert.Equal(DesktopPalette.Light.Panel, orange.Panel);
+        Assert.Equal(DesktopPalette.Light.SidebarSelection, orange.SidebarSelection);
+        Assert.Equal(DesktopPalette.Light.ButtonHover, orange.ButtonHover);
+        Assert.Equal(DesktopPalette.Light.TitleBarTop, orange.TitleBarTop);
+        Assert.Equal(DesktopPalette.Light.MenuBarBottom, orange.MenuBarBottom);
+        Assert.True(orange.Selection.Red > orange.Selection.Blue);
+        Assert.True(orange.SkyTop.Red > orange.SkyTop.Blue);
+    }
+
+    [Fact]
+    public void TextAndLinesAreQuieterInOrder()
+    {
+        foreach (var palette in new[] { DesktopPalette.Light, DesktopPalette.Create(DesktopPalette.StandardAccent, isDark: true) })
+        {
+            var panel = Brightness(palette.Panel);
+            int Distance(UIColor color) => Math.Abs(Brightness(color) - panel);
+
+            Assert.True(Distance(palette.Text) > Distance(palette.SecondaryText));
+            Assert.True(Distance(palette.SecondaryText) > Distance(palette.DisabledText));
+            Assert.True(Distance(palette.Border) < Distance(palette.DisabledText));
+        }
     }
 
     [Fact]
@@ -67,14 +85,16 @@ public sealed class DesktopPaletteTests
     }
 
     [Fact]
-    public void OffersDistroTycoonsSwatchesWithTheStandardAccentFirst()
+    public void OffersGnomesNineAccentsWithBlueFirst()
     {
-        Assert.Equal(8, DesktopPalette.Swatches.Count);
-        AssertNear(DesktopPalette.StandardAccent, DesktopPalette.Swatches[0]);
+        Assert.Equal(
+            ["#3584E4", "#2190A4", "#3A944A", "#C88800", "#ED5B00", "#E62D42", "#D56199", "#9141AC", "#6F8396"],
+            DesktopPalette.Swatches.Select(DesktopPalette.Format));
+        Assert.Equal(DesktopPalette.StandardAccent, DesktopPalette.Swatches[0]);
     }
 
     [Theory]
-    [InlineData("#1E78DC", 30, 120, 220)]
+    [InlineData("#3584E4", 0x35, 0x84, 0xE4)]
     [InlineData("#e8922a", 232, 146, 42)]
     public void ReadsHexColors(string text, byte red, byte green, byte blue)
     {
@@ -97,11 +117,4 @@ public sealed class DesktopPaletteTests
 
     private static int Brightness(UIColor color) =>
         (int)((0.299f * color.Red) + (0.587f * color.Green) + (0.114f * color.Blue));
-
-    private static void AssertNear(UIColor expected, UIColor actual)
-    {
-        Assert.InRange(actual.Red, expected.Red - 3, expected.Red + 3);
-        Assert.InRange(actual.Green, expected.Green - 3, expected.Green + 3);
-        Assert.InRange(actual.Blue, expected.Blue - 3, expected.Blue + 3);
-    }
 }

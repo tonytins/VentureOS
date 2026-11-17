@@ -62,7 +62,7 @@ public sealed class AppearanceTests : IDisposable
     {
         Run("local look = venture.appearance() print(look.mode, look.accent)");
 
-        Assert.Equal(["light\t#1E78DC"], output.Lines);
+        Assert.Equal(["light\t#3584E4"], output.Lines);
     }
 
     [Fact]
@@ -193,7 +193,7 @@ public sealed class AppearanceTests : IDisposable
     {
         Command("appearance");
 
-        Assert.Equal(["Appearance: light", "Accent:     #1E78DC"], output.Lines);
+        Assert.Equal(["Appearance: light", "Accent:     #3584E4"], output.Lines);
     }
 
     [Fact]

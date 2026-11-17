@@ -19,7 +19,7 @@ public sealed class ScriptAppearance : IAppearance
     {
         var color = DesktopTheme.Palette.ChosenAccent;
         if (accent is not null && !DesktopPalette.TryParseColor(accent, out color))
-            return new AppearanceChange($"an accent is written #RRGGBB, such as #1E78DC, not \"{accent}\"", null);
+            return new AppearanceChange($"an accent is written #RRGGBB, such as #3584E4, not \"{accent}\"", null);
 
         return new AppearanceChange(null, DesktopAppearance.Apply(DesktopPalette.Create(color, dark)));
     }
