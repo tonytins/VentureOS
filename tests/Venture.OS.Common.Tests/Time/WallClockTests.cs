@@ -22,6 +22,9 @@ public sealed class WallClockTests : IDisposable
     [InlineData("utc+05:45", 345)]
     [InlineData("UTC", 0)]
     [InlineData("0", 0)]
+    [InlineData("5", 300)]
+    [InlineData("5:30", 330)]
+    [InlineData("UTC5:45", 345)]
     [InlineData("+14:00", 840)]
     [InlineData("-12", -720)]
     [InlineData(" −03:00 ", -180)]
@@ -33,7 +36,6 @@ public sealed class WallClockTests : IDisposable
 
     [Theory]
     [InlineData("", "none was given")]
-    [InlineData("5", "written like")]
     [InlineData("-5:3", "written like")]
     [InlineData("-123", "written like")]
     [InlineData("EST", "written like")]

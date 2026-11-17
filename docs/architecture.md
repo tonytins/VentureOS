@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,031 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,036 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -777,7 +777,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   Without it, the title is the name.
 - **The clock** (`Venture.OS.Time.WallClock`) is the hardware clock, read
   through Cosmos's `DateTime.UtcNow` (CMOS on x64, PL031 on ARM64), moved
-  by an offset from UTC the user sets in Settings, with the `clock` command,
+  by an offset from UTC the user sets in Settings' Clock pane, typed after a
+  fixed "UTC" label, with the `clock` command,
   or `venture.setUtcOffset`, saved to `/mnt/user/settings/time.xml`
   (`<Time version="1" utcOffset="-05:00"/>`, read like `appearance.xml`).
   There's no time zone database, so no daylight saving: the offset is
@@ -892,7 +893,11 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   the text color (`UIListState.Icons`), and faint lines between groups
   (`GroupStarts`, which `window:setItems` fills from `{ separator = true }`;
   separators aren't rows). Clicks, hover, and scrolling count the lines'
-  room. Files sets System apart from its places with one.
+  room. Files sets System apart from its places with one. Settings has a
+  sidebar of panes, as GNOME Settings does: Appearance and Clock. There's
+  no pane container in UIScript, so each pane's controls sit in the same
+  place in one `.uix` and Settings' Lua shows one pane's at a time,
+  titling the window after it; it always opens on Appearance.
 - **Zoom.** A resizable window has a green third button, which zooms it
   to fill the screen below the menu bar (`TopInset`), over the dock, as
   macOS does, and a second click puts it back where it was, at its old
@@ -1200,6 +1205,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Settings' panes (§9): Settings gets a sidebar with Appearance and Clock, the offset typed after a "UTC" label; an offset without a sign is ahead of UTC; the contrast test draws stacked controls one at a time. |
 | 2026-11-17 | minor | Sidebars done (§9): Files sets System apart from its places; the app guide and the sidebar draft describe icons and groups. |
 | 2026-11-17 | minor | Sidebar rows (§9): rounded shades for the selection and hover, rows' icons as 16-pixel symbols in the text color with every row's text lined up after them, and faint lines between groups; clicks, hover, and scrolling count the room the lines take. |
 | 2026-11-17 | minor | Sidebars begin (§9): `window:setItems` takes a sidebar's rows as tables with `text`, an `icon` naming an `<Image>`, or `separator = true`, kept in `UIListState.Icons` and `GroupStarts`; separators aren't rows. Not drawn yet; a plain list refuses them. |

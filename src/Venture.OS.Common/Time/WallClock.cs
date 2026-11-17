@@ -144,8 +144,8 @@ public sealed class WallClock
     }
 
     /// <summary>
-    /// Reads an offset as people write one: <c>-05:00</c>, <c>+5:30</c>, <c>-5</c>, <c>UTC-05:00</c>, or <c>UTC</c>
-    /// for none.
+    /// Reads an offset as people write one: <c>-05:00</c>, <c>+5:30</c>, <c>5:30</c> (ahead, without a sign),
+    /// <c>-5</c>, <c>UTC-05:00</c>, or <c>UTC</c> or <c>0</c> for none.
     /// </summary>
     public static bool TryParseOffset(string text, out TimeSpan offset, out string? problem)
     {
@@ -165,13 +165,14 @@ public sealed class WallClock
             return true;
         }
 
-        var sign = rest[0] switch { '+' => 1, '-' => -1, '−' => -1, _ => 0 };
-        var digits = sign == 0 ? rest : rest[1..];
+        // Without a sign, it's ahead of UTC, as 5:30 is +5:30; a typographic minus counts as a minus.
+        var signed = rest[0] is '+' or '-' or '\u2212';
+        var sign = rest[0] is '-' or '\u2212' ? -1 : 1;
+        var digits = signed ? rest[1..] : rest;
         var colon = digits.IndexOf(':');
         var hoursText = colon < 0 ? digits : digits[..colon];
         var minutesText = colon < 0 ? "0" : digits[(colon + 1)..];
-        if (sign == 0
-            || hoursText.Length is 0 or > 2 || !int.TryParse(hoursText, NumberStyles.None, CultureInfo.InvariantCulture, out var hours)
+        if (hoursText.Length is 0 or > 2 || !int.TryParse(hoursText, NumberStyles.None, CultureInfo.InvariantCulture, out var hours)
             || (colon >= 0 && minutesText.Length != 2)
             || !int.TryParse(minutesText, NumberStyles.None, CultureInfo.InvariantCulture, out var minutes))
         {

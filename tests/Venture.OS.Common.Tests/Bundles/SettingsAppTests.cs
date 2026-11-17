@@ -161,5 +161,44 @@ public sealed class SettingsAppTests : IDisposable
         Assert.Equal("EST", Window.View.Text("utcOffset"));
     }
 
+    [Fact]
+    public void OpensOnAppearanceWithClockInTheSidebar()
+    {
+        Assert.Equal(["Appearance", "Clock"], Window.View.List("panes")!.Items);
+        Assert.Equal(0, Window.View.List("panes")!.SelectedIndex);
+        Assert.Equal("Appearance", Window.Title);
+        Assert.False(Window.View.IsHidden("swatch1"));
+        Assert.True(Window.View.IsHidden("utcOffset"));
+        Assert.True(Window.View.IsHidden("clockShown"));
+    }
+
+    [Fact]
+    public void ChoosingClockShowsItsPaneAlone()
+    {
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 1));
+
+        Assert.Equal("Clock", Window.Title);
+        Assert.False(Window.View.IsHidden("utcLabel"));
+        Assert.False(Window.View.IsHidden("utcOffset"));
+        Assert.True(Window.View.IsHidden("swatch1"));
+        Assert.True(Window.View.IsHidden("custom"));
+
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 0));
+        Assert.Equal("Appearance", Window.Title);
+        Assert.True(Window.View.IsHidden("utcOffset"));
+    }
+
+    [Fact]
+    public void TheOffsetIsTypedAfterTheUtcLabelWithoutOne()
+    {
+        Assert.Equal("UTC", Window.View.Text("utcLabel"));
+
+        Window.View.SetText("utcOffset", "5:30");
+        Send(new UIEvent(UIEventKind.Submitted, "utcOffset", "5:30"));
+
+        Assert.Equal(TimeSpan.FromMinutes(330), system.WallClock!.UtcOffset);
+        Assert.Equal("Wed 2:15 AM, UTC+05:30", Window.View.Text("clockShown"));
+    }
+
     private void Send(UIEvent uiEvent) => Window.EventHandler!(Window, uiEvent);
 }

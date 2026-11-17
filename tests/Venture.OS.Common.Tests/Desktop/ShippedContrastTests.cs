@@ -12,6 +12,8 @@ namespace Venture.OS.Tests.Desktop;
 /// The bar is a contrast of 3 to 1, the WCAG minimum for large text and interface parts; secondary text is meant to
 /// be quieter than 4.5 to 1 allows. A change to the theme or a shipped style that makes an app hard to read fails
 /// here before anyone boots.
+/// <para>A control that overlaps another is drawn on its own, the rest hidden, since an app may stack controls it
+/// shows one group at a time, as Settings stacks its panes; the others are drawn together.</para>
 /// </remarks>
 [Collection(nameof(AppearanceCollection))]
 public sealed class ShippedContrastTests : IDisposable
@@ -97,9 +99,46 @@ public sealed class ShippedContrastTests : IDisposable
         RecordingPainter painter = new(1024, 768);
         DesktopWindow window = new("Sample", view);
         manager.Open(window);
-        manager.Draw(painter);
+
+        // Controls that overlap another, as stacked panes do, are drawn one at a time; the rest together.
+        List<UIControl> stacked = [];
+        foreach (var control in script.Controls)
+        {
+            var bounds = view.Bounds(control.Name)!.Value;
+            foreach (var other in script.Controls)
+            {
+                if (!ReferenceEquals(control, other) && Overlap(bounds, view.Bounds(other.Name)!.Value))
+                {
+                    stacked.Add(control);
+                    break;
+                }
+            }
+        }
 
         List<(string, double)> found = [];
+        foreach (var control in stacked)
+            view.SetHidden(true, control.Name);
+        Measure(manager, painter, window, found);
+
+        foreach (var shown in stacked)
+        {
+            // A control without text, such as a color swatch, has nothing to read.
+            if (view.List(shown.Name) is null && string.IsNullOrEmpty(view.Text(shown.Name)))
+                continue;
+
+            foreach (var control in script.Controls)
+                view.SetHidden(!ReferenceEquals(control, shown), control.Name);
+            Measure(manager, painter, window, found);
+        }
+
+        return found;
+    }
+
+    /// <summary>Draws the window and adds each text's contrast with what's behind it.</summary>
+    private static void Measure(WindowManager manager, RecordingPainter painter, DesktopWindow window, List<(string, double)> found)
+    {
+        painter.Texts.Clear();
+        manager.Draw(painter);
         foreach (var text in painter.Texts)
         {
             if (string.IsNullOrWhiteSpace(text.Text) || !window.Bounds.Contains(text.X + 1, text.Y + 1))
@@ -108,9 +147,10 @@ public sealed class ShippedContrastTests : IDisposable
             var behind = painter.At(text.X + 1, text.Y + (int)MathF.Ceiling(text.Size * 1.35f / 2));
             found.Add((text.Text, Contrast(text.Color, behind)));
         }
-
-        return found;
     }
+
+    private static bool Overlap(UIRect a, UIRect b) =>
+        a.X < b.X + b.Width && b.X < a.X + a.Width && a.Y < b.Y + b.Height && b.Y < a.Y + a.Height;
 
     private static double Contrast(UIColor color, int pixel)
     {

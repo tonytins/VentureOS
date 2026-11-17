@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The Settings window: the look and the clock. main.lua applies and saves each choice. -->
-<UIScript version="1">
-  <Window width="380" height="292"/>
-
+<!-- The Settings window: a sidebar of panes, as GNOME Settings has, each pane's controls in one place, which
+     main.lua shows one pane at a time. main.lua applies and saves each choice. -->
+<UIScript version="1" requires="sidebar">
+  <Window width="380" height="222"/>
+  <Sidebar name="panes" width="130"/>
 
   <Style name="heading" fontSize="title"/>
   <Style name="quiet" textColor="secondaryText"/>
@@ -30,7 +31,8 @@
   <String name="swatch9Name" table="1" index="9"/>
   <String name="utcOffsetHint" table="1" index="10"/>
 
-  <Text name="appearanceHeading" x="12" y="10" width="356" height="24" style="heading" text="Appearance"/>
+  <!-- Appearance. -->
+  <Text name="styleHeading" x="12" y="10" width="356" height="24" style="heading" text="Style"/>
   <Button name="light" x="12" y="40" width="84" height="26" text="Light"/>
   <Button name="dark" x="102" y="40" width="84" height="26" text="Dark"/>
 
@@ -49,8 +51,10 @@
   <TextField name="custom" x="12" y="182" width="120" height="26" placeholder="#RRGGBB"/>
   <Text name="status" x="142" y="185" width="226" height="20" style="quiet"/>
 
-  <!-- The clock's offset from UTC; there's no daylight saving, so it's changed when the clocks change. -->
-  <Text name="clockHeading" x="12" y="220" width="356" height="24" style="heading" text="Clock"/>
-  <TextField name="utcOffset" x="12" y="252" width="120" height="26" placeholder="UTC-05:00" tooltip="utcOffsetHint"/>
-  <Text name="clockShown" x="142" y="255" width="226" height="20" style="quiet"/>
+  <!-- Clock: the offset from UTC, typed after the UTC label; there's no daylight saving, so it's changed when the
+       clocks change. -->
+  <Text name="offsetHeading" x="12" y="10" width="356" height="24" style="heading" text="Offset from UTC"/>
+  <Text name="utcLabel" x="12" y="43" width="34" height="20" text="UTC"/>
+  <TextField name="utcOffset" x="48" y="40" width="90" height="26" placeholder="-05:00" tooltip="utcOffsetHint"/>
+  <Text name="clockShown" x="148" y="43" width="220" height="20" style="quiet"/>
 </UIScript>

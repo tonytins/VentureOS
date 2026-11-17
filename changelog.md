@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.403
+
+- Settings has a sidebar with two panes, Appearance and Clock, as GNOME Settings does, and opens on Appearance.
+- In Settings' Clock pane, type only the offset after the "UTC" label, such as `-05:00` or `5:30`.
+- An offset without a sign is ahead of UTC, so `clock 5:30` sets UTC+05:30.
+
 ## 0.5.402
 
 - Sidebars mark the selected row, and the one under the pointer, with a rounded shade, as Nautilus does.

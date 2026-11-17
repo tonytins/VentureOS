@@ -8,7 +8,7 @@ local options = args.parse({...}, {
   summary = "Show the time, or set the clock's offset from UTC, as Settings does. The choice is saved. "
     .. "There's no daylight saving, so change the offset when the clocks change.",
   arguments = {
-    { name = "offset", optional = true, summary = "From UTC, such as -05:00, +5:30, -5, or UTC." },
+    { name = "offset", optional = true, summary = "From UTC, such as -05:00, 5:30, -5, or 0." },
   },
 })
 if not options then return end

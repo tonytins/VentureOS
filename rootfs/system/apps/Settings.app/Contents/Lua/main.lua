@@ -1,4 +1,5 @@
--- Settings: the desktop's look, light or dark, and its accent color, and the
+-- Settings: panes in a sidebar, as GNOME Settings has them. Appearance holds
+-- the desktop's look, light or dark, and its accent color; Clock holds the
 -- clock's offset from UTC. Each choice applies at once and is saved in
 -- /mnt/user/settings, as the appearance and clock commands' are.
 
@@ -74,5 +75,34 @@ end)
 -- The time shown keeps up, as the menu bar's does.
 window:every(30, function() showClock() end)
 
+-- The panes, in the sidebar's order, and the controls each one shows; every
+-- pane's controls sit in the same place, and only the chosen pane's show.
+local PANES = {
+  {
+    name = "Appearance",
+    controls = {
+      "styleHeading", "light", "dark", "accentHeading", "swatch1", "swatch2", "swatch3", "swatch4", "swatch5",
+      "swatch6", "swatch7", "swatch8", "swatch9", "accentName", "custom", "status",
+    },
+  },
+  { name = "Clock", controls = { "offsetHeading", "utcLabel", "utcOffset", "clockShown" } },
+}
+
+local function showPane(number)
+  for index, pane in ipairs(PANES) do
+    for _, control in ipairs(pane.controls) do window:setHidden(control, index ~= number) end
+  end
+  window:setTitle(PANES[number].name)
+  window:select("panes", number)
+end
+
+local names = {}
+for number, pane in ipairs(PANES) do names[number] = pane.name end
+window:setItems("panes", names)
+window:on("panes", function(event)
+  if event.kind == "selected" then showPane(event.index) end
+end)
+
 show()
 showClock()
+showPane(1)
