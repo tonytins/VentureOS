@@ -767,6 +767,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   highlighted text color, its light parts left clear
   (`DesktopImage.Silhouette`), so it reads as a symbol on the accent.
   Without it, the title is the name.
+- **The menu bar's glass,** after Tiger: its gradient, then
+  `MenuBarGloss` over the top half and `MenuBarSheen` along the top row,
+  both translucent white from the palette, fainter in dark.
   A `.uix` `<Visual>` draws an image its owner supplies with
   `UIView.SetImage`, scaled to its frame; the About window's `icon` visual
   shows the app's icon, and is hidden for an app without one and for

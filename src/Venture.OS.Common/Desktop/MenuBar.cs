@@ -311,7 +311,10 @@ public sealed class MenuBar
         ArgumentNullException.ThrowIfNull(painter);
         const int Size = DesktopTheme.TextSize;
 
+        // Tiger's glass: the gradient, a bright band over its top half, and a sheen along the top edge.
         DesktopTheme.FillGradient(painter, 0, 0, painter.Width, Height, DesktopTheme.TitleBarTop, DesktopTheme.MenuBarBottom);
+        painter.FillRectangle(0, 0, painter.Width, Height / 2, DesktopTheme.MenuBarGloss);
+        painter.FillRectangle(0, 0, painter.Width, 1, DesktopTheme.MenuBarSheen);
         painter.FillRectangle(0, Height - 1, painter.Width, 1, DesktopTheme.Border);
 
         titles.Clear();

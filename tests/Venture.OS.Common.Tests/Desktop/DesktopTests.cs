@@ -62,8 +62,12 @@ public sealed class DesktopTests
         Assert.True(session.Update(new DesktopInput(50, 60, false)));
         session.Draw(painter);
 
-        var barTop = DesktopTheme.TitleBarTop;
-        Assert.Equal(DesktopBackground.Pack(barTop.Red, barTop.Green, barTop.Blue), painter.At(399, 0));
+        // Tiger's glass: a bright band over the top half, so the bar steps down in the middle far more than the
+        // gradient does from row to row elsewhere.
+        var middle = MenuBar.Height / 2;
+        var step = Lightness(painter.At(399, middle - 1)) - Lightness(painter.At(399, middle));
+        var gradientStep = Lightness(painter.At(399, middle + 1)) - Lightness(painter.At(399, middle + 2));
+        Assert.True(step > gradientStep + 20, $"The band steps {step}, the gradient {gradientStep}.");
         Assert.Equal(DesktopBackground.Render(400, 300)[(MenuBar.Height * 400) + 399], painter.At(399, MenuBar.Height));
         Assert.Equal(Black, painter.At(50, 60));
         Assert.Contains(painter.Texts, text => text.Text == "VentureOS" && text.Y < MenuBar.Height);
@@ -117,4 +121,6 @@ public sealed class DesktopTests
     }
 
     private static int Brightness(int pixel) => ((pixel >> 16) & 0xFF) + ((pixel >> 8) & 0xFF) + (pixel & 0xFF);
+
+    private static int Lightness(int pixel) => ((pixel >> 16) & 0xFF) + ((pixel >> 8) & 0xFF) + (pixel & 0xFF);
 }

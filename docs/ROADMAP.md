@@ -106,7 +106,7 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
 
 - [x] VentureOS's icon in place of its name, as Tiger's Apple, white while
   its menu is open.
-- [ ] Tiger's gloss: a bright band and a sheen line.
+- [x] Tiger's gloss: a bright band and a sheen line.
 - [ ] Status items on the right, starting with a clock, once VentureOS
   knows the time.
 

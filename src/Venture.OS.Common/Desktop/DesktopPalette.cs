@@ -78,6 +78,12 @@ public sealed record DesktopPalette
     public UIColor Shadow { get; private init; }
     public UIColor InactiveFade { get; private init; }
     public UIColor MenuBarBottom { get; private init; }
+
+    /// <summary>The menu bar's gloss: white laid over its top half, Tiger's bright band.</summary>
+    public UIColor MenuBarGloss { get; private init; }
+
+    /// <summary>The sheen along the menu bar's top edge, where the light catches it.</summary>
+    public UIColor MenuBarSheen { get; private init; }
     public UIColor MenuBackground { get; private init; }
     public UIColor HighlightedText { get; private init; }
     public UIColor Separator { get; private init; }
@@ -141,6 +147,8 @@ public sealed record DesktopPalette
                 TitleBarBottom = Tint(0.1f, 0.23f),
                 ButtonPressed = Tint(0.45f, 0.4f),
                 MenuBarBottom = Tint(0.08f, 0.2f),
+                MenuBarGloss = new UIColor(255, 255, 255, 18),
+                MenuBarSheen = new UIColor(255, 255, 255, 46),
                 MenuBackground = Tint(0.05f, 0.21f),
                 Shadow = new UIColor(0, 0, 0, 120),
                 InactiveFade = new UIColor(24, 26, 30, 100),
@@ -170,6 +178,8 @@ public sealed record DesktopPalette
                 TitleBarBottom = Tint(0.154f, 0.886f),
                 ButtonPressed = Tint(0.295f, 0.894f),
                 MenuBarBottom = Tint(0.069f, 0.925f),
+                MenuBarGloss = new UIColor(255, 255, 255, 120),
+                MenuBarSheen = new UIColor(255, 255, 255, 230),
                 MenuBackground = Tint(0.014f, 0.992f),
                 Shadow = new UIColor(0, 0, 0, 60),
                 InactiveFade = new UIColor(255, 255, 255, 90),

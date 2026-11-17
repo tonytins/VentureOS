@@ -94,6 +94,10 @@ public static class DesktopTheme
     /// <summary>The bottom of the menu bar's gradient, which starts from <see cref="TitleBarTop"/>.</summary>
     public static UIColor MenuBarBottom => Palette.MenuBarBottom;
 
+    public static UIColor MenuBarGloss => Palette.MenuBarGloss;
+
+    public static UIColor MenuBarSheen => Palette.MenuBarSheen;
+
     /// <summary>A menu's background.</summary>
     public static UIColor MenuBackground => Palette.MenuBackground;
 
