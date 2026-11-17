@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,080 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,085 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -904,6 +904,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   no pane container in UIScript, so each pane's controls sit in the same
   place in one `.uix` and Settings' Lua shows one pane's at a time,
   titling the window after it; it always opens on Appearance.
+- **Rounded corners.** With `corners="rounded"` in the look, the
+  standard, a window's four corners are rounded to a 10-pixel radius, its
+  shadow too. Before a window draws, it reads back (`IPainter.ReadPixels`)
+  what's under each corner; after, outside the curve that shows again, and
+  along it the outline, blended by how much of each pixel the curve
+  covers. Settings' Appearance pane switches them.
 - **Zoom.** A resizable window has a green third button, which zooms it
   to fill the screen below the menu bar (`TopInset`), over the dock, as
   macOS does, and a second click puts it back where it was, at its old
@@ -1211,6 +1217,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-17 | minor | Rounded corners (§9): windows' four corners and shadows rounded to 10 pixels when the look says so, by reading back what's under them (`IPainter.ReadPixels`); Settings switches them. |
 | 2026-11-17 | minor | Look options begin (§9): `DesktopLook` with `auto` and its schedule, corners, and the wallpaper's name, saved in `appearance.xml` and read and set from Lua (`setAppearance` takes a table); `.wallpaper` bundles with `-light` and `-dark` variants, and Earthset in one. Corners, wallpapers, and the schedule aren't used yet. |
 | 2026-11-17 | minor | Settings' panes (§9): Settings gets a sidebar with Appearance and Clock, the offset typed after a "UTC" label; an offset without a sign is ahead of UTC; the contrast test draws stacked controls one at a time. |
 | 2026-11-17 | minor | Sidebars done (§9): Files sets System apart from its places; the app guide and the sidebar draft describe icons and groups. |

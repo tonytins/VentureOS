@@ -17,6 +17,21 @@ internal sealed class CanvasPainter(Canvas canvas, TrueTypeFont interfaceFont, T
     public void DrawPixels(int[] pixels, int x, int y, int width, int height) =>
         canvas.DrawArray(pixels, x, y, width, height);
 
+    public void ReadPixels(int[] into, int x, int y, int width, int height)
+    {
+        var buffer = canvas.GetBuffer();
+        for (var row = 0; row < height; row++)
+        {
+            for (var column = 0; column < width; column++)
+            {
+                var (px, py) = (x + column, y + row);
+                into[(row * width) + column] = buffer is not null && px >= 0 && py >= 0 && px < canvas.Width && py < canvas.Height
+                    ? buffer[(py * canvas.Width) + px]
+                    : 0;
+            }
+        }
+    }
+
     public void DrawImage(DesktopImage image, int x, int y)
     {
         // An opaque picture is copied, which the canvas clips; anything else is blended into the frame by hand.

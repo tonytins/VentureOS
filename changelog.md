@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.501
+
+- Windows have rounded corners, all four, and rounded shadows. Settings ▸ Appearance ▸ Window corners switches them to square.
+
 ## 0.5.500
 
 - Scripts: `venture.appearance()` also gives `dark` (whether the look showing is dark), `corners`, `wallpaper`, `darkFrom`, and `darkUntil`, and its `mode` can be `auto`; `venture.setAppearance{ ... }` changes any of them. VentureOS doesn't use the new ones yet.

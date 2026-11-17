@@ -28,6 +28,13 @@ public interface IPainter
     void DrawPixels(int[] pixels, int x, int y, int width, int height);
 
     /// <summary>
+    /// Copies what's on the screen into <paramref name="into"/>, as 0xAARRGGBB values row by row, so something drawn
+    /// over it can be partly put back, as a window's rounded corners are. Pixels off the screen read as 0.
+    /// </summary>
+    /// <param name="into">At least <paramref name="width"/> times <paramref name="height"/> long.</param>
+    void ReadPixels(int[] into, int x, int y, int width, int height);
+
+    /// <summary>
     /// Draws a picture with its corner at (<paramref name="x"/>, <paramref name="y"/>), at its own size, blending
     /// it over what's there by each pixel's opacity, so an icon's rounded corners show what's behind them.
     /// </summary>

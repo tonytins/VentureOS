@@ -37,6 +37,18 @@ internal sealed class RecordingPainter(int width, int height) : IPainter
         image.DrawOnto(Pixels, Width, x, y);
     }
 
+    public void ReadPixels(int[] into, int x, int y, int width, int height)
+    {
+        for (var row = 0; row < height; row++)
+        {
+            for (var column = 0; column < width; column++)
+            {
+                var (px, py) = (x + column, y + row);
+                into[(row * width) + column] = px >= 0 && py >= 0 && px < Width && py < Height ? Pixels[(py * Width) + px] : 0;
+            }
+        }
+    }
+
     public void FillRectangle(int x, int y, int width, int height, UIColor color)
     {
         Calls++;

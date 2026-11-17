@@ -23,6 +23,8 @@ local function show()
   local look = venture.appearance()
   window:setChecked("light", look.mode == "light")
   window:setChecked("dark", look.mode == "dark")
+  window:setChecked("rounded", look.corners == "rounded")
+  window:setChecked("square", look.corners == "square")
 
   local name = "Custom, " .. look.accent
   for _, swatch in ipairs(SWATCHES) do
@@ -39,6 +41,15 @@ local function choose(mode, accent)
   return ok
 end
 
+-- Rounds or squares every window's corners, keeping the rest of the look.
+local function corners(shape)
+  local ok, problem = venture.setAppearance({ corners = shape })
+  window:setText("status", problem or "")
+  if ok then show() end
+end
+
+window:on("rounded", function() corners("rounded") end)
+window:on("square", function() corners("square") end)
 window:on("light", function() choose("light") end)
 window:on("dark", function() choose("dark") end)
 for number, swatch in ipairs(SWATCHES) do
@@ -82,7 +93,8 @@ local PANES = {
     name = "Appearance",
     controls = {
       "styleHeading", "light", "dark", "accentHeading", "swatch1", "swatch2", "swatch3", "swatch4", "swatch5",
-      "swatch6", "swatch7", "swatch8", "swatch9", "accentName", "custom", "status",
+      "swatch6", "swatch7", "swatch8", "swatch9", "accentName", "custom", "status", "cornersHeading", "rounded",
+      "square",
     },
   },
   { name = "Clock", controls = { "offsetHeading", "utcLabel", "utcOffset", "clockShown" } },

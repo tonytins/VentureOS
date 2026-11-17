@@ -1721,6 +1721,8 @@ public sealed class UIView
 
         public void DrawImage(DesktopImage image, int x, int y) => inner.DrawImage(image, x, y);
 
+        public void ReadPixels(int[] into, int x, int y, int width, int height) => inner.ReadPixels(into, x, y, width, height);
+
         public void FillRectangle(int x, int y, int width, int height, UIColor color) => inner.FillRectangle(x, y, width, height, color);
 
         public void DrawText(string text, int x, int y, UIColor color, int size, DesktopFont font = DesktopFont.Interface) =>

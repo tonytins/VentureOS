@@ -75,6 +75,14 @@ public sealed class DesktopWindow
         return false;
     }
 
+    /// <summary>How round a window's corners are, when they're rounded.</summary>
+    public const int CornerRadius = 10;
+
+    // What was under each corner before the window drew, and a corner as drawn, reused every frame.
+    private readonly int[][] corners = [new int[CornerRadius * CornerRadius], new int[CornerRadius * CornerRadius],
+        new int[CornerRadius * CornerRadius], new int[CornerRadius * CornerRadius]];
+    private readonly int[] drawn = new int[CornerRadius * CornerRadius];
+
     /// <summary>The close and minimize buttons' size.</summary>
     public const int ButtonSize = 12;
 
@@ -491,7 +499,17 @@ public sealed class DesktopWindow
         const int Shadow = DesktopTheme.ShadowSize;
         var bar = BarHeight;
 
-        painter.FillRectangle(X + Shadow, Y + Shadow, Width, Height, DesktopTheme.Shadow);
+        // With rounded corners, the shadow is rounded too, and what's under each corner is kept to put back after.
+        var rounded = DesktopAppearance.Current.RoundedCorners && Width >= 2 * CornerRadius && Height >= 2 * CornerRadius;
+        if (rounded)
+        {
+            DesktopTheme.FillRoundedGradient(painter, X + Shadow, Y + Shadow, Width, Height, CornerRadius, DesktopTheme.Shadow, DesktopTheme.Shadow);
+            SaveCorners(painter);
+        }
+        else
+        {
+            painter.FillRectangle(X + Shadow, Y + Shadow, Width, Height, DesktopTheme.Shadow);
+        }
 
         // A sidebar runs the window's full height, with the buttons on its top, and the title bar spans the content.
         var side = View.SidebarWidth;
@@ -537,6 +555,63 @@ public sealed class DesktopWindow
 
         if (!active)
             painter.FillRectangle(X, Y, Width, Height, DesktopTheme.InactiveFade);
+
+        if (rounded)
+            RoundCorners(painter, active);
+    }
+
+    /// <summary>Keeps what's under each of the window's corners, before the window draws over it.</summary>
+    private void SaveCorners(IPainter painter)
+    {
+        const int R = CornerRadius;
+        painter.ReadPixels(corners[0], X, Y, R, R);
+        painter.ReadPixels(corners[1], X + Width - R, Y, R, R);
+        painter.ReadPixels(corners[2], X, Y + Height - R, R, R);
+        painter.ReadPixels(corners[3], X + Width - R, Y + Height - R, R, R);
+    }
+
+    /// <summary>
+    /// Rounds the window's four corners: outside the curve, what was there before shows again; along it, the outline,
+    /// blended by how much of each pixel the curve covers, so the edge is smooth.
+    /// </summary>
+    private void RoundCorners(IPainter painter, bool active)
+    {
+        const int R = CornerRadius;
+        var outline = active ? DesktopTheme.Border : DesktopTheme.Blend(DesktopTheme.Border, DesktopTheme.InactiveFade with { Alpha = 255 }, DesktopTheme.InactiveFade.Alpha / 255f);
+        var edge = DesktopImage.Pack(255, outline.Red, outline.Green, outline.Blue);
+        for (var corner = 0; corner < 4; corner++)
+        {
+            // Top left, top right, bottom left, then bottom right, in the order SaveCorners kept them.
+            var (right, bottom) = (corner % 2 == 1, corner >= 2);
+            var (left, top) = (right ? X + Width - R : X, bottom ? Y + Height - R : Y);
+            painter.ReadPixels(drawn, left, top, R, R);
+            var under = corners[corner];
+            for (var row = 0; row < R; row++)
+            {
+                for (var column = 0; column < R; column++)
+                {
+                    // Distance from the curve's center, measured from the pixel's middle, mirrored for each corner.
+                    var dx = (right ? column + 0.5f : R - column - 0.5f);
+                    var dy = (bottom ? row + 0.5f : R - row - 0.5f);
+                    var distance = MathF.Sqrt((dx * dx) + (dy * dy));
+                    var index = (row * R) + column;
+
+                    // The curve's radius is R, so it meets the straight edges, whose outermost pixels' middles lie at
+                    // R - 0.5; the ring of pixels that far out is the outline, covered as much as the curve covers it.
+                    var inside = distance <= R - 1f ? drawn[index] : edge;
+                    var cover = Math.Clamp(R + 0.5f - distance, 0f, 1f);
+                    drawn[index] = cover >= 1 ? inside : Mix(under[index], inside, cover);
+                }
+            }
+
+            painter.DrawPixels(drawn, left, top, R, R);
+        }
+    }
+
+    private static int Mix(int under, int over, float amount)
+    {
+        int Channel(int shift) => (int)MathF.Round((((under >> shift) & 0xFF) * (1 - amount)) + (((over >> shift) & 0xFF) * amount));
+        return DesktopImage.Pack(255, Channel(16), Channel(8), Channel(0));
     }
 
     private void DrawToolbar(IPainter painter, int pressedItem, int hoveredItem)

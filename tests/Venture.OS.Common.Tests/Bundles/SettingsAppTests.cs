@@ -162,6 +162,25 @@ public sealed class SettingsAppTests : IDisposable
     }
 
     [Fact]
+    public void SquareAndRoundedSwitchEveryWindowsCorners()
+    {
+        Assert.True(Window.View.IsSelected("rounded"));
+
+        Send(new UIEvent(UIEventKind.Pressed, "square"));
+
+        Assert.False(DesktopAppearance.Current.RoundedCorners);
+        Assert.True(Window.View.IsSelected("square"));
+        Assert.False(Window.View.IsSelected("rounded"));
+        Assert.Contains("corners=\"square\"", File.ReadAllText(DesktopAppearance.SettingsPath!));
+
+        Send(new UIEvent(UIEventKind.Pressed, "rounded"));
+        Assert.True(DesktopAppearance.Current.RoundedCorners);
+
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 1));
+        Assert.True(Window.View.IsHidden("square"));
+    }
+
+    [Fact]
     public void OpensOnAppearanceWithClockInTheSidebar()
     {
         Assert.Equal(["Appearance", "Clock"], Window.View.List("panes")!.Items);

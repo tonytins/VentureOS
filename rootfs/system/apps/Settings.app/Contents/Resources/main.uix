@@ -2,7 +2,7 @@
 <!-- The Settings window: a sidebar of panes, as GNOME Settings has, each pane's controls in one place, which
      main.lua shows one pane at a time. main.lua applies and saves each choice. -->
 <UIScript version="1" requires="sidebar">
-  <Window width="380" height="222"/>
+  <Window width="380" height="292"/>
   <Sidebar name="panes" width="130"/>
 
   <Style name="heading" fontSize="title"/>
@@ -50,6 +50,10 @@
   <Text name="accentName" x="12" y="152" width="356" height="20" style="quiet"/>
   <TextField name="custom" x="12" y="182" width="120" height="26" placeholder="#RRGGBB"/>
   <Text name="status" x="142" y="185" width="226" height="20" style="quiet"/>
+
+  <Text name="cornersHeading" x="12" y="222" width="356" height="24" style="heading" text="Window corners"/>
+  <Button name="rounded" x="12" y="252" width="84" height="26" text="Rounded"/>
+  <Button name="square" x="102" y="252" width="84" height="26" text="Square"/>
 
   <!-- Clock: the offset from UTC, typed after the UTC label; there's no daylight saving, so it's changed when the
        clocks change. -->
