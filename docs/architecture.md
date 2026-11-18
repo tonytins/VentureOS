@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,153 tests, and 21 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,202 tests, and 21 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -742,9 +742,23 @@ closing tag begins, and each attribute's span, value as written, and quote.
 order mark and line endings included, as strict UTF-8), those positions,
 and the `UIScript` VentureOS reads from it, or why VentureOS refuses it. A
 refused document, such as one with an element VentureOS doesn't know, opens
-for text editing only. Edits, coming in 0.6.2xx, change the text in place,
-so a document nobody edited is written back byte for byte; Hudini's examples
-and every shipped `.uix` are tested to do so.
+for text editing only. Edits change the text in place, so a document nobody
+edited is written back byte for byte; Hudini's examples and every shipped
+`.uix` are tested to do so. Each edit gives a new document and leaves the old
+one as it was, and one VentureOS would refuse throws its `UIScriptException`
+instead:
+
+- `SetAttribute(element, name, value)` replaces a value between its own
+  quotes, encoded for them (`FlatXml.EncodeValue`; tabs and line breaks
+  become character references, so they read back), and leaves a value that
+  already reads the same as written. A new attribute follows the last one,
+  on the same line, or on a line of its own with the same indentation when
+  the element's attributes are written one per line.
+- `RemoveAttribute(element, name)` takes the attribute and the space before
+  it, so one on its own line takes the line.
+
+Elements are named by their index among the root's children, or
+`UIDocument.Root`, since `<Window>` and `<Style>` don't always have names.
 
 **The desktop.** `desktop` switches the screen to graphics until VentureOS ▸
 Return to Shell (Ctrl+Shift+Q). The
@@ -1269,6 +1283,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Interface formats (§9): `UIDocument` sets and removes attributes in place, laid out as the element's others are, refusing an edit VentureOS would refuse. |
 | 2026-11-18 | minor | Interface formats (§9): `FlatXml` records where each element and attribute sits in the text, and `UIDocument` holds a `.uix` as an editor does, written back byte for byte; the start of 0.6.2xx's round trip. |
 | 2026-11-18 | minor | Drawing (§9): Roundhouse's window, a document's text beside its live drawing, redrawn after typing stops, keeping the last good drawing when the text is refused; light, dark, and the accent switch in the window. |
 | 2026-11-18 | minor | Drawing (§9): `FrameBuffer` holds the fill, blend, copy, and read-back arithmetic the kernel's painter used, now shared with Roundhouse's `SkiaPainter`, which draws everything but text through it and text with Skia in VentureOS's fonts; `DocumentView` opens a `.uix` with its strings and images for apps and Roundhouse alike; `Roundhouse --render` draws one to a PNG file. |

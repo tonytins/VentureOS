@@ -18,6 +18,9 @@ public sealed class UIDocument
     // Strict UTF-8: text that isn't valid UTF-8 couldn't be written back as it was, so it's refused instead.
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
+    /// <summary>The root element, <c>&lt;UIScript&gt;</c>, wherever an edit takes an element's index.</summary>
+    public const int Root = -1;
+
     private UIDocument(string text, FlatXmlDocument? xml, UIScript? script, UIScriptException? problem)
     {
         Text = text;
@@ -99,5 +102,96 @@ public sealed class UIDocument
         File.WriteAllBytes(path, Utf8.GetBytes(Text));
     }
 
+    /// <summary>
+    /// Sets an attribute, in place if the element has it, or after its last attribute if not, laid out as the
+    /// element's attributes are: on the same line, or each on its own line with the same indentation. Nothing else in
+    /// the text changes; a value that already reads as <paramref name="value"/> is left as written.
+    /// </summary>
+    /// <param name="element">The element's index among the root's children, or <see cref="Root"/>.</param>
+    /// <returns>The edited document; this one is unchanged.</returns>
+    /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
+    /// <exception cref="ArgumentException"><paramref name="name"/> isn't an attribute name.</exception>
+    /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a width that isn't a number.</exception>
+    public UIDocument SetAttribute(int element, string name, string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var (target, source) = Find(element, name);
+
+        for (var index = 0; index < source.Attributes.Count; index++)
+        {
+            var attribute = source.Attributes[index];
+            if (attribute.Name != name)
+                continue;
+
+            return target.Attributes[index].Value == value
+                ? this
+                : Edit(attribute.Value, FlatXml.EncodeValue(value, attribute.Quote));
+        }
+
+        // A new attribute follows the last one, as it was set apart from the one before it.
+        var (separator, after, quote) = source.Attributes.Count switch
+        {
+            0 => (" ", source.NameEnd, '"'),
+            _ => (Text[Gap(source, source.Attributes.Count - 1)..source.Attributes[^1].Span.Start],
+                source.Attributes[^1].Span.End,
+                source.Attributes[^1].Quote),
+        };
+        if (!separator.Contains('\n', StringComparison.Ordinal))
+            separator = " ";
+
+        return Edit(new FlatXmlSpan(after, 0), $"{separator}{name}={quote}{FlatXml.EncodeValue(value, quote)}{quote}");
+    }
+
+    /// <summary>
+    /// Removes an attribute and the space before it, leaving the rest of the text as it was. Removing an attribute
+    /// the element doesn't have changes nothing.
+    /// </summary>
+    /// <param name="element">The element's index among the root's children, or <see cref="Root"/>.</param>
+    /// <returns>The edited document; this one is unchanged.</returns>
+    /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
+    /// <exception cref="ArgumentException"><paramref name="name"/> isn't an attribute name.</exception>
+    /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a window without a width.</exception>
+    public UIDocument RemoveAttribute(int element, string name)
+    {
+        var (_, source) = Find(element, name);
+        for (var index = 0; index < source.Attributes.Count; index++)
+        {
+            if (source.Attributes[index].Name != name)
+                continue;
+
+            var start = Gap(source, index);
+            return Edit(new FlatXmlSpan(start, source.Attributes[index].Span.End - start), "");
+        }
+
+        return this;
+    }
+
     public override string ToString() => Text;
+
+    /// <summary>Where the space before an attribute starts: the end of the attribute before it, or of the name.</summary>
+    private static int Gap(FlatXmlElementSource source, int attribute) =>
+        attribute == 0 ? source.NameEnd : source.Attributes[attribute - 1].Span.End;
+
+    private (FlatXmlElement Element, FlatXmlElementSource Source) Find(int element, string attribute)
+    {
+        ArgumentNullException.ThrowIfNull(attribute);
+        if (!IsEditable || Xml is null)
+            throw new InvalidOperationException($"This document can only be edited as text: {Problem?.Message}");
+        if (!FlatXml.IsName(attribute))
+            throw new ArgumentException($"\"{attribute}\" isn't an attribute name.", nameof(attribute));
+        if (element != Root && (element < 0 || element >= Xml.Children.Count))
+            throw new ArgumentOutOfRangeException(nameof(element), element, $"The document has {Xml.Children.Count} elements inside its root.");
+
+        var found = element == Root ? Xml.Root : Xml.Children[element];
+        return (found, found.Source!);
+    }
+
+    /// <summary>Replaces one span of the text, and reads the result as VentureOS would, refusing what it refuses.</summary>
+    private UIDocument Edit(FlatXmlSpan span, string replacement)
+    {
+        var edited = Read(string.Concat(Text.AsSpan(0, span.Start), replacement, Text.AsSpan(span.End)));
+        return edited.Problem is { } problem ? throw problem : edited;
+    }
 }

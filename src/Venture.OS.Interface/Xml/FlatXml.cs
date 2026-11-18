@@ -116,6 +116,52 @@ public static class FlatXml
         return new Reader(text).ReadDocument();
     }
 
+    /// <summary>Whether <paramref name="name"/> can be written as an element or attribute name, as this reader reads one.</summary>
+    public static bool IsName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (name.Length == 0 || !Reader.IsNameStart(name[0]))
+            return false;
+
+        foreach (var character in name)
+        {
+            if (!Reader.IsNameCharacter(character))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> as an attribute value between <paramref name="quote"/>s, so this reader reads
+    /// it back exactly: <c>&amp;</c>, <c>&lt;</c>, and the quote become entities, and tabs and line breaks become
+    /// character references, which, unlike the characters themselves, aren't read as spaces.
+    /// </summary>
+    public static string EncodeValue(string value, char quote)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (quote is not ('"' or '\''))
+            throw new ArgumentOutOfRangeException(nameof(quote), quote, "An attribute value is quoted with \" or '.");
+
+        StringBuilder encoded = new(value.Length);
+        foreach (var character in value)
+        {
+            encoded.Append(character switch
+            {
+                '&' => "&amp;",
+                '<' => "&lt;",
+                '"' when quote == '"' => "&quot;",
+                '\'' when quote == '\'' => "&apos;",
+                '\t' => "&#9;",
+                '\n' => "&#10;",
+                '\r' => "&#13;",
+                _ => character.ToString(),
+            });
+        }
+
+        return encoded.ToString();
+    }
+
     /// <summary>Reads a UTF-8 file.</summary>
     /// <exception cref="FlatXmlException">The text isn't well-formed flat XML.</exception>
     /// <exception cref="IOException">The file couldn't be read.</exception>
@@ -416,10 +462,10 @@ public static class FlatXml
 
         private static bool IsWhitespace(char character) => character is ' ' or '\t' or '\n' or '\r';
 
-        private static bool IsNameStart(char character) =>
+        internal static bool IsNameStart(char character) =>
             char.IsLetter(character) || character is '_' or ':';
 
-        private static bool IsNameCharacter(char character) =>
+        internal static bool IsNameCharacter(char character) =>
             IsNameStart(character) || char.IsDigit(character) || character is '-' or '.';
     }
 }
