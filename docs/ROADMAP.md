@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-18 · **Latest release:** 0.5, Cassiopeia · **Next:** 0.6, Izumo (Roundhouse), in development
+> **Last updated:** 2026-11-18 · **Latest release:** 0.6, Izumo · **Next:** 0.7, Seto, being planned
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -43,7 +43,7 @@ stage to the next, and add a line to the revision history.
 | 0.3 | (the desktop) | released 2026-11-11, `v0.3.18`; [notes](./releases/0.3.md) | The desktop, its apps, Settings, and the look |
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
-| 0.6 | Izumo | in development | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
+| 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
 
 ## 0.4, Pere Marquette
 
@@ -188,7 +188,7 @@ Roundhouse only.
 
 **0.6.5xx, bundles**
 
-- [ ] A navigator for a bundle's files, a Lua editor with highlighting, a form
+- [x] A navigator for a bundle's files, a Lua editor with highlighting, a form
   for `Info.xml`, and a new app from a template.
 
 **The native version,** an app on VentureOS itself, comes after 0.6. It needs
@@ -238,6 +238,8 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | 0.6, Izumo, is released as `v0.6.505`. 0.7, Seto, is being planned. |
+| 2026-11-18 | patch | 0.6.5xx's bundles are done: a navigator, editors for Lua and text, the `Info.xml` form, New App, a Log tab, and a prompt before leaving unsaved edits. Every band of 0.6 is complete; shipping it is the owner's call. |
 | 2026-11-18 | patch | 0.6.4xx's Run is done: VentureOS's desktop runs in Roundhouse over a fresh copy of its files, with scripts' paths kept within it, and the designer shows a document's menus above its window, as Xcode does. The band is complete. |
 | 2026-11-18 | patch | 0.6.3xx's designer is done, with Roundhouse's own menus for the global menu bar, a title bar after VentureOS's, and packaging for Linux, Windows, and macOS, after CityLimits'. The band is complete. |
 | 2026-11-18 | patch | 0.6.2xx's round trip is done: `UIDocument` edits attributes and elements in place, refusing what VentureOS refuses, and Roundhouse saves through it. The band is complete. |

@@ -959,7 +959,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   button hides when `NativeMenu.IsNativeMenuExported` says the desktop has
   the menus. The shortcuts are window key bindings, so a focused editor or
   field handles its own first.
-- **Bundles** (0.6.5xx, being built): Roundhouse opens a bundle (`OpenBundle`,
+- **Bundles** (0.6.5xx): Roundhouse opens a bundle (`OpenBundle`,
   an `.app` or `.wallpaper` folder), from its folder or any file in it, which
   `OpenBundle.Find` finds by its nearest bundle-named folder. The left pane
   splits: the bundle's files (`OpenBundle.Tree`, folders first, a linked

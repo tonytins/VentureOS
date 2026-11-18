@@ -64,7 +64,7 @@ to open the desktop; VentureOS ▸ Return to Shell (Ctrl+Shift+Q) comes back.
 
 ### Roundhouse
 
-Roundhouse is VentureOS's IDE, for Linux, macOS, and Windows. It needs only the .NET SDK, not the Cosmos tools. Open a `.uix` interface, and it shows the text beside the window as VentureOS draws it, redrawing as you type:
+Roundhouse is VentureOS's IDE, for Linux, macOS, and Windows. It needs only the .NET SDK, not the Cosmos tools. Open an app's folder, or any file in it, and its files are listed: a `.uix` interface opens in a designer that draws it as VentureOS does, beside its text; Lua and other text in an editor; `Info.xml` as a form. File ▸ New App makes a window app to start from:
 
 ```
 dotnet run --project src/Venture.Roundhouse -- rootfs/user/apps/Calculator.app/Contents/Resources/main.uix

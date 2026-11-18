@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.505
+
+- VentureOS 0.6, Izumo, is released. See [the release notes](docs/releases/0.6.md).
+
 ## 0.6.504
 
 - Opening another bundle while one is open in the designer no longer crashes Roundhouse.
