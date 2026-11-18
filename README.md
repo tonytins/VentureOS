@@ -62,6 +62,21 @@ VentureOS boots to a shell. Type `help` to list the commands, and `desktop`
 to open the desktop; VentureOS ▸ Return to Shell (Ctrl+Shift+Q) comes back.
 [Writing apps](docs/writing-apps.md) shows how to add your own.
 
+### Roundhouse
+
+Roundhouse is VentureOS's IDE, for Linux, macOS, and Windows. It needs only the .NET SDK, not the Cosmos tools. Open a `.uix` interface, and it shows the text beside the window as VentureOS draws it, redrawing as you type:
+
+```
+dotnet run --project src/Venture.Roundhouse -- rootfs/user/apps/Calculator.app/Contents/Resources/main.uix
+dotnet test --project tests/Venture.Roundhouse.Tests
+```
+
+To draw a document into a PNG file without opening a window:
+
+```
+dotnet run --project src/Venture.Roundhouse -- --render main.uix main.png --dark --accent "#3A944A"
+```
+
 ## ⚖️ No Copyright
 
 Copyrights and any related rights for VentureOS are waived via the [UNLICENSE](UNLICENSE). Credit still appreciated.

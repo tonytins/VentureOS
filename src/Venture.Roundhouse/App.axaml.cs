@@ -12,7 +12,13 @@ public sealed class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = new MainWindow();
+        {
+            // Roundhouse document.uix opens it.
+            MainWindow window = new();
+            if (desktop.Args is [var path, ..])
+                window.Open(path);
+            desktop.MainWindow = window;
+        }
 
         base.OnFrameworkInitializationCompleted();
     }

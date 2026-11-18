@@ -24,6 +24,9 @@
     <PackageReference Include="Avalonia" Version="12.1.5" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <!-- Highlighting for the text beside the canvas, and later for Lua. -->
+    <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
     <!-- Skia, which Avalonia draws with, at Avalonia's own version: Roundhouse's painter draws text with it. -->
     <PackageReference Include="Avalonia.Skia" Version="12.1.5" />
     <PackageReference Include="GitInfo" Version="3.6.1">

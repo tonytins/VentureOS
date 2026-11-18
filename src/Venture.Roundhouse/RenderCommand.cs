@@ -93,8 +93,20 @@ public static class RenderCommand
     /// <exception cref="FileNotFoundException">VentureOS's fonts aren't beside Roundhouse.</exception>
     public static byte[] Render(UIView view, string title)
     {
+        using var fonts = SkiaFonts.LoadShipped();
+        using var painter = Draw(view, title, fonts);
+        return painter.EncodePng();
+    }
+
+    /// <summary>
+    /// Draws a view in a window over the sky, as the desktop would, with some sky round it for the window's shadow.
+    /// The caller disposes of the painter, whose <see cref="SkiaPainter.Pixels"/> hold the picture.
+    /// </summary>
+    public static SkiaPainter Draw(UIView view, string title, SkiaFonts fonts)
+    {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(title);
+        ArgumentNullException.ThrowIfNull(fonts);
 
         DesktopWindow window = new(title, view);
         var (width, height) = (window.Width + (2 * Margin), window.Height + (2 * Margin));
@@ -102,10 +114,9 @@ public static class RenderCommand
         windows.Open(window);
         (window.X, window.Y) = (Margin, Margin);
 
-        using var fonts = SkiaFonts.LoadShipped();
-        using SkiaPainter painter = new(width, height, fonts);
+        SkiaPainter painter = new(width, height, fonts);
         painter.DrawPixels(DesktopBackground.Render(width, height), 0, 0, width, height);
         windows.Draw(painter);
-        return painter.EncodePng();
+        return painter;
     }
 }

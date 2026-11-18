@@ -166,7 +166,7 @@ Roundhouse only.
 
 - [x] Apps don't ask for `ui`; commands, `init.lua`, and the `lua` prompt can
   show an alert, Quick Look, and launch an app.
-- [ ] Roundhouse opens a `.uix` and draws it beside its text, as VentureOS
+- [x] Roundhouse opens a `.uix` and draws it beside its text, as VentureOS
   does, redrawing as you type, in light and dark.
 
 **0.6.2xx, round trip**
@@ -238,6 +238,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | patch | 0.6.1xx's preview is done: Roundhouse opens a `.uix` and redraws it beside its text as you type, in light and dark. The band is complete. |
 | 2026-11-18 | minor | 0.6 is Izumo, Roundhouse, from its approved design, in five bands, designer first; apps no longer ask for `ui`. 0.7 will be Seto. |
 | 2026-11-18 | minor | 0.5, Cassiopeia, is released as `v0.5.506`. Roundhouse is next, being planned. |
 | 2026-11-17 | minor | 0.5.5xx done, in four phases: the look grows, rounded corners, wallpapers with a picker, and automatic dark mode on a schedule, which I chose over sunset times for now. Every band of 0.5 is done. |

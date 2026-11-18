@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.103
+
+- Roundhouse opens a `.uix` (`Roundhouse document.uix`, or Open… with Ctrl+O) and shows its text, highlighted, beside the window VentureOS would draw. The window redraws a moment after you stop typing. Text VentureOS wouldn't read keeps the last drawing, and the status line names the line that's wrong. Switch Dark and the accent to see either look, and Save (Ctrl+S) writes the text back.
+
 ## 0.6.102
 
 - Roundhouse: `Roundhouse --render document.uix picture.png` draws a `.uix` as VentureOS shows it, in a window over the sky, into a PNG file, in light or `--dark` and with any `--accent`.

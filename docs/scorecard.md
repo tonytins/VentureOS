@@ -17,7 +17,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Network](#network) | 4 | 0 | 0 | DHCP lease 10.0.2.15 under QEMU; `resolve` and `ping` |
 | [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 14 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.97, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 1,116 tests, and 15 for Roundhouse, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 1,116 tests, and 21 for Roundhouse, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 7 | 0 | 0 | Version 0.5; opens in 177 ms at 1024x768, over the Earthset wallpaper |
 | [Desktop apps](#desktop-apps) | 5 | 0 | 0 | Keystone complete; Files, Settings, System Monitor, Terminal, Notes, Calculator, and TextEdit |

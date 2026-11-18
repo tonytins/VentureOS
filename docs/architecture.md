@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,116 tests, and 15 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,116 tests, and 21 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -821,6 +821,13 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   `Roundhouse --render document.uix picture.png [--dark] [--accent
   #RRGGBB]` draws a document in a window over the sky, with its strings
   and images from beside it (`DocumentView`), with no window of its own.
+- **Roundhouse's window** (`MainWindow`) shows a document's text in
+  AvaloniaEdit, with TextMate's XML highlighting, beside the same drawing,
+  redrawn 300 ms after typing stops. Text `UIScript` refuses leaves the
+  last drawing up and puts the reader's message, with its line, in the
+  status line. The Dark and accent switches set VentureOS's look
+  (`DesktopAppearance.Use`) for Roundhouse's process and redraw; nothing is
+  written to VentureOS's settings. Save writes the text exactly as edited.
 - **Windows.** `WindowManager` keeps the windows back to front. Pressing a
   window brings it to the front and focuses it; its title bar drags it,
   kept on screen far enough to grab again; its close button closes it on
@@ -1251,6 +1258,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Drawing (§9): Roundhouse's window, a document's text beside its live drawing, redrawn after typing stops, keeping the last good drawing when the text is refused; light, dark, and the accent switch in the window. |
 | 2026-11-18 | minor | Drawing (§9): `FrameBuffer` holds the fill, blend, copy, and read-back arithmetic the kernel's painter used, now shared with Roundhouse's `SkiaPainter`, which draws everything but text through it and text with Skia in VentureOS's fonts; `DocumentView` opens a `.uix` with its strings and images for apps and Roundhouse alike; `Roundhouse --render` draws one to a PNG file. |
 | 2026-11-18 | minor | Layout (§2): Roundhouse's projects, `src/Venture.Roundhouse` (Avalonia 12) and `tests/Venture.Roundhouse.Tests` (headless), in the solution; the kernel's build doesn't change. |
 | 2026-11-18 | minor | No `ui` scope (§9): apps open windows without asking, and `ui` is accepted and ignored; every script gets `venture.ui.alert`, `preview`, and `launch` through `ISystemInfo.Desktop`, an alert printed without the desktop on the screen. |
