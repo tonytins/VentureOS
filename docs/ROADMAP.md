@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-18 · **Latest release:** 0.6, Izumo · **Next:** 0.7, Seto, being planned
+> **Last updated:** 2026-11-18 · **Latest release:** 0.6, Izumo · **Next:** 0.7, Seto, in development
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -44,6 +44,7 @@ stage to the next, and add a line to the revision history.
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
+| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS, then Roundhouse on VentureOS itself |
 
 ## 0.4, Pere Marquette
 
@@ -191,12 +192,32 @@ Roundhouse only.
 - [x] A navigator for a bundle's files, a Lua editor with highlighting, a form
   for `Info.xml`, and a new app from a template.
 
-**The native version,** an app on VentureOS itself, comes after 0.6. It needs
+## 0.7, Seto
+
+Named after the Sunrise Seto, which runs coupled to the Izumo. 0.7 takes
+Roundhouse onto VentureOS itself, starting with a way to get apps there.
+
+**0.7.1xx, vdb**
+
+vdb sends an app to a running VentureOS and opens it, from a command-line tool
+on another computer, once developer mode is on and the computer is trusted.
+It stands in until VentureOS can keep files and install from a disk. Its
+[design](./design/2026-11-18-vdb-design.md) has the protocol and the rules.
+The tool is written in Swift, in `tools/vdb/` for now; Swift Argument Parser
+and swift-log are approved for it alone.
+
+- [ ] Developer mode, in Settings and from scripts, and trusting a computer,
+  by an alert or ahead of time on the owner's own builds.
+- [ ] The vdb/1 protocol: installing an app, checked as boot checks apps, and
+  opening it, with what it prints sent back.
+- [ ] The `vdb` tool, for Linux, macOS, and Windows.
+
+**Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
+first, as capable as a desktop code editor, and in the long run a designer
+like the desktop version's, gaining widgets as it needs them. A designer needs
 from the platform: a `<Region>` that hosts and draws another `.uix`, pointer
 input in regions, UIScript to and from Lua, text with more than one style, and
 persistence.
-
-0.7, whatever it holds, is Seto, after Izumo's sister train.
 
 ## Ideas
 
@@ -238,6 +259,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | 0.7, Seto, begins with 0.7.1xx, vdb, from its approved design: developer mode, trusting a computer, a plain-text protocol with files in base64, and a Swift tool. Roundhouse on VentureOS follows, a text editor first. |
 | 2026-11-18 | minor | 0.6, Izumo, is released as `v0.6.505`. 0.7, Seto, is being planned. |
 | 2026-11-18 | patch | 0.6.5xx's bundles are done: a navigator, editors for Lua and text, the `Info.xml` form, New App, a Log tab, and a prompt before leaving unsaved edits. Every band of 0.6 is complete; shipping it is the owner's call. |
 | 2026-11-18 | patch | 0.6.4xx's Run is done: VentureOS's desktop runs in Roundhouse over a fresh copy of its files, with scripts' paths kept within it, and the designer shows a document's menus above its window, as Xcode does. The band is complete. |
