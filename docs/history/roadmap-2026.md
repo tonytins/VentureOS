@@ -262,7 +262,7 @@ phases:
 
 - [x] Phase 1, the UIScript reader: `.uix` files read with Hudini's rules,
   tested against Hudini's examples, plus a `menus` feature
-  ([draft](../uiscript-menus.md)) for the global menu bar.
+  ([draft](../uiscript/menus.md)) for the global menu bar.
 - [x] Phase 2, drawing and `desktop`: graphics mode, a frame loop, the blue
   desktop and pointer, and a way back to the shell.
 - [x] Phase 3, windows: Tiger-style frames (title bar, close dot, dragging,
@@ -327,7 +327,7 @@ with the close and minimize buttons on top, as Big Sur's Finder does.
   address shows the full path, keeping its end when cut.
 - [x] Phase 2, `<Sidebar>` in UIScript: a flat list down the window's left,
   with a name and a width and no position, behind `requires="sidebar"`, and
-  drafted for Hudini in [uiscript-sidebar.md](../uiscript-sidebar.md).
+  drafted for Hudini in [uiscript/sidebar.md](../uiscript/sidebar.md).
 - [x] Phase 3, the sidebar in the frame: drawn the window's full height in
   its own shade, with the buttons on top and the title bar over the
   content only. Files' bookmarks move into one.
@@ -348,7 +348,7 @@ with the close and minimize buttons on top, as Big Sur's Finder does.
   `appearance` command switch it until reboot, ahead of Settings.
 - [x] Phase 7, style roles: colour roles (`textColor="secondary"`) and
   font-size roles (`fontSize="title"`) on `<Style>`, written as if in
-  Hudini's spec and drafted in `docs/uiscript-styles.md`, with layered
+  Hudini's spec and drafted in `docs/uiscript/styles.md`, with layered
   `dark*` colours for apps that need literal ones. The shipped apps move to
   roles, and a test checks every shipped interface stays readable in both
   palettes.
@@ -397,7 +397,7 @@ interface formats into `Venture.OS.Interface`.
 | 2026-11-11 | major | Tony Bark moved VentureOS to releases: no schedule, .NET-style feature bands, only the latest release supported until 1.0, tags and notes now and ISOs later, and code names for releases. 0.3 is released as `v0.3.18`, holding Borealis, Keystone, Downeaster, and the repository's new layout. 0.4, Pere Marquette, the last Amtrak name, holds standard menus, text selection, Edit, and networking; Telnet is dropped. About 29–57 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster phase 9, the optional one: hover text, through a transitional reader for the settled part of the CST specification; Settings' swatches name themselves. About 18–35 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster complete: phase 8, Settings, with every change saved to `/mnt/user/settings/appearance.xml` and restored by a new optional boot step. Hover text stays optional. About 18–35 h of milestones remain. |
-| 2026-11-11 | minor | Downeaster 88%: phase 7, colour and size roles and `dark` twins on `<Style>`, drafted in `docs/uiscript-styles.md`; the shipped apps use roles, and a contrast test covers every shipped interface in every palette. About 21–41 h of milestones remain. |
+| 2026-11-11 | minor | Downeaster 88%: phase 7, colour and size roles and `dark` twins on `<Style>`, drafted in `docs/uiscript/styles.md`; the shipped apps use roles, and a contrast test covers every shipped interface in every palette. About 21–41 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 75%: phase 6, light and dark palettes from an accent after Distro Tycoon 2, switched by `venture.setAppearance` and the `appearance` command. About 25–49 h of milestones remain. |
 | 2026-11-11 | major | Tony Bark extended Downeaster with hover, a dark palette and accent colours after Distro Tycoon 2, style roles drafted for Hudini, Settings, and optional hover text through a transitional CST reader; the docs-and-boot phase and the every-stage list (CI, ARM64 boots, ISO releases) are dropped, and beta needs only Blue Water. Phase 5, hover, is done (63% of the required phases). About 29–57 h of milestones remain. |
 | 2026-11-11 | minor | Downeaster 80%: phase 4, resizable windows with a grip, following Hudini's edge offsets instead of a new `anchor` attribute; Files and TextEdit resize. About 19–38 h of milestones remain. |

@@ -306,8 +306,8 @@ public sealed class UIScriptException(string message, int? line = null)
 /// controls, plus its menus with the <c>menus</c> feature and its sidebar with the <c>sidebar</c> feature.
 /// </summary>
 /// <remarks>
-/// <para>This reads the format Hudini defines (Draft, version 1; see docs/uiscript-menus.md for VentureOS's
-/// <c>menus</c> feature), with the same rules as Hudini's reader, so a document reads the same in both. A document
+/// <para>This reads the format Hudini defines (Draft, version 1), and a superset of it: Hudini's <c>menus</c> and
+/// <c>sidebar</c> modules, and VentureOS's additions (see docs/uiscript/), with the same rules as Hudini's reader, so a document reads the same in both. A document
 /// reads completely and validly, or throws <see cref="UIScriptException"/>.</para>
 /// <list type="bullet">
 /// <item><description>A newer <c>version</c> or an unknown <c>requires</c> feature refuses the document, before

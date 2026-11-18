@@ -1038,14 +1038,17 @@ version and `requires` are checked first; unknown elements refuse the
 document and unknown attributes are listed; references, sizes, and
 per-control attributes are validated, so a document reads completely or not
 at all. It's tested against Hudini's five example documents, copied into the
-tests with Hudini's license. VentureOS adds two features, drafted for
-Hudini to take up: `menus` (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with
-hotkeys and Ctrl or Alt shortcuts), in [uiscript-menus.md](./uiscript-menus.md),
-and `sidebar` (`<Sidebar>`, a list of places beside the content), in
-[uiscript-sidebar.md](./uiscript-sidebar.md). Styles take color roles
-(`secondaryText`, `panel`, ...), size roles (`caption` to `largeTitle`), and
-`dark` twins of each color, drafted in [uiscript-styles.md](./uiscript-styles.md)
-as if already in Hudini's spec. `UIView` draws documents in desktop windows,
+tests with Hudini's license. VentureOS's UIScript is a superset of
+Hudini's, described in [uiscript/](./uiscript/README.md): it implements
+Hudini's `menus` module (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with
+hotkeys and Ctrl or Alt shortcuts) and `sidebar` module (`<Sidebar>`, a list
+of places beside the content), and style roles (`secondaryText`, `panel`,
+...), size roles (`caption` to `largeTitle`), and `dark` twins of each
+color, all first drafted here ([menus](./uiscript/menus.md),
+[sidebar](./uiscript/sidebar.md), [styles](./uiscript/styles.md)) and taken
+into Hudini's spec on 2026-11-12. What it adds since, `subtitle` and toolbar
+items' `image` and `placement`, is drafted in
+[uiscript/title-bar.md](./uiscript/title-bar.md). `UIView` draws documents in desktop windows,
 resolving each style once per palette, so styles with roles follow a switch
 to dark or a new accent. `ShippedContrastTests` draws every shipped
 interface in every palette and fails on any text below a 3 to 1 contrast.
@@ -1230,6 +1233,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Docs: the UIScript drafts move to `docs/uiscript/`, whose README says VentureOS's UIScript is a superset of Hudini's and lists what it adds; Hudini adopted the menus, sidebar, and styles drafts, which say so; a new title bar draft covers `subtitle`, and toolbar items' `image` and `placement`. |
 | 2026-11-17 | minor | Automatic dark mode (§9): an `auto` look switches light and dark by the clock as each minute turns; Settings and `appearance auto --from --until` set it. Every band of 0.5 is done. |
 | 2026-11-17 | minor | Wallpapers (§9): the desktop shows the look's wallpaper from its bundle, light or dark, and follows a change; `venture.wallpapers()` lists them, and Settings picks one from thumbnails, the sky first. |
 | 2026-11-17 | minor | Image buttons (§9): buttons draw their images, ringed in the accent when checked, and `window:setImage` supplies one at run time, from where an app may look. |

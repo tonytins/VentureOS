@@ -270,7 +270,7 @@ new number. `roll` still works in the shell, since both live in the same app.
   `backgroundColor="inputBackground"`, `fontSize="title"`. A hex color such
   as `#1E5AA0` stays exactly that in every look unless you give it a dark
   twin, such as `darkTextColor="#8CB8F0"`. See
-  [UIScript styles](./uiscript-styles.md) for every role.
+  [UIScript styles](./uiscript/styles.md) for every role.
 - **Hover text:** give a control `tooltip="saveTip"`, naming a
   `<String name="saveTip" table="1" index="3"/>`, and put its text in a
   table beside your `.uix`, named `_1_<anything>.cst`, as `3 ^Save the file^`.
@@ -288,7 +288,7 @@ new number. `roll` still works in the shell, since both live in the same app.
   with no code of yours, Undo and Redo included; setting a field's text
   yourself starts its undo history over. Don't add your own Close Window, or
   your own copy and paste. See
-  [UIScript menus](./uiscript-menus.md).
+  [UIScript menus](./uiscript/menus.md).
 - **A sidebar:** add `sidebar` to `requires` and
   `<Sidebar name="places" width="120"/>`, and the window gets a list of
   places down its left, its full height, as Files has. Fill and read it like
@@ -309,7 +309,7 @@ new number. `roll` still works in the shell, since both live in the same app.
   color, as toolbar icons do; draw them as dark shapes. Only a sidebar
   takes tables; a plain list takes strings. The sidebar sits beside the
   content, so the window's size and your controls' positions don't change.
-  See [UIScript sidebar](./uiscript-sidebar.md).
+  See [UIScript sidebar](./uiscript/sidebar.md).
 - **Resizing:** `resizable="true"` on `<Window>` puts a grip in the window's
   bottom-right corner. The window starts at its `width` and `height` and
   shrinks no further than `minWidth` and `minHeight` (or its starting size,

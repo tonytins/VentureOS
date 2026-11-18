@@ -1,6 +1,10 @@
 # UIScript styles (draft)
 
-This is a draft revision of the [UIScript format](https://github.com/tonytins/Hudini/blob/main/doc/UISCRIPT.md)'s
+> **Adopted.** Hudini took this draft into its spec on 2026-11-12, as its style roles. Hudini's
+> [spec](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) is now the reference; this draft is kept as a
+> record of how VentureOS first built it. See [UIScript in VentureOS](./README.md).
+
+This is a draft revision of the [UIScript format](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md)'s
 **Styles** section, which Hudini defines. It's written as if it were already
 in the spec: VentureOS reads it today, and Hudini's styling rework can take
 it from here.

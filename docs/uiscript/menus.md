@@ -1,6 +1,10 @@
 # UIScript menus (draft feature)
 
-This is a draft addition to the [UIScript format](https://github.com/tonytins/Hudini/blob/main/doc/UISCRIPT.md),
+> **Adopted.** Hudini took this draft into its spec on 2026-11-12, as its `menus` module. Hudini's
+> [spec](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) is now the reference; this draft is kept as a
+> record of how VentureOS first built it. See [UIScript in VentureOS](./README.md).
+
+This is a draft addition to the [UIScript format](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md),
 which Hudini defines. VentureOS reads it first; it's written as a section of
 the UIScript spec so it can move there once it settles.
 
