@@ -1101,6 +1101,105 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void InfoXmlOpensAsAFormThatEditsTheTextInPlace() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var info = Path.Combine(app, "Contents", "Info.xml");
+        var saved = File.ReadAllText(info);
+        Select(window, info);
+        var form = window.FindControl<Bundles.InfoForm>("InfoForm")!;
+
+        Assert.True(window.FindControl<ScrollViewer>("InfoView")!.IsVisible);
+        var name = (TextBox)form.Fields["name"];
+        Assert.Equal("Calculator", name.Text);
+
+        window.UpdateLayout();
+        Assert.True(name.Focus());
+        name.Text = "Adding Machine";
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+
+        Assert.Equal(saved.Replace("name=\"Calculator\"", "name=\"Adding Machine\"", StringComparison.Ordinal), window.Bundle!.Text(info));
+        Assert.True(window.Bundle.IsUnsaved(info));
+        Assert.Contains("Info.xml ●", Labels(window));
+
+        // The form is updated, not built again, so the field typed in keeps its place for Tab.
+        Assert.Same(name, form.Fields["name"]);
+
+        Assert.True(window.Save());
+        Assert.Contains("name=\"Adding Machine\"", File.ReadAllText(info));
+        window.Close();
+    });
+
+    [Fact]
+    public void TheFormsNeedsAreCheckBoxesAndARefusedValueSaysWhyUnderItsField() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var info = Path.Combine(app, "Contents", "Info.xml");
+        Select(window, info);
+        var form = window.FindControl<Bundles.InfoForm>("InfoForm")!;
+
+        ((CheckBox)window.FindControl<Bundles.InfoForm>("InfoForm")!.Fields["needs.files"]).IsChecked = true;
+        Assert.Equal(Venture.OS.Scripting.ScriptScopes.Files, window.Info!.Bundle!.Needs & Venture.OS.Scripting.ScriptScopes.Files);
+        Assert.Contains("files", window.Bundle!.Text(info));
+
+        var identifier = (TextBox)form.Fields["identifier"];
+        window.UpdateLayout();
+        Assert.True(identifier.Focus());
+        identifier.Text = "not an identifier";
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+
+        Assert.Contains("reverse-DNS", form.Problem("identifier"));
+        Assert.DoesNotContain("not an identifier", window.Bundle.Text(info));
+        window.Close();
+    });
+
+    [Fact]
+    public void TheMainScriptIsChosenFromTheBundlesLuaFiles() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        File.WriteAllText(Path.Combine(app, "Contents", "Lua", "other.lua"), "print('other')");
+        window.Open(app);
+        var info = Path.Combine(app, "Contents", "Info.xml");
+        Select(window, info);
+        var main = (ComboBox)window.FindControl<Bundles.InfoForm>("InfoForm")!.Fields["main"];
+
+        Assert.Contains("Contents/Lua/other.lua", (IEnumerable<string>)main.ItemsSource!);
+        main.SelectedItem = "Contents/Lua/other.lua";
+
+        Assert.Contains("main=\"Contents/Lua/other.lua\"", window.Bundle!.Text(info));
+        window.Close();
+    });
+
+    [Fact]
+    public void AnInfoXmlVentureOSRefusesOpensAsTextWithTheReason() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var info = Path.Combine(app, "Contents", "Info.xml");
+        File.WriteAllText(info, "<App version=\"1\"><Info name=\"Calculator\"/></App>");
+
+        Select(window, info);
+
+        Assert.True(window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.IsVisible);
+        Assert.Contains("identifier", window.Status);
+        window.Close();
+    });
+
+    [Fact]
+    public void EditAsTextShowsTheTextAndTheViewMenuBringsTheFormBack() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        Select(window, Path.Combine(app, "Contents", "Info.xml"));
+
+        window.ShowInfoAsText(true);
+        Assert.True(window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.IsVisible);
+
+        Command(window, "View", "Info.xml as Text").Run();
+        Assert.False(window.IsInfoAsText);
+        Assert.True(window.FindControl<ScrollViewer>("InfoView")!.IsVisible);
+        window.Close();
+    });
+
     /// <summary>The navigator's labels, as shown, unsaved marks included.</summary>
     private static List<string> Labels(MainWindow window)
     {

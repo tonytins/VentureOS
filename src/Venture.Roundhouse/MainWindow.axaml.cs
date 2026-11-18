@@ -21,6 +21,7 @@ using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using Venture.OS.Desktop;
 using Venture.OS.Interface;
+using Venture.OS.Bundles;
 using Venture.Roundhouse.Bundles;
 using Venture.Roundhouse.Designer;
 using Venture.Roundhouse.Drawing;
@@ -59,6 +60,9 @@ public sealed partial class MainWindow : Window
     private readonly RegistryOptions highlightOptions;
     private readonly TextMate.Installation fileHighlighting;
     private bool loadingFile;
+
+    // Whether Info.xml shows as text rather than as its form, by choice.
+    private bool infoAsText;
 
     // The files last marked unsaved in the list.
     private string[] shownUnsaved = [];
@@ -121,6 +125,8 @@ public sealed partial class MainWindow : Window
         // pointer mid-drag, so it stays where the person put it.
         CanvasHost.AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true);
         Inspector.Commit = CommitAttribute;
+        InfoForm.Commit = CommitInfo;
+        InfoForm.ShowText = () => ShowInfoAsText(true);
         AddButton.Click += (_, _) =>
         {
             // The Insert menu's entries, read now, so what's enabled is current.
@@ -430,6 +436,10 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        // A bundle's Info.xml shows as a form while VentureOS reads it, and as text to fix it when it doesn't.
+        if (IsInfo(open, file) && !infoAsText && ShowInfo(open, file))
+            return;
+
         string text;
         try
         {
@@ -453,9 +463,84 @@ public sealed partial class MainWindow : Window
         var language = highlightOptions.GetLanguageByExtension(Path.GetExtension(file));
         fileHighlighting.SetGrammar(language is null ? null : highlightOptions.GetScopeByLanguageId(language.Id));
         ShowCenter(FileEditor);
-        StatusText.Text = "";
+        StatusText.Text = Info is { Problem: { } problem } && IsInfo(open, file)
+            ? $"{problem.Message} Fix it here, then choose Info.xml in the list again for its form."
+            : "";
         ShowUndo();
         ShowCaret();
+    }
+
+    /// <summary>The bundle's <c>Info.xml</c> as last read, while it's the file shown, or <see langword="null"/>.</summary>
+    public InfoDocument? Info { get; private set; }
+
+    /// <summary>Whether the <c>Info.xml</c> shows as text, by choice, rather than as its form.</summary>
+    public bool IsInfoAsText => infoAsText;
+
+    /// <summary>Shows a bundle's <c>Info.xml</c> as its form, or as text; the choice lasts until it's changed.</summary>
+    public void ShowInfoAsText(bool asText)
+    {
+        infoAsText = asText;
+        if (CurrentFile is { } file && Bundle is { } open && IsInfo(open, file))
+            ShowFile(file);
+    }
+
+    private static bool IsInfo(OpenBundle bundle, string file) =>
+        Path.GetFullPath(file) == Path.GetFullPath(Path.Combine(bundle.Root, "Contents", "Info.xml"));
+
+    /// <summary>Shows the form, when VentureOS reads the <c>Info.xml</c>.</summary>
+    /// <returns>Whether it did; when it didn't, the caller shows the text, with <see cref="Info"/> saying why.</returns>
+    private bool ShowInfo(OpenBundle bundle, string file)
+    {
+        if (InfoDocument.KindOf(bundle.Root) is not { } kind)
+            return false;
+
+        try
+        {
+            Info = InfoDocument.Read(bundle.Text(file), bundle.Root, kind);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            Info = null;
+            return false;
+        }
+
+        if (!Info.IsEditable)
+            return false;
+
+        InfoForm.Show(Info, BundleFiles(bundle));
+        ShowCenter(InfoView);
+        StatusText.Text = "";
+        return true;
+    }
+
+    /// <summary>The bundle's files, by their paths inside it with <c>/</c> between folders, for the form's choices.</summary>
+    private static List<string> BundleFiles(OpenBundle bundle) =>
+        [.. Directory.EnumerateFiles(bundle.Root, "*", SearchOption.AllDirectories)
+            .Select(file => Path.GetRelativePath(bundle.Root, file).Replace(Path.DirectorySeparatorChar, '/'))
+            .Order(StringComparer.OrdinalIgnoreCase)];
+
+    /// <summary>Commits a form change to the <c>Info.xml</c>, or says why VentureOS wouldn't take it.</summary>
+    private string? CommitInfo(string attribute, string? value)
+    {
+        if (Info is not { } info || Bundle is not { } open || CurrentFile is not { } file)
+            return "Open a bundle's Info.xml first.";
+
+        try
+        {
+            var edited = value is null ? info.RemoveAttribute(attribute) : info.SetAttribute(attribute, value);
+            if (ReferenceEquals(edited, info))
+                return null;
+
+            Info = edited;
+            open.Edit(file, edited.Text);
+            InfoForm.Show(edited, BundleFiles(open));
+            ShowUnsaved();
+            return null;
+        }
+        catch (Exception exception) when (exception is BundleException or ArgumentException or InvalidOperationException)
+        {
+            return exception.Message;
+        }
     }
 
     /// <summary>Shows that Roundhouse has no editor for a file, or that a bundle has nothing to show, and why.</summary>
@@ -489,8 +574,10 @@ public sealed partial class MainWindow : Window
     /// <summary>Shows one of the centre's views: the designer, the file editor, a picture, or a placeholder.</summary>
     private void ShowCenter(Control shown)
     {
-        foreach (var view in (Control[])[CenterGrid, FileEditor, ImageView, FilePlaceholder])
+        foreach (var view in (Control[])[CenterGrid, FileEditor, ImageView, InfoView, FilePlaceholder])
             view.IsVisible = ReferenceEquals(view, shown);
+        if (!ReferenceEquals(shown, InfoView) && !ReferenceEquals(shown, FileEditor))
+            Info = null;
     }
 
     private void OnFileTextChanged(object? sender, EventArgs e)
@@ -602,7 +689,8 @@ public sealed partial class MainWindow : Window
     /// <returns>Whether it was saved.</returns>
     public bool Save()
     {
-        if (FileEditor.IsVisible && Bundle is { } open && CurrentFile is { } file)
+        // A bundle's file other than the designer's is saved from the bundle, whichever editor shows it.
+        if (path is null && Bundle is { } open && CurrentFile is { } file)
         {
             try
             {
@@ -1098,6 +1186,7 @@ public sealed partial class MainWindow : Window
             new("View",
             [
                 new MenuCommand("Text", () => ShowText(!IsTextShowing), IsChecked: () => IsTextShowing),
+                new MenuCommand("Info.xml as Text", () => ShowInfoAsText(!infoAsText), IsChecked: () => infoAsText),
                 new MenuCommand("Twice the Size", () => SetZoom(Zoom != 2), Ctrl(Key.OemPlus), IsChecked: () => Zoom == 2),
                 new MenuSeparator(),
                 new MenuCommand("Dark", () => SetDark(!IsDark), IsChecked: () => IsDark),

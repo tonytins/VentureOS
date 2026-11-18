@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.502
+
+- Roundhouse shows a bundle's `Info.xml` as a form: name, identifier, version, and description; check boxes for the scopes an app needs; and its main script and icon, chosen from the bundle's own files, with the icon shown as VentureOS's dock shows it. A value VentureOS wouldn't accept, such as an identifier that isn't reverse-DNS, says why under its field, and every change edits only that attribute in the file.
+- Edit as Text (or View ▸ Info.xml as Text) shows the file as text instead; an `Info.xml` VentureOS can't read opens as text with the reason.
+
 ## 0.6.501
 
 - Roundhouse edits a bundle's other files: Lua in an editor with highlighting, other text as plain text, and pictures shown as they are. A file that isn't text says so.

@@ -3,6 +3,7 @@
         xmlns:edit="https://github.com/avaloniaui/avaloniaedit"
         xmlns:designer="using:Venture.Roundhouse.Designer"
         xmlns:local="using:Venture.Roundhouse"
+        xmlns:bundles="using:Venture.Roundhouse.Bundles"
         x:Class="Venture.Roundhouse.MainWindow"
         Icon="/Assets/Roundhouse.png"
         Width="1100" Height="720" MinWidth="640" MinHeight="400">
@@ -204,6 +205,10 @@
       <ScrollViewer x:Name="ImageView" Grid.Column="2" IsVisible="False" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
         <Image x:Name="FileImage" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16"
                RenderOptions.BitmapInterpolationMode="None"/>
+      </ScrollViewer>
+      <!-- A bundle's Info.xml, as a form. -->
+      <ScrollViewer x:Name="InfoView" Grid.Column="2" IsVisible="False" HorizontalScrollBarVisibility="Disabled">
+        <bundles:InfoForm x:Name="InfoForm"/>
       </ScrollViewer>
       <!-- A file Roundhouse shows no editor for. -->
       <TextBlock x:Name="FilePlaceholder" Grid.Column="2" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"

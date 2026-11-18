@@ -199,6 +199,21 @@ public sealed class Bundle
             throw new BundleException($"{label}'s {InfoPath} couldn't be read: {exception.Message}");
         }
 
+        return FromInfo(root, document, expected);
+    }
+
+    /// <summary>
+    /// Makes the bundle at <paramref name="path"/> from its <c>Info.xml</c>, already read, with every check
+    /// <see cref="Read"/> makes, the files it names included; for an editor checking text that isn't saved yet.
+    /// </summary>
+    /// <param name="path">The bundle folder, as a full path with <c>/</c> between folders.</param>
+    /// <exception cref="BundleException">VentureOS wouldn't read it as a bundle of that kind; the message says why.</exception>
+    public static Bundle FromInfo(string path, FlatXmlDocument document, BundleKind expected)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentNullException.ThrowIfNull(document);
+        var root = path.TrimEnd('/');
+        var label = System.IO.Path.GetFileName(root);
         var kind = ReadKind(document.Root, expected, label);
         CheckVersion(document.Root, label);
 

@@ -19,7 +19,7 @@ public sealed class UIDocument
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     /// <summary>The root element, <c>&lt;UIScript&gt;</c>, wherever an edit takes an element's index.</summary>
-    public const int Root = -1;
+    public const int Root = FlatXmlEditor.Root;
 
     private UIDocument(string text, FlatXmlDocument? xml, UIScript? script, UIScriptException? problem)
     {
@@ -113,35 +113,8 @@ public sealed class UIDocument
     /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
     /// <exception cref="ArgumentException"><paramref name="name"/> isn't an attribute name.</exception>
     /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a width that isn't a number.</exception>
-    public UIDocument SetAttribute(int element, string name, string value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-        var (target, source) = Find(element, name);
-
-        for (var index = 0; index < source.Attributes.Count; index++)
-        {
-            var attribute = source.Attributes[index];
-            if (attribute.Name != name)
-                continue;
-
-            return target.Attributes[index].Value == value
-                ? this
-                : Edit(attribute.Value, FlatXml.EncodeValue(value, attribute.Quote));
-        }
-
-        // A new attribute follows the last one, as it was set apart from the one before it.
-        var (separator, after, quote) = source.Attributes.Count switch
-        {
-            0 => (" ", source.NameEnd, '"'),
-            _ => (Text[Gap(source, source.Attributes.Count - 1)..source.Attributes[^1].Span.Start],
-                source.Attributes[^1].Span.End,
-                source.Attributes[^1].Quote),
-        };
-        if (!separator.Contains('\n', StringComparison.Ordinal))
-            separator = " ";
-
-        return Edit(new FlatXmlSpan(after, 0), $"{separator}{name}={quote}{FlatXml.EncodeValue(value, quote)}{quote}");
-    }
+    public UIDocument SetAttribute(int element, string name, string value) =>
+        Finish(FlatXmlEditor.SetAttribute(Text, Editable(), element, name, value));
 
     /// <summary>
     /// Removes an attribute and the space before it, leaving the rest of the text as it was. Removing an attribute
@@ -153,20 +126,8 @@ public sealed class UIDocument
     /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
     /// <exception cref="ArgumentException"><paramref name="name"/> isn't an attribute name.</exception>
     /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a window without a width.</exception>
-    public UIDocument RemoveAttribute(int element, string name)
-    {
-        var (_, source) = Find(element, name);
-        for (var index = 0; index < source.Attributes.Count; index++)
-        {
-            if (source.Attributes[index].Name != name)
-                continue;
-
-            var start = Gap(source, index);
-            return Edit(new FlatXmlSpan(start, source.Attributes[index].Span.End - start), "");
-        }
-
-        return this;
-    }
+    public UIDocument RemoveAttribute(int element, string name) =>
+        Finish(FlatXmlEditor.RemoveAttribute(Text, Editable(), element, name));
 
     /// <summary>
     /// Adds an element, written as <c>&lt;Name a="1"/&gt;</c>, so it becomes the root's child at
@@ -180,31 +141,8 @@ public sealed class UIDocument
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is past the end.</exception>
     /// <exception cref="ArgumentException">A name isn't one, or an attribute is given twice.</exception>
     /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a second window.</exception>
-    public UIDocument InsertElement(int index, string name, IReadOnlyList<KeyValuePair<string, string>> attributes)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(attributes);
-        var xml = Editable();
-        if (index < 0 || index > xml.Children.Count)
-            throw new ArgumentOutOfRangeException(nameof(index), index, $"An element goes from 0 to {xml.Children.Count}.");
-        if (!FlatXml.IsName(name))
-            throw new ArgumentException($"\"{name}\" isn't an element name.", nameof(name));
-
-        StringBuilder element = new($"<{name}");
-        HashSet<string> seen = [];
-        foreach (var (attribute, value) in attributes)
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            if (!FlatXml.IsName(attribute))
-                throw new ArgumentException($"\"{attribute}\" isn't an attribute name.", nameof(attributes));
-            if (!seen.Add(attribute))
-                throw new ArgumentException($"The attribute {attribute} is given twice.", nameof(attributes));
-            element.Append($" {attribute}=\"{FlatXml.EncodeValue(value, '"')}\"");
-        }
-
-        element.Append("/>");
-        return Finish(Insert(Text, xml, index, element.ToString()));
-    }
+    public UIDocument InsertElement(int index, string name, IReadOnlyList<KeyValuePair<string, string>> attributes) =>
+        Finish(FlatXmlEditor.InsertElement(Text, Editable(), index, name, attributes));
 
     /// <summary>
     /// Removes the root's child at <paramref name="index"/> with the comments that describe it (those right above it,
@@ -214,12 +152,7 @@ public sealed class UIDocument
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
     /// <exception cref="UIScriptException">VentureOS would refuse the result, such as one without its window.</exception>
-    public UIDocument RemoveElement(int index)
-    {
-        var xml = Editable();
-        CheckChild(xml, index, nameof(index));
-        return Finish(Remove(Text, xml, index));
-    }
+    public UIDocument RemoveElement(int index) => Finish(FlatXmlEditor.RemoveElement(Text, Editable(), index));
 
     /// <summary>
     /// Moves the root's child at <paramref name="from"/> so it's at <paramref name="to"/>, written exactly as it
@@ -230,125 +163,9 @@ public sealed class UIDocument
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">There's no such element, or no such place.</exception>
     /// <exception cref="UIScriptException">VentureOS would refuse the result.</exception>
-    public UIDocument MoveElement(int from, int to)
-    {
-        var xml = Editable();
-        CheckChild(xml, from, nameof(from));
-        CheckChild(xml, to, nameof(to));
-        if (from == to)
-            return this;
-
-        var element = Block(Text, xml, from).Of(Text);
-        var removed = Remove(Text, xml, from);
-
-        // The document between the two steps can lack something VentureOS needs, so it's only read as XML.
-        return Finish(Insert(removed, FlatXml.Parse(removed), to, element));
-    }
+    public UIDocument MoveElement(int from, int to) => Finish(FlatXmlEditor.MoveElement(Text, Editable(), from, to));
 
     public override string ToString() => Text;
-
-    private static void CheckChild(FlatXmlDocument xml, int index, string parameter)
-    {
-        if (index < 0 || index >= xml.Children.Count)
-            throw new ArgumentOutOfRangeException(parameter, index, $"The document has {xml.Children.Count} elements inside its root.");
-    }
-
-    private static string Insert(string text, FlatXmlDocument xml, int index, string element)
-    {
-        var children = xml.Children;
-        var root = xml.Root.Source!;
-        if (root.CloseStart is null)
-            throw new InvalidOperationException("The root is written as <UIScript/>, so it has nowhere to hold an element.");
-
-        // The new element follows the one before it, or the root's start tag, and takes its neighbour's layout.
-        var after = index > 0 ? children[index - 1].Source!.Span.End : ContentStart(text, root);
-        var neighbour = index < children.Count ? children[index] : children.Count > 0 ? children[^1] : null;
-
-        string separator;
-        if (neighbour is null)
-            separator = NewLine(text) + LineIndent(text, root.Span.Start, out _) + "  ";
-        else
-        {
-            var indent = LineIndent(text, neighbour.Source!.Span.Start, out var ownLine);
-            separator = ownLine ? NewLine(text) + indent : "";
-        }
-
-        return string.Concat(text.AsSpan(0, after), separator, element, text.AsSpan(after));
-    }
-
-    private static string Remove(string text, FlatXmlDocument xml, int index)
-    {
-        var span = Block(text, xml, index);
-        var start = span.Start;
-        var end = span.End;
-
-        // An element alone on its line takes the line, from its indentation through its line break.
-        LineIndent(text, start, out var ownLine);
-        var rest = end;
-        while (rest < text.Length && text[rest] is ' ' or '\t')
-            rest++;
-        if (ownLine && (rest == text.Length || text[rest] is '\n' or '\r'))
-        {
-            start = text.LastIndexOf('\n', Math.Max(0, start - 1)) + 1;
-            end = rest;
-            if (end < text.Length && text[end] == '\r')
-                end++;
-            if (end < text.Length && text[end] == '\n')
-                end++;
-        }
-
-        return string.Concat(text.AsSpan(0, start), text.AsSpan(end));
-    }
-
-    /// <summary>
-    /// An element with the comments that describe it: those right above it, each starting its own line, with no
-    /// blank line between, or one just before it on its own line.
-    /// </summary>
-    private static FlatXmlSpan Block(string text, FlatXmlDocument xml, int index)
-    {
-        var span = xml.Children[index].Source!.Span;
-        var floor = index > 0 ? xml.Children[index - 1].Source!.Span.End : ContentStart(text, xml.Root.Source!);
-
-        // Between two elements there's only space and comments, as the reader checked, so they're found going forward.
-        List<FlatXmlSpan> comments = [];
-        for (var at = text.IndexOf("<!--", floor, span.Start - floor, StringComparison.Ordinal); at >= 0;)
-        {
-            var close = text.IndexOf("-->", at + 4, span.Start - at - 4, StringComparison.Ordinal) + 3;
-            comments.Add(new(at, close - at));
-            at = close >= span.Start ? -1 : text.IndexOf("<!--", close, span.Start - close, StringComparison.Ordinal);
-        }
-
-        var start = span.Start;
-        for (var before = comments.Count - 1; before >= 0; before--)
-        {
-            var comment = comments[before];
-            var gap = text.AsSpan(comment.End, start - comment.End);
-            var breaks = gap.Count('\n');
-            LineIndent(text, comment.Start, out var ownLine);
-            if (breaks > 1 || (breaks == 1 && !ownLine))
-                break;
-            start = comment.Start;
-        }
-
-        return new(start, span.End - start);
-    }
-
-    /// <summary>Where the root's children begin: just after its start tag.</summary>
-    private static int ContentStart(string text, FlatXmlElementSource root) =>
-        text.IndexOf('>', root.Attributes.Count > 0 ? root.Attributes[^1].Span.End : root.NameEnd) + 1;
-
-    /// <summary>The spaces and tabs before <paramref name="position"/> on its line, and whether nothing else is.</summary>
-    private static string LineIndent(string text, int position, out bool ownLine)
-    {
-        var start = position;
-        while (start > 0 && text[start - 1] is ' ' or '\t')
-            start--;
-        ownLine = start == 0 || text[start - 1] is '\n' or '\r';
-        return text[start..position];
-    }
-
-    /// <summary>The document's own line break: Windows's when it uses them, otherwise a line feed.</summary>
-    private static string NewLine(string text) => text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
 
     private FlatXmlDocument Editable()
     {
@@ -357,30 +174,15 @@ public sealed class UIDocument
         return Xml;
     }
 
-    /// <summary>Where the space before an attribute starts: the end of the attribute before it, or of the name.</summary>
-    private static int Gap(FlatXmlElementSource source, int attribute) =>
-        attribute == 0 ? source.NameEnd : source.Attributes[attribute - 1].Span.End;
-
-    private (FlatXmlElement Element, FlatXmlElementSource Source) Find(int element, string attribute)
+    /// <summary>
+    /// Reads edited text as VentureOS would, refusing what it refuses; text the edit left as it was gives this
+    /// document back.
+    /// </summary>
+    private UIDocument Finish(string text)
     {
-        ArgumentNullException.ThrowIfNull(attribute);
-        var xml = Editable();
-        if (!FlatXml.IsName(attribute))
-            throw new ArgumentException($"\"{attribute}\" isn't an attribute name.", nameof(attribute));
-        if (element != Root)
-            CheckChild(xml, element, nameof(element));
+        if (ReferenceEquals(text, Text))
+            return this;
 
-        var found = element == Root ? xml.Root : xml.Children[element];
-        return (found, found.Source!);
-    }
-
-    /// <summary>Replaces one span of the text, and reads the result as VentureOS would, refusing what it refuses.</summary>
-    private UIDocument Edit(FlatXmlSpan span, string replacement) =>
-        Finish(string.Concat(Text.AsSpan(0, span.Start), replacement, Text.AsSpan(span.End)));
-
-    /// <summary>Reads edited text as VentureOS would, refusing what it refuses.</summary>
-    private static UIDocument Finish(string text)
-    {
         var edited = Read(text);
         return edited.Problem is { } problem ? throw problem : edited;
     }

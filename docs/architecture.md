@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,512 tests, and 158 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,525 tests, and 163 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -148,6 +148,7 @@ VentureOS/
 │  ├─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
 │  │  ├─ UIScript.cs               Venture.OS.Interface: .uix (UIScript) documents, with menus, sidebars, and style roles
 │  │  ├─ UIDocument.cs             a .uix as an editor holds it: its exact text, where everything sits, and its UIScript
+│  │  ├─ Xml/FlatXmlEditor.cs      edits any flat XML's text in place, for UIDocument and InfoDocument
 │  │  ├─ UIScriptSchema.cs         the attributes each element takes, as UIScript reads them, for editors
 │  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
 │  │  └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
@@ -977,6 +978,17 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   every unsaved file's text by path (`SimulatedRun.Start`'s edits), which
   replace those files in the run's copy of the app. Opening a bundle again
   re-reads its folder.
+- **The `Info.xml` form** (`InfoForm`) edits a bundle's `Info.xml` through
+  `InfoDocument` (`Venture.OS.Common`), which checks every edit with
+  `Bundle.FromInfo`, the same checks `Bundle.Read` makes on a saved file, and
+  edits in place with `FlatXmlEditor` (`Venture.OS.Interface`), the flat-XML
+  core `UIDocument` now builds on too. Needs are check boxes, written in
+  VentureOS's order; `main`, `icon`, and a wallpaper's `image` are chosen
+  from the bundle's files; the icon shows through `DesktopIcon` as the dock
+  shows it. A refusal shows under its field. The form updates in place
+  after a change, keeping the focused field, and is built again only for a
+  new bundle, files, or picture. An `Info.xml` VentureOS refuses, or one
+  chosen as text, opens in the file editor.
 - **Run** (0.6.4xx) opens VentureOS in its own window
   (`SimulatorWindow`, 1024x768, the kernel's screen) beside the designer.
   Each run starts from a fresh copy of `rootfs/` (`SimulatedDisk`), laid
@@ -1466,6 +1478,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Interface formats, bundles, and Roundhouse (§9): `FlatXmlEditor`, moved out of `UIDocument`; `Bundle.FromInfo` and `InfoDocument`; the `Info.xml` form. |
 | 2026-11-18 | minor | Roundhouse (§9): editors for a bundle's other files (Lua highlighted, text, pictures), unsaved marks, Save All, and every unsaved file in Run. |
 | 2026-11-18 | minor | Roundhouse (§9): the start of 0.6.5xx, bundles: `OpenBundle`, the navigator over the outline, and edits kept per file. |
 | 2026-11-18 | minor | Roundhouse (§9): a document's menus in VentureOS's menu bar above the canvas's window, selecting menus and items; `MenuBar.TitleBounds` and `EntryBounds`. |
