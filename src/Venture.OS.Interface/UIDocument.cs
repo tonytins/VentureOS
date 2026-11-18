@@ -168,7 +168,158 @@ public sealed class UIDocument
         return this;
     }
 
+    /// <summary>
+    /// Adds an element, written as <c>&lt;Name a="1"/&gt;</c>, so it becomes the root's child at
+    /// <paramref name="index"/>: right after the element before it, on a line of its own with the same indentation
+    /// as its neighbours, or on their line when they share one. A comment above the element now after it stays
+    /// with that element.
+    /// </summary>
+    /// <param name="index">Where the element goes among the root's children, from 0 to their count.</param>
+    /// <returns>The edited document; this one is unchanged.</returns>
+    /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is past the end.</exception>
+    /// <exception cref="ArgumentException">A name isn't one, or an attribute is given twice.</exception>
+    /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a second window.</exception>
+    public UIDocument InsertElement(int index, string name, IReadOnlyList<KeyValuePair<string, string>> attributes)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(attributes);
+        var xml = Editable();
+        if (index < 0 || index > xml.Children.Count)
+            throw new ArgumentOutOfRangeException(nameof(index), index, $"An element goes from 0 to {xml.Children.Count}.");
+        if (!FlatXml.IsName(name))
+            throw new ArgumentException($"\"{name}\" isn't an element name.", nameof(name));
+
+        StringBuilder element = new($"<{name}");
+        HashSet<string> seen = [];
+        foreach (var (attribute, value) in attributes)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (!FlatXml.IsName(attribute))
+                throw new ArgumentException($"\"{attribute}\" isn't an attribute name.", nameof(attributes));
+            if (!seen.Add(attribute))
+                throw new ArgumentException($"The attribute {attribute} is given twice.", nameof(attributes));
+            element.Append($" {attribute}=\"{FlatXml.EncodeValue(value, '"')}\"");
+        }
+
+        element.Append("/>");
+        return Finish(Insert(Text, xml, index, element.ToString()));
+    }
+
+    /// <summary>
+    /// Removes the root's child at <paramref name="index"/>; one on a line of its own takes the line. Comments stay
+    /// where they are.
+    /// </summary>
+    /// <returns>The edited document; this one is unchanged.</returns>
+    /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
+    /// <exception cref="UIScriptException">VentureOS would refuse the result, such as one without its window.</exception>
+    public UIDocument RemoveElement(int index)
+    {
+        var xml = Editable();
+        CheckChild(xml, index, nameof(index));
+        return Finish(Remove(Text, xml, index));
+    }
+
+    /// <summary>
+    /// Moves the root's child at <paramref name="from"/> so it's at <paramref name="to"/>, written exactly as it
+    /// was. Later controls are drawn over earlier ones, so this changes what's in front.
+    /// </summary>
+    /// <returns>The edited document; this one is unchanged, and it's returned as is when the element doesn't move.</returns>
+    /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element, or no such place.</exception>
+    /// <exception cref="UIScriptException">VentureOS would refuse the result.</exception>
+    public UIDocument MoveElement(int from, int to)
+    {
+        var xml = Editable();
+        CheckChild(xml, from, nameof(from));
+        CheckChild(xml, to, nameof(to));
+        if (from == to)
+            return this;
+
+        var element = xml.Children[from].Source!.Span.Of(Text);
+        var removed = Remove(Text, xml, from);
+
+        // The document between the two steps can lack something VentureOS needs, so it's only read as XML.
+        return Finish(Insert(removed, FlatXml.Parse(removed), to, element));
+    }
+
     public override string ToString() => Text;
+
+    private static void CheckChild(FlatXmlDocument xml, int index, string parameter)
+    {
+        if (index < 0 || index >= xml.Children.Count)
+            throw new ArgumentOutOfRangeException(parameter, index, $"The document has {xml.Children.Count} elements inside its root.");
+    }
+
+    private static string Insert(string text, FlatXmlDocument xml, int index, string element)
+    {
+        var children = xml.Children;
+        var root = xml.Root.Source!;
+        if (root.CloseStart is null)
+            throw new InvalidOperationException("The root is written as <UIScript/>, so it has nowhere to hold an element.");
+
+        // The new element follows the one before it, or the root's start tag, and takes its neighbour's layout.
+        var after = index > 0
+            ? children[index - 1].Source!.Span.End
+            : text.IndexOf('>', root.Attributes.Count > 0 ? root.Attributes[^1].Span.End : root.NameEnd) + 1;
+        var neighbour = index < children.Count ? children[index] : children.Count > 0 ? children[^1] : null;
+
+        string separator;
+        if (neighbour is null)
+            separator = NewLine(text) + LineIndent(text, root.Span.Start, out _) + "  ";
+        else
+        {
+            var indent = LineIndent(text, neighbour.Source!.Span.Start, out var ownLine);
+            separator = ownLine ? NewLine(text) + indent : "";
+        }
+
+        return string.Concat(text.AsSpan(0, after), separator, element, text.AsSpan(after));
+    }
+
+    private static string Remove(string text, FlatXmlDocument xml, int index)
+    {
+        var span = xml.Children[index].Source!.Span;
+        var start = span.Start;
+        var end = span.End;
+
+        // An element alone on its line takes the line, from its indentation through its line break.
+        LineIndent(text, start, out var ownLine);
+        var rest = end;
+        while (rest < text.Length && text[rest] is ' ' or '\t')
+            rest++;
+        if (ownLine && (rest == text.Length || text[rest] is '\n' or '\r'))
+        {
+            start = text.LastIndexOf('\n', Math.Max(0, start - 1)) + 1;
+            end = rest;
+            if (end < text.Length && text[end] == '\r')
+                end++;
+            if (end < text.Length && text[end] == '\n')
+                end++;
+        }
+
+        return string.Concat(text.AsSpan(0, start), text.AsSpan(end));
+    }
+
+    /// <summary>The spaces and tabs before <paramref name="position"/> on its line, and whether nothing else is.</summary>
+    private static string LineIndent(string text, int position, out bool ownLine)
+    {
+        var start = position;
+        while (start > 0 && text[start - 1] is ' ' or '\t')
+            start--;
+        ownLine = start == 0 || text[start - 1] is '\n' or '\r';
+        return text[start..position];
+    }
+
+    /// <summary>The document's own line break: Windows's when it uses them, otherwise a line feed.</summary>
+    private static string NewLine(string text) => text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+
+    private FlatXmlDocument Editable()
+    {
+        if (!IsEditable || Xml is null)
+            throw new InvalidOperationException($"This document can only be edited as text: {Problem?.Message}");
+        return Xml;
+    }
 
     /// <summary>Where the space before an attribute starts: the end of the attribute before it, or of the name.</summary>
     private static int Gap(FlatXmlElementSource source, int attribute) =>
@@ -177,21 +328,24 @@ public sealed class UIDocument
     private (FlatXmlElement Element, FlatXmlElementSource Source) Find(int element, string attribute)
     {
         ArgumentNullException.ThrowIfNull(attribute);
-        if (!IsEditable || Xml is null)
-            throw new InvalidOperationException($"This document can only be edited as text: {Problem?.Message}");
+        var xml = Editable();
         if (!FlatXml.IsName(attribute))
             throw new ArgumentException($"\"{attribute}\" isn't an attribute name.", nameof(attribute));
-        if (element != Root && (element < 0 || element >= Xml.Children.Count))
-            throw new ArgumentOutOfRangeException(nameof(element), element, $"The document has {Xml.Children.Count} elements inside its root.");
+        if (element != Root)
+            CheckChild(xml, element, nameof(element));
 
-        var found = element == Root ? Xml.Root : Xml.Children[element];
+        var found = element == Root ? xml.Root : xml.Children[element];
         return (found, found.Source!);
     }
 
     /// <summary>Replaces one span of the text, and reads the result as VentureOS would, refusing what it refuses.</summary>
-    private UIDocument Edit(FlatXmlSpan span, string replacement)
+    private UIDocument Edit(FlatXmlSpan span, string replacement) =>
+        Finish(string.Concat(Text.AsSpan(0, span.Start), replacement, Text.AsSpan(span.End)));
+
+    /// <summary>Reads edited text as VentureOS would, refusing what it refuses.</summary>
+    private static UIDocument Finish(string text)
     {
-        var edited = Read(string.Concat(Text.AsSpan(0, span.Start), replacement, Text.AsSpan(span.End)));
+        var edited = Read(text);
         return edited.Problem is { } problem ? throw problem : edited;
     }
 }

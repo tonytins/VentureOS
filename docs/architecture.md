@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,202 tests, and 21 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,245 tests, and 21 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -757,6 +757,17 @@ instead:
 - `RemoveAttribute(element, name)` takes the attribute and the space before
   it, so one on its own line takes the line.
 
+- `InsertElement(index, name, attributes)` writes `<Name a="1"/>` right
+  after the element before it, on its own line indented as its neighbours,
+  or on their line when they share one, with the document's own line
+  breaks. A comment above the element now after it stays with that element.
+- `RemoveElement(index)` takes the element, and its line when it's alone
+  on one.
+- `MoveElement(from, to)` moves an element exactly as written, which
+  changes what's drawn in front. Comments and blank lines stay where they
+  were, so moving an element away and back keeps every element and comment
+  but not always the blank lines between them.
+
 Elements are named by their index among the root's children, or
 `UIDocument.Root`, since `<Window>` and `<Style>` don't always have names.
 
@@ -1283,6 +1294,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Interface formats (§9): `UIDocument` adds, removes, and moves elements, laid out as their neighbours, leaving comments where they are. |
 | 2026-11-18 | minor | Interface formats (§9): `UIDocument` sets and removes attributes in place, laid out as the element's others are, refusing an edit VentureOS would refuse. |
 | 2026-11-18 | minor | Interface formats (§9): `FlatXml` records where each element and attribute sits in the text, and `UIDocument` holds a `.uix` as an editor does, written back byte for byte; the start of 0.6.2xx's round trip. |
 | 2026-11-18 | minor | Drawing (§9): Roundhouse's window, a document's text beside its live drawing, redrawn after typing stops, keeping the last good drawing when the text is refused; light, dark, and the accent switch in the window. |
