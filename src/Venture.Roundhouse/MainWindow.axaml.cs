@@ -293,6 +293,8 @@ public sealed partial class MainWindow : Window
         loading = false;
         Title = $"{Path.GetFileName(full)} — {ProductTitle}";
         DocumentTitle.Text = Path.GetFileName(full);
+        DocumentSubtitle.Text = Subtitle(full);
+        DocumentSubtitle.IsVisible = DocumentSubtitle.Text.Length > 0;
         RenderNow();
     }
 
@@ -674,15 +676,35 @@ public sealed partial class MainWindow : Window
         foreach (var control in TitleBar.GetLogicalDescendants().OfType<Button>())
             WindowDecorationProperties.SetElementRole(control, merged ? WindowDecorationsElementRole.User : WindowDecorationsElementRole.None);
 
-        // Avalonia doesn't draw the window buttons on X11 when the content reaches the top, so Roundhouse does, as
-        // Passenger does. Windows and macOS draw their own.
-        WindowButtons.IsVisible = merged && OperatingSystem.IsLinux() && WindowState != WindowState.FullScreen;
+        // On Linux, Avalonia draws the frame and Roundhouse the buttons, VentureOS's red, orange, and green dots; the
+        // frame draws nothing else (see FrameOnly). Windows and macOS keep their own buttons beside the bar.
+        if (merged && OperatingSystem.IsLinux())
+            WindowDecorationsTheme = (ControlTheme)Resources["FrameOnly"]!;
+        ShowWindowButtons();
         PlaceTitleBarContent();
     }
 
-    /// <summary>Keeps the bar's own buttons clear of the window buttons drawn at its right end.</summary>
-    private void PlaceTitleBarContent() =>
-        TitleBarContent.Margin = new Thickness(6, 0, 8 + (IsTitleBarMerged ? WindowDecorationMargin.Right : 0), 0);
+    /// <summary>Whether Roundhouse draws the window's buttons in the bar: where the bar is the title bar on Linux.</summary>
+    public bool DrawsWindowButtons => IsTitleBarMerged && OperatingSystem.IsLinux() && WindowState != WindowState.FullScreen;
+
+    private void ShowWindowButtons()
+    {
+        var palette = DesktopPalette.Light;
+        CloseDot.Fill = Brush(palette.CloseButton);
+        MinimizeDot.Fill = Brush(palette.MinimizeButton);
+        ZoomDot.Fill = Brush(palette.ZoomButton);
+        WindowButtons.IsVisible = DrawsWindowButtons;
+        ToolTip.SetTip(MaximizeButton, WindowState == WindowState.Maximized ? "Restore" : "Zoom");
+
+        static SolidColorBrush Brush(OS.Interface.UIColor color) => new(Color.FromRgb(color.Red, color.Green, color.Blue));
+    }
+
+    /// <summary>Keeps the bar's items clear of any window buttons the system draws beside it, as macOS's on the left.</summary>
+    private void PlaceTitleBarContent()
+    {
+        var system = IsTitleBarMerged && !DrawsWindowButtons ? WindowDecorationMargin : default;
+        TitleBarContent.Margin = new Thickness(10 + system.Left, 0, 10 + system.Right, 0);
+    }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
@@ -691,10 +713,7 @@ public sealed partial class MainWindow : Window
             PlaceTitleBarContent();
         else if (change.Property == WindowStateProperty && MaximizeButton is not null)
         {
-            var maximized = WindowState == WindowState.Maximized;
-            MaximizeButton.Content = maximized ? "❐" : "□";
-            ToolTip.SetTip(MaximizeButton, maximized ? "Restore" : "Maximize");
-            WindowButtons.IsVisible = IsTitleBarMerged && OperatingSystem.IsLinux() && WindowState != WindowState.FullScreen;
+            ShowWindowButtons();
         }
         else if (change.Property == NativeMenu.IsNativeMenuExportedProperty && MenuButton is not null)
             MenuButton.IsVisible = !NativeMenu.GetIsNativeMenuExported(this);
@@ -724,6 +743,19 @@ public sealed partial class MainWindow : Window
     private void OnUndoClicked(object? sender, RoutedEventArgs e) => Undo();
 
     private void OnRedoClicked(object? sender, RoutedEventArgs e) => Redo();
+
+    /// <summary>What a document belongs to, shown under its name: the app bundle it's in, such as Calculator.app, or its folder.</summary>
+    public static string Subtitle(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        for (var folder = Path.GetDirectoryName(path); !string.IsNullOrEmpty(folder); folder = Path.GetDirectoryName(folder))
+        {
+            if (folder.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+                return Path.GetFileName(folder);
+        }
+
+        return Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
+    }
 
     private void ShowUndo()
     {

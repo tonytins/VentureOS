@@ -720,11 +720,34 @@ public sealed class MainWindowTests : IDisposable
     });
 
     [Fact]
-    public void TheBarShowsTheDocumentsName() => TestApp.Run(() =>
+    public void TheBarShowsTheDocumentsNameAndItsBundle() => TestApp.Run(() =>
     {
         var (window, _) = OpenCalculator();
 
         Assert.Equal("main.uix", window.FindControl<TextBlock>("DocumentTitle")!.Text);
+
+        // The test's copy sits in a plain folder, so its folder is the subtitle.
+        var subtitle = window.FindControl<TextBlock>("DocumentSubtitle")!;
+        Assert.True(subtitle.IsVisible);
+        Assert.StartsWith("roundhouse-window-", subtitle.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void WindowButtonsAreVentureOSsDotsWhereRoundhouseDrawsTheFrame() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        var buttons = window.FindControl<StackPanel>("WindowButtons")!;
+
+        Assert.Equal(window.DrawsWindowButtons, buttons.IsVisible);
+        var palette = Venture.OS.Desktop.DesktopPalette.Light;
+        var close = (Avalonia.Media.SolidColorBrush)window.FindControl<Avalonia.Controls.Shapes.Ellipse>("CloseDot")!.Fill!;
+        Assert.Equal((palette.CloseButton.Red, palette.CloseButton.Green, palette.CloseButton.Blue), (close.Color.R, close.Color.G, close.Color.B));
+        Assert.Equal(["CloseButton", "MinimizeButton", "MaximizeButton"], buttons.Children.Select(child => child.Name));
+
+        // VentureOS's order: the window's buttons first, at the left end, then the start items.
+        var start = window.FindControl<StackPanel>("StartItems")!;
+        Assert.Same(buttons, start.Children[0]);
         window.Close();
     });
 
