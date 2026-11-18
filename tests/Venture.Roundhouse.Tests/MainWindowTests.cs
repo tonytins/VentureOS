@@ -1,3 +1,5 @@
+using Avalonia;
+using Avalonia.Input;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
@@ -270,6 +272,158 @@ public sealed class MainWindowTests : IDisposable
         Assert.Null(window.Selection);
         window.Close();
     });
+
+    [Fact]
+    public void ClickingTheCanvasSelectsWhatsThereWithHandles() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+
+        Click(window, bounds.X + 10, bounds.Y + 10);
+
+        Assert.Equal(equals, window.Selection);
+        Assert.Equal(9, Layer(window).Children.Count);
+
+        Click(window, window.Map.Content.X + 2, window.Map.Content.Y + window.Map.Content.Height - 2);
+        Assert.Equal(window.Map.Window, window.Selection);
+        Assert.Single(Layer(window).Children);
+
+        Click(window, 2, 2);
+        Assert.Null(window.Selection);
+        Assert.Empty(Layer(window).Children);
+        window.Close();
+    });
+
+    [Fact]
+    public void DraggingAControlMovesItInOneEditThatUndoes() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var before = window.Text;
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+
+        window.MouseDown(At(window, bounds.X + 10, bounds.Y + 10), MouseButton.Left);
+        window.MouseMove(At(window, bounds.X + 15, bounds.Y + 12));
+        window.MouseMove(At(window, bounds.X + 20, bounds.Y + 15));
+
+        // While the drag goes on, the canvas follows it and the text waits.
+        Assert.Equal(before, window.Text);
+        Assert.Equal(bounds.X + 10, window.Map.BoundsOf(equals)!.Value.X);
+
+        window.MouseUp(At(window, bounds.X + 20, bounds.Y + 15), MouseButton.Left);
+
+        Assert.Contains("""<Button name="equals" x="184" y="261" width="46" height="40" text="="/>""", window.Text);
+        Assert.Equal(equals, window.Selection);
+        var editor = window.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+        editor.Undo();
+        Assert.Equal(before, window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void DraggingAHandleResizes() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+        Click(window, bounds.X + 10, bounds.Y + 10);
+
+        window.MouseDown(At(window, bounds.X + bounds.Width, bounds.Y + bounds.Height), MouseButton.Left);
+        window.MouseMove(At(window, bounds.X + bounds.Width + 10, bounds.Y + bounds.Height + 4));
+        window.MouseUp(At(window, bounds.X + bounds.Width + 10, bounds.Y + bounds.Height + 4), MouseButton.Left);
+
+        Assert.Contains("""<Button name="equals" x="174" y="256" width="56" height="44" text="="/>""", window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void AClickWithoutADragChangesNothing() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var before = window.Text;
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+
+        Click(window, bounds.X + 10, bounds.Y + 10);
+
+        Assert.Equal(before, window.Text);
+        Assert.False(window.FindControl<AvaloniaEdit.TextEditor>("Editor")!.CanUndo);
+        window.Close();
+    });
+
+    [Fact]
+    public void ArrowKeysNudgeByAPixelAndShiftByEight() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+        Click(window, bounds.X + 10, bounds.Y + 10);
+
+        window.KeyPress(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        window.KeyPress(Key.Down, RawInputModifiers.Shift, PhysicalKey.ArrowDown, null);
+
+        Assert.Contains("""<Button name="equals" x="175" y="264" """, window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void AtTwiceTheSizeADragMovesHalfAsFar() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        window.FindControl<ComboBox>("ZoomBox")!.SelectedIndex = 1;
+        Assert.Equal(2, window.Zoom);
+        window.UpdateLayout();
+
+        // The clear button is near the top, so it's still in view at twice the size.
+        var clear = window.Document!.Xml!.Children.ToList().FindIndex(element => element["name"] == "clear");
+        var bounds = window.Map!.BoundsOf(clear)!.Value;
+        var screenStart = At(window, bounds.X + 10, bounds.Y + 10);
+
+        window.MouseDown(screenStart, MouseButton.Left);
+        window.MouseMove(screenStart + new Point(40, 0));
+        window.MouseUp(screenStart + new Point(40, 0), MouseButton.Left);
+
+        // 40 of the screen's pixels are 20 of VentureOS's at 200%.
+        Assert.Contains("""<Button name="clear" x="32" y="64" """, window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void AMoveVentureOSWouldRefuseSaysWhyAndLeavesTheText() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var before = window.Text;
+        window.Text = before.Replace("""x="174" y="256" width="46" height="40" text="="/>""", """x="174" y="256" width="46" height="40" text="=" scrolls="display"/>""", StringComparison.Ordinal);
+        window.RenderNow();
+
+        // A button that scrolls something that isn't a list is refused, so nothing can be dragged onto the canvas.
+        Assert.False(window.Document!.IsEditable);
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+        window.MouseDown(At(window, bounds.X + 10, bounds.Y + 10), MouseButton.Left);
+        window.MouseMove(At(window, bounds.X + 20, bounds.Y + 10));
+        window.MouseUp(At(window, bounds.X + 20, bounds.Y + 10), MouseButton.Left);
+
+        Assert.DoesNotContain("x=\"184\"", window.Text);
+        window.Close();
+    });
+
+    private (MainWindow Window, int EqualsKey) OpenCalculator()
+    {
+        MainWindow window = new();
+        window.Show();
+        window.Open(document);
+        Dispatcher.UIThread.RunJobs();
+        var equals = window.Document!.Xml!.Children.ToList().FindIndex(element => element["name"] == "equals");
+        return (window, equals);
+    }
+
+    private static Canvas Layer(MainWindow window) => window.FindControl<Canvas>("SelectionLayer")!;
+
+    /// <summary>A point on the canvas, in VentureOS's pixels, in the window's own coordinates.</summary>
+    private static Point At(MainWindow window, float x, float y) =>
+        window.FindControl<Image>("PreviewImage")!.TranslatePoint(new Point(x, y), window)!.Value;
+
+    private static void Click(MainWindow window, float x, float y)
+    {
+        window.MouseDown(At(window, x, y), MouseButton.Left);
+        window.MouseUp(At(window, x, y), MouseButton.Left);
+    }
 
     private static uint Pixel(WriteableBitmap bitmap, int x, int y)
     {

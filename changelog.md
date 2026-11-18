@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.301
+
+- Roundhouse's designer: click a control on the canvas to select it, drag it to move it, and drag its handles to resize it. The arrow keys move it a pixel at a time, or eight with Shift. Each drag is one change, which Undo takes back, and the text follows it. Clicking the window's background selects the window.
+- View the canvas at 100% or 200%.
+
 ## 0.6.300
 
 - Roundhouse's window makes room for the designer: an outline on the left, an inspector on the right, and the canvas over the text, which the Text button hides and shows again.

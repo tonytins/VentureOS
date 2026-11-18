@@ -5,6 +5,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Rectangle = Avalonia.Controls.Shapes.Rectangle;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Platform.Storage;
@@ -42,6 +44,9 @@ public sealed partial class MainWindow : Window
 
     private GridLength textHeight = new(240);
 
+    // The drag under way on the canvas, if any.
+    private Drag? drag;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -56,6 +61,12 @@ public sealed partial class MainWindow : Window
         loading = true;
         AccentBox.ItemsSource = AccentNames;
         AccentBox.SelectedIndex = 0;
+        ZoomBox.ItemsSource = (string[])["100%", "200%"];
+        ZoomBox.SelectedIndex = 0;
+
+        // Clicking the canvas focuses it for the arrow keys; scrolling it into view then would slide it under the
+        // pointer mid-drag, so it stays where the person put it.
+        CanvasHost.AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true);
         loading = false;
 
         // XML highlighting, in colors that follow Roundhouse's own light or dark theme.
@@ -119,6 +130,29 @@ public sealed partial class MainWindow : Window
         if (element is { } index && (Document?.Xml is not { } xml || index < 0 || index >= xml.Children.Count))
             throw new ArgumentOutOfRangeException(nameof(element), element, "The document has no such element.");
         Selection = element;
+        ShowSelection();
+    }
+
+    /// <summary>How much the canvas is magnified: 1 or 2, so each of VentureOS's pixels stays a whole number of the screen's.</summary>
+    public double Zoom => ZoomBox.SelectedIndex == 1 ? 2 : 1;
+
+    /// <summary>
+    /// Moves the selected control or visual by whole pixels, as the arrow keys do. Nothing happens without one, and a
+    /// move VentureOS would refuse says why in the status line.
+    /// </summary>
+    public void Nudge(int dx, int dy)
+    {
+        if (Selection is not { } element || !CanEdit(element) || Map?.BoundsOf(element) is not { } bounds)
+            return;
+
+        try
+        {
+            Apply(FrameEdit.Apply(Document!, element, bounds, new FrameChange(dx, dy, 0, 0)));
+        }
+        catch (UIScriptException exception)
+        {
+            StatusText.Text = $"VentureOS wouldn't read that: {exception.Message}";
+        }
     }
 
     /// <summary>
@@ -220,14 +254,150 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        List<string> problems = [];
-        var view = DocumentView.Open(script, Path.GetDirectoryName(path) ?? "/", file => SkiaImages.Load(file), problems.Add);
-        using var painter = RenderCommand.Draw(view, Path.GetFileName(path), fonts, out var drawn);
-        PreviewImage.Source = ToBitmap(painter);
-        Map = new DesignMap(document, drawn);
         if (Selection >= document.Xml!.Children.Count)
             Selection = null;
+        var problems = Draw(document, script);
         StatusText.Text = problems.Count == 0 ? "VentureOS reads this document." : string.Join(" ", problems);
+    }
+
+    /// <summary>Draws a document VentureOS reads onto the canvas, with the selection over it; the text isn't touched.</summary>
+    /// <returns>What couldn't be loaded, such as a missing image.</returns>
+    private List<string> Draw(UIDocument document, UIScript script)
+    {
+        var file = path ?? throw new InvalidOperationException("Only an open document is drawn.");
+        List<string> problems = [];
+        var view = DocumentView.Open(script, Path.GetDirectoryName(file) ?? "/", image => SkiaImages.Load(image), problems.Add);
+        using var painter = RenderCommand.Draw(view, Path.GetFileName(file), fonts, out var drawn);
+        PreviewImage.Source = ToBitmap(painter);
+        Map = new DesignMap(document, drawn);
+        ShowSelection();
+        return problems;
+    }
+
+    /// <summary>Whether the designer can change an element: one with a frame, in a document VentureOS reads as drawn.</summary>
+    private bool CanEdit(int element) =>
+        Document is { IsEditable: true, Xml: { } xml } && Map is not null && element < xml.Children.Count
+        && FrameEdit.IsFramed(xml.Children[element].Name);
+
+    /// <summary>Outlines the selection on its own layer over the canvas, with handles on what can be resized.</summary>
+    private void ShowSelection()
+    {
+        SelectionLayer.Children.Clear();
+        if (PreviewImage.Source is { } image)
+            (SelectionLayer.Width, SelectionLayer.Height) = (image.Size.Width, image.Size.Height);
+        if (Selection is not { } element || Map?.BoundsOf(element) is not { } bounds)
+            return;
+
+        // A line one screen pixel wide at any zoom, in GNOME's blue, so it reads over any accent.
+        var line = 1 / Zoom;
+        IBrush accent = new SolidColorBrush(Color.FromRgb(0x35, 0x84, 0xE4));
+        Rectangle outline = new() { Width = bounds.Width + line, Height = bounds.Height + line, Stroke = accent, StrokeThickness = line };
+        Canvas.SetLeft(outline, bounds.X - (line / 2));
+        Canvas.SetTop(outline, bounds.Y - (line / 2));
+        SelectionLayer.Children.Add(outline);
+
+        if (!CanEdit(element))
+            return;
+        foreach (var handle in FrameDrag.Handles)
+        {
+            var (x, y) = FrameDrag.Centre(bounds, handle);
+            var size = FrameDrag.HandleSize / Zoom;
+            Rectangle box = new() { Width = size, Height = size, Fill = Brushes.White, Stroke = accent, StrokeThickness = line };
+            Canvas.SetLeft(box, x - (size / 2));
+            Canvas.SetTop(box, y - (size / 2));
+            SelectionLayer.Children.Add(box);
+        }
+    }
+
+    private void OnCanvasPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (Map is null || Document is not { IsEditable: true } document || !e.GetCurrentPoint(CanvasHost).Properties.IsLeftButtonPressed)
+            return;
+
+        CanvasHost.Focus();
+        var point = e.GetPosition(PreviewImage);
+
+        // A handle of what's selected wins over whatever is under it; otherwise the click selects what's there.
+        var handle = Handle.None;
+        var element = Selection is { } selected && CanEdit(selected) && Map.BoundsOf(selected) is { } current
+            && (handle = FrameDrag.HandleAt(current, (float)point.X, (float)point.Y)) != Handle.None
+                ? selected
+                : Map.ElementAt((float)point.X, (float)point.Y);
+        Select(element);
+
+        if (element is { } index && CanEdit(index) && Map.BoundsOf(index) is { } bounds)
+        {
+            drag = new Drag(index, handle, point, bounds, document);
+            e.Pointer.Capture(CanvasHost);
+        }
+
+        e.Handled = true;
+    }
+
+    private void OnCanvasMoved(object? sender, PointerEventArgs e)
+    {
+        if (drag is null)
+            return;
+
+        // Whole pixels of VentureOS's, whatever the zoom.
+        var point = e.GetPosition(PreviewImage);
+        var change = FrameDrag.Change(drag.Bounds, drag.Handle,
+            (float)Math.Round(point.X - drag.Start.X), (float)Math.Round(point.Y - drag.Start.Y));
+        if (change == drag.Change)
+            return;
+        drag.Change = change;
+
+        try
+        {
+            // The canvas follows the drag from a document of its own; the text changes once, when it ends.
+            drag.Pending = change.IsEmpty ? null : FrameEdit.Apply(drag.From, drag.Element, drag.Bounds, change);
+            var shown = drag.Pending ?? drag.From;
+            Draw(shown, shown.Script!);
+        }
+        catch (UIScriptException exception)
+        {
+            StatusText.Text = $"VentureOS wouldn't read that: {exception.Message}";
+        }
+    }
+
+    private void OnCanvasReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (drag is null)
+            return;
+
+        var pending = drag.Pending;
+        drag = null;
+        e.Pointer.Capture(null);
+        if (pending is not null)
+            Apply(pending);
+        else
+            RenderNow();
+    }
+
+    private void OnCanvasKeyDown(object? sender, KeyEventArgs e)
+    {
+        var step = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 8 : 1;
+        (int X, int Y)? by = e.Key switch
+        {
+            Key.Left => (-step, 0),
+            Key.Right => (step, 0),
+            Key.Up => (0, -step),
+            Key.Down => (0, step),
+            _ => null,
+        };
+        if (by is not { } move || Selection is null)
+            return;
+
+        Nudge(move.X, move.Y);
+        e.Handled = true;
+    }
+
+    private void OnZoomChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (CanvasZoom is null)
+            return;
+        CanvasZoom.LayoutTransform = new ScaleTransform(Zoom, Zoom);
+        ShowSelection();
     }
 
     /// <summary>Reads the editor's text as the document, keeping the byte order mark the file had.</summary>
@@ -306,6 +476,27 @@ public sealed partial class MainWindow : Window
         for (var row = 0; row < painter.Height; row++)
             Marshal.Copy(painter.Pixels, row * painter.Width, locked.Address + (row * locked.RowBytes), painter.Width);
         return bitmap;
+    }
+
+    /// <summary>
+    /// A drag on the canvas: what it moves or resizes, from where, and the document it would leave, shown on the
+    /// canvas until the drag ends.
+    /// </summary>
+    private sealed class Drag(int element, Handle handle, Point start, UIRect bounds, UIDocument from)
+    {
+        public int Element { get; } = element;
+
+        public Handle Handle { get; } = handle;
+
+        public Point Start { get; } = start;
+
+        public UIRect Bounds { get; } = bounds;
+
+        public UIDocument From { get; } = from;
+
+        public FrameChange Change { get; set; }
+
+        public UIDocument? Pending { get; set; }
     }
 
     /// <summary>A command that runs an action, for the window's key bindings.</summary>
