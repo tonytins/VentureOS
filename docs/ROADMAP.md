@@ -177,7 +177,7 @@ Roundhouse only.
 
 **0.6.3xx, designer**
 
-- [ ] Select, move, and resize; an outline, an inspector, and a library of
+- [x] Select, move, and resize; an outline, an inspector, and a library of
   controls; window settings, the title bar, menus, and the sidebar; Undo and
   Redo.
 
@@ -238,6 +238,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | patch | 0.6.3xx's designer is done, with Roundhouse's own menus for the global menu bar, a title bar after VentureOS's, and packaging for Linux, Windows, and macOS, after CityLimits'. The band is complete. |
 | 2026-11-18 | patch | 0.6.2xx's round trip is done: `UIDocument` edits attributes and elements in place, refusing what VentureOS refuses, and Roundhouse saves through it. The band is complete. |
 | 2026-11-18 | patch | 0.6.1xx's preview is done: Roundhouse opens a `.uix` and redraws it beside its text as you type, in light and dark. The band is complete. |
 | 2026-11-18 | minor | 0.6 is Izumo, Roundhouse, from its approved design, in five bands, designer first; apps no longer ask for `ui`. 0.7 will be Seto. |

@@ -4,6 +4,7 @@
         xmlns:designer="using:Venture.Roundhouse.Designer"
         xmlns:local="using:Venture.Roundhouse"
         x:Class="Venture.Roundhouse.MainWindow"
+        Icon="/Assets/Roundhouse.png"
         Width="1100" Height="720" MinWidth="640" MinHeight="400">
   <Window.Resources>
     <!--

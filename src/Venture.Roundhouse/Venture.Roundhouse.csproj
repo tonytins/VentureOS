@@ -17,6 +17,8 @@
     <!-- Roundhouse shares VentureOS's version, from GitInfo.txt at the repository root, as the kernel does. -->
     <GitIgnoreTagVersion>true</GitIgnoreTagVersion>
     <GitIgnoreBranchVersion>true</GitIgnoreBranchVersion>
+    <!-- A placeholder until Roundhouse has its own art; packaging/icons.sh makes it from Assets/Roundhouse.png. -->
+    <ApplicationIcon>Assets/Roundhouse.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,6 +35,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The window's icon. -->
+    <AvaloniaResource Include="Assets/Roundhouse.png" />
   </ItemGroup>
 
   <ItemGroup>

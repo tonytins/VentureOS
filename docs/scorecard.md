@@ -21,7 +21,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 7 | 0 | 0 | Version 0.5; opens in 177 ms at 1024x768, over the Earthset wallpaper |
 | [Desktop apps](#desktop-apps) | 5 | 0 | 0 | Keystone complete; Files, Settings, System Monitor, Terminal, Notes, Calculator, and TextEdit |
-| [Distribution](#distribution) | 0 | 0 | 5 | No CI for now; tests and builds run locally |
+| [Distribution](#distribution) | 1 | 0 | 5 | No CI for now; tests and builds run locally; Roundhouse packages for three platforms |
 | [Known issues](#known-issues) | | | | 2 open, 4 resolved |
 
 Kernel-free code in `Venture.OS.Common` is covered by tests
@@ -154,6 +154,7 @@ output stays on the console.
 | DIST-2 | CI also builds ARM64 | missing | No CI |
 | DIST-3 | CI boots the kernel headless and checks it reaches the shell | missing | |
 | DIST-4 | Release ISOs are published | missing | No release workflow |
+| DIST-6 | Roundhouse builds into packages for Linux, Windows, and macOS | done | `packaging/*/package.sh` built all five on 2026-11-18 at 0.6.307; the Linux folder and the AppImage ran `--render` and opened a window on Xvfb. The Windows and macOS packages were checked by their contents only; neither was run |
 
 ## Known issues
 

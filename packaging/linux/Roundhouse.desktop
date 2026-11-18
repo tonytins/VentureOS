@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Roundhouse
+GenericName=Interface Designer
+Comment=VentureOS's IDE: design VentureOS windows as VentureOS draws them
+Exec=Roundhouse %F
+Icon=Roundhouse
+Terminal=false
+Type=Application
+Categories=Development;IDE;GUIDesigner;
+Keywords=VentureOS;uix;UIScript;interface;designer;

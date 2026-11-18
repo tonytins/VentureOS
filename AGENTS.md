@@ -39,6 +39,10 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   AvaloniaEdit, and its TextMate add-on are approved for it alone; the  
   VentureOS projects never reference them. See  
   [its design](docs/design/2026-11-18-roundhouse-design.md).
+- `packaging/` holds the scripts that build Roundhouse into packages for  
+  Linux, Windows, and macOS, after CityLimits', writing to `dist/`; see  
+  [its README](packaging/README.md). Its icon is a placeholder, made from  
+  `src/Venture.Roundhouse/Assets/Roundhouse.png` by `packaging/icons.sh`.
 - `tests/Venture.OS.Common.Tests` covers `Venture.OS.Common` and  
   `Venture.OS.Interface` with xUnit v3, and `tests/Venture.Roundhouse.Tests`  
   drives Roundhouse off-screen with `Avalonia.Headless`.
@@ -48,7 +52,7 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
 [docs/scorecard.md](docs/scorecard.md) records verified status. Read  
 `docs/architecture.md` before changing boot, storage, networking, or the shell.
 
-Never commit build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`).
+Never commit build output (`bin/`, `obj/`, `output-*/`, `dist/`, `*.iso`, `*.img`).
 
 ## Build and Test
 

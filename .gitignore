@@ -492,3 +492,6 @@ $RECYCLE.BIN/
 
 # Release notes, which the Visual Studio template above ignores as build output.
 !docs/releases/
+
+# Roundhouse packages and their working files (packaging/).
+dist/

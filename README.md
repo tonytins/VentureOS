@@ -77,6 +77,14 @@ To draw a document into a PNG file without opening a window:
 dotnet run --project src/Venture.Roundhouse -- --render main.uix main.png --dark --accent "#3A944A"
 ```
 
+To build Roundhouse into packages for Linux (an AppImage and a `.tar.gz`), Windows (a zip), and macOS (`Roundhouse.app` in a zip), each needing nothing installed, see [packaging](packaging/README.md):
+
+```
+packaging/linux/package.sh
+packaging/windows/package.sh
+packaging/macos/package.sh
+```
+
 ## ⚖️ No Copyright
 
 Copyrights and any related rights for VentureOS are waived via the [UNLICENSE](UNLICENSE). Credit still appreciated.

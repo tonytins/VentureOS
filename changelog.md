@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.308
+
+- Roundhouse comes as packages that need nothing installed: an AppImage and a `.tar.gz` for Linux, a zip for Windows, and `Roundhouse.app` for macOS, Apple silicon and Intel, built by the scripts in `packaging/`.
+- Roundhouse has an icon, a placeholder until its own art arrives.
+
 ## 0.6.307
 
 - Roundhouse's designer edits the rest of a window: click the title bar to select the window, and drag its right or bottom edge to resize it; click a toolbar item, the title field, or the sidebar to select it, and drag the sidebar's edge to set its width.

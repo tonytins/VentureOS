@@ -173,6 +173,7 @@ VentureOS/
 ├─ tests/
 │  ├─ Venture.OS.Common.Tests/     xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with rootfs/ copied in
 │  └─ Venture.Roundhouse.Tests/    xUnit v3 tests that drive Roundhouse off-screen with Avalonia.Headless
+├─ packaging/                     Roundhouse's packages for Linux, Windows, and macOS, after CityLimits'; writes dist/
 ├─ docs/                          architecture, roadmap, scorecard, the app guide, and the UIScript drafts
 ├─ .agents/skills/                C# and Cosmos guidance for agents
 ├─ GitInfo.txt                    the base version, which every commit counts up from
@@ -919,6 +920,14 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   button hides when `NativeMenu.IsNativeMenuExported` says the desktop has
   the menus. The shortcuts are window key bindings, so a focused editor or
   field handles its own first.
+- **Packaging** (`packaging/`, after CityLimits') builds Roundhouse into
+  self-contained packages from Linux or macOS: an AppImage and `.tar.gz`, a
+  Windows zip, and `Roundhouse.app` zips for both Mac architectures, named
+  for GitInfo's version. Each script publishes Roundhouse, checks its fonts
+  and Skia came along, and runs it headless with `--render` where it can.
+  appimagetool and its runtime are downloaded at pinned versions and checked
+  against their SHA-256s. The icon is a placeholder, made from one PNG by
+  `packaging/icons.sh`.
 - **The coloured bar** is the window's title bar (`ExtendClientAreaToDecorationsHint`)
   where `TitleBars.Merges` allows: Windows, macOS, and a named Linux desktop
   that isn't a tiling window manager or WSL. On X11 that also needs
@@ -1374,6 +1383,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Layout (§2) and Roundhouse (§9): `packaging/`, after CityLimits', builds Roundhouse for Linux, Windows, and macOS; a placeholder icon. 0.6.3xx, the designer, is complete. |
 | 2026-11-18 | minor | Roundhouse (§9): the window, title bar items, title field, menus, and sidebar in the designer, with each kind's own handles and the features they need added to `requires`. |
 | 2026-11-18 | minor | Roundhouse (§9): the bar replaces the window manager's title bar on X11 (Avalonia's drawn frame, as Passenger), laid out as VentureOS's title bar with its window dots. |
 | 2026-11-18 | minor | Roundhouse (§9): menus exported to the desktop's global menu bar and behind ☰, a merged blue-to-teal title bar with its own window buttons on Linux, compact panes, and a status bar. |
