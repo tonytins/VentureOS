@@ -53,6 +53,11 @@ public sealed partial class MainWindow : Window
     // The drag under way on the canvas, if any.
     private Drag? drag;
 
+    // The menu bar over the canvas, the document its menus came from, and whether it holds the pointer.
+    private readonly MenuBar documentMenus = new();
+    private UIDocument? menusOf;
+    private bool menuPointer;
+
     // Set while the outline is updated to match, so it doesn't select in turn.
     private bool syncing;
 
@@ -360,11 +365,91 @@ public sealed partial class MainWindow : Window
         var file = path ?? throw new InvalidOperationException("Only an open document is drawn.");
         List<string> problems = [];
         var view = DocumentView.Open(script, Path.GetDirectoryName(file) ?? "/", image => SkiaImages.Load(image), problems.Add);
-        using var painter = RenderCommand.Draw(view, Path.GetFileName(file), fonts, out var drawn);
+        var menus = MenusFor(document, script, file);
+        using var painter = RenderCommand.Draw(view, Path.GetFileName(file), fonts, out var drawn, menus);
         PreviewImage.Source = ToBitmap(painter);
         Map = new DesignMap(document, drawn);
+        MenusShown = menus;
         ShowSelection();
         return problems;
+    }
+
+    /// <summary>
+    /// The menu bar shown along the top of the canvas, as Xcode shows an app's menus over its design, or
+    /// <see langword="null"/> while the document has no menus.
+    /// </summary>
+    public MenuBar? MenusShown { get; private set; }
+
+    /// <summary>
+    /// The bar for a document with menus: the app's own menu, named in bold as VentureOS shows it, then the
+    /// document's menus in order. It's given new menus only when the document changes, so a menu stays open while
+    /// the canvas redraws around it.
+    /// </summary>
+    private MenuBar? MenusFor(UIDocument document, UIScript script, string file)
+    {
+        if (script.Menus.Count == 0)
+            return null;
+        if (ReferenceEquals(menusOf, document))
+            return documentMenus;
+
+        var app = SimulatedRun.BundleOf(file) is { } bundle ? Path.GetFileNameWithoutExtension(bundle) : Path.GetFileNameWithoutExtension(file);
+        List<BarMenu> menus =
+        [
+            new(new UIMenu("app", app, null, [new UIMenuEntry("quit", $"Quit {app}", 'Q', new UIShortcut(true, false, false, 'Q'), 0)], 0),
+                MenuGroup.App, Emphasized: true),
+        ];
+        menus.AddRange(script.Menus.Select(menu => new BarMenu(menu, MenuGroup.Window)));
+        documentMenus.SetMenus(menus);
+        menusOf = document;
+        return documentMenus;
+    }
+
+    /// <summary>Draws the canvas again from the document as it is, for a menu opening or closing.</summary>
+    private void RedrawCanvas()
+    {
+        if (Document is { Script: { } script } document)
+            Draw(document, script);
+    }
+
+    /// <summary>
+    /// Hands the menu bar a press, move, or release on the canvas: on the bar, or anywhere while a menu is open.
+    /// Opening a menu selects its <c>&lt;Menu&gt;</c>; choosing an item selects its <c>&lt;MenuItem&gt;</c>.
+    /// </summary>
+    /// <returns>Whether the menu bar took it, so the designer doesn't handle it as well.</returns>
+    private bool MenuPointer(Point point, bool pressed, bool released)
+    {
+        if (MenusShown is not { } bar || (!menuPointer && !bar.IsOpen && !(pressed && point.Y < MenuBar.Height)))
+            return false;
+
+        var wasOpen = bar.IsOpen;
+        var choice = bar.UpdatePointer((int)point.X, (int)point.Y, pressed, released);
+        var children = Document!.Xml!.Children;
+        if (choice is { } chosen && chosen.Menu.Group == MenuGroup.Window)
+        {
+            Select(Index(children, child => child.Name == "MenuItem" && child["name"] == chosen.Item.Name && child["menu"] == chosen.Menu.Menu.Name));
+        }
+        else if (pressed && bar.OpenMenu is { Group: MenuGroup.Window } opened)
+        {
+            Select(Index(children, child => child.Name == "Menu" && child["name"] == opened.Menu.Name));
+        }
+
+        RedrawCanvas();
+
+        // A press outside an open menu only closed it; the designer handles the press as well, as a click there.
+        if (pressed && wasOpen && !bar.IsOpen && point.Y >= MenuBar.Height)
+            return false;
+        return true;
+
+        static int? Index(IReadOnlyList<Venture.OS.Interface.Xml.FlatXmlElement> elements, Func<Venture.OS.Interface.Xml.FlatXmlElement, bool> match)
+        {
+            for (var index = 0; index < elements.Count; index++)
+            {
+                if (match(elements[index]))
+                    return index;
+            }
+
+            return null;
+        }
     }
 
     /// <summary>
@@ -530,6 +615,13 @@ public sealed partial class MainWindow : Window
 
         CanvasHost.Focus();
         var point = e.GetPosition(PreviewImage);
+        if (MenuPointer(point, pressed: true, released: false))
+        {
+            menuPointer = true;
+            e.Pointer.Capture(CanvasHost);
+            e.Handled = true;
+            return;
+        }
 
         // A handle of what's selected wins over whatever is under it; otherwise the click selects what's there.
         var handle = Handle.None;
@@ -552,7 +644,12 @@ public sealed partial class MainWindow : Window
     private void OnCanvasMoved(object? sender, PointerEventArgs e)
     {
         if (drag is null)
+        {
+            // Over an open menu, the pointer picks out its items, as VentureOS's menu bar does.
+            if (MenusShown is { IsOpen: true } || menuPointer)
+                MenuPointer(e.GetPosition(PreviewImage), pressed: false, released: false);
             return;
+        }
 
         // Whole pixels of VentureOS's, whatever the zoom.
         var point = e.GetPosition(PreviewImage);
@@ -577,6 +674,14 @@ public sealed partial class MainWindow : Window
 
     private void OnCanvasReleased(object? sender, PointerReleasedEventArgs e)
     {
+        if (menuPointer)
+        {
+            menuPointer = false;
+            e.Pointer.Capture(null);
+            MenuPointer(e.GetPosition(PreviewImage), pressed: false, released: true);
+            return;
+        }
+
         if (drag is null)
             return;
 
@@ -591,6 +696,14 @@ public sealed partial class MainWindow : Window
 
     private void OnCanvasKeyDown(object? sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Escape && MenusShown is { IsOpen: true } bar)
+        {
+            bar.Close();
+            RedrawCanvas();
+            e.Handled = true;
+            return;
+        }
+
         OnDesignKeyDown(sender, e);
         if (e.Handled)
             return;

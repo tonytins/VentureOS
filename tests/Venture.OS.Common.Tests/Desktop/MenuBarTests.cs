@@ -50,6 +50,27 @@ public sealed class MenuBarTests
     }
 
     [Fact]
+    public void WhereTitlesAndTheOpenMenusEntriesWereDrawnCanBeFound()
+    {
+        var file = bar.TitleBounds(0)!.Value;
+        var view = bar.TitleBounds(1)!.Value;
+        Assert.True(view.X > file.X + file.Width - 1);
+        Assert.Equal(MenuBar.Height, file.Height);
+        Assert.Null(bar.TitleBounds(2));
+        Assert.Null(bar.EntryBounds(0));
+
+        bar.UpdatePointer((int)file.X + 2, 10, pressed: true, released: false);
+        bar.Draw(painter);
+
+        // Clicking in the middle of an entry's bounds chooses that entry; a separator has bounds but isn't chosen.
+        var clearAll = bar.EntryBounds(2)!.Value;
+        Assert.True(bar.EntryBounds(1)!.Value.Height < clearAll.Height);
+        var choice = bar.UpdatePointer((int)(clearAll.X + 10), (int)(clearAll.Y + (clearAll.Height / 2)), pressed: false, released: true);
+        Assert.Equal("clearAll", choice?.Item.Name);
+        Assert.Null(bar.EntryBounds(0));
+    }
+
+    [Fact]
     public void PressingDraggingAndReleasingChoosesToo()
     {
         bar.UpdatePointer(20, 10, pressed: true, released: false);

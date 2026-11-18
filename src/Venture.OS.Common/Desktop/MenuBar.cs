@@ -150,6 +150,20 @@ public sealed class MenuBar
         dropdown = default;
     }
 
+    /// <summary>
+    /// Where a menu's title was last drawn, by its position in the bar, or <see langword="null"/> before it's drawn;
+    /// for a host that shows the bar, such as Roundhouse's designer, to find its menus.
+    /// </summary>
+    public UIRect? TitleBounds(int index) =>
+        index >= 0 && index < titles.Count ? new UIRect(titles[index].X, 0, titles[index].Width, Height) : null;
+
+    /// <summary>
+    /// Where an entry of the open menu was last drawn, by its position in the menu, or <see langword="null"/> when no
+    /// menu is open or it hasn't been drawn.
+    /// </summary>
+    public UIRect? EntryBounds(int index) =>
+        open >= 0 && index >= 0 && index < rows.Count ? new UIRect(dropdown.X, rows[index].Y, dropdown.Width, rows[index].Height) : null;
+
     /// <summary>Whether a point is on the bar or in the open menu.</summary>
     public bool Contains(int x, int y) => y < Height || (open >= 0 && dropdown.Contains(x, y));
 

@@ -105,22 +105,44 @@ public static class RenderCommand
     public static SkiaPainter Draw(UIView view, string title, SkiaFonts fonts) => Draw(view, title, fonts, out _);
 
     /// <summary>Draws as <see cref="Draw(UIView, string, SkiaFonts)"/> does, and gives the window drawn, for finding what's where.</summary>
-    public static SkiaPainter Draw(UIView view, string title, SkiaFonts fonts, out DesktopWindow drawn)
+    public static SkiaPainter Draw(UIView view, string title, SkiaFonts fonts, out DesktopWindow drawn) =>
+        Draw(view, title, fonts, out drawn, null);
+
+    /// <summary>
+    /// Draws as <see cref="Draw(UIView, string, SkiaFonts)"/> does, with <paramref name="menuBar"/>, when it has menus,
+    /// along the top, as VentureOS's menu bar is, and any menu open in it over the window, the way Xcode shows an
+    /// app's menus above its design. The canvas grows to hold the longest menu.
+    /// </summary>
+    public static SkiaPainter Draw(UIView view, string title, SkiaFonts fonts, out DesktopWindow drawn, MenuBar? menuBar)
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(fonts);
 
+        var bar = menuBar is { Menus.Count: > 0 } ? menuBar : null;
+        var top = bar is null ? 0 : MenuBar.Height;
         DesktopWindow window = new(title, view);
-        var (width, height) = (window.Width + (2 * Margin), window.Height + (2 * Margin));
+        var width = window.Width + (2 * Margin);
+        var height = window.Height + (2 * Margin) + top;
+        if (bar is not null)
+        {
+            // Every entry as an item, the taller of the two, and a margin, so an open menu always fits.
+            var longest = bar.Menus.Max(menu => menu.Menu.Entries.Count);
+            height = Math.Max(height, MenuBar.Height + (longest * MenuRow) + Margin);
+        }
+
         WindowManager windows = new(width, height);
         windows.Open(window);
-        (window.X, window.Y) = (Margin, Margin);
+        (window.X, window.Y) = (Margin, Margin + top);
 
         SkiaPainter painter = new(width, height, fonts);
         painter.DrawPixels(DesktopBackground.Render(width, height), 0, 0, width, height);
         windows.Draw(painter);
+        bar?.Draw(painter);
         drawn = window;
         return painter;
     }
+
+    // At least as tall as one of a menu's rows, separators included.
+    private const int MenuRow = 22;
 }

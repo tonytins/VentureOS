@@ -868,6 +868,78 @@ public sealed class MainWindowTests : IDisposable
 
     private static Designer.InspectorPanel Inspector(MainWindow window) => window.FindControl<Designer.InspectorPanel>("Inspector")!;
 
+    [Fact]
+    public void ADocumentWithMenusShowsThemAboveTheWindowAndOneWithoutDoesnt() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        Assert.Null(window.MenusShown);
+
+        var files = OpenFiles(window);
+        var bar = window.MenusShown!;
+
+        // The copy isn't in an app, so the app's menu takes the document's name; in Files.app, it'd say Files.
+        Assert.Equal(["files", "File", "Go"], bar.Menus.Select(menu => menu.Menu.Title));
+        Assert.True(bar.Menus[0].Emphasized);
+        Assert.True(window.Map!.Content.Y > Venture.OS.Desktop.MenuBar.Height);
+        Assert.NotNull(files);
+        window.Close();
+    });
+
+    [Fact]
+    public void ClickingAMenuSelectsItAndClickingAnItemSelectsTheItem() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        var children = OpenFiles(window);
+        var bar = window.MenusShown!;
+        var file = bar.TitleBounds(1)!.Value;
+
+        window.MouseDown(At(window, file.X + 4, 10), MouseButton.Left);
+        window.MouseUp(At(window, file.X + 4, 10), MouseButton.Left);
+
+        Assert.True(bar.IsOpen);
+        Assert.Equal("fileMenu", children[window.Selection!.Value]["name"]);
+
+        // The second entry is Quick Look.
+        var look = bar.EntryBounds(1)!.Value;
+        Click(window, look.X + 10, look.Y + (look.Height / 2));
+
+        Assert.False(bar.IsOpen);
+        Assert.Equal("lookItem", children[window.Selection!.Value]["name"]);
+        window.Close();
+    });
+
+    [Fact]
+    public void EscapeClosesAnOpenMenuAndAClickElsewhereClosesItAndSelectsThere() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        OpenFiles(window);
+        var bar = window.MenusShown!;
+        var go = bar.TitleBounds(2)!.Value;
+
+        Click(window, go.X + 4, 10);
+        Assert.True(bar.IsOpen);
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        Assert.False(bar.IsOpen);
+
+        Click(window, go.X + 4, 10);
+        var content = window.Map!.Content;
+        Click(window, content.X + content.Width - 4, content.Y + content.Height - 4);
+        Assert.False(bar.IsOpen);
+        Assert.Equal(window.Map.Window, window.Selection);
+        window.Close();
+    });
+
+    /// <summary>Opens a copy of Files' window, which has menus, and gives its elements.</summary>
+    private IReadOnlyList<Venture.OS.Interface.Xml.FlatXmlElement> OpenFiles(MainWindow window)
+    {
+        var files = Path.Combine(folder, "files.uix");
+        File.Copy(Path.Combine(SkiaPainterTests.RepositoryRoot(), "rootfs", "system", "apps", "Files.app", "Contents", "Resources", "main.uix"), files);
+        window.Open(files);
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        return window.Document!.Xml!.Children;
+    }
+
     private (MainWindow Window, int EqualsKey) OpenCalculator()
     {
         MainWindow window = new();

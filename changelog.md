@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.403
+
+- Roundhouse's designer shows a document's menus above its window, in VentureOS's menu bar, as Xcode shows an app's: the app's name in bold, then its menus. Click a menu to open it and select it, and click an item to select that; Escape or a click elsewhere closes it. A document without menus shows no bar.
+
 ## 0.6.402
 
 - Roundhouse's Run runs VentureOS: its desktop in a window beside the designer, at 1024x768, with the menu bar, the dock, Files, and the system's and user's apps, with the app being designed open as it's edited, saved or not. A document outside an app opens as a window of its own.
