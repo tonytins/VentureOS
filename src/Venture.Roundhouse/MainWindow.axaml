@@ -10,19 +10,39 @@
       <Button x:Name="SaveButton" Content="Save" Click="OnSaveClicked" IsEnabled="False"/>
       <CheckBox x:Name="DarkBox" Content="Dark" Margin="16,0,0,0" IsCheckedChanged="OnLookChanged"/>
       <ComboBox x:Name="AccentBox" MinWidth="120" SelectionChanged="OnLookChanged"/>
+      <ToggleButton x:Name="TextToggle" Content="Text" Margin="16,0,0,0" IsChecked="True" IsCheckedChanged="OnTextToggled"/>
     </StackPanel>
 
     <!-- What the reader said, or that the document reads. -->
     <TextBlock x:Name="StatusText" DockPanel.Dock="Bottom" Margin="8,4" TextWrapping="Wrap"
                Text="Open a .uix file to see it as VentureOS draws it."/>
 
-    <Grid ColumnDefinitions="*,4,*">
-      <edit:TextEditor x:Name="Editor" Grid.Column="0" ShowLineNumbers="True" FontFamily="Cascadia Code,Fira Code,monospace"
-                       FontSize="13" TextChanged="OnTextChanged"/>
+    <!-- Outline, canvas over text, inspector: after Xcode's Interface Builder. -->
+    <Grid ColumnDefinitions="200,4,*,4,260">
+      <DockPanel x:Name="OutlinePane" Grid.Column="0" Margin="8,0,0,0">
+        <TextBlock DockPanel.Dock="Top" Text="Outline" FontWeight="SemiBold" Margin="0,0,0,6"/>
+        <TextBlock x:Name="OutlineHint" Text="The document's elements will be listed here." TextWrapping="Wrap" Opacity="0.6"/>
+      </DockPanel>
       <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
-      <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-        <Image x:Name="PreviewImage" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16"/>
-      </ScrollViewer>
+
+      <Grid x:Name="CenterGrid" Grid.Column="2" RowDefinitions="*,4,240">
+        <ScrollViewer x:Name="CanvasScroller" Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+          <!-- The selection is drawn over the canvas by Roundhouse, never into VentureOS's pixels. -->
+          <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16">
+            <Image x:Name="PreviewImage" Stretch="None"/>
+            <Canvas x:Name="SelectionLayer" IsHitTestVisible="False"/>
+          </Grid>
+        </ScrollViewer>
+        <GridSplitter x:Name="TextSplitter" Grid.Row="1" ResizeDirection="Rows"/>
+        <edit:TextEditor x:Name="Editor" Grid.Row="2" ShowLineNumbers="True" FontFamily="Cascadia Code,Fira Code,monospace"
+                         FontSize="13" TextChanged="OnTextChanged"/>
+      </Grid>
+
+      <GridSplitter Grid.Column="3" ResizeDirection="Columns"/>
+      <DockPanel x:Name="InspectorPane" Grid.Column="4" Margin="0,0,8,0">
+        <TextBlock DockPanel.Dock="Top" Text="Inspector" FontWeight="SemiBold" Margin="0,0,0,6"/>
+        <TextBlock x:Name="InspectorHint" Text="Select an element to see its attributes." TextWrapping="Wrap" Opacity="0.6"/>
+      </DockPanel>
     </Grid>
   </DockPanel>
 </Window>

@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,246 tests, and 24 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 33 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -148,9 +148,11 @@ VentureOS/
 │  ├─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
 │  │  ├─ UIScript.cs               Venture.OS.Interface: .uix (UIScript) documents, with menus, sidebars, and style roles
 │  │  ├─ UIDocument.cs             a .uix as an editor holds it: its exact text, where everything sits, and its UIScript
+│  │  ├─ UIScriptSchema.cs         the attributes each element takes, as UIScript reads them, for editors
 │  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
 │  │  └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
+│     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap, from a point on the canvas to its element
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
 │     └─ RenderCommand.cs          Roundhouse --render: a .uix drawn into a PNG file, with no window
 ├─ rootfs/                        files built into the kernel and installed at boot
@@ -860,6 +862,15 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   `Roundhouse --render document.uix picture.png [--dark] [--accent
   #RRGGBB]` draws a document in a window over the sky, with its strings
   and images from beside it (`DocumentView`), with no window of its own.
+- **Roundhouse's designer** lays the window out as Xcode's Interface
+  Builder does: an outline, the canvas over the text (the Text button
+  collapses the text), and an inspector. `DesignMap` is made from the
+  window each drawing came from, so it matches it exactly: a point finds
+  the frontmost control, then visual, then the window's background, and an
+  element finds where it was drawn. `UIScriptSchema`, in
+  `Venture.OS.Interface`, lists the attributes each element takes, grouped
+  for an inspector, and only those a control's kind allows; tests set each
+  one on the reader and check every shipped document against it.
 - **Roundhouse's window** (`MainWindow`) shows a document's text in
   AvaloniaEdit, with TextMate's XML highlighting, beside the same drawing,
   redrawn 300 ms after typing stops. Text `UIScript` refuses leaves the
@@ -1302,6 +1313,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): the designer's layout, `DesignMap` from canvas points to elements, and `UIScriptSchema` of each element's attributes; the start of 0.6.3xx. |
 | 2026-11-18 | minor | Interface formats and Roundhouse (§9): comments right above an element move and go with it; Roundhouse holds its text as a `UIDocument`, saving byte for byte, and `Apply` shows an edit as the change alone. 0.6.2xx is complete. |
 | 2026-11-18 | minor | Interface formats (§9): `UIDocument` adds, removes, and moves elements, laid out as their neighbours, leaving comments where they are. |
 | 2026-11-18 | minor | Interface formats (§9): `UIDocument` sets and removes attributes in place, laid out as the element's others are, refusing an edit VentureOS would refuse. |

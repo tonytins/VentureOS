@@ -14,6 +14,7 @@ using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using Venture.OS.Desktop;
 using Venture.OS.Interface;
+using Venture.Roundhouse.Designer;
 using Venture.Roundhouse.Drawing;
 
 namespace Venture.Roundhouse;
@@ -38,6 +39,8 @@ public sealed partial class MainWindow : Window
 
     // The editor shows the text without a byte order mark, and the document keeps it, so a save leaves it as it was.
     private string byteOrderMark = "";
+
+    private GridLength textHeight = new(240);
 
     public MainWindow()
     {
@@ -100,6 +103,24 @@ public sealed partial class MainWindow : Window
     /// </summary>
     public UIDocument? Document { get; private set; }
 
+    /// <summary>Where each element was drawn on the canvas, or <see langword="null"/> before anything has been.</summary>
+    public DesignMap? Map { get; private set; }
+
+    /// <summary>The selected element, by its index among the root's children, or <see langword="null"/>.</summary>
+    public int? Selection { get; private set; }
+
+    /// <summary>Whether the text is showing below the canvas.</summary>
+    public bool IsTextShowing => TextToggle.IsChecked == true;
+
+    /// <summary>Selects an element, by its index among the root's children, or nothing.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The document has no such element.</exception>
+    public void Select(int? element)
+    {
+        if (element is { } index && (Document?.Xml is not { } xml || index < 0 || index >= xml.Children.Count))
+            throw new ArgumentOutOfRangeException(nameof(element), element, "The document has no such element.");
+        Selection = element;
+    }
+
     /// <summary>
     /// Shows an edited document, such as one the designer changed, by replacing only the text that changed, so the
     /// editor keeps its place and can undo the edit.
@@ -145,6 +166,8 @@ public sealed partial class MainWindow : Window
 
         path = full;
         Document = document;
+        Selection = null;
+        Map = null;
         byteOrderMark = document.Text.StartsWith('\uFEFF') ? "\uFEFF" : "";
         loading = true;
         Editor.Text = WithoutByteOrderMark(document.Text);
@@ -199,8 +222,11 @@ public sealed partial class MainWindow : Window
 
         List<string> problems = [];
         var view = DocumentView.Open(script, Path.GetDirectoryName(path) ?? "/", file => SkiaImages.Load(file), problems.Add);
-        using var painter = RenderCommand.Draw(view, Path.GetFileName(path), fonts);
+        using var painter = RenderCommand.Draw(view, Path.GetFileName(path), fonts, out var drawn);
         PreviewImage.Source = ToBitmap(painter);
+        Map = new DesignMap(document, drawn);
+        if (Selection >= document.Xml!.Children.Count)
+            Selection = null;
         StatusText.Text = problems.Count == 0 ? "VentureOS reads this document." : string.Join(" ", problems);
     }
 
@@ -238,6 +264,21 @@ public sealed partial class MainWindow : Window
             Accent = accent,
         });
         RenderNow();
+    }
+
+    private void OnTextToggled(object? sender, RoutedEventArgs e)
+    {
+        // The divider remembers where it was, so showing the text again puts it back.
+        var row = CenterGrid.RowDefinitions[2];
+        if (IsTextShowing)
+            row.Height = textHeight;
+        else
+        {
+            textHeight = row.Height;
+            row.Height = new GridLength(0);
+        }
+
+        Editor.IsVisible = TextSplitter.IsVisible = IsTextShowing;
     }
 
     private void OnOpenClicked(object? sender, RoutedEventArgs e) => _ = PickAndOpenAsync();

@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -200,6 +201,73 @@ public sealed class MainWindowTests : IDisposable
         Assert.True(editor.CanUndo);
         editor.Undo();
         Assert.Equal(before, window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheDesignerHasAnOutlineACanvasOverTheTextAndAnInspector() => TestApp.Run(() =>
+    {
+        MainWindow window = new();
+        window.Show();
+
+        Assert.NotNull(window.FindControl<DockPanel>("OutlinePane"));
+        Assert.NotNull(window.FindControl<DockPanel>("InspectorPane"));
+        Assert.True(window.IsTextShowing);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheTextCollapsesAndComesBackWhereItWas() => TestApp.Run(() =>
+    {
+        MainWindow window = new();
+        window.Show();
+        var center = window.FindControl<Grid>("CenterGrid")!;
+        var editor = window.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+        center.RowDefinitions[2].Height = new GridLength(180);
+
+        window.FindControl<ToggleButton>("TextToggle")!.IsChecked = false;
+
+        Assert.False(window.IsTextShowing);
+        Assert.False(editor.IsVisible);
+        Assert.Equal(0, center.RowDefinitions[2].Height.Value);
+
+        window.FindControl<ToggleButton>("TextToggle")!.IsChecked = true;
+
+        Assert.True(editor.IsVisible);
+        Assert.Equal(180, center.RowDefinitions[2].Height.Value);
+        window.Close();
+    });
+
+    [Fact]
+    public void ADrawnDocumentIsMappedAndAnElementCanBeSelected() => TestApp.Run(() =>
+    {
+        MainWindow window = new();
+        window.Show();
+        window.Open(document);
+        var equals = window.Document!.Xml!.Children.ToList().FindIndex(element => element["name"] == "equals");
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+
+        var found = window.Map.ElementAt(bounds.X + 2, bounds.Y + 2);
+        window.Select(found);
+
+        Assert.Equal(equals, window.Selection);
+        Assert.Throws<ArgumentOutOfRangeException>(() => window.Select(window.Document.Xml.Children.Count));
+        window.Select(null);
+        Assert.Null(window.Selection);
+        window.Close();
+    });
+
+    [Fact]
+    public void OpeningADocumentClearsTheSelection() => TestApp.Run(() =>
+    {
+        MainWindow window = new();
+        window.Show();
+        window.Open(document);
+        window.Select(0);
+
+        window.Open(document);
+
+        Assert.Null(window.Selection);
         window.Close();
     });
 

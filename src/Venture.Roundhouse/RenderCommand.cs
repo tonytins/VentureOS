@@ -102,7 +102,10 @@ public static class RenderCommand
     /// Draws a view in a window over the sky, as the desktop would, with some sky round it for the window's shadow.
     /// The caller disposes of the painter, whose <see cref="SkiaPainter.Pixels"/> hold the picture.
     /// </summary>
-    public static SkiaPainter Draw(UIView view, string title, SkiaFonts fonts)
+    public static SkiaPainter Draw(UIView view, string title, SkiaFonts fonts) => Draw(view, title, fonts, out _);
+
+    /// <summary>Draws as <see cref="Draw(UIView, string, SkiaFonts)"/> does, and gives the window drawn, for finding what's where.</summary>
+    public static SkiaPainter Draw(UIView view, string title, SkiaFonts fonts, out DesktopWindow drawn)
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(title);
@@ -117,6 +120,7 @@ public static class RenderCommand
         SkiaPainter painter = new(width, height, fonts);
         painter.DrawPixels(DesktopBackground.Render(width, height), 0, 0, width, height);
         windows.Draw(painter);
+        drawn = window;
         return painter;
     }
 }

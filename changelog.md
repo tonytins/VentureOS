@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.300
+
+- Roundhouse's window makes room for the designer: an outline on the left, an inspector on the right, and the canvas over the text, which the Text button hides and shows again.
+
 ## 0.6.203
 
 - Roundhouse saves a `.uix` exactly as it was opened when you haven't changed it, byte order mark and line endings included, and keeps everything you didn't change when you have.
