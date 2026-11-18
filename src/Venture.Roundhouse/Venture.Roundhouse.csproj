@@ -45,6 +45,8 @@
   <ItemGroup>
     <!-- VentureOS's own fonts, so Roundhouse draws text in the same faces VentureOS does. -->
     <None Include="../../rootfs/system/fonts/*" LinkBase="fonts" CopyToOutputDirectory="PreserveNewest" />
+    <!-- What File ▸ New App starts from, beside Roundhouse. -->
+    <None Include="Templates/**/*" CopyToOutputDirectory="PreserveNewest" />
     <!-- VentureOS's own files, which Run copies afresh for each run, so a packaged Roundhouse can run VentureOS. -->
     <None Include="../../rootfs/**/*" LinkBase="rootfs" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

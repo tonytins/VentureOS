@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.503
+
+- Roundhouse's File ▸ New App (Ctrl+N) makes a window app to start from: give it a name, an identifier (suggested from the name), and a place, and it opens in the designer, ready for Run. Its button counts its presses. A name or identifier VentureOS wouldn't take is explained in the dialog, and nothing is made.
+
 ## 0.6.502
 
 - Roundhouse shows a bundle's `Info.xml` as a form: name, identifier, version, and description; check boxes for the scopes an app needs; and its main script and icon, chosen from the bundle's own files, with the icon shown as VentureOS's dock shows it. A value VentureOS wouldn't accept, such as an identifier that isn't reverse-DNS, says why under its field, and every change edits only that attribute in the file.

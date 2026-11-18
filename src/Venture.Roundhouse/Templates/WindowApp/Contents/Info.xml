@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<App version="1">
+  <Info identifier="$IDENTIFIER$" name="$NAME$" version="1.0" description="A new app, made in Roundhouse."/>
+</App>

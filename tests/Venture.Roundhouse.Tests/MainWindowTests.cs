@@ -1200,6 +1200,42 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void ANewAppOpensInTheDesignerWithItsFiles() => TestApp.Run(() =>
+    {
+        MainWindow window = new();
+        window.Show();
+
+        var app = window.CreateApp("Counter", "dev.example.counter", folder);
+
+        Assert.Equal("Counter.app", window.Bundle!.Name);
+        Assert.Equal(Path.Combine(app, "Contents", "Resources", "main.uix"), window.CurrentFile);
+        Assert.NotNull(window.Document!.Script!.Control("press"));
+        Assert.True(Command(window, "File", "New App…").IsEnabled?.Invoke() ?? true);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheNewAppDialogFollowsTheNameUntilTheIdentifierIsChangedAndSaysWhatsWrong() => TestApp.Run(() =>
+    {
+        Bundles.NewAppWindow dialog = new(folder);
+        dialog.Show();
+
+        dialog.AppName = "Dice Roller";
+        Assert.Equal("dev.example.diceroller", dialog.Identifier);
+        dialog.Identifier = "dev.mine.dice";
+        dialog.AppName = "Dice";
+        Assert.Equal("dev.mine.dice", dialog.Identifier);
+
+        dialog.AppName = "a/b";
+        Assert.Null(dialog.Create());
+        Assert.Contains("can't have", dialog.Problem);
+
+        dialog.AppName = "Dice";
+        Assert.Equal(Path.Combine(folder, "Dice.app"), dialog.Create());
+        Assert.Equal("dev.mine.dice", Venture.OS.Bundles.Bundle.Read(Path.Combine(folder, "Dice.app"), Venture.OS.Bundles.BundleKind.App).Identifier);
+    });
+
     /// <summary>The navigator's labels, as shown, unsaved marks included.</summary>
     private static List<string> Labels(MainWindow window)
     {

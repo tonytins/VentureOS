@@ -90,6 +90,7 @@ public sealed partial class MainWindow : Window
         NativeMenu.SetMenu(this, nativeMenu);
         foreach (var (key, modifiers, run) in (ReadOnlySpan<(Key, KeyModifiers, Action)>)
                  [
+                     (Key.N, KeyModifiers.Control, () => _ = NewAppAsync()),
                      (Key.O, KeyModifiers.Control, () => _ = PickAndOpenAsync()),
                      (Key.O, KeyModifiers.Control | KeyModifiers.Shift, () => _ = PickAndOpenBundleAsync()),
                      (Key.S, KeyModifiers.Control, () => Save()),
@@ -1155,6 +1156,8 @@ public sealed partial class MainWindow : Window
         [
             new("File",
             [
+                new MenuCommand("New App…", () => _ = NewAppAsync(), Ctrl(Key.N)),
+                new MenuSeparator(),
                 new MenuCommand("Open…", () => _ = PickAndOpenAsync(), Ctrl(Key.O)),
                 new MenuCommand("Open Bundle…", () => _ = PickAndOpenBundleAsync(), Ctrl(Key.O, KeyModifiers.Shift)),
                 new MenuCommand("Save", () => Save(), Ctrl(Key.S), () => HasDocument() || FileEditor.IsVisible),
@@ -1433,6 +1436,29 @@ public sealed partial class MainWindow : Window
 
         if (files is [var file, ..] && file.TryGetLocalPath() is { } local)
             Open(local);
+    }
+
+    /// <summary>Makes a window app from the template, and opens its window in the designer.</summary>
+    /// <returns>The new app's folder.</returns>
+    /// <exception cref="ArgumentException">It couldn't be made, as <see cref="AppTemplate.Create"/> says.</exception>
+    /// <exception cref="IOException">It couldn't be written.</exception>
+    public string CreateApp(string name, string identifier, string folder)
+    {
+        var app = AppTemplate.Create(name, identifier, folder);
+        Open(app);
+        StatusText.Text = $"Made {Path.GetFileName(app)} in {folder}.";
+        return app;
+    }
+
+    /// <summary>Asks for a new app's name and place, makes it, and opens it.</summary>
+    private async Task NewAppAsync()
+    {
+        var app = await new NewAppWindow(NewAppWindow.SuggestedFolder()).ShowDialog<string?>(this);
+        if (app is not null)
+        {
+            Open(app);
+            StatusText.Text = $"Made {Path.GetFileName(app)}.";
+        }
     }
 
     /// <summary>Chooses a bundle's folder, such as an .app, and opens it.</summary>

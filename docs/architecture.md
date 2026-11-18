@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,525 tests, and 163 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,525 tests, and 179 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -989,6 +989,15 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   after a change, keeping the focused field, and is built again only for a
   new bundle, files, or picture. An `Info.xml` VentureOS refuses, or one
   chosen as text, opens in the file editor.
+- **New App** (`AppTemplate`, `NewAppWindow`) copies the window-app
+  template beside Roundhouse (`Templates/WindowApp`: `Info.xml`, a
+  `main.lua` that opens `main.uix`, and a window with a label and a button
+  that counts presses, the app guide's window example) into `Name.app`,
+  writing the name and identifier into it (as values in XML, and only in a
+  comment in Lua), then reads it with `Bundle.Read`; one VentureOS refuses
+  is removed, with the reason. A name must make a folder on any system. The
+  dialog suggests `dev.example.<name>` and the repository's user apps while
+  Roundhouse runs from source, or the computer's documents otherwise.
 - **Run** (0.6.4xx) opens VentureOS in its own window
   (`SimulatorWindow`, 1024x768, the kernel's screen) beside the designer.
   Each run starts from a fresh copy of `rootfs/` (`SimulatedDisk`), laid
@@ -1478,6 +1487,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): New App, a window app from the template beside Roundhouse, checked by `Bundle.Read`. |
 | 2026-11-18 | minor | Interface formats, bundles, and Roundhouse (§9): `FlatXmlEditor`, moved out of `UIDocument`; `Bundle.FromInfo` and `InfoDocument`; the `Info.xml` form. |
 | 2026-11-18 | minor | Roundhouse (§9): editors for a bundle's other files (Lua highlighted, text, pictures), unsaved marks, Save All, and every unsaved file in Run. |
 | 2026-11-18 | minor | Roundhouse (§9): the start of 0.6.5xx, bundles: `OpenBundle`, the navigator over the outline, and edits kept per file. |

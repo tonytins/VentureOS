@@ -14,8 +14,12 @@ the same shape.
 
 - Build and run VentureOS as the [README](../README.md) describes. You'll
   use `./run.sh` to try your app.
-- Apps are text-only: they add commands. Anything an app writes to the RAM
-  disk, such as `/mnt`, is gone after a reboot.
+- Apps add commands, open windows, or both. Anything an app writes to the
+  RAM disk, such as `/mnt`, is gone after a reboot.
+- Roundhouse, VentureOS's IDE, can start an app for you: File ▸ New App
+  makes a window app with a button that counts its presses, opens it in its
+  designer, and Run tries it in VentureOS without QEMU. This guide builds an
+  app by hand, so you know what each part does.
 
 ## Make the bundle
 
