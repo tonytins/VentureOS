@@ -35,7 +35,8 @@ public sealed class SimulatedDisk : IDisposable
                 throw new DirectoryNotFoundException($"{rootfs} has no {part} folder, so VentureOS can't run from it.");
         }
 
-        SimulatedDisk disk = new(Path.Combine(Path.GetTempPath(), $"roundhouse-run-{Guid.NewGuid():N}"));
+        RemoveLeftovers();
+        SimulatedDisk disk = new(Path.Combine(Path.GetTempPath(), $"{Prefix}{Environment.ProcessId}-{Guid.NewGuid():N}"));
         try
         {
             Copy(Path.Combine(rootfs, "system"), disk.HostPath(SystemFolder));
@@ -46,6 +47,51 @@ public sealed class SimulatedDisk : IDisposable
         {
             disk.Dispose();
             throw;
+        }
+    }
+
+    /// <summary>What every run's folder in the temporary folder starts with, before the process's ID.</summary>
+    public const string Prefix = "roundhouse-run-";
+
+    /// <summary>
+    /// Deletes runs' copies left behind by a Roundhouse that has ended without cleaning up, such as one that crashed
+    /// or was killed: those whose process isn't running. A running Roundhouse's are left alone.
+    /// </summary>
+    /// <returns>How many it deleted.</returns>
+    public static int RemoveLeftovers()
+    {
+        var removed = 0;
+        foreach (var folder in Directory.EnumerateDirectories(Path.GetTempPath(), Prefix + "*"))
+        {
+            var rest = Path.GetFileName(folder)[Prefix.Length..];
+            var dash = rest.IndexOf('-', StringComparison.Ordinal);
+            if (dash <= 0 || !int.TryParse(rest[..dash], out var process) || IsRunning(process))
+                continue;
+
+            try
+            {
+                Directory.Delete(folder, recursive: true);
+                removed++;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // Another user's, or one in use; it's left for that process or the system to clear.
+            }
+        }
+
+        return removed;
+    }
+
+    private static bool IsRunning(int process)
+    {
+        try
+        {
+            using var found = System.Diagnostics.Process.GetProcessById(process);
+            return !found.HasExited;
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+        {
+            return false;
         }
     }
 

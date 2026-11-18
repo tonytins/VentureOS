@@ -731,23 +731,65 @@ public sealed class MainWindowTests : IDisposable
     });
 
     [Fact]
-    public void RunOpensVentureOSInItsOwnWindowOnceAndItsCopyGoesWhenItCloses() => TestApp.Run(() =>
+    public void RunOpensVentureOSWithTheEditedAppOnceAndItsCopyGoesWhenItCloses() => TestApp.Run(() =>
     {
-        var (window, _) = OpenCalculator();
+        var (window, equals) = OpenCalculator();
+        window.Apply(window.Document!.SetAttribute(equals, "text", "Go"));
 
         Command(window, "Run", "Run").Run();
         var simulator = window.Simulator!;
         window.Run();
 
         Assert.Same(simulator, window.Simulator);
-        Assert.Equal((1024, 768), ((int)simulator.Width, (int)simulator.Height));
-        Assert.StartsWith("VentureOS 0.6.", simulator.Status);
-        var root = simulator.Disk!.Root;
-        Assert.True(File.Exists(Path.Combine(root, "mnt", "user", "apps", "Calculator.app", "Contents", "Info.xml")));
+        var run = simulator.Run!;
+        Assert.Contains(run.Apps.Running, app => app.Bundle.Name == "Files");
+        var root = run.Disk.Root;
 
-        simulator.Close();
+        // The test's copy of Calculator's document isn't in an app, so it runs as a window of its own, as edited.
+        Assert.Contains(run.Session.Windows.Windows, shown => shown.Title == "main.uix");
+        Assert.True(Command(window, "Run", "Stop").IsEnabled!());
+
+        Command(window, "Run", "Stop").Run();
         Assert.Null(window.Simulator);
         Assert.False(Directory.Exists(root));
+        window.Close();
+    });
+
+    [Fact]
+    public void RestartStartsAFreshRunAndClosingTheDesignerEndsIt() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        window.Run();
+        var first = window.Simulator!;
+        var firstRoot = first.Run!.Disk.Root;
+
+        window.RestartRun();
+
+        Assert.NotSame(first, window.Simulator);
+        Assert.False(Directory.Exists(firstRoot));
+        var secondRoot = window.Simulator!.Run!.Disk.Root;
+        window.Close();
+        Assert.False(Directory.Exists(secondRoot));
+    });
+
+    [Fact]
+    public void TheSimulatorPassesThePointerAndKeysToVentureOS() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        window.Run();
+        var simulator = window.Simulator!;
+        var run = simulator.Run!;
+
+        // Click VentureOS's own menu, then Escape closes it again.
+        simulator.PointAt(12, 10, down: true);
+        simulator.Frame();
+        simulator.PointAt(12, 10, down: false);
+        simulator.Frame();
+        Assert.True(run.Session.MenuBar.IsOpen);
+
+        simulator.Press(new Venture.OS.Desktop.KeyPress(Venture.OS.Desktop.DesktopKey.Escape));
+        simulator.Frame();
+        Assert.False(run.Session.MenuBar.IsOpen);
         window.Close();
     });
 

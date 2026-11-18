@@ -37,6 +37,19 @@ public sealed class SimulatorTests
     }
 
     [Fact]
+    public void CopiesLeftByAnEndedRoundhouseAreClearedAndARunningOnesKept()
+    {
+        // No process has this ID: process IDs stay well below it on every system Roundhouse runs on.
+        var ended = Path.Combine(Path.GetTempPath(), $"{SimulatedDisk.Prefix}2147483646-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(ended, "mnt"));
+        using var running = SimulatedDisk.Create(SimulatedDisk.FindRootfs()!);
+
+        Assert.False(Directory.Exists(ended));
+        Assert.True(Directory.Exists(running.Root));
+        Assert.StartsWith($"{SimulatedDisk.Prefix}{Environment.ProcessId}-", Path.GetFileName(running.Root));
+    }
+
+    [Fact]
     public void AFolderWithoutVentureOSsFilesIsRefused()
     {
         Assert.Throws<DirectoryNotFoundException>(() => SimulatedDisk.Create(Path.GetTempPath()));

@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,511 tests, and 127 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,511 tests, and 138 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -155,7 +155,7 @@ VentureOS/
 │     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
 │     │                            InspectorPanel, and DesignEdits (the library and selection edits)
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
-│     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedDisk, SimulatedSystem (Run)
+│     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedRun, SimulatedDisk, SimulatedSystem
 │     ├─ Menus/                    Venture.Roundhouse.Menus: AppMenu, one list for the global menu bar and the ☰ button
 │     ├─ TitleBars.cs              where the coloured bar can be the window's title bar
 │     ├─ TitleBarPanel.cs          the bar's layout, as VentureOS's title bar's
@@ -949,7 +949,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   button hides when `NativeMenu.IsNativeMenuExported` says the desktop has
   the menus. The shortcuts are window key bindings, so a focused editor or
   field handles its own first.
-- **Run** (0.6.4xx, being built) opens VentureOS in its own window
+- **Run** (0.6.4xx) opens VentureOS in its own window
   (`SimulatorWindow`, 1024x768, the kernel's screen) beside the designer.
   Each run starts from a fresh copy of `rootfs/` (`SimulatedDisk`), laid
   out as the kernel's RAM disk, in `mnt/system` and `mnt/user` under a
@@ -957,8 +957,24 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   carries `rootfs/` beside itself for this. `SimulatedSystem` is what the
   run tells scripts: the kernel's name, version, and build number for this
   commit, the computer's clock, and the run's uptime, leaving out the
-  Cosmos version, network, and memory it can't read. Nothing runs in the
-  window yet.
+  Cosmos version, network, and memory it can't read; its `Root` keeps
+  scripts' paths within the copy (see **Running inside another system**).
+  `SimulatedRun` sets VentureOS up as the kernel's `desktop` command does:
+  `AppWindows`, `AppManager` over the copy's apps, `ScriptDesktop`, a shell
+  over the Lua commands (there are no C# commands, such as `cd`), and a
+  `DesktopSession` with Files as the fallback app. The app being designed is
+  copied over its own copy, with the editor's text in place of what's saved,
+  and opened; a document outside an app opens as a window. The window hands
+  each frame (about every 16 ms) the pointer, the wheel, Ctrl and Alt
+  shortcuts and VentureOS's special keys, and typed text, and shows the
+  frame when it changed. All of a run's work happens in frames on the
+  window's thread, so Lua that keeps one frame busy for 10 seconds
+  (`SimulatedRun.FrameLimit`) is stopped, in place of the kernel's Ctrl+C.
+  `DesktopAppearance` is process-wide and the designer uses it too, so a run
+  keeps its own look, settings path, wallpapers folder, and time of day, and
+  puts them in place only while it works (`SimulatedRun.Within`). Run
+  folders carry Roundhouse's process ID, and a new run deletes those whose
+  process has ended.
 - **Packaging** (`packaging/`, after CityLimits') builds Roundhouse into
   self-contained packages from Linux or macOS: an AppImage and `.tar.gz`, a
   Windows zip, and `Roundhouse.app` zips for both Mac architectures, named
@@ -1422,6 +1438,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): Run runs VentureOS's desktop in a window over a fresh, rooted copy of its files, with the app being designed as edited, its own look, and a 10-second frame limit. |
 | 2026-11-18 | minor | Scripts (§9): `ISystemInfo.Root` and `FileRoot`, which keep scripts' paths within a folder where VentureOS runs inside another system, and switch off Lua's own file and program access there; none in the kernel, which is unchanged. |
 | 2026-11-18 | minor | Roundhouse (§9): the start of 0.6.4xx, Run: a simulator window over a fresh copy of `rootfs/` and Roundhouse's own `ISystemInfo`; the bar's title on one line. |
 | 2026-11-18 | minor | Layout (§2) and Roundhouse (§9): `packaging/`, after CityLimits', builds Roundhouse for Linux, Windows, and macOS; a placeholder icon. 0.6.3xx, the designer, is complete. |

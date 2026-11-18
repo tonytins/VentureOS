@@ -55,14 +55,16 @@ public sealed class SimulatedSystem(SimulatedDisk disk) : ISystemInfo
         }
     }
 
-    public IAppearance? Appearance => null;
+    /// <summary>The desktop's look, which Settings changes, as the kernel's; a run keeps its own (see <see cref="SimulatedRun"/>).</summary>
+    public IAppearance? Appearance { get; } = new Venture.OS.Desktop.ScriptAppearance();
 
     public INetworkTools? NetworkTools => null;
 
     /// <summary>The computer's clock, in UTC, kept nowhere: the run's settings start fresh each time.</summary>
     public WallClock? WallClock { get; } = new(() => DateTime.UtcNow);
 
-    public IScriptDesktop? Desktop => null;
+    /// <summary>The run's alerts, Quick Look, and apps, once its desktop is set up.</summary>
+    public IScriptDesktop? Desktop { get; set; }
 
     /// <summary>The run's copy of VentureOS's files, which scripts' paths are kept within.</summary>
     public FileRoot? Root { get; } = new(disk.Root);

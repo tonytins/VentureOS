@@ -79,6 +79,8 @@ public sealed partial class MainWindow : Window
                      (Key.Y, KeyModifiers.Control, Redo),
                      (Key.OemPlus, KeyModifiers.Control, () => ZoomToggle.IsChecked = ZoomToggle.IsChecked != true),
                      (Key.R, KeyModifiers.Control, Run),
+                     (Key.R, KeyModifiers.Control | KeyModifiers.Shift, RestartRun),
+                     (Key.OemPeriod, KeyModifiers.Control, StopRun),
                  ])
         {
             // Bound to the window, so they act only when the focused control, such as the editor, hasn't already.
@@ -113,7 +115,12 @@ public sealed partial class MainWindow : Window
             redraw.Stop();
             RenderNow();
         };
-        Closed += (_, _) => fonts.Dispose();
+        Closed += (_, _) =>
+        {
+            // The run goes with the designer, so its copy of VentureOS's files is deleted.
+            StopRun();
+            fonts.Dispose();
+        };
     }
 
     /// <summary>The window's title: Roundhouse and its version, such as <c>Roundhouse 0.6.101</c>.</summary>
@@ -677,6 +684,8 @@ public sealed partial class MainWindow : Window
             new("Run",
             [
                 new MenuCommand("Run", Run, Ctrl(Key.R)),
+                new MenuCommand("Restart", RestartRun, Ctrl(Key.R, KeyModifiers.Shift), () => Simulator is not null),
+                new MenuCommand("Stop", StopRun, Ctrl(Key.OemPeriod), () => Simulator is not null),
             ]),
         ];
     }
@@ -771,7 +780,10 @@ public sealed partial class MainWindow : Window
     /// <summary>The window VentureOS runs in, while it's open.</summary>
     public SimulatorWindow? Simulator { get; private set; }
 
-    /// <summary>Opens VentureOS in its own window beside the designer, or brings the open one forward.</summary>
+    /// <summary>
+    /// Opens VentureOS in its own window beside the designer, running the app being designed as it's edited, saved
+    /// or not, or brings the open one forward.
+    /// </summary>
     public void Run()
     {
         if (Simulator is { } open)
@@ -780,9 +792,24 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        Simulator = new SimulatorWindow();
-        Simulator.Closed += (_, _) => Simulator = null;
-        Simulator.Show();
+        var simulator = new SimulatorWindow(path, path is null ? null : Editor.Text);
+        Simulator = simulator;
+        simulator.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(Simulator, simulator))
+                Simulator = null;
+        };
+        simulator.Show();
+    }
+
+    /// <summary>Ends the run, deleting its copy of VentureOS's files.</summary>
+    public void StopRun() => Simulator?.Close();
+
+    /// <summary>Ends the run and starts a fresh one, with the document as it's edited now.</summary>
+    public void RestartRun()
+    {
+        StopRun();
+        Run();
     }
 
     private void OnRunClicked(object? sender, RoutedEventArgs e) => Run();

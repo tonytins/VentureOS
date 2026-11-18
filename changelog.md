@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.402
+
+- Roundhouse's Run runs VentureOS: its desktop in a window beside the designer, at 1024x768, with the menu bar, the dock, Files, and the system's and user's apps, with the app being designed open as it's edited, saved or not. A document outside an app opens as a window of its own.
+- Run ▸ Restart (Ctrl+Shift+R) starts a fresh run; Run ▸ Stop (Ctrl+.), closing the window, Return to Shell, or closing the designer ends it. Each run starts from a fresh copy of VentureOS's files, and nothing it changes outlasts it.
+- Settings in a run changes the run's look, not the designer's, and the designer's Dark and accent don't change the run.
+
 ## 0.6.400
 
 - Roundhouse's bar shows the document and its app on one line, such as `main.uix — Calculator.app`.
