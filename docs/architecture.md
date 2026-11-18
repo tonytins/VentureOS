@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 56 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 64 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -152,7 +152,8 @@ VentureOS/
 │  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
 │  │  └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
-│     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit
+│     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
+│     │                            and InspectorPanel
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
 │     └─ RenderCommand.cs          Roundhouse --render: a .uix drawn into a PNG file, with no window
 ├─ rootfs/                        files built into the kernel and installed at boot
@@ -880,6 +881,15 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   Undo. The arrow keys nudge by 1 px, Shift by 8. At 200% each of VentureOS's
   pixels is two of the screen's, drawn without smoothing. Focusing the
   canvas doesn't scroll it, which would slide it under the pointer.
+- **The outline** lists the root's children in file order and shares the
+  canvas's selection. **The inspector** (`InspectorPanel`) builds its
+  fields from `UIScriptSchema`, by group, with a check box for flags and a
+  list for choices, plus an Other group for attributes VentureOS skips. A
+  field commits on Enter or when it's left, through `SetAttribute` or, when
+  emptied, `RemoveAttribute`, then `Apply`; a refusal shows under the field
+  and leaves the document alone. Showing the same kind of element again only
+  updates values, so typing isn't interrupted. While VentureOS refuses the
+  text, both panes are disabled.
 - **Roundhouse's window** (`MainWindow`) shows a document's text in
   AvaloniaEdit, with TextMate's XML highlighting, beside the same drawing,
   redrawn 300 ms after typing stops. Text `UIScript` refuses leaves the
@@ -1322,6 +1332,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): the outline, sharing the canvas's selection, and the inspector, built from `UIScriptSchema`, committing through `UIDocument` and showing refusals under the field. |
 | 2026-11-18 | minor | Roundhouse (§9): the canvas selects, moves, resizes, and nudges, each drag one edit through `Apply`; 100% and 200% zoom. |
 | 2026-11-18 | minor | Roundhouse (§9): the designer's layout, `DesignMap` from canvas points to elements, and `UIScriptSchema` of each element's attributes; the start of 0.6.3xx. |
 | 2026-11-18 | minor | Interface formats and Roundhouse (§9): comments right above an element move and go with it; Roundhouse holds its text as a `UIDocument`, saving byte for byte, and `Apply` shows an edit as the change alone. 0.6.2xx is complete. |

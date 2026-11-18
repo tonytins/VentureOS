@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:edit="https://github.com/avaloniaui/avaloniaedit"
+        xmlns:designer="using:Venture.Roundhouse.Designer"
         x:Class="Venture.Roundhouse.MainWindow"
         Width="1100" Height="720" MinWidth="640" MinHeight="400">
   <DockPanel>
@@ -22,7 +23,16 @@
     <Grid ColumnDefinitions="200,4,*,4,260">
       <DockPanel x:Name="OutlinePane" Grid.Column="0" Margin="8,0,0,0">
         <TextBlock DockPanel.Dock="Top" Text="Outline" FontWeight="SemiBold" Margin="0,0,0,6"/>
-        <TextBlock x:Name="OutlineHint" Text="The document's elements will be listed here." TextWrapping="Wrap" Opacity="0.6"/>
+        <TextBlock x:Name="OutlineHint" DockPanel.Dock="Top" Text="Open a document to see its elements." TextWrapping="Wrap" Opacity="0.6"/>
+        <ListBox x:Name="OutlineList" SelectionChanged="OnOutlineSelected">
+          <ListBox.Styles>
+            <!-- An outline is read as a list of names, so its rows are compact. -->
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="8,3"/>
+              <Setter Property="MinHeight" Value="0"/>
+            </Style>
+          </ListBox.Styles>
+        </ListBox>
       </DockPanel>
       <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
 
@@ -46,7 +56,12 @@
       <GridSplitter Grid.Column="3" ResizeDirection="Columns"/>
       <DockPanel x:Name="InspectorPane" Grid.Column="4" Margin="0,0,8,0">
         <TextBlock DockPanel.Dock="Top" Text="Inspector" FontWeight="SemiBold" Margin="0,0,0,6"/>
-        <TextBlock x:Name="InspectorHint" Text="Select an element to see its attributes." TextWrapping="Wrap" Opacity="0.6"/>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock x:Name="InspectorHint" Text="Select an element to see its attributes." TextWrapping="Wrap" Opacity="0.6"/>
+            <designer:InspectorPanel x:Name="Inspector" Margin="0,0,12,0"/>
+          </StackPanel>
+        </ScrollViewer>
       </DockPanel>
     </Grid>
   </DockPanel>

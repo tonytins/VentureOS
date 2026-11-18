@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.302
+
+- Roundhouse's outline lists every element of the document in order, and selecting one there selects it on the canvas, and back. Styles, strings, and menus, which aren't drawn, are selected here.
+- The inspector shows every attribute the selected element can have, grouped into Identity, Frame, Text, Appearance, and Behaviour, with attributes VentureOS doesn't read under Other. Type a value and press Enter, or leave the field; empty it to remove the attribute. A value VentureOS wouldn't accept is explained under its field and changes nothing, and Escape puts the field back.
+
 ## 0.6.301
 
 - Roundhouse's designer: click a control on the canvas to select it, drag it to move it, and drag its handles to resize it. The arrow keys move it a pixel at a time, or eight with Shift. Each drag is one change, which Undo takes back, and the text follows it. Clicking the window's background selects the window.

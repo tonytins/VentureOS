@@ -47,6 +47,9 @@ public sealed partial class MainWindow : Window
     // The drag under way on the canvas, if any.
     private Drag? drag;
 
+    // Set while the outline is updated to match, so it doesn't select in turn.
+    private bool syncing;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -67,6 +70,7 @@ public sealed partial class MainWindow : Window
         // Clicking the canvas focuses it for the arrow keys; scrolling it into view then would slide it under the
         // pointer mid-drag, so it stays where the person put it.
         CanvasHost.AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true);
+        Inspector.Commit = CommitAttribute;
         loading = false;
 
         // XML highlighting, in colors that follow Roundhouse's own light or dark theme.
@@ -131,6 +135,7 @@ public sealed partial class MainWindow : Window
             throw new ArgumentOutOfRangeException(nameof(element), element, "The document has no such element.");
         Selection = element;
         ShowSelection();
+        ShowPanels();
     }
 
     /// <summary>How much the canvas is magnified: 1 or 2, so each of VentureOS's pixels stays a whole number of the screen's.</summary>
@@ -246,6 +251,7 @@ public sealed partial class MainWindow : Window
             return;
 
         var document = Read();
+        ShowPanels();
         if (document.Script is not { } script)
         {
             // The reader's message already starts with the line it stopped on.
@@ -257,6 +263,7 @@ public sealed partial class MainWindow : Window
         if (Selection >= document.Xml!.Children.Count)
             Selection = null;
         var problems = Draw(document, script);
+        ShowPanels();
         StatusText.Text = problems.Count == 0 ? "VentureOS reads this document." : string.Join(" ", problems);
     }
 
@@ -272,6 +279,60 @@ public sealed partial class MainWindow : Window
         Map = new DesignMap(document, drawn);
         ShowSelection();
         return problems;
+    }
+
+    /// <summary>
+    /// Shows the document's elements in the outline and the selected one's attributes in the inspector. A document
+    /// VentureOS refuses stays listed but can't be edited until it reads.
+    /// </summary>
+    private void ShowPanels()
+    {
+        var xml = Document?.Xml;
+        var editable = Document?.IsEditable == true;
+        string[] labels = xml is null ? [] : [.. xml.Children.Select(OutlineLabel)];
+
+        syncing = true;
+        if (OutlineList.ItemsSource is not string[] shown || !shown.SequenceEqual(labels))
+            OutlineList.ItemsSource = labels;
+        OutlineList.SelectedIndex = Selection ?? -1;
+        syncing = false;
+
+        OutlineHint.IsVisible = xml is null;
+        OutlinePane.IsEnabled = InspectorPane.IsEnabled = editable;
+        InspectorHint.IsVisible = Selection is null;
+        InspectorHint.Text = editable || Document is null
+            ? "Select an element to see its attributes."
+            : "VentureOS can't read the text as it is, so only the text can be edited.";
+        Inspector.Show(editable && Selection is { } element && element < xml!.Children.Count ? xml.Children[element] : null);
+    }
+
+    /// <summary>An element as the outline lists it: its kind, and its name, or the menu it's in.</summary>
+    private static string OutlineLabel(OS.Interface.Xml.FlatXmlElement element) =>
+        element["name"] is { } name ? $"{element.Name}  {name}"
+        : element["menu"] is { } menu ? $"{element.Name}  in {menu}"
+        : element.Name;
+
+    /// <summary>Commits an inspector change to the selected element, or says why it can't be made.</summary>
+    private string? CommitAttribute(string attribute, string? value)
+    {
+        if (Selection is not { } element || Document is not { IsEditable: true } document)
+            return "Select an element in a document VentureOS reads first.";
+
+        try
+        {
+            Apply(value is null ? document.RemoveAttribute(element, attribute) : document.SetAttribute(element, attribute, value));
+            return null;
+        }
+        catch (Exception exception) when (exception is UIScriptException or ArgumentException)
+        {
+            return exception.Message;
+        }
+    }
+
+    private void OnOutlineSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!syncing && OutlineList.SelectedIndex is var index)
+            Select(index >= 0 ? index : null);
     }
 
     /// <summary>Whether the designer can change an element: one with a frame, in a document VentureOS reads as drawn.</summary>

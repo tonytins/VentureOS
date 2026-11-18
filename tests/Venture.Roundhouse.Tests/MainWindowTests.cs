@@ -403,6 +403,153 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void TheOutlineListsEveryElementAndFollowsTheSelectionBothWays() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var outline = window.FindControl<ListBox>("OutlineList")!;
+        var labels = (string[])outline.ItemsSource!;
+
+        Assert.Equal(window.Document!.Xml!.Children.Count, labels.Length);
+        Assert.Equal("Window", labels[0]);
+        Assert.Equal("Button  equals", labels[equals]);
+
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+        Click(window, bounds.X + 10, bounds.Y + 10);
+        Assert.Equal(equals, outline.SelectedIndex);
+
+        // A style isn't drawn, so the outline is the way to select it.
+        outline.SelectedIndex = 1;
+        Assert.Equal(1, window.Selection);
+        Assert.Empty(Layer(window).Children);
+        Assert.Contains("fontSize", Inspector(window).Fields.Keys);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheInspectorShowsTheSelectedElementsAttributesInGroups() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Select(equals);
+
+        var inspector = Inspector(window);
+        Assert.Equal("174", ((TextBox)inspector.Fields["x"].Editor).Text);
+        Assert.Equal("", ((TextBox)inspector.Fields["style"].Editor).Text);
+        Assert.IsType<ComboBox>(inspector.Fields["alignment"].Editor);
+        Assert.DoesNotContain("placeholder", inspector.Fields.Keys);
+        var headings = inspector.Children.OfType<TextBlock>().Select(block => block.Text).ToList();
+        Assert.Equal(["<Button>", "Identity", "Frame", "Text", "Appearance", "Behaviour"], headings);
+        window.Close();
+    });
+
+    [Fact]
+    public void AValueTypedInTheInspectorIsWrittenOnEnter() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Select(equals);
+        var x = (TextBox)Inspector(window).Fields["x"].Editor;
+
+        x.Focus();
+        x.Text = "180";
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+
+        Assert.Contains("""<Button name="equals" x="180" y="256" """, window.Text);
+        Assert.Equal(180, window.Map!.BoundsOf(equals)!.Value.X - window.Map.Content.X);
+        Assert.Null(Inspector(window).Fields["x"].Problem);
+        window.Close();
+    });
+
+    [Fact]
+    public void AValueVentureOSRefusesShowsWhyUnderItsFieldAndChangesNothing() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Select(equals);
+        var before = window.Text;
+        var field = Inspector(window).Fields["width"];
+        var width = (TextBox)field.Editor;
+
+        width.Focus();
+        width.Text = "wide";
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+
+        Assert.Equal(before, window.Text);
+        Assert.Contains("width", field.Problem);
+        Assert.Equal("wide", width.Text);
+
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        Assert.Equal("46", width.Text);
+        Assert.Null(field.Problem);
+        window.Close();
+    });
+
+    [Fact]
+    public void EmptyingAFieldRemovesItsAttributeUnlessItsRequired() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Select(equals);
+        var inspector = Inspector(window);
+
+        var text = (TextBox)inspector.Fields["text"].Editor;
+        text.Focus();
+        text.Text = "";
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        Assert.Contains("""<Button name="equals" x="174" y="256" width="46" height="40"/>""", window.Text);
+
+        var name = (TextBox)inspector.Fields["name"].Editor;
+        name.Focus();
+        name.Text = "";
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        Assert.Contains("name", inspector.Fields["name"].Problem);
+        window.Close();
+    });
+
+    [Fact]
+    public void ChoicesAndFlagsHaveTheirOwnFields() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Select(equals);
+        ((ComboBox)Inspector(window).Fields["alignment"].Editor).SelectedItem = "center";
+        Assert.Contains("""text="=" alignment="center"/>""", window.Text);
+
+        window.Select(0);
+        ((CheckBox)Inspector(window).Fields["resizable"].Editor).IsChecked = true;
+        Assert.Contains("""<Window width="232" height="308" resizable="true"/>""", window.Text);
+        ((CheckBox)Inspector(window).Fields["resizable"].Editor).IsChecked = false;
+        Assert.Contains("""<Window width="232" height="308"/>""", window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void AttributesVentureOSDoesntReadAreShownUnderOther() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Text = window.Text.Replace("""text="="/>""", """text="=" note="keep me"/>""", StringComparison.Ordinal);
+        window.RenderNow();
+        window.Select(equals);
+
+        var inspector = Inspector(window);
+        Assert.Equal("keep me", ((TextBox)inspector.Fields["note"].Editor).Text);
+        Assert.Contains("Other", inspector.Children.OfType<TextBlock>().Select(block => block.Text));
+        window.Close();
+    });
+
+    [Fact]
+    public void TheOutlineAndInspectorWaitWhileVentureOSRefusesTheText() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        window.Select(0);
+
+        window.Text = window.Text.Replace("</UIScript>", "<Hologram/></UIScript>", StringComparison.Ordinal);
+        window.RenderNow();
+
+        Assert.False(window.FindControl<DockPanel>("OutlinePane")!.IsEnabled);
+        Assert.False(window.FindControl<DockPanel>("InspectorPane")!.IsEnabled);
+        Assert.Empty(Inspector(window).Fields);
+        window.Close();
+    });
+
+    private static Designer.InspectorPanel Inspector(MainWindow window) => window.FindControl<Designer.InspectorPanel>("Inspector")!;
+
     private (MainWindow Window, int EqualsKey) OpenCalculator()
     {
         MainWindow window = new();
