@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,511 tests, and 138 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,512 tests, and 141 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -939,8 +939,15 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   menu items and separators (joining the selected menu after its last
   entry), and the sidebar; a menu or sidebar first adds its feature to
   `requires` (`DesignEdits.Require`). Toolbar items restack among
-  themselves, left to right. The canvas doesn't show menus, which VentureOS
-  shows in its menu bar; the outline and inspector edit them.
+  themselves, left to right.
+- **Menus on the canvas:** a document's menus show above its window in
+  VentureOS's own `MenuBar`, as Xcode shows an app's: the app's menu, named
+  in bold, then the document's, with room below for the longest
+  (`RenderCommand.Draw` with a bar). The bar gets new menus only when the
+  document changes, so an open menu survives the canvas redrawing around it.
+  Opening a menu selects its `<Menu>`, and choosing an item its
+  `<MenuItem>`; Escape or a click elsewhere closes it. `MenuBar.TitleBounds`
+  and `EntryBounds` say where a title and the open menu's entries were drawn.
 - **Roundhouse's menus** are one list (`AppMenu`, `MenuCommand`,
   `AppMenuGroup`), after Passenger's: `AppMenu.Fill` makes it the window's
   `NativeMenu`, which Avalonia hands to the desktop's global menu bar (KDE's
@@ -1438,6 +1445,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): a document's menus in VentureOS's menu bar above the canvas's window, selecting menus and items; `MenuBar.TitleBounds` and `EntryBounds`. |
 | 2026-11-18 | minor | Roundhouse (§9): Run runs VentureOS's desktop in a window over a fresh, rooted copy of its files, with the app being designed as edited, its own look, and a 10-second frame limit. |
 | 2026-11-18 | minor | Scripts (§9): `ISystemInfo.Root` and `FileRoot`, which keep scripts' paths within a folder where VentureOS runs inside another system, and switch off Lua's own file and program access there; none in the kernel, which is unchanged. |
 | 2026-11-18 | minor | Roundhouse (§9): the start of 0.6.4xx, Run: a simulator window over a fresh copy of `rootfs/` and Roundhouse's own `ISystemInfo`; the bar's title on one line. |
