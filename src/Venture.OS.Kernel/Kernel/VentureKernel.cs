@@ -127,6 +127,11 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.AddSource(runtimeCommands);
         commands.AddSource(scripts);
 
+        AppWindows appWindows = new(windows, desktopOutput, () => ScriptStop.After(Bootstrap.UiEventLimit))
+        {
+            LoadImage = PngLoader.Load,
+            SystemFolder = Bootstrap.SystemDirectoryPath,
+        };
         appManager = new AppManager(
             Bootstrap.AppsDirectoryPath,
             runtimeCommands,
@@ -134,9 +139,12 @@ public class VentureKernel : Sys.Kernel, IShellHost
             Bootstrap.LibraryDirectoryPath,
             RunShellLine,
             () => ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(Bootstrap.AppStartupLimit)),
-            new AppWindows(windows, desktopOutput, () => ScriptStop.After(Bootstrap.UiEventLimit)) { LoadImage = PngLoader.Load, SystemFolder = Bootstrap.SystemDirectoryPath },
+            appWindows,
             Bootstrap.UserAppsDirectoryPath,
             (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false });
+
+        // Every script, app or not, can show an alert, Quick Look, or open an app through the same desktop.
+        system.Desktop = new ScriptDesktop(appWindows, () => appManager);
 
         shellContext = new ShellContext(new ConsoleShellOutput(), this, commands)
         {

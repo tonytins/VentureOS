@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.100
+
+- Apps open windows without listing `ui` in `needs`. An app or script that still lists it works as before.
+- Any script, not just an app, can show a message with `venture.ui.alert(message, title)`, Quick Look a file with `venture.ui.preview(path)`, and open an app with `venture.ui.launch(app, file)`. Without the desktop on the screen, an alert is printed.
+
 ## 0.5.506
 
 - VentureOS 0.5, Cassiopeia, is released. See [the release notes](docs/releases/0.5.md).

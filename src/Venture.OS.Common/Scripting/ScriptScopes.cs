@@ -25,11 +25,13 @@ public enum ScriptScopes
     /// <summary><c>files</c>: <c>venture.files</c>, which lists, reads, and changes files and folders.</summary>
     Files = 1 << 3,
 
-    /// <summary><c>ui</c>: <c>venture.ui</c>, which opens windows on the desktop. Only apps can use it.</summary>
-    Ui = 1 << 4,
-
     /// <summary>Everything, for code the user types, such as the <c>lua</c> command.</summary>
-    All = System | Network | Shell | Files | Ui,
+    /// <remarks>
+    /// There's no scope for <c>venture.ui</c>: showing windows is harmless, so every app can, and every script can
+    /// show an alert, Quick Look, or open an app. <c>ui</c>, which a script or app before 0.6 may still name, is
+    /// accepted and means nothing.
+    /// </remarks>
+    All = System | Network | Shell | Files,
 }
 
 /// <summary>
@@ -45,7 +47,6 @@ public static class ScriptScopeNames
         ScriptScopes.Network => "network",
         ScriptScopes.Shell => "shell",
         ScriptScopes.Files => "files",
-        ScriptScopes.Ui => "ui",
         _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "Not a single scope."),
     };
 
@@ -55,7 +56,7 @@ public static class ScriptScopeNames
     public static string Describe(ScriptScopes scopes)
     {
         List<string> names = [];
-        foreach (var scope in (ReadOnlySpan<ScriptScopes>)[ScriptScopes.System, ScriptScopes.Network, ScriptScopes.Shell, ScriptScopes.Files, ScriptScopes.Ui])
+        foreach (var scope in (ReadOnlySpan<ScriptScopes>)[ScriptScopes.System, ScriptScopes.Network, ScriptScopes.Shell, ScriptScopes.Files])
         {
             if ((scopes & scope) != 0)
                 names.Add(Name(scope));
@@ -65,7 +66,8 @@ public static class ScriptScopeNames
     }
 
     /// <summary>
-    /// Finds the scope a name stands for, ignoring case.
+    /// Finds the scope a name stands for, ignoring case. <c>ui</c>, the scope windows needed before 0.6, is
+    /// accepted as <see cref="ScriptScopes.None"/>, so older apps and scripts still read.
     /// </summary>
     /// <param name="name">A name from a <c>-- Needs:</c> line.</param>
     /// <param name="scope">The scope, when the method returns <see langword="true"/>.</param>
@@ -74,13 +76,19 @@ public static class ScriptScopeNames
     {
         ArgumentNullException.ThrowIfNull(name);
 
+        if (name.Equals("ui", StringComparison.OrdinalIgnoreCase))
+        {
+            scope = ScriptScopes.None;
+            error = null;
+            return true;
+        }
+
         scope = name.ToLowerInvariant() switch
         {
             "system" => ScriptScopes.System,
             "network" => ScriptScopes.Network,
             "shell" => ScriptScopes.Shell,
             "files" => ScriptScopes.Files,
-            "ui" => ScriptScopes.Ui,
             _ => ScriptScopes.None,
         };
 
@@ -90,7 +98,7 @@ public static class ScriptScopeNames
             return true;
         }
 
-        error = $"\"{name}\" isn't a known scope; use system, network, shell, files, or ui.";
+        error = $"\"{name}\" isn't a known scope; use system, network, shell, or files.";
         return false;
     }
 }

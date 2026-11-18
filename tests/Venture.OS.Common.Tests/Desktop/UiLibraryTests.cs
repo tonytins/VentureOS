@@ -311,12 +311,30 @@ public sealed class UiLibraryTests : IDisposable
     }
 
     [Fact]
-    public void NeedsTheUiScope()
+    public void AnAppOpensWindowsWithoutAskingForUi()
     {
-        Write("""venture.ui.open("main.uix")""", needs: "files");
+        Write("""venture.ui.open("main.uix")""", needs: "");
 
-        Assert.False(manager.OpenApp("Pad", root, output));
-        Assert.Contains(output.Lines, line => line.Contains("venture.ui.open needs the ui scope"));
+        Assert.True(manager.OpenApp("Pad", root, output), string.Join('\n', output.Lines));
+        Assert.Single(windows.Windows);
+    }
+
+    [Fact]
+    public void AnAppsAlertShowsAWindowOrPrintsWithoutTheDesktop()
+    {
+        Open("""
+            venture.ui.alert("Saved.")
+            venture.ui.alert("Disk full.", "Problem")
+            """);
+
+        // The desktop isn't on the screen in this test, so both go to the app's messages.
+        Assert.Contains("Pad: Saved.", events.Lines);
+        Assert.Contains("Problem: Disk full.", events.Lines);
+
+        windows.IsShowing = true;
+        Assert.True(manager.CloseApp("Pad", new RecordingOutput()));
+        Open("""venture.ui.alert("Saved.")""");
+        Assert.Contains(windows.Windows, window => window.Title == "Pad" && window.App == "Pad" && window.View.Script.Control("ok") is not null);
     }
 
     [Fact]

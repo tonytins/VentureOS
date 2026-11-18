@@ -74,6 +74,7 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
 
         var frames = 0;
         appOutput.PassTo = null;
+        windows.IsShowing = true;
         DesktopSession? session = null;
         try
         {
@@ -133,6 +134,7 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
     /// </summary>
     private void Leave(DesktopSession? session, IShellOutput output)
     {
+        windows.IsShowing = false;
         session?.CloseDesktopWindows();
         foreach (var line in appOutput.Take())
             output.WriteLine(line);

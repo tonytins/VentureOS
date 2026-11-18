@@ -52,7 +52,7 @@ public sealed class NotesAppTests : IDisposable
 
         Assert.NotNull(listing.Bundle);
         Assert.Equal("dev.tonytins.ventureos.notes", listing.Bundle.Identifier);
-        Assert.Equal(ScriptScopes.Shell | ScriptScopes.Files | ScriptScopes.Ui, listing.Bundle.Needs);
+        Assert.Equal(ScriptScopes.Shell | ScriptScopes.Files, listing.Bundle.Needs);
         Assert.Empty(listing.Bundle.IgnoredAttributes);
     }
 

@@ -62,12 +62,13 @@ public sealed class ScriptHeaderTests
     }
 
     [Fact]
-    public void ReadsTheUiScope()
+    public void AcceptsTheOldUiScopeAndIgnoresIt()
     {
+        // Windows needed ui before 0.6; a script that still names it reads, and gets what it needs without it.
         var header = Parse("-- Needs: ui files");
 
         Assert.Null(header.Error);
-        Assert.Equal(ScriptScopes.Ui | ScriptScopes.Files, header.Needs);
+        Assert.Equal(ScriptScopes.Files, header.Needs);
     }
 
     [Fact]
@@ -81,7 +82,7 @@ public sealed class ScriptHeaderTests
     {
         Assert.Equal("none", ScriptScopeNames.Describe(ScriptScopes.None));
         Assert.Equal("network", ScriptScopeNames.Describe(ScriptScopes.Network));
-        Assert.Equal("system, network, shell, files, ui", ScriptScopeNames.Describe(ScriptScopes.All));
+        Assert.Equal("system, network, shell, files", ScriptScopeNames.Describe(ScriptScopes.All));
     }
 
     [Fact]

@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,102 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,110 tests, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -1072,7 +1072,12 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   `resource(path)` for `Contents/Resources/`); and `require` searching its
   own `Contents/Lua/`, then the system library. Apps can't replace system
   script commands, and `help` shows their commands as `From:` the app.
-- **Windows** (`venture.ui`, `UiLibrary`, the `ui` scope):
+- **Windows** (`venture.ui`, `UiLibrary`; no scope since 0.6, and a `ui`
+  in `needs` or `-- Needs:` is accepted and ignored): any script, app or not,
+  gets `venture.ui.alert`, `preview`, and `launch` through `ISystemInfo.Desktop`
+  (`ScriptDesktop`), since none calls the script back; an alert is printed
+  while the desktop isn't on the screen (`WindowManager.IsShowing`). Only an
+  app opens windows of its own:
   `venture.ui.open("main.uix", { title = ... })` opens a window from the
   app's `Contents/Resources/` and registers its undo, so quitting closes it.
   `window:on(name, fn)` keeps `fn` in the Lua registry and calls it through
@@ -1233,6 +1238,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | No `ui` scope (§9): apps open windows without asking, and `ui` is accepted and ignored; every script gets `venture.ui.alert`, `preview`, and `launch` through `ISystemInfo.Desktop`, an alert printed without the desktop on the screen. |
 | 2026-11-18 | minor | Docs: the UIScript drafts move to `docs/uiscript/`, whose README says VentureOS's UIScript is a superset of Hudini's and lists what it adds; Hudini adopted the menus, sidebar, and styles drafts, which say so; a new title bar draft covers `subtitle`, and toolbar items' `image` and `placement`. |
 | 2026-11-17 | minor | Automatic dark mode (§9): an `auto` look switches light and dark by the clock as each minute turns; Settings and `appearance auto --from --until` set it. Every band of 0.5 is done. |
 | 2026-11-17 | minor | Wallpapers (§9): the desktop shows the look's wallpaper from its bundle, light or dark, and follows a change; `venture.wallpapers()` lists them, and Settings picks one from thumbnails, the sky first. |

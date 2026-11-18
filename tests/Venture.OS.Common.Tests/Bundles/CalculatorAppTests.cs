@@ -42,7 +42,7 @@ public sealed class CalculatorAppTests : IDisposable
         var listing = Assert.Single(manager.Available(), listing => listing.Folder == "Calculator.app");
 
         Assert.True(listing.IsUser);
-        Assert.Equal(ScriptScopes.Ui, listing.Bundle!.Needs);
+        Assert.Equal(ScriptScopes.None, listing.Bundle!.Needs);
         Assert.Empty(output.Lines);
         Assert.Equal("0", Window.View.Text("display"));
     }

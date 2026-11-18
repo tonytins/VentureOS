@@ -21,6 +21,9 @@ internal sealed class KernelSystemInfo : ISystemInfo
     /// <summary>The desktop's look, saved by <see cref="DesktopAppearance"/> once the appearance boot step sets where.</summary>
     public IAppearance? Appearance { get; } = new ScriptAppearance();
 
+    /// <summary>The desktop's alerts, Quick Look, and apps for every script, once the shell has made the apps.</summary>
+    public IScriptDesktop? Desktop { get; set; }
+
     /// <summary>The system's clock, whose offset the clock boot step restores.</summary>
     public Time.WallClock? WallClock => Startup.Bootstrap.WallClock;
 

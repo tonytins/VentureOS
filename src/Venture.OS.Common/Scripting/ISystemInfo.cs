@@ -63,6 +63,12 @@ public interface ISystemInfo
     /// <see langword="null"/> on a system without one.
     /// </summary>
     Time.WallClock? WallClock { get; }
+
+    /// <summary>
+    /// The desktop's alerts, Quick Look, and apps, which <c>venture.ui</c> gives every script, or
+    /// <see langword="null"/> on a system without a desktop.
+    /// </summary>
+    IScriptDesktop? Desktop { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>

@@ -126,12 +126,12 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
     [Fact]
     public void TheWindowStepRollsFromAButton()
     {
-        // The third XML block replaces the Info line, the fourth is main.uix, and the fourth Lua block goes at the end.
-        var info = Block("xml", 0).Replace(InfoLine(Block("xml", 0)), Block("xml", 2).Trim());
-        Build(info, Block("lua", 0) + "\n" + Block("lua", 3));
+        // Windows need no scope, so the Info line stays as it was; the third XML block is main.uix, and the fourth
+        // Lua block goes at the end.
+        Build(Block("xml", 0), Block("lua", 0) + "\n" + Block("lua", 3));
         var resources = Path.Combine(apps, "Dice.app", "Contents", "Resources");
         Directory.CreateDirectory(resources);
-        File.WriteAllText(Path.Combine(resources, "main.uix"), Block("xml", 3));
+        File.WriteAllText(Path.Combine(resources, "main.uix"), Block("xml", 2));
 
         Assert.True(manager.OpenApp("dice", root, output), string.Join('\n', output.Lines));
         var window = Assert.Single(windows.Windows);

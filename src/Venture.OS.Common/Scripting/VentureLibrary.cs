@@ -1,5 +1,6 @@
 using Cosmos.Executable.Lua;
 using Venture.OS.Network;
+using Venture.OS.Shell;
 using Venture.OS.Time;
 
 namespace Venture.OS.Scripting;
@@ -42,7 +43,11 @@ public static class VentureLibrary
     /// a Lua error that names the <c>-- Needs:</c> line the script is missing.
     /// </remarks>
     /// <param name="scopes">What the code may reach besides <c>venture.version()</c>.</param>
-    public static void Open(ILuaState state, ISystemInfo system, ScriptScopes scopes = ScriptScopes.All)
+    /// <param name="workingDirectory">The script's current folder, for <c>venture.ui</c>'s relative paths.</param>
+    /// <param name="output">Where <c>venture.ui.alert</c> prints when the desktop isn't showing.</param>
+    public static void Open(
+        ILuaState state, ISystemInfo system, ScriptScopes scopes = ScriptScopes.All, Func<string>? workingDirectory = null,
+        TextWriter? output = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(system);
@@ -66,7 +71,10 @@ public static class VentureLibrary
             Gated("shell", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "shell")),
         ]);
 
-        // Replaced by UiLibrary for apps; elsewhere it explains that only apps have windows.
+        // Any script may show a message, Quick Look, or open an app, since none of it calls the script back; only an
+        // app, whose code lasts while its windows do, may open a window of its own, so UiLibrary replaces the table
+        // for apps.
+        var folder = workingDirectory ?? (() => "/");
         state.NewTable();
         state.PushCSharpFunction(lua =>
         {
@@ -74,6 +82,21 @@ public static class VentureLibrary
             return lua.Error();
         });
         state.SetField(-2, "open");
+        state.PushCSharpFunction(lua => Alert(lua, system.Desktop, output));
+        state.SetField(-2, "alert");
+        state.PushCSharpFunction(lua =>
+        {
+            var path = ShellPaths.Resolve(folder(), LuaText.Decode(lua.L_CheckString(1)));
+            return Answer(lua, system.Desktop is { } desktop ? desktop.Preview(path) : NoDesktop("preview"));
+        });
+        state.SetField(-2, "preview");
+        state.PushCSharpFunction(lua =>
+        {
+            var app = LuaText.Decode(lua.L_CheckString(1));
+            var file = lua.IsNoneOrNil(2) ? null : LuaText.Decode(lua.L_CheckString(2));
+            return Answer(lua, system.Desktop is { } desktop ? desktop.Launch(app, file, folder()) : NoDesktop("launch"));
+        });
+        state.SetField(-2, "launch");
         state.SetField(-2, "ui");
         state.SetGlobal(GlobalName);
     }
@@ -85,9 +108,39 @@ public static class VentureLibrary
     public static string NotOwnedMessage(string function) =>
         $"venture.{function} only works in init.lua and at the lua prompt, which last beyond a single run";
 
-    /// <summary>The error for <c>venture.ui</c> in code that isn't an app's.</summary>
+    /// <summary>The error for <c>venture.ui.open</c> in code that isn't an app's.</summary>
     public const string NotAppMessage =
-        "venture.ui.open only works in apps, whose windows close when the app quits; see docs/writing-apps.md";
+        "venture.ui.open only works in apps, whose windows close when the app quits; other code can use "
+        + "venture.ui.alert, preview, and launch; see docs/writing-apps.md";
+
+    /// <summary>
+    /// <c>venture.ui.alert(message, title)</c>: shows the message in a window with an OK button, or, without the
+    /// desktop on the screen, prints it. Returns <see langword="true"/>.
+    /// </summary>
+    private static int Alert(ILuaState lua, IScriptDesktop? desktop, TextWriter? output)
+    {
+        var message = LuaText.Decode(lua.L_CheckString(1));
+        var title = lua.IsNoneOrNil(2) ? "Message" : LuaText.Decode(lua.L_CheckString(2));
+        if (desktop is { IsShowing: true })
+            desktop.Alert(title, message);
+        else
+            output?.WriteLine(title == "Message" ? message : $"{title}: {message}");
+
+        lua.PushBoolean(true);
+        return 1;
+    }
+
+    /// <summary>Returns <see langword="true"/>, or <see langword="nil"/> and why.</summary>
+    private static int Answer(ILuaState lua, string? problem) =>
+        problem is null ? Done(lua) : Refuse(lua, problem);
+
+    private static int Done(ILuaState lua)
+    {
+        lua.PushBoolean(true);
+        return 1;
+    }
+
+    private static string NoDesktop(string function) => $"venture.ui.{function} needs the desktop, which this system doesn't have";
 
     private static int NotOwned(ILuaState lua, string function)
     {

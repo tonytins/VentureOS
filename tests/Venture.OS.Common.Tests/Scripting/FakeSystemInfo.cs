@@ -35,6 +35,9 @@ internal sealed class FakeSystemInfo : ISystemInfo
     public Venture.OS.Time.WallClock? WallClock { get; init; } =
         new(() => new DateTime(2026, 11, 17, 20, 45, 30, DateTimeKind.Utc));
 
+    /// <summary>No desktop, by default; a <see cref="FakeScriptDesktop"/> records what scripts ask of one.</summary>
+    public IScriptDesktop? Desktop { get; init; }
+
     /// <summary>When set, reading <see cref="Uptime"/> throws it, as a failing device might.</summary>
     public Exception? UptimeFailure { get; init; }
 

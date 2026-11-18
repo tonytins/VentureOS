@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Settings: the desktop's look, light or dark, and its accent color. -->
 <App version="1">
-  <Info identifier="dev.tonytins.ventureos.settings" name="Settings" version="1.0" needs="system ui" description="Chooses light or dark, the accent color, window corners, the wallpaper, and the clock's offset from UTC."/>
+  <Info identifier="dev.tonytins.ventureos.settings" name="Settings" version="1.0" needs="system" description="Chooses light or dark, the accent color, window corners, the wallpaper, and the clock's offset from UTC."/>
 </App>

@@ -65,6 +65,12 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     public int TopInset { get; set; }
 
     /// <summary>
+    /// Whether the desktop is on the screen. The windows outlast it, but an alert shown while it isn't would wait
+    /// unseen, so a script's alert is printed instead.
+    /// </summary>
+    public bool IsShowing { get; set; }
+
+    /// <summary>
     /// Changes the screen the windows are on. Windows outlive a visit to the desktop, since apps open them from the
     /// shell too, so the screen is only known once the desktop shows; windows already open stay where they are.
     /// </summary>

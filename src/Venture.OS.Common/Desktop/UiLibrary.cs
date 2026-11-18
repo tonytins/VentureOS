@@ -298,6 +298,19 @@ public static class UiLibrary
             return 1;
         });
         Function(state, "launch", app, host, (lua, desktop) => Launch(lua, owner, desktop, apps));
+        Function(state, "alert", app, host, (lua, desktop) =>
+        {
+            var message = LuaText.Decode(lua.L_CheckString(1));
+            var title = lua.IsNoneOrNil(2) ? app.Name : LuaText.Decode(lua.L_CheckString(2));
+
+            // Without the desktop on the screen, the window would wait unseen, so the message is printed instead.
+            if (desktop.Windows.IsShowing)
+                desktop.Windows.Open(DesktopAlert.Create(title, message, app.Name));
+            else
+                desktop.Output.WriteLine($"{title}: {message}");
+            lua.PushBoolean(true);
+            return 1;
+        });
         Function(state, "onOpenFile", app, host, (lua, desktop) =>
         {
             if (!lua.IsFunction(1))
@@ -349,12 +362,10 @@ public static class UiLibrary
         state.Pop(1);
     }
 
-    /// <summary>A <c>venture.ui</c> function, or one that explains the missing scope or desktop.</summary>
+    /// <summary>A <c>venture.ui</c> function, or one that explains the missing desktop.</summary>
     private static void Function(ILuaState state, string name, Bundle app, AppWindows? host, Func<ILuaState, AppWindows, int> body)
     {
-        if ((app.Needs & ScriptScopes.Ui) == 0)
-            state.PushCSharpFunction(lua => Fail(lua, VentureLibrary.UndeclaredMessage($"ui.{name}", ScriptScopes.Ui)));
-        else if (host is null)
+        if (host is null)
             state.PushCSharpFunction(lua => Fail(lua, $"venture.ui.{name} needs the desktop, which this system doesn't have"));
         else
             state.PushCSharpFunction(lua => body(lua, host));
@@ -372,12 +383,42 @@ public static class UiLibrary
 
     private static int Launch(ILuaState lua, LuaOwner owner, AppWindows host, AppManager? apps)
     {
-        var path = FullPath(lua, owner, "launch");
+        if (lua.Type(1) != LuaType.LUA_TSTRING)
+            return Fail(lua, "venture.ui.launch needs an app, such as venture.ui.launch(\"TextEdit\")");
         if (apps is null)
             return Fail(lua, "venture.ui.launch needs the system's apps, which aren't available");
 
-        // A bare name, such as "TextEdit", is an app in the system's or the user's apps folder.
-        var given = LuaText.Decode(lua.ToString(1));
+        string? file = null;
+        if (lua.Type(2) == LuaType.LUA_TSTRING)
+            file = LuaText.Decode(lua.ToString(2));
+        else if (!lua.IsNoneOrNil(2))
+            return Fail(lua, "venture.ui.launch's file must be a path, such as venture.ui.launch(app, \"/mnt/todo.txt\")");
+
+        var problem = LaunchApp(host, apps, LuaText.Decode(lua.ToString(1)), file, owner.Interpreter.WorkingDirectory ?? "/");
+        if (problem is not null)
+        {
+            lua.PushNil();
+            lua.PushString(LuaText.Encode(problem));
+            return 2;
+        }
+
+        lua.PushBoolean(true);
+        return 1;
+    }
+
+    /// <summary>
+    /// Opens an app, by name (in the system's or the user's apps) or by bundle path from a folder, and hands it a
+    /// file when one is given; an open app without a file comes forward, as from the dock. What the app says while
+    /// it opens goes to the desktop's messages.
+    /// </summary>
+    /// <returns>Why it couldn't, or <see langword="null"/>.</returns>
+    public static string? LaunchApp(AppWindows host, AppManager apps, string given, string? file, string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(apps);
+        ArgumentNullException.ThrowIfNull(given);
+
+        var path = ShellPaths.Resolve(workingDirectory, given);
         if (!given.Contains('/') && !given.EndsWith(Bundle.Extension(BundleKind.App), StringComparison.OrdinalIgnoreCase))
         {
             path = "";
@@ -391,11 +432,7 @@ public static class UiLibrary
             }
 
             if (path.Length == 0)
-            {
-                lua.PushNil();
-                lua.PushString(LuaText.Encode($"there's no app called {given}"));
-                return 2;
-            }
+                return $"there's no app called {given}";
         }
 
         Bundle bundle;
@@ -405,44 +442,24 @@ public static class UiLibrary
         }
         catch (BundleException exception)
         {
-            lua.PushNil();
-            lua.PushString(LuaText.Encode(exception.Message));
-            return 2;
+            return exception.Message;
         }
 
-        string? file = null;
-        if (lua.Type(2) == LuaType.LUA_TSTRING)
-            file = ShellPaths.Resolve(owner.Interpreter.WorkingDirectory ?? "/", LuaText.Decode(lua.ToString(2)));
-        else if (!lua.IsNoneOrNil(2))
-            return Fail(lua, "venture.ui.launch's file must be a path, such as venture.ui.launch(app, \"/mnt/todo.txt\")");
+        if (!apps.IsOpen(bundle.Identifier) && !apps.OpenApp(path, workingDirectory, host.Output, explainNeeds: false))
+            return $"{bundle.Name} didn't open";
 
-        // What the app says while it opens, including why it didn't, goes to the desktop's messages.
-        if (!apps.IsOpen(bundle.Identifier)
-            && !apps.OpenApp(path, owner.Interpreter.WorkingDirectory ?? "/", host.Output, explainNeeds: false))
-        {
-            lua.PushNil();
-            lua.PushString(LuaText.Encode($"{bundle.Name} didn't open"));
-            return 2;
-        }
-
-        // With a file, the app opens it. Without one, the app comes forward, as from the dock, with a new window if
-        // it has none.
+        // With a file, the app opens it. Without one, the app comes forward, with a new window if it has none.
         if (file is not null)
         {
-            if (!host.OpenFile(bundle.Name, file))
-            {
-                lua.PushNil();
-                lua.PushString(LuaText.Encode($"{bundle.Name} can't open files"));
-                return 2;
-            }
+            if (!host.OpenFile(bundle.Name, ShellPaths.Resolve(workingDirectory, file)))
+                return $"{bundle.Name} can't open files";
         }
         else
         {
             host.Activate(bundle.Name);
         }
 
-        lua.PushBoolean(true);
-        return 1;
+        return null;
     }
 
     private static int OpenWindow(ILuaState lua, LuaOwner owner, Bundle app, AppWindows host)

@@ -164,7 +164,7 @@ Roundhouse only.
 
 **0.6.1xx, preview, and no `ui` scope**
 
-- [ ] Apps don't ask for `ui`; commands, `init.lua`, and the `lua` prompt can
+- [x] Apps don't ask for `ui`; commands, `init.lua`, and the `lua` prompt can
   show an alert, Quick Look, and launch an app.
 - [ ] Roundhouse opens a `.uix` and draws it beside its text, as VentureOS
   does, redrawing as you type, in light and dark.

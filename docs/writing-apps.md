@@ -65,9 +65,11 @@ The scopes for `needs`:
 | `files` | `venture.files` to list, read, and change files |
 | `system` | `venture.uptime()` and `venture.memory()` |
 | `network` | `venture.net()`, `venture.resolve(name)`, and `venture.ping(address)` |
-| `ui` | `venture.ui` to open windows on the desktop |
 
 Dice adds a command, so it needs `shell`. Ask for only what the app uses.
+Windows need no scope: any app can open them, and any script, app or not, can
+show a message with `venture.ui.alert(message, title)`, Quick Look a file with
+`venture.ui.preview(path)`, or open an app with `venture.ui.launch(app, file)`.
 
 ## Add a command in main.lua
 
@@ -198,12 +200,10 @@ To split the app's code into several files, put modules in `Contents/Lua/`.
 ## Give the app a window
 
 An app can open windows on the desktop. Each window's layout is a `.uix`
-file, in the [UIScript format](https://github.com/tonytins/Hudini/blob/main/doc/UISCRIPT.md),
-in `Contents/Resources/`. Add `ui` to `needs` in `Info.xml`:
-
-```xml
-  <Info identifier="dev.example.dice" name="Dice" version="1.0" needs="shell ui"/>
-```
+file, in the [UIScript format](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md),
+in `Contents/Resources/`. Opening windows needs no scope, so `needs` stays
+as it was. (Before 0.6, windows needed `ui`; it's still accepted, and means
+nothing.)
 
 Save this as `Contents/Resources/main.uix`:
 
