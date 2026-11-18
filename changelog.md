@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.306
+
+- The document's name and its app in Roundhouse's bar are no longer cut off at the bottom.
+
 ## 0.6.305
 
 - Roundhouse's bar is laid out like a VentureOS window's title bar: red, orange, and green buttons to close, minimize, and zoom at the left, then ☰, Add, Undo, and Redo; the document's name centred with its app, such as Calculator.app, under it; and 2× and Text at the right.

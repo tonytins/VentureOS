@@ -118,10 +118,13 @@
                   ToolTip.Tip="Redo (Ctrl+Shift+Z)"/>
         </StackPanel>
         <StackPanel x:Name="TitleStack" VerticalAlignment="Center" IsHitTestVisible="False">
-          <!-- Set line heights, so the name and its bundle fit the bar together whatever the font's own spacing. -->
+          <!--
+            The font's own line heights, so no glyph is cut: a line height shorter than the font's clipped the bundle's
+            descenders and its dot on KDE. Both lines together still fit the bar with room to spare.
+          -->
           <TextBlock x:Name="DocumentTitle" Text="Roundhouse" Foreground="White" FontWeight="SemiBold" FontSize="13"
-                     LineHeight="17" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-          <TextBlock x:Name="DocumentSubtitle" Foreground="White" Opacity="0.8" FontSize="11" LineHeight="14"
+                     HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          <TextBlock x:Name="DocumentSubtitle" Foreground="White" Opacity="0.8" FontSize="11"
                      HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" IsVisible="False"/>
         </StackPanel>
         <StackPanel x:Name="EndItems" Orientation="Horizontal" Spacing="2">

@@ -751,6 +751,25 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void TheNameAndBundleAreTallEnoughForTheirGlyphsAndFitTheBar() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        window.UpdateLayout();
+
+        // A text block clips to its bounds, so each must be at least as tall as its font's line, or glyphs are cut.
+        foreach (var name in (string[])["DocumentTitle", "DocumentSubtitle"])
+        {
+            var text = window.FindControl<TextBlock>(name)!;
+            Assert.True(double.IsNaN(text.LineHeight), $"{name} sets a line height, which can cut its glyphs.");
+            Assert.True(text.Bounds.Height >= text.FontSize * 1.2, $"{name} is {text.Bounds.Height} tall at {text.FontSize} pt.");
+        }
+
+        var stack = window.FindControl<StackPanel>("TitleStack")!;
+        Assert.True(stack.Bounds.Top >= 0 && stack.Bounds.Bottom <= window.FindControl<Border>("TitleBar")!.Bounds.Height);
+        window.Close();
+    });
+
     private static Menus.MenuCommand Command(MainWindow window, string menu, string title) =>
         Menus.AppMenu.Find(window.Menus, menu, title) ?? throw new InvalidOperationException($"No {menu} ▸ {title}.");
 
