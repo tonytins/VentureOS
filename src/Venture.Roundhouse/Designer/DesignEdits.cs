@@ -41,9 +41,62 @@ public static class DesignEdits
     /// </summary>
     /// <exception cref="ArgumentException">The library has no such control.</exception>
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result.</exception>
-    public static (UIDocument Document, int Element) Add(UIDocument document, string element)
+    public static (UIDocument Document, int Element) Add(UIDocument document, string element) => Add(document, element, null);
+
+    /// <summary>
+    /// The parts of a window that aren't controls, which the library adds too: the title bar's items and title field,
+    /// the menus, and the sidebar.
+    /// </summary>
+    public static IReadOnlyList<(string Element, string Title)> Parts { get; } =
+    [
+        ("ToolbarItem", "Toolbar Item"),
+        ("TitleField", "Title Field"),
+        ("Menu", "Menu"),
+        ("MenuItem", "Menu Item"),
+        ("MenuSeparator", "Menu Separator"),
+        ("Sidebar", "Sidebar"),
+    ];
+
+    /// <summary>
+    /// Adds a control (see <see cref="Add(UIDocument, string)"/>) or one of the window's other <see cref="Parts"/>. A
+    /// menu or sidebar first adds the feature it needs to <c>requires</c>. A menu item or separator joins the
+    /// <paramref name="selected"/> menu, or the menu of the selected item, or else the last menu, after its last entry.
+    /// </summary>
+    /// <exception cref="ArgumentException">The library has no such element, or a menu item has no menu to join.</exception>
+    /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a second title field.</exception>
+    public static (UIDocument Document, int Element) Add(UIDocument document, string element, int? selected)
     {
         ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(element);
+        var end = document.Xml?.Children.Count ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
+        switch (element)
+        {
+            case "ToolbarItem":
+                return Insert(document, end, element, [new("name", UniqueName(document, "item")), new("title", "Item")]);
+            case "TitleField":
+                return Insert(document, end, element, [new("name", UniqueName(document, "title")), new("placeholder", "Title")]);
+            case "Menu":
+            {
+                var withMenus = Require(document, UIScript.MenusFeature);
+                return Insert(withMenus, end, element, [new("name", UniqueName(withMenus, "menu")), new("title", "Menu")]);
+            }
+
+            case "MenuItem" or "MenuSeparator":
+            {
+                var (menu, after) = MenuFor(document, selected);
+                List<KeyValuePair<string, string>> entry = [new("menu", menu)];
+                if (element == "MenuItem")
+                    entry.AddRange([new("name", UniqueName(document, "item")), new("title", "Item")]);
+                return Insert(document, after + 1, element, entry);
+            }
+
+            case "Sidebar":
+            {
+                var withSidebar = Require(document, UIScript.SidebarFeature);
+                return Insert(withSidebar, end, element, [new("name", UniqueName(withSidebar, "sidebar")), new("width", "160")]);
+            }
+        }
+
         var control = Library.FirstOrDefault(item => item.Element == element)
             ?? throw new ArgumentException($"The library has no <{element}>.", nameof(element));
         var script = document.Script ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
@@ -124,23 +177,77 @@ public static class DesignEdits
         }
     }
 
+    /// <summary>
+    /// Adds <paramref name="feature"/> to the document's <c>requires</c>, keeping what's there, unless it's already
+    /// listed; elements that need it are refused until it is.
+    /// </summary>
+    public static UIDocument Require(UIDocument document, string feature)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        var listed = document.Xml?.Root["requires"] ?? "";
+        var features = listed.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
+        return features.Contains(feature)
+            ? document
+            : document.SetAttribute(UIDocument.Root, "requires", string.Join(' ', [.. features, feature]));
+    }
+
+    /// <summary>
+    /// What an element is stacked among, so moving it forward or back passes over everything else: visuals, all
+    /// drawn behind the controls; controls; and toolbar items, whose order is left to right along the title bar.
+    /// </summary>
+    private static string? Layer(string element) => element switch
+    {
+        "Visual" or "ToolbarItem" => element,
+        _ when FrameEdit.IsFramed(element) => "control",
+        _ => null,
+    };
+
     private static (UIDocument, int) Restack(UIDocument document, int element, int direction)
     {
         ArgumentNullException.ThrowIfNull(document);
         var children = document.Xml?.Children ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
-        var moving = Child(document, element);
-        var drawnLayer = moving.Name == "Visual";
+        if (Layer(Child(document, element).Name) is not { } layer)
+            return (document, element);
 
-        // Visuals are all drawn behind controls, so each moves only among its own kind.
         for (var index = element + direction; index >= 0 && index < children.Count; index += direction)
         {
-            var other = children[index].Name;
-            if (FrameEdit.IsFramed(other) && (other == "Visual") == drawnLayer)
+            if (Layer(children[index].Name) == layer)
                 return (document.MoveElement(element, index), index);
         }
 
         return (document, element);
     }
+
+    /// <summary>
+    /// The menu a new item joins, and the last element of that menu, which the item goes after: the selected menu,
+    /// the menu of the selected item or separator, or else the document's last menu.
+    /// </summary>
+    private static (string Menu, int Last) MenuFor(UIDocument document, int? selected)
+    {
+        var children = document.Xml!.Children;
+        string? menu = null;
+        if (selected is { } index && index >= 0 && index < children.Count)
+        {
+            var chosen = children[index];
+            menu = chosen.Name == "Menu" ? chosen["name"] : chosen.Name is "MenuItem" or "MenuSeparator" ? chosen["menu"] : null;
+        }
+
+        menu ??= children.LastOrDefault(child => child.Name == "Menu")?["name"]
+            ?? throw new ArgumentException("Add a menu first, then its items.", nameof(selected));
+
+        var last = -1;
+        for (var at = 0; at < children.Count; at++)
+        {
+            var child = children[at];
+            if ((child.Name == "Menu" && child["name"] == menu) || (child.Name is "MenuItem" or "MenuSeparator" && child["menu"] == menu))
+                last = at;
+        }
+
+        return last < 0 ? throw new ArgumentException($"There's no menu named {menu}.", nameof(selected)) : (menu, last);
+    }
+
+    private static (UIDocument, int) Insert(UIDocument document, int index, string element, List<KeyValuePair<string, string>> attributes) =>
+        (document.InsertElement(index, element, attributes), index);
 
     private static FlatXmlElement Child(UIDocument document, int element)
     {

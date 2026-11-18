@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.307
+
+- Roundhouse's designer edits the rest of a window: click the title bar to select the window, and drag its right or bottom edge to resize it; click a toolbar item, the title field, or the sidebar to select it, and drag the sidebar's edge to set its width.
+- Insert (and Add ▾) also adds a toolbar item, a title field, a menu, a menu item, a menu separator, or a sidebar. A menu or sidebar adds `requires="menus"` or `"sidebar"` for you; a menu item joins the selected menu. Forward and Backward move toolbar items along the bar.
+
 ## 0.6.306
 
 - The document's name and its app in Roundhouse's bar are no longer cut off at the bottom.

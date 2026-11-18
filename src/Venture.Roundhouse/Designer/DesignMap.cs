@@ -44,6 +44,26 @@ public sealed class DesignMap
                     drawn.Add((index, bounds with { X = bounds.X + left, Y = bounds.Y + top }));
             }
         }
+
+        // The title bar's items and title field, and the sidebar down the window's left, around the content.
+        var toolbarItem = 0;
+        for (var index = 0; index < children.Count; index++)
+        {
+            switch (children[index].Name)
+            {
+                case "ToolbarItem":
+                    if (window.ToolbarItemBounds(toolbarItem++) is { Width: > 0 } item)
+                        drawn.Add((index, item));
+                    break;
+                case "TitleField":
+                    if (window.TitleFieldBounds is { Width: > 0 } field)
+                        drawn.Add((index, field));
+                    break;
+                case "Sidebar" when window.View.SidebarWidth > 0:
+                    drawn.Add((index, new UIRect(window.X, top, window.View.SidebarWidth, window.Height - window.BarHeight)));
+                    break;
+            }
+        }
     }
 
     /// <summary>The <c>&lt;Window&gt;</c> element's index, which is selected by clicking the window's own background.</summary>
@@ -60,8 +80,8 @@ public sealed class DesignMap
     }
 
     /// <summary>
-    /// The element at a point on the canvas: the frontmost control or visual there, or the window when the point is
-    /// on its content but nothing else; <see langword="null"/> off the window's content.
+    /// The element at a point on the canvas: a title bar item, the title field, or the sidebar; the frontmost control
+    /// or visual there; or the window, anywhere else on it, its bar included. <see langword="null"/> off the window.
     /// </summary>
     public int? ElementAt(float x, float y)
     {
@@ -71,7 +91,7 @@ public sealed class DesignMap
                 return drawn[index].Element;
         }
 
-        return Content.Contains(x, y) ? Window : null;
+        return window.Bounds.Contains(x, y) ? Window : null;
     }
 
     /// <summary>Where an element was drawn on the canvas, or <see langword="null"/> for one that isn't drawn, such as a style.</summary>

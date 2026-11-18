@@ -71,7 +71,8 @@ public sealed class FrameDragTests
     {
         var document = UIDocument.Read("""<UIScript><Window width="200" height="100"/><Style name="s"/></UIScript>""");
 
-        Assert.Throws<ArgumentException>(() => FrameEdit.Apply(document, 0, Frame, new FrameChange(1, 0, 0, 0)));
+        // The window grows and shrinks but doesn't move; a style has no frame at all.
+        Assert.Same(document, FrameEdit.Apply(document, 0, Frame, new FrameChange(1, 0, 0, 0)));
         Assert.Throws<ArgumentException>(() => FrameEdit.Apply(document, 1, Frame, new FrameChange(1, 0, 0, 0)));
         Assert.True(FrameEdit.IsFramed("Visual"));
         Assert.True(FrameEdit.IsFramed("Slider"));

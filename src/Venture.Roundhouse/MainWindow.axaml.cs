@@ -90,15 +90,13 @@ public sealed partial class MainWindow : Window
         // pointer mid-drag, so it stays where the person put it.
         CanvasHost.AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true);
         Inspector.Commit = CommitAttribute;
-        MenuFlyout library = new() { Placement = PlacementMode.BottomEdgeAlignedLeft };
-        foreach (var control in DesignEdits.Library)
+        AddButton.Click += (_, _) =>
         {
-            MenuItem item = new() { Header = control.Element };
-            item.Click += (_, _) => AddControl(control.Element);
-            library.Items.Add(item);
-        }
-
-        AddButton.Flyout = library;
+            // The Insert menu's entries, read now, so what's enabled is current.
+            var library = AppMenu.Flyout(Menus.Single(group => group.Title == "Insert").Entries);
+            library.Placement = PlacementMode.BottomEdgeAlignedLeft;
+            library.ShowAt(AddButton);
+        };
         loading = false;
         ShowPanels();
 
@@ -362,10 +360,13 @@ public sealed partial class MainWindow : Window
         return problems;
     }
 
-    /// <summary>Adds a control from the library in front of everything else, and selects it.</summary>
+    /// <summary>
+    /// Adds a control or another part of the window from the library, and selects it. A control goes in front of
+    /// everything; a menu item joins the selected menu; a menu or sidebar adds the feature it needs.
+    /// </summary>
     /// <returns>Whether it was added; when it wasn't, the status line says why.</returns>
     public bool AddControl(string element) =>
-        Edit(document => DesignEdits.Add(document, element));
+        Edit(document => DesignEdits.Add(document, element, Selection));
 
     /// <summary>Copies the selection just in front of it, set off a little, and selects the copy.</summary>
     /// <returns>Whether it was copied; when it wasn't, the status line says why.</returns>
@@ -473,9 +474,19 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>Whether the designer can change an element: one with a frame, in a document VentureOS reads as drawn.</summary>
-    private bool CanEdit(int element) =>
-        Document is { IsEditable: true, Xml: { } xml } && Map is not null && element < xml.Children.Count
-        && FrameEdit.IsFramed(xml.Children[element].Name);
+    private bool CanEdit(int element) => Kind(element) is { } kind && FrameEdit.IsFramed(kind);
+
+    /// <summary>The handles the selected element can be resized by on the canvas: none when it can't be.</summary>
+    private IReadOnlyList<Handle> HandlesOf(int element) => Kind(element) is { } kind ? FrameEdit.HandlesFor(kind) : [];
+
+    /// <summary>Whether an element can move in front of or behind others: a control, a visual, or a toolbar item.</summary>
+    private bool CanRestack(int element) => Kind(element) is { } kind && (FrameEdit.IsFramed(kind) || kind == "ToolbarItem");
+
+    /// <summary>An element's name, such as <c>Button</c>, in a document VentureOS reads as drawn; otherwise <see langword="null"/>.</summary>
+    private string? Kind(int element) =>
+        Document is { IsEditable: true, Xml: { } xml } && Map is not null && element >= 0 && element < xml.Children.Count
+            ? xml.Children[element].Name
+            : null;
 
     /// <summary>Outlines the selection on its own layer over the canvas, with handles on what can be resized.</summary>
     private void ShowSelection()
@@ -494,9 +505,7 @@ public sealed partial class MainWindow : Window
         Canvas.SetTop(outline, bounds.Y - (line / 2));
         SelectionLayer.Children.Add(outline);
 
-        if (!CanEdit(element))
-            return;
-        foreach (var handle in FrameDrag.Handles)
+        foreach (var handle in HandlesOf(element))
         {
             var (x, y) = FrameDrag.Centre(bounds, handle);
             var size = FrameDrag.HandleSize / Zoom;
@@ -517,13 +526,14 @@ public sealed partial class MainWindow : Window
 
         // A handle of what's selected wins over whatever is under it; otherwise the click selects what's there.
         var handle = Handle.None;
-        var element = Selection is { } selected && CanEdit(selected) && Map.BoundsOf(selected) is { } current
-            && (handle = FrameDrag.HandleAt(current, (float)point.X, (float)point.Y)) != Handle.None
+        var element = Selection is { } selected && Map.BoundsOf(selected) is { } current
+            && (handle = FrameDrag.HandleAt(current, (float)point.X, (float)point.Y, HandlesOf(selected))) != Handle.None
                 ? selected
                 : Map.ElementAt((float)point.X, (float)point.Y);
         Select(element);
 
-        if (element is { } index && CanEdit(index) && Map.BoundsOf(index) is { } bounds)
+        // A handle resizes what has one; dragging anywhere else moves only a control or visual.
+        if (element is { } index && (handle != Handle.None || CanEdit(index)) && Map.BoundsOf(index) is { } bounds)
         {
             drag = new Drag(index, handle, point, bounds, document);
             e.Pointer.Capture(CanvasHost);
@@ -622,7 +632,7 @@ public sealed partial class MainWindow : Window
         bool HasDocument() => path is not null;
         bool Editable() => Document?.IsEditable == true;
         bool Selected() => Editable() && Selection is not null;
-        bool Framed() => Editable() && Selection is { } element && CanEdit(element);
+        bool Stackable() => Editable() && Selection is { } element && CanRestack(element);
         KeyGesture Ctrl(Key key, KeyModifiers more = KeyModifiers.None) => new(key, KeyModifiers.Control | more);
 
         return
@@ -642,12 +652,18 @@ public sealed partial class MainWindow : Window
                 new MenuCommand("Duplicate", () => DuplicateSelection(), Ctrl(Key.D), Selected),
                 new MenuCommand("Delete", () => DeleteSelection(), new KeyGesture(Key.Delete), Selected),
             ]),
-            new("Insert", [.. DesignEdits.Library.Select(control =>
-                new MenuCommand(control.Element, () => AddControl(control.Element), IsEnabled: Editable))]),
+            new("Insert",
+            [
+                .. DesignEdits.Library.Select(control =>
+                    new MenuCommand(control.Element, () => AddControl(control.Element), IsEnabled: Editable)),
+                new MenuSeparator(),
+                .. DesignEdits.Parts.Select(part =>
+                    new MenuCommand(part.Title, () => AddControl(part.Element), IsEnabled: Editable)),
+            ]),
             new("Arrange",
             [
-                new MenuCommand("Bring Forward", () => BringForward(), Ctrl(Key.OemCloseBrackets), Framed),
-                new MenuCommand("Send Backward", () => SendBackward(), Ctrl(Key.OemOpenBrackets), Framed),
+                new MenuCommand("Bring Forward", () => BringForward(), Ctrl(Key.OemCloseBrackets), Stackable),
+                new MenuCommand("Send Backward", () => SendBackward(), Ctrl(Key.OemOpenBrackets), Stackable),
             ]),
             new("View",
             [

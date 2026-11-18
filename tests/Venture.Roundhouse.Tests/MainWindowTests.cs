@@ -285,8 +285,9 @@ public sealed class MainWindowTests : IDisposable
         Assert.Equal(9, Layer(window).Children.Count);
 
         Click(window, window.Map.Content.X + 2, window.Map.Content.Y + window.Map.Content.Height - 2);
+        // The window has the right and bottom edges and their corner to resize it by.
         Assert.Equal(window.Map.Window, window.Selection);
-        Assert.Single(Layer(window).Children);
+        Assert.Equal(4, Layer(window).Children.Count);
 
         Click(window, 2, 2);
         Assert.Null(window.Selection);
@@ -767,6 +768,39 @@ public sealed class MainWindowTests : IDisposable
 
         var stack = window.FindControl<StackPanel>("TitleStack")!;
         Assert.True(stack.Bounds.Top >= 0 && stack.Bounds.Bottom <= window.FindControl<Border>("TitleBar")!.Bounds.Height);
+        window.Close();
+    });
+
+    [Fact]
+    public void DraggingTheWindowsCornerResizesTheWindow() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        var content = window.Map!.Content;
+        Click(window, content.X + 2, content.Y + content.Height - 2);
+        Assert.Equal(0, window.Selection);
+        Assert.Equal(4, Layer(window).Children.Count);
+
+        window.MouseDown(At(window, content.X + content.Width, content.Y + content.Height), MouseButton.Left);
+        window.MouseMove(At(window, content.X + content.Width + 20, content.Y + content.Height + 10));
+        window.MouseUp(At(window, content.X + content.Width + 20, content.Y + content.Height + 10), MouseButton.Left);
+
+        Assert.Contains("""<Window width="252" height="318"/>""", window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheInsertMenuOffersTheWindowsPartsAndAMenuItemJoinsTheSelectedMenu() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+
+        Command(window, "Insert", "Menu").Run();
+        var menu = window.Selection!.Value;
+        Command(window, "Insert", "Menu Item").Run();
+
+        Assert.Equal(menu + 1, window.Selection);
+        Assert.Contains("requires=\"menus\"", window.Text);
+        Assert.Contains("""<MenuItem menu="menu" name="item" title="Item"/>""", window.Text);
+        Assert.Equal("MenuItem  item", ((string[])window.FindControl<ListBox>("OutlineList")!.ItemsSource!)[menu + 1]);
         window.Close();
     });
 

@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 106 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 117 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -899,6 +899,18 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   visual past its next drawn neighbour of the same layer (visuals are all
   behind controls). Delete is `RemoveElement`. Each goes through one
   `Apply`, and the shortcuts act only while the canvas or outline has focus.
+- **The window's other parts:** `DesignMap` also finds the title bar's
+  items (`ToolbarItemBounds`), the title field, and the sidebar, and the
+  rest of the window, its bar included, selects the `<Window>`. Each kind
+  has its own handles (`FrameEdit.HandlesFor`): every one for a control or
+  visual; the right and bottom edges and their corner for the window, which
+  set its size; the right edge for the sidebar, which sets its width. The
+  library (`DesignEdits.Parts`) adds toolbar items, the title field, menus,
+  menu items and separators (joining the selected menu after its last
+  entry), and the sidebar; a menu or sidebar first adds its feature to
+  `requires` (`DesignEdits.Require`). Toolbar items restack among
+  themselves, left to right. The canvas doesn't show menus, which VentureOS
+  shows in its menu bar; the outline and inspector edit them.
 - **Roundhouse's menus** are one list (`AppMenu`, `MenuCommand`,
   `AppMenuGroup`), after Passenger's: `AppMenu.Fill` makes it the window's
   `NativeMenu`, which Avalonia hands to the desktop's global menu bar (KDE's
@@ -1362,6 +1374,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): the window, title bar items, title field, menus, and sidebar in the designer, with each kind's own handles and the features they need added to `requires`. |
 | 2026-11-18 | minor | Roundhouse (§9): the bar replaces the window manager's title bar on X11 (Avalonia's drawn frame, as Passenger), laid out as VentureOS's title bar with its window dots. |
 | 2026-11-18 | minor | Roundhouse (§9): menus exported to the desktop's global menu bar and behind ☰, a merged blue-to-teal title bar with its own window buttons on Linux, compact panes, and a status bar. |
 | 2026-11-18 | minor | Roundhouse (§9): the library, Duplicate, Delete, Forward, and Backward, each one edit through `UIDocument`. |

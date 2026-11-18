@@ -11,6 +11,19 @@ public static class FrameEdit
     public static bool IsFramed(string element) => element == "Visual" || UIScriptSchema.Controls.Contains(element);
 
     /// <summary>
+    /// The handles an element can be resized by: every one for a control or visual; the right and bottom edges and
+    /// their corner for the window, whose top left stays where the title bar puts it; the right edge for the
+    /// sidebar, which sets its width; none for anything else.
+    /// </summary>
+    public static IReadOnlyList<Handle> HandlesFor(string element) => element switch
+    {
+        "Window" => [Handle.Right, Handle.BottomRight, Handle.Bottom],
+        "Sidebar" => [Handle.Right],
+        _ when IsFramed(element) => FrameDrag.Handles,
+        _ => [],
+    };
+
+    /// <summary>
     /// Moves and resizes an element by <paramref name="change"/>, writing only the attributes that change. A size the
     /// element doesn't write, such as a button sized by its image, starts from the size it was drawn at.
     /// </summary>
@@ -23,8 +36,12 @@ public static class FrameEdit
         ArgumentNullException.ThrowIfNull(document);
         var target = document.Xml?.Children[element]
             ?? throw new ArgumentException("The document isn't one VentureOS reads.", nameof(document));
-        if (!IsFramed(target.Name))
+        if (!IsFramed(target.Name) && HandlesFor(target.Name).Count == 0)
             throw new ArgumentException($"<{target.Name}> has no frame to move or resize.", nameof(element));
+
+        // The window and the sidebar don't move; they only grow and shrink, by their own width and height.
+        if (!IsFramed(target.Name))
+            change = change with { X = 0, Y = 0, Height = target.Name == "Sidebar" ? 0 : change.Height };
 
         var edited = document;
         foreach (var (attribute, by, fallback) in (ReadOnlySpan<(string, float, float)>)

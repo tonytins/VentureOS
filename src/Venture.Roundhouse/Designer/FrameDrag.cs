@@ -48,10 +48,14 @@ public static class FrameDrag
     }
 
     /// <summary>The handle under a point, or <see cref="Handle.None"/>. A point a little outside a handle still counts.</summary>
-    public static Handle HandleAt(UIRect frame, float x, float y)
+    public static Handle HandleAt(UIRect frame, float x, float y) => HandleAt(frame, x, y, Handles);
+
+    /// <summary>The handle under a point among <paramref name="offered"/>, the ones an element has, or <see cref="Handle.None"/>.</summary>
+    public static Handle HandleAt(UIRect frame, float x, float y, IReadOnlyList<Handle> offered)
     {
+        ArgumentNullException.ThrowIfNull(offered);
         const float Reach = (HandleSize / 2) + 2;
-        foreach (var handle in Handles)
+        foreach (var handle in offered)
         {
             var (centreX, centreY) = Centre(frame, handle);
             if (MathF.Abs(x - centreX) <= Reach && MathF.Abs(y - centreY) <= Reach)

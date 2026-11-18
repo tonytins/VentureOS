@@ -42,11 +42,11 @@ public sealed class DesignMapTests : IDisposable
     }
 
     [Fact]
-    public void APointOffTheWindowsContentFindsNothing()
+    public void ThePlainTitleBarFindsTheWindowAndOffTheWindowFindsNothing()
     {
         var (map, window) = Map(Overlapping);
 
-        Assert.Null(map.ElementAt(window.X + 20, window.Y + 5));
+        Assert.Equal(map.Window, map.ElementAt(window.X + 60, window.Y + 5));
         Assert.Null(map.ElementAt(2, 2));
     }
 

@@ -46,13 +46,13 @@ public static class AppMenu
             menu.Items.Add(Native(group));
     }
 
-    /// <summary>A dropdown of the menus as they are now, for the ☰ button.</summary>
-    public static MenuFlyout Flyout(IReadOnlyList<AppMenuGroup> menus)
+    /// <summary>A dropdown of menus or entries as they are now, for the ☰ button or a menu of its own, such as Add's.</summary>
+    public static MenuFlyout Flyout(IEnumerable<MenuEntry> entries)
     {
-        ArgumentNullException.ThrowIfNull(menus);
+        ArgumentNullException.ThrowIfNull(entries);
         MenuFlyout flyout = new();
-        foreach (var group in menus)
-            flyout.Items.Add(Item(group));
+        foreach (var entry in entries)
+            flyout.Items.Add(Item(entry));
         return flyout;
     }
 
