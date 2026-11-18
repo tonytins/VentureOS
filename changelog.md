@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.400
+
+- Roundhouse's bar shows the document and its app on one line, such as `main.uix — Calculator.app`.
+- Run ▸ Run (▶ Run, Ctrl+R) opens the window VentureOS will run in, beside the designer. For now it only prepares a fresh copy of VentureOS's files, which goes when the window closes.
+
 ## 0.6.308
 
 - Roundhouse comes as packages that need nothing installed: an AppImage and a `.tar.gz` for Linux, a zip for Windows, and `Roundhouse.app` for macOS, Apple silicon and Intel, built by the scripts in `packaging/`.

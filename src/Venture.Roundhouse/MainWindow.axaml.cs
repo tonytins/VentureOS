@@ -23,6 +23,7 @@ using Venture.OS.Interface;
 using Venture.Roundhouse.Designer;
 using Venture.Roundhouse.Drawing;
 using Venture.Roundhouse.Menus;
+using Venture.Roundhouse.Simulator;
 
 namespace Venture.Roundhouse;
 
@@ -77,6 +78,7 @@ public sealed partial class MainWindow : Window
                      (Key.Z, KeyModifiers.Control | KeyModifiers.Shift, Redo),
                      (Key.Y, KeyModifiers.Control, Redo),
                      (Key.OemPlus, KeyModifiers.Control, () => ZoomToggle.IsChecked = ZoomToggle.IsChecked != true),
+                     (Key.R, KeyModifiers.Control, Run),
                  ])
         {
             // Bound to the window, so they act only when the focused control, such as the editor, hasn't already.
@@ -290,9 +292,7 @@ public sealed partial class MainWindow : Window
         Editor.Document.UndoStack.ClearAll();
         loading = false;
         Title = $"{Path.GetFileName(full)} — {ProductTitle}";
-        DocumentTitle.Text = Path.GetFileName(full);
-        DocumentSubtitle.Text = Subtitle(full);
-        DocumentSubtitle.IsVisible = DocumentSubtitle.Text.Length > 0;
+        DocumentTitle.Text = BarTitle(full);
         RenderNow();
     }
 
@@ -626,7 +626,7 @@ public sealed partial class MainWindow : Window
         e.Handled = true;
     }
 
-    /// <summary>Roundhouse's menus: File, Edit, Insert, Arrange, and View.</summary>
+    /// <summary>Roundhouse's menus: File, Edit, Insert, Arrange, View, and Run.</summary>
     private List<AppMenuGroup> BuildMenus()
     {
         bool HasDocument() => path is not null;
@@ -673,6 +673,10 @@ public sealed partial class MainWindow : Window
                 new MenuCommand("Dark", () => SetDark(!IsDark), IsChecked: () => IsDark),
                 new AppMenuGroup("Accent", [.. AccentNames.Select((name, index) =>
                     new MenuCommand(name, () => SetAccent(index), IsChecked: () => Accent == index))]),
+            ]),
+            new("Run",
+            [
+                new MenuCommand("Run", Run, Ctrl(Key.R)),
             ]),
         ];
     }
@@ -760,7 +764,30 @@ public sealed partial class MainWindow : Window
 
     private void OnRedoClicked(object? sender, RoutedEventArgs e) => Redo();
 
-    /// <summary>What a document belongs to, shown under its name: the app bundle it's in, such as Calculator.app, or its folder.</summary>
+    /// <summary>The bar's title: the document and the app it's in, on one line, such as <c>main.uix — Calculator.app</c>.</summary>
+    public static string BarTitle(string path) =>
+        Subtitle(path) is { Length: > 0 } app ? $"{Path.GetFileName(path)} — {app}" : Path.GetFileName(path);
+
+    /// <summary>The window VentureOS runs in, while it's open.</summary>
+    public SimulatorWindow? Simulator { get; private set; }
+
+    /// <summary>Opens VentureOS in its own window beside the designer, or brings the open one forward.</summary>
+    public void Run()
+    {
+        if (Simulator is { } open)
+        {
+            open.Activate();
+            return;
+        }
+
+        Simulator = new SimulatorWindow();
+        Simulator.Closed += (_, _) => Simulator = null;
+        Simulator.Show();
+    }
+
+    private void OnRunClicked(object? sender, RoutedEventArgs e) => Run();
+
+    /// <summary>What a document belongs to, shown after its name: the app bundle it's in, such as Calculator.app, or its folder.</summary>
     public static string Subtitle(string path)
     {
         ArgumentNullException.ThrowIfNull(path);

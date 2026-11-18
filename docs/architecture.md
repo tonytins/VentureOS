@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 117 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 127 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -155,6 +155,7 @@ VentureOS/
 │     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
 │     │                            InspectorPanel, and DesignEdits (the library and selection edits)
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
+│     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedDisk, SimulatedSystem (Run)
 │     ├─ Menus/                    Venture.Roundhouse.Menus: AppMenu, one list for the global menu bar and the ☰ button
 │     ├─ TitleBars.cs              where the coloured bar can be the window's title bar
 │     ├─ TitleBarPanel.cs          the bar's layout, as VentureOS's title bar's
@@ -920,6 +921,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   button hides when `NativeMenu.IsNativeMenuExported` says the desktop has
   the menus. The shortcuts are window key bindings, so a focused editor or
   field handles its own first.
+- **Run** (0.6.4xx, being built) opens VentureOS in its own window
+  (`SimulatorWindow`, 1024x768, the kernel's screen) beside the designer.
+  Each run starts from a fresh copy of `rootfs/` (`SimulatedDisk`), laid
+  out as the kernel's RAM disk, in `mnt/system` and `mnt/user` under a
+  temporary folder that's deleted when the window closes; Roundhouse
+  carries `rootfs/` beside itself for this. `SimulatedSystem` is what the
+  run tells scripts: the kernel's name, version, and build number for this
+  commit, the computer's clock, and the run's uptime, leaving out the
+  Cosmos version, network, and memory it can't read. Nothing runs in the
+  window yet.
 - **Packaging** (`packaging/`, after CityLimits') builds Roundhouse into
   self-contained packages from Linux or macOS: an AppImage and `.tar.gz`, a
   Windows zip, and `Roundhouse.app` zips for both Mac architectures, named
@@ -1383,6 +1394,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): the start of 0.6.4xx, Run: a simulator window over a fresh copy of `rootfs/` and Roundhouse's own `ISystemInfo`; the bar's title on one line. |
 | 2026-11-18 | minor | Layout (§2) and Roundhouse (§9): `packaging/`, after CityLimits', builds Roundhouse for Linux, Windows, and macOS; a placeholder icon. 0.6.3xx, the designer, is complete. |
 | 2026-11-18 | minor | Roundhouse (§9): the window, title bar items, title field, menus, and sidebar in the designer, with each kind's own handles and the features they need added to `requires`. |
 | 2026-11-18 | minor | Roundhouse (§9): the bar replaces the window manager's title bar on X11 (Avalonia's drawn frame, as Passenger), laid out as VentureOS's title bar with its window dots. |

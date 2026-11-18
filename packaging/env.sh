@@ -59,7 +59,8 @@ export BUILD_SHA
 
 # Publishes Roundhouse for a runtime (such as linux-x64) into a folder, without debug symbols.
 # The second argument is "true" for a self-contained build, "false" for one that needs .NET.
-# Roundhouse draws text in VentureOS's own fonts, which it finds in fonts/ beside itself.
+# Roundhouse draws text in VentureOS's own fonts, which it finds in fonts/ beside itself, and runs
+# VentureOS from a copy of rootfs/, also beside itself.
 publish() {
     local rid="$1" self_contained="$2" out="$3"
     rm -rf "$out"
@@ -68,6 +69,8 @@ publish() {
         || fail "couldn't publish Roundhouse for $rid."
     [[ -f "$out/fonts/OpenSans-Regular.ttf" && -f "$out/fonts/FiraCode-Regular.ttf" ]] \
         || fail "the published Roundhouse for $rid has no fonts folder."
+    [[ -f "$out/rootfs/system/init.lua" && -d "$out/rootfs/user/apps" ]] \
+        || fail "the published Roundhouse for $rid has no rootfs folder, which Run copies VentureOS from."
 }
 
 # Copies the readme, licence, and changelog into a package's folder.

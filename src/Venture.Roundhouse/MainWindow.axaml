@@ -120,15 +120,14 @@
         </StackPanel>
         <StackPanel x:Name="TitleStack" VerticalAlignment="Center" IsHitTestVisible="False">
           <!--
-            The font's own line heights, so no glyph is cut: a line height shorter than the font's clipped the bundle's
-            descenders and its dot on KDE. Both lines together still fit the bar with room to spare.
+            The document and its app on one line, such as "main.uix — Calculator.app", in the font's own line height,
+            so no glyph is cut.
           -->
           <TextBlock x:Name="DocumentTitle" Text="Roundhouse" Foreground="White" FontWeight="SemiBold" FontSize="13"
                      HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-          <TextBlock x:Name="DocumentSubtitle" Foreground="White" Opacity="0.8" FontSize="11"
-                     HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" IsVisible="False"/>
         </StackPanel>
         <StackPanel x:Name="EndItems" Orientation="Horizontal" Spacing="2">
+          <Button x:Name="RunButton" Classes="bar" Content="▶ Run" Click="OnRunClicked" ToolTip.Tip="Run in VentureOS (Ctrl+R)"/>
           <ToggleButton x:Name="ZoomToggle" Classes="bar" Content="2×" IsCheckedChanged="OnZoomChanged"
                         ToolTip.Tip="Twice the size (Ctrl+=)"/>
           <ToggleButton x:Name="TextToggle" Classes="bar" Content="Text" IsChecked="True" IsCheckedChanged="OnTextToggled"

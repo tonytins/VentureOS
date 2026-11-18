@@ -640,7 +640,7 @@ public sealed class MainWindowTests : IDisposable
         window.Select(equals);
         var menu = NativeMenu.GetMenu(window)!;
 
-        Assert.Equal(["File", "Edit", "Insert", "Arrange", "View"], menu.Items.OfType<NativeMenuItem>().Select(item => item.Header));
+        Assert.Equal(["File", "Edit", "Insert", "Arrange", "View", "Run"], menu.Items.OfType<NativeMenuItem>().Select(item => item.Header));
         var edit = menu.Items.OfType<NativeMenuItem>().Single(item => item.Header == "Edit").Menu!;
         var duplicate = edit.Items.OfType<NativeMenuItem>().Single(item => item.Header == "Duplicate");
         Assert.Equal(new KeyGesture(Key.D, KeyModifiers.Control), duplicate.Gesture);
@@ -686,7 +686,7 @@ public sealed class MainWindowTests : IDisposable
 
         var flyout = Menus.AppMenu.Flyout(window.Menus);
 
-        Assert.Equal(["File", "Edit", "Insert", "Arrange", "View"], flyout.Items.OfType<MenuItem>().Select(item => (string)item.Header!));
+        Assert.Equal(["File", "Edit", "Insert", "Arrange", "View", "Run"], flyout.Items.OfType<MenuItem>().Select(item => (string)item.Header!));
         Assert.True(window.FindControl<Button>("MenuButton")!.IsVisible);
         window.Close();
     });
@@ -721,16 +721,33 @@ public sealed class MainWindowTests : IDisposable
     });
 
     [Fact]
-    public void TheBarShowsTheDocumentsNameAndItsBundle() => TestApp.Run(() =>
+    public void TheBarShowsTheDocumentAndItsFolderOnOneLine() => TestApp.Run(() =>
     {
         var (window, _) = OpenCalculator();
 
-        Assert.Equal("main.uix", window.FindControl<TextBlock>("DocumentTitle")!.Text);
+        // The test's copy sits in a plain folder, so its folder follows the name.
+        Assert.StartsWith("main.uix — roundhouse-window-", window.FindControl<TextBlock>("DocumentTitle")!.Text);
+        window.Close();
+    });
 
-        // The test's copy sits in a plain folder, so its folder is the subtitle.
-        var subtitle = window.FindControl<TextBlock>("DocumentSubtitle")!;
-        Assert.True(subtitle.IsVisible);
-        Assert.StartsWith("roundhouse-window-", subtitle.Text);
+    [Fact]
+    public void RunOpensVentureOSInItsOwnWindowOnceAndItsCopyGoesWhenItCloses() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+
+        Command(window, "Run", "Run").Run();
+        var simulator = window.Simulator!;
+        window.Run();
+
+        Assert.Same(simulator, window.Simulator);
+        Assert.Equal((1024, 768), ((int)simulator.Width, (int)simulator.Height));
+        Assert.StartsWith("VentureOS 0.6.", simulator.Status);
+        var root = simulator.Disk!.Root;
+        Assert.True(File.Exists(Path.Combine(root, "mnt", "user", "apps", "Calculator.app", "Contents", "Info.xml")));
+
+        simulator.Close();
+        Assert.Null(window.Simulator);
+        Assert.False(Directory.Exists(root));
         window.Close();
     });
 
@@ -759,7 +776,7 @@ public sealed class MainWindowTests : IDisposable
         window.UpdateLayout();
 
         // A text block clips to its bounds, so each must be at least as tall as its font's line, or glyphs are cut.
-        foreach (var name in (string[])["DocumentTitle", "DocumentSubtitle"])
+        foreach (var name in (string[])["DocumentTitle"])
         {
             var text = window.FindControl<TextBlock>(name)!;
             Assert.True(double.IsNaN(text.LineHeight), $"{name} sets a line height, which can cut its glyphs.");

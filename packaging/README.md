@@ -32,7 +32,8 @@ VentureOS itself isn't packaged here: it's an ISO, built with
 - It reads the version once, from GitInfo, the same major.minor.patch
   Roundhouse shows in its title and the changelog uses.
 - It publishes Roundhouse without debug symbols and checks VentureOS's
-  fonts came with it, in `fonts/`, with their licenses.
+  fonts came with it, in `fonts/`, with their licenses, and VentureOS's
+  files, in `rootfs/`, which Run copies afresh for each run.
 - It copies the readme, the UNLICENSE, and the changelog in.
 - It runs the packaged Roundhouse with no window: `Roundhouse --render`
   draws Calculator's interface into a PNG, which needs the fonts, Skia,

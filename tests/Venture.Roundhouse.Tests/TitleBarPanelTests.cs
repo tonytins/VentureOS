@@ -42,4 +42,12 @@ public sealed class TitleBarPanelTests
     {
         Assert.Equal(expected, MainWindow.Subtitle(path));
     }
+
+    [Theory]
+    [InlineData("/home/me/rootfs/user/apps/Calculator.app/Contents/Resources/main.uix", "main.uix — Calculator.app")]
+    [InlineData("/about.uix", "about.uix")]
+    public void TheBarsTitleIsTheDocumentAndItsAppOnOneLine(string path, string expected)
+    {
+        Assert.Equal(expected, MainWindow.BarTitle(path));
+    }
 }
