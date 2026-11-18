@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.500
+
+- Roundhouse opens a whole bundle, such as an app: open its folder (File ▸ Open Bundle…, Ctrl+Shift+O) or any file in it. Its files are listed over the outline, and choosing one shows it: an interface in the designer. Edits stay while you move between files, until they're saved.
+- Run runs the bundle's app from whichever of its files is open.
+
 ## 0.6.403
 
 - Roundhouse's designer shows a document's menus above its window, in VentureOS's menu bar, as Xcode shows an app's: the app's name in bold, then its menus. Click a menu to open it and select it, and click an item to select that; Escape or a click elsewhere closes it. A document without menus shows no bar.

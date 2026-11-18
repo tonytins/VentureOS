@@ -929,6 +929,109 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void OpeningABundleListsItsFilesAndShowsItsInterface() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+
+        Assert.True(window.FindControl<DockPanel>("FilesPane")!.IsVisible);
+        Assert.Equal("Calculator.app", window.Bundle!.Name);
+        Assert.Equal(Path.Combine(app, "Contents", "Resources", "main.uix"), window.CurrentFile);
+        Assert.NotNull(window.Document);
+        Assert.Equal("main.uix — Calculator.app", window.FindControl<TextBlock>("DocumentTitle")!.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void AnotherFileShowsAPlaceholderAndComingBackKeepsTheEdit() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var main = window.CurrentFile!;
+        var edited = window.Text.Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal);
+        window.Text = edited;
+
+        Select(window, Path.Combine(app, "Contents", "Lua", "main.lua"));
+
+        Assert.True(window.FindControl<TextBlock>("FilePlaceholder")!.IsVisible);
+        Assert.False(window.FindControl<Grid>("CenterGrid")!.IsVisible);
+        Assert.Null(window.Document);
+        Assert.True(window.Bundle!.IsUnsaved(main));
+
+        Select(window, main);
+
+        Assert.Equal(edited, window.Text);
+        Assert.True(window.Save());
+        Assert.False(window.Bundle.IsUnsaved(main));
+        Assert.Contains("text=\"Go\"", File.ReadAllText(main));
+        window.Close();
+    });
+
+    [Fact]
+    public void ADocumentOutsideABundleHidesTheFiles() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculatorBundle();
+
+        window.Open(document);
+
+        Assert.Null(window.Bundle);
+        Assert.False(window.FindControl<DockPanel>("FilesPane")!.IsVisible);
+        window.Close();
+    });
+
+    [Fact]
+    public void AFolderThatIsntABundleIsRefused() => TestApp.Run(() =>
+    {
+        MainWindow window = new();
+        window.Show();
+
+        window.Open(folder);
+
+        Assert.Null(window.Bundle);
+        Assert.Contains("isn't a bundle", window.Status);
+        window.Close();
+    });
+
+    [Fact]
+    public void RunFromAnotherFileOfTheBundleRunsTheApp() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        Select(window, Path.Combine(app, "Contents", "Info.xml"));
+
+        window.Run();
+
+        Assert.Contains(window.Simulator!.Run!.Apps.Running, running => running.Bundle.Name == "Calculator");
+        window.Close();
+    });
+
+    /// <summary>Opens a copy of Calculator.app, by its folder.</summary>
+    private (MainWindow Window, string App) OpenCalculatorBundle()
+    {
+        var app = Path.Combine(folder, "Calculator.app");
+        var source = Path.Combine(SkiaPainterTests.RepositoryRoot(), "rootfs", "user", "apps", "Calculator.app");
+        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            var target = Path.Combine(app, Path.GetRelativePath(source, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target);
+        }
+
+        MainWindow window = new();
+        window.Show();
+        window.Open(app);
+        Dispatcher.UIThread.RunJobs();
+        return (window, app);
+    }
+
+    /// <summary>Chooses a file in the navigator, as a click would.</summary>
+    private static void Select(MainWindow window, string file)
+    {
+        var tree = window.FindControl<TreeView>("FileTree")!;
+        tree.SelectedItem = Find(((Bundles.BundleItem[])tree.ItemsSource!)[0]);
+
+        Bundles.BundleItem? Find(Bundles.BundleItem item) =>
+            item.Path == file ? item : item.Children.Select(Find).FirstOrDefault(found => found is not null);
+    }
+
     /// <summary>Opens a copy of Files' window, which has menus, and gives its elements.</summary>
     private IReadOnlyList<Venture.OS.Interface.Xml.FlatXmlElement> OpenFiles(MainWindow window)
     {

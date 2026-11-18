@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,512 tests, and 141 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,512 tests, and 153 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -152,6 +152,7 @@ VentureOS/
 │  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
 │  │  └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
+│     ├─ Bundles/                  Venture.Roundhouse.Bundles: OpenBundle, a bundle's files and their unsaved edits
 │     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
 │     │                            InspectorPanel, and DesignEdits (the library and selection edits)
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
@@ -956,6 +957,17 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   button hides when `NativeMenu.IsNativeMenuExported` says the desktop has
   the menus. The shortcuts are window key bindings, so a focused editor or
   field handles its own first.
+- **Bundles** (0.6.5xx, being built): Roundhouse opens a bundle (`OpenBundle`,
+  an `.app` or `.wallpaper` folder), from its folder or any file in it, which
+  `OpenBundle.Find` finds by its nearest bundle-named folder. The left pane
+  splits: the bundle's files (`OpenBundle.Tree`, folders first, a linked
+  folder listed but not entered) over the outline. A folder opens on its
+  first interface in `Contents/Resources`, or else its `Info.xml`. Leaving a
+  file keeps its text in the bundle (`OpenBundle.Edit`), as strict UTF-8,
+  until it's saved; text the same as what's saved isn't an edit. An
+  interface opens in the designer from that text; other files show a
+  placeholder for now. A file that can't be read is reported and what was
+  shown stays.
 - **Run** (0.6.4xx) opens VentureOS in its own window
   (`SimulatorWindow`, 1024x768, the kernel's screen) beside the designer.
   Each run starts from a fresh copy of `rootfs/` (`SimulatedDisk`), laid
@@ -1445,6 +1457,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): the start of 0.6.5xx, bundles: `OpenBundle`, the navigator over the outline, and edits kept per file. |
 | 2026-11-18 | minor | Roundhouse (§9): a document's menus in VentureOS's menu bar above the canvas's window, selecting menus and items; `MenuBar.TitleBounds` and `EntryBounds`. |
 | 2026-11-18 | minor | Roundhouse (§9): Run runs VentureOS's desktop in a window over a fresh, rooted copy of its files, with the app being designed as edited, its own look, and a 10-second frame limit. |
 | 2026-11-18 | minor | Scripts (§9): `ISystemInfo.Root` and `FileRoot`, which keep scripts' paths within a folder where VentureOS runs inside another system, and switch off Lua's own file and program access there; none in the kernel, which is unchanged. |

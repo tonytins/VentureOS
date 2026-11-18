@@ -3,6 +3,7 @@ using System.Text;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Controls.Chrome;
 using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
@@ -20,6 +21,7 @@ using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using Venture.OS.Desktop;
 using Venture.OS.Interface;
+using Venture.Roundhouse.Bundles;
 using Venture.Roundhouse.Designer;
 using Venture.Roundhouse.Drawing;
 using Venture.Roundhouse.Menus;
@@ -77,6 +79,7 @@ public sealed partial class MainWindow : Window
         foreach (var (key, modifiers, run) in (ReadOnlySpan<(Key, KeyModifiers, Action)>)
                  [
                      (Key.O, KeyModifiers.Control, () => _ = PickAndOpenAsync()),
+                     (Key.O, KeyModifiers.Control | KeyModifiers.Shift, () => _ = PickAndOpenBundleAsync()),
                      (Key.S, KeyModifiers.Control, () => Save()),
                      (Key.Q, KeyModifiers.Control, Close),
                      (Key.Z, KeyModifiers.Control, Undo),
@@ -94,6 +97,10 @@ public sealed partial class MainWindow : Window
 
         MergeTitleBar(TitleBars.Merges());
         Editor.TextArea.Caret.PositionChanged += (_, _) => ShowCaret();
+
+        FileTree.ItemTemplate = new FuncTreeDataTemplate<BundleItem>(
+            (item, _) => new TextBlock { Text = item.Name, FontWeight = item.IsFolder ? FontWeight.SemiBold : FontWeight.Normal },
+            item => item.Children);
 
         // Clicking the canvas focuses it for the arrow keys; scrolling it into view then would slide it under the
         // pointer mid-drag, so it stays where the person put it.
@@ -282,18 +289,75 @@ public sealed partial class MainWindow : Window
     public void Open(string file)
     {
         ArgumentNullException.ThrowIfNull(file);
-        var full = Path.GetFullPath(file);
-        UIDocument document;
-        try
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(file));
+
+        // A bundle's folder opens the bundle; a file in one opens the bundle at that file.
+        var bundle = OpenBundle.Find(full);
+        if (Directory.Exists(full) && bundle != full)
         {
-            document = UIDocument.Load(full);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
-        {
-            StatusText.Text = $"{file} couldn't be opened: {exception.Message}";
+            StatusText.Text = $"{file} isn't a bundle, such as an .app; open one, or a file.";
             return;
         }
 
+        KeepEdit();
+        if (bundle != Bundle?.Root)
+        {
+            Bundle = bundle is null ? null : new OpenBundle(bundle);
+            ShowFiles();
+        }
+
+        if (full == bundle)
+        {
+            if (Bundle!.FirstFile() is { } first)
+                ShowFile(first);
+            else
+                ShowPlaceholder(null);
+            return;
+        }
+
+        ShowFile(full);
+    }
+
+    /// <summary>The bundle open, or <see langword="null"/> while a document outside one is.</summary>
+    public OpenBundle? Bundle { get; private set; }
+
+    /// <summary>The file shown, by its path on this computer, or <see langword="null"/>.</summary>
+    public string? CurrentFile { get; private set; }
+
+    /// <summary>
+    /// Shows a file: an interface in the designer, from its edited text if it has some, and anything else, for now,
+    /// as a file Roundhouse has no editor for.
+    /// </summary>
+    /// <remarks>A document that can't be read is reported, and what was shown stays.</remarks>
+    private void ShowFile(string full)
+    {
+        if (!full.EndsWith(".uix", StringComparison.OrdinalIgnoreCase))
+        {
+            KeepEdit();
+            CurrentFile = full;
+            SelectInFiles(full);
+            ShowPlaceholder(full);
+            return;
+        }
+
+        // Kept first, so a document read from the bundle includes the edit being left, when it's the same one.
+        KeepEdit();
+        UIDocument document;
+        try
+        {
+            document = Bundle is { } open ? UIDocument.Read(open.Text(full)) : UIDocument.Load(full);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
+        {
+            StatusText.Text = $"{Path.GetFileName(full)} couldn't be opened: {exception.Message}";
+            SelectInFiles(CurrentFile ?? "");
+            return;
+        }
+
+        CurrentFile = full;
+        SelectInFiles(full);
+        CenterGrid.IsVisible = true;
+        FilePlaceholder.IsVisible = false;
         path = full;
         Document = document;
         Selection = null;
@@ -308,6 +372,74 @@ public sealed partial class MainWindow : Window
         RenderNow();
     }
 
+    /// <summary>Shows that Roundhouse has no editor for a file, or that a bundle has nothing to show.</summary>
+    private void ShowPlaceholder(string? file)
+    {
+        path = null;
+        Document = null;
+        Map = null;
+        MenusShown = null;
+        Selection = null;
+        PreviewImage.Source = null;
+        loading = true;
+        Editor.Text = "";
+        Editor.Document.UndoStack.ClearAll();
+        loading = false;
+        CenterGrid.IsVisible = false;
+        FilePlaceholder.IsVisible = true;
+        FilePlaceholder.Text = file is null
+            ? $"{Bundle?.Name} has no interface or Info.xml to show; choose a file."
+            : $"Roundhouse can't edit {Path.GetFileName(file)} yet.";
+        Title = $"{Path.GetFileName(file ?? Bundle?.Root ?? "")} — {ProductTitle}";
+        DocumentTitle.Text = file is null ? Bundle?.Name ?? "Roundhouse" : BarTitle(file);
+        StatusText.Text = file is null ? "" : $"{Path.GetFileName(file)} is in {Bundle?.Name ?? Path.GetDirectoryName(file)}.";
+        ShowSelection();
+        ShowPanels();
+    }
+
+    /// <summary>
+    /// Keeps the designer's text, edited or not, in the open bundle, so moving to another file and back keeps the
+    /// edit until it's saved.
+    /// </summary>
+    private void KeepEdit()
+    {
+        if (Bundle is { } open && path is not null && File.Exists(path))
+            open.Edit(path, byteOrderMark + Editor.Text);
+    }
+
+    /// <summary>Lists the open bundle's files, or hides the list while a document outside one is open.</summary>
+    private void ShowFiles()
+    {
+        var showing = Bundle is not null;
+        FilesPane.IsVisible = FilesSplitter.IsVisible = showing;
+        LeftPane.RowDefinitions[0].Height = showing ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        syncing = true;
+        FileTree.ItemsSource = Bundle is { } open ? (BundleItem[])[open.Tree()] : null;
+        syncing = false;
+    }
+
+    /// <summary>Selects a file in the list, as the file shown.</summary>
+    private void SelectInFiles(string file)
+    {
+        if (FileTree.ItemsSource is not BundleItem[] { Length: 1 } items)
+            return;
+
+        var top = items[0];
+
+        syncing = true;
+        FileTree.SelectedItem = Find(top);
+        syncing = false;
+
+        BundleItem? Find(BundleItem item) =>
+            item.Path == file ? item : item.Children.Select(Find).FirstOrDefault(found => found is not null);
+    }
+
+    private void OnFileSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!syncing && FileTree.SelectedItem is BundleItem { IsFolder: false } item && item.Path != CurrentFile)
+            ShowFile(item.Path);
+    }
+
     /// <summary>
     /// Saves the text exactly as it is in the editor, even text VentureOS would refuse, with the byte order mark the
     /// file had; a file nobody edited is saved byte for byte.
@@ -320,7 +452,9 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            Read().Save(path);
+            var document = Read();
+            document.Save(path);
+            Bundle?.Edit(path, document.Text);
             StatusText.Text = $"Saved {Path.GetFileName(path)}.";
             return true;
         }
@@ -760,6 +894,7 @@ public sealed partial class MainWindow : Window
             new("File",
             [
                 new MenuCommand("Open…", () => _ = PickAndOpenAsync(), Ctrl(Key.O)),
+                new MenuCommand("Open Bundle…", () => _ = PickAndOpenBundleAsync(), Ctrl(Key.O, KeyModifiers.Shift)),
                 new MenuCommand("Save", () => Save(), Ctrl(Key.S), HasDocument),
                 new MenuSeparator(),
                 new MenuCommand("Quit", Close, Ctrl(Key.Q)),
@@ -905,7 +1040,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var simulator = new SimulatorWindow(path, path is null ? null : Editor.Text);
+        var simulator = new SimulatorWindow(CurrentFile, path is null ? null : Editor.Text);
         Simulator = simulator;
         simulator.Closed += (_, _) =>
         {
@@ -1020,6 +1155,19 @@ public sealed partial class MainWindow : Window
         });
 
         if (files is [var file, ..] && file.TryGetLocalPath() is { } local)
+            Open(local);
+    }
+
+    /// <summary>Chooses a bundle's folder, such as an .app, and opens it.</summary>
+    private async Task PickAndOpenBundleAsync()
+    {
+        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Open a bundle, such as an .app",
+            AllowMultiple = false,
+        });
+
+        if (folders is [var folder, ..] && folder.TryGetLocalPath() is { } local)
             Open(local);
     }
 

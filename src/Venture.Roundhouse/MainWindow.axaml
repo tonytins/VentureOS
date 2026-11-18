@@ -148,20 +148,38 @@
 
     <!-- Outline, canvas over text, inspector: after Xcode's Interface Builder. -->
     <Grid ColumnDefinitions="210,1,*,1,270">
-      <DockPanel x:Name="OutlinePane" Grid.Column="0" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-        <TextBlock DockPanel.Dock="Top" Classes="pane" Text="OUTLINE"/>
-        <TextBlock x:Name="OutlineHint" DockPanel.Dock="Top" Text="Open a document to see its elements." TextWrapping="Wrap"
-                   Opacity="0.6" Margin="10,0"/>
-        <ListBox x:Name="OutlineList" Background="Transparent" SelectionChanged="OnOutlineSelected" KeyDown="OnDesignKeyDown">
-          <ListBox.Styles>
-            <!-- An outline is read as a list of names, so its rows are compact. -->
-            <Style Selector="ListBoxItem">
-              <Setter Property="Padding" Value="10,3"/>
-              <Setter Property="MinHeight" Value="0"/>
-            </Style>
-          </ListBox.Styles>
-        </ListBox>
-      </DockPanel>
+      <!-- The bundle's files over the open interface's outline, when a bundle is open. -->
+      <Grid x:Name="LeftPane" Grid.Column="0" RowDefinitions="*,1,*" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+        <DockPanel x:Name="FilesPane" Grid.Row="0" IsVisible="False">
+          <TextBlock DockPanel.Dock="Top" Classes="pane" Text="FILES"/>
+          <TreeView x:Name="FileTree" Background="Transparent" SelectionChanged="OnFileSelected">
+            <TreeView.Styles>
+              <!-- Every folder open. -->
+              <Style Selector="TreeViewItem">
+                <Setter Property="IsExpanded" Value="True"/>
+                <Setter Property="MinHeight" Value="0"/>
+                <Setter Property="Padding" Value="4,2"/>
+              </Style>
+
+            </TreeView.Styles>
+          </TreeView>
+        </DockPanel>
+        <GridSplitter x:Name="FilesSplitter" Grid.Row="1" ResizeDirection="Rows" IsVisible="False"/>
+        <DockPanel x:Name="OutlinePane" Grid.Row="2">
+          <TextBlock DockPanel.Dock="Top" Classes="pane" Text="OUTLINE"/>
+          <TextBlock x:Name="OutlineHint" DockPanel.Dock="Top" Text="Open a document to see its elements." TextWrapping="Wrap"
+                     Opacity="0.6" Margin="10,0"/>
+          <ListBox x:Name="OutlineList" Background="Transparent" SelectionChanged="OnOutlineSelected" KeyDown="OnDesignKeyDown">
+            <ListBox.Styles>
+              <!-- An outline is read as a list of names, so its rows are compact. -->
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="10,3"/>
+                <Setter Property="MinHeight" Value="0"/>
+              </Style>
+            </ListBox.Styles>
+          </ListBox>
+        </DockPanel>
+      </Grid>
       <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
 
       <Grid x:Name="CenterGrid" Grid.Column="2" RowDefinitions="*,1,240">
@@ -180,6 +198,9 @@
         <edit:TextEditor x:Name="Editor" Grid.Row="2" ShowLineNumbers="True" FontFamily="Cascadia Code,Fira Code,monospace"
                          FontSize="13" TextChanged="OnTextChanged"/>
       </Grid>
+      <!-- A file Roundhouse shows no editor for. -->
+      <TextBlock x:Name="FilePlaceholder" Grid.Column="2" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 TextWrapping="Wrap" TextAlignment="Center" Opacity="0.6" Margin="40"/>
 
       <GridSplitter Grid.Column="3" ResizeDirection="Columns"/>
       <DockPanel x:Name="InspectorPane" Grid.Column="4" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
