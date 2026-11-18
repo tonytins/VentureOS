@@ -38,7 +38,7 @@ public sealed class MainWindowTests : IDisposable
 
         window.Show();
 
-        Assert.Matches(@"^Roundhouse 0\.6\.\d+$", window.Title);
+        Assert.Matches($@"^Roundhouse {System.Text.RegularExpressions.Regex.Escape(SkiaPainterTests.Release())}\.\d+$", window.Title);
         Assert.Equal(MainWindow.ProductTitle, window.Title);
         window.Close();
     });

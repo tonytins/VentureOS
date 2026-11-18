@@ -73,7 +73,7 @@ public sealed class SimulatorTests
         SimulatedSystem system = new(disk);
 
         Assert.Equal("VentureOS", system.Name);
-        Assert.Matches(@"^0\.6\.\d+$", system.Version);
+        Assert.Matches($@"^{System.Text.RegularExpressions.Regex.Escape(SkiaPainterTests.Release())}\.\d+$", system.Version);
         Assert.Matches("^[0-9a-f]{7,}$", system.Commit);
         var commit = System.Text.Encoding.UTF8.GetBytes(system.Commit);
         Assert.Equal(commit.Length < 4 ? 0 : BitConverter.ToUInt32(commit, 0) % 1_000_000, system.BuildNumber);

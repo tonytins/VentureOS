@@ -495,3 +495,11 @@ $RECYCLE.BIN/
 
 # Roundhouse packages and their working files (packaging/).
 dist/
+
+# Personal files: notes, preferences, and developer.local.lua, which trusts the owner's own vdb (see docs/design/2026-11-18-vdb-design.md)
+*.local
+*.local.*
+
+# vdb's Swift build
+tools/vdb/.build/
+.swiftpm/

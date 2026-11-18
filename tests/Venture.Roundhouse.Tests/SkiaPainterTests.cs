@@ -109,4 +109,14 @@ public sealed class SkiaPainterTests : IDisposable
             folder = folder.Parent;
         return folder?.FullName ?? throw new DirectoryNotFoundException("The repository's GitInfo.txt isn't above the tests.");
     }
+
+    /// <summary>
+    /// The release being built, such as <c>0.7</c>, from GitInfo.txt, so tests of the version don't break each time
+    /// a release begins.
+    /// </summary>
+    internal static string Release()
+    {
+        var parts = File.ReadAllText(Path.Combine(RepositoryRoot(), "GitInfo.txt")).Trim().Split('.');
+        return $"{parts[0]}.{parts[1]}";
+    }
 }
