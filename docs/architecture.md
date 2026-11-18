@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,630 tests, and 188 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,632 tests, and 188 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -493,6 +493,12 @@ has the why, and [docs/vdb](./vdb/README.md) the protocol.
   Settings; none reaches the desktop. With no NIC, turning it on reports
   that there's nothing to listen on.
 - Under QEMU, `./run.sh --vdb` forwards port 28455 from the host.
+- **The tool** is `vdb`, in Swift, in `tools/vdb/` (its [README](../tools/vdb/README.md)):
+  `VdbKit` holds the client, over any line transport, the bundle reader, and
+  the identity, kept in the configuration folder; `TCPConnection` is POSIX
+  or Winsock sockets with `poll`. Its tests replay the same recorded
+  conversations VentureOS's do. While following output, it sends an empty
+  line every 10 seconds to stay under the idle limit.
 
 ---
 
@@ -1304,7 +1310,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   its app.
 - **The fallback app.** Files is to the desktop what Finder is to a Mac
   (`DesktopSession.FallbackApp`). The desktop starts it before anything
-  else, so it opens a window on the folder `desktop` was typed in; it's
+  else, with no window, since its job at the start is the menu bar; its
+  windows open on the folder `desktop` was typed in, from New Window or
+  its dock icon; it's
   first in the dock and always marked open; its menu shows whenever no
   other app is in front; it has New Window and no Quit; and closing its
   last window leaves it running. If it isn't running, such as after
@@ -1546,6 +1554,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | vdb (§8.1): the `vdb` tool. Files (§9) starts without a window. |
 | 2026-11-18 | minor | vdb (§8.1): developer mode, the protocol in Common, the desktop's listener, the Trust alert, `developer.local.lua`, and `run.sh --vdb`. |
 | 2026-11-18 | minor | Roundhouse (§9): NLog and the Log tab; `Info.xml` in the Text tab under its form; a prompt before leaving unsaved edits; opening another bundle from the designer no longer crashes. |
 | 2026-11-18 | minor | Roundhouse (§9): New App, a window app from the template beside Roundhouse, checked by `Bundle.Read`. |

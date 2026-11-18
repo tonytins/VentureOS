@@ -236,6 +236,16 @@ public sealed class VdbSessionTests : IDisposable
         Assert.True(session.IsClosed);
     }
 
+    [Fact]
+    public void TakesAHelloOfferingFeaturesItDoesNotUse()
+    {
+        trust.Trust(Identity);
+
+        Send($"hello vdb/1 {Identity} install launch shell");
+
+        Assert.Equal(["ok vdb/1 install launch"], sent);
+    }
+
     [Theory]
     [InlineData("hello")]
     [InlineData("hello vdb/1")]
@@ -269,6 +279,18 @@ public sealed class VdbSessionTests : IDisposable
         session.Tick(TimeSpan.FromSeconds(50));
 
         Assert.False(session.IsClosed);
+    }
+
+    [Fact]
+    public void AnEmptyLineKeepsTheConnectionOpen()
+    {
+        Ready();
+
+        session.Receive("\n"u8, TimeSpan.FromSeconds(25));
+        session.Tick(TimeSpan.FromSeconds(50));
+
+        Assert.False(session.IsClosed);
+        Assert.Single(sent);
     }
 
     [Fact]

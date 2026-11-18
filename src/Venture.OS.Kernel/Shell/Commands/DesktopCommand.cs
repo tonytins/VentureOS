@@ -10,7 +10,7 @@ namespace Venture.OS.Shell.Commands;
 /// Opens the desktop: graphics on the whole screen, until the user goes back to the shell.
 /// </summary>
 /// <remarks>
-/// <para>Files is the desktop's own app: the desktop starts it, which opens a Files window, and keeps it running.
+/// <para>Files is the desktop's own app: the desktop starts it, with no window, for the menu bar, and keeps it running.
 /// Any <c>.uix</c> files named on the command line open as windows too, which previews an interface while it's
 /// being written. The dock opens the system's apps; what they write while
 /// the desktop is showing is held and shown in a window, since the console would draw over the desktop, and goes to

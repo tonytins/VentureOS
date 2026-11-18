@@ -26,4 +26,10 @@ public enum VdbProtocol {
 
     /// The longest path inside a bundle, in characters.
     public static let maximumPathLength = 255
+
+    /// How long a connection may say nothing before VentureOS closes it, in seconds.
+    public static let idleLimitSeconds: Double = 30
+
+    /// How long VentureOS's Trust alert waits for an answer before it counts as Deny, in seconds.
+    public static let trustLimitSeconds: Double = 60
 }

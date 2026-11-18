@@ -44,7 +44,7 @@ stage to the next, and add a line to the revision history.
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
-| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS, then Roundhouse on VentureOS itself |
+| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; the dock as an app; then Roundhouse on VentureOS itself |
 
 ## 0.4, Pere Marquette
 
@@ -210,7 +210,18 @@ and swift-log are approved for it alone.
   by an alert or ahead of time on the owner's own builds.
 - [x] The vdb/1 protocol: installing an app, checked as boot checks apps, and
   opening it, with what it prints sent back.
-- [ ] The `vdb` tool, for Linux, macOS, and Windows.
+- [x] The `vdb` tool, for Linux, macOS, and Windows (built and tested on Linux).
+
+**0.7.2xx, the dock as an app**
+
+The dock becomes a system app, `Dock.app`, as macOS's is, rather than part of
+the desktop's own code: one less thing that can take the desktop down, and
+easier to change later. It gains a choice of always visible, hiding on its
+own, or hiding when a window would cover it. The platform needs for it what
+Lua doesn't have yet: a window pinned to an edge of the screen, the list of
+apps and their changes, and minimized windows.
+
+- [ ] Not yet planned in detail.
 
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer
@@ -259,6 +270,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | 0.7.1xx's vdb is done, with the `vdb` tool in Swift. The desktop no longer opens a Files window. The dock becomes an app in a band of its own, 0.7.2xx, by my decision. |
 | 2026-11-18 | patch | VentureOS's side of vdb is done: developer mode, the Trust alert, the protocol, and listening from the desktop, checked by sending an app into QEMU. The `vdb` tool is next. GitVersion gains a tag switch, so vdb reports VentureOS's version. |
 | 2026-11-18 | minor | 0.7, Seto, begins with 0.7.1xx, vdb, from its approved design: developer mode, trusting a computer, a plain-text protocol with files in base64, and a Swift tool. Roundhouse on VentureOS follows, a text editor first. |
 | 2026-11-18 | minor | 0.6, Izumo, is released as `v0.6.505`. 0.7, Seto, is being planned. |

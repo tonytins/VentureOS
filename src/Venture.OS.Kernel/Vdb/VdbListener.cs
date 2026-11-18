@@ -293,8 +293,11 @@ internal sealed class VdbListener
 
             // The user's copy first, which is where vdb installs, then the system's.
             var user = $"{AppsFolder}/{app}";
-            var path = Directory.Exists(user) ? user : $"{Startup.Bootstrap.AppsDirectoryPath}/{app}";
-            var problem = UiLibrary.LaunchApp(appWindows, manager, path, null, "/");
+            var system = $"{Startup.Bootstrap.AppsDirectoryPath}/{app}";
+            var path = Directory.Exists(user) ? user : Directory.Exists(system) ? system : null;
+            var problem = path is null
+                ? $"there's no {app} in {AppsFolder} or {Startup.Bootstrap.AppsDirectoryPath}"
+                : UiLibrary.LaunchApp(appWindows, manager, path, null, "/");
             changed = true;
             KernelLog.WriteSerialLine(problem is null ? $"vdb opened {app}." : $"vdb couldn't open {app}: {problem}");
             return problem;

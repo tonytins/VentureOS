@@ -176,7 +176,7 @@ Linux, macOS, and Windows, and uses Swift Argument Parser and swift-log, both ap
 ```sh
 vdb identity [--lua]                  # this computer's identity, or the lines for developer.local.lua
 vdb install Dice.app [--launch]       # send an app, and open it
-vdb launch Dice.app                   # open an installed app; prints what apps say until Ctrl+C
+vdb launch Dice.app [--follow|--for N] # open an installed app; print what apps say until Ctrl+C, or for N seconds
 vdb --host 10.0.0.5 --port 28455 …     # default: 127.0.0.1:28455, which run.sh --vdb forwards to QEMU
 ```
 
@@ -184,7 +184,10 @@ vdb --host 10.0.0.5 --port 28455 …     # default: 127.0.0.1:28455, which run.s
   adding a networking package.
 - It exits 0 on success and non-zero with VentureOS's reason on stderr otherwise, so scripts can use it. Logging
   (`--verbose`) goes to stderr through swift-log.
-- It never prompts; `install` waits up to 60 seconds for the Trust alert and says it's waiting.
+- It never prompts; it waits up to 70 seconds for the Trust alert and says it's waiting.
+- As built, following output is opt-in (`--follow`, `--for`), so a plain `launch` returns once the app opens; while
+  following, vdb sends an empty line every 10 seconds, which VentureOS ignores but counts, so the idle limit doesn't
+  close the connection. After a refusal, it says `bye` before exiting. See [its README](../../tools/vdb/README.md).
 
 ## Where the code goes
 

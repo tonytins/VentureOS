@@ -90,6 +90,17 @@ packaging/windows/package.sh
 packaging/macos/package.sh
 ```
 
+### vdb
+
+[vdb](tools/vdb/README.md) sends an app to a running VentureOS and opens it, so you can try a change without rebuilding the kernel. Boot with `./run.sh --vdb`, open the desktop, and turn on Settings ▸ Developer; then, with Swift 6:
+
+```
+cd tools/vdb
+swift run vdb install ../../rootfs/user/apps/Calculator.app --launch
+```
+
+VentureOS asks whether to trust your computer the first time. An app sent this way lasts until VentureOS restarts.
+
 ## ⚖️ No Copyright
 
 Copyrights and any related rights for VentureOS are waived via the [UNLICENSE](UNLICENSE). Credit still appreciated.

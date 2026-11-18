@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.105
+
+- `vdb`, in `tools/vdb`, sends an app from your computer to a running VentureOS: `vdb install Dice.app --launch` installs and opens it, and `--for 5` or `--follow` prints what it prints. It never asks anything, exits with 1 and VentureOS's reason when something's refused, and `vdb identity --lua` prints the lines that make your own builds trust your computer. See [its README](tools/vdb/README.md).
+- The desktop opens without a Files window: Files starts for the menu bar, and its dock icon or New Window opens one.
+- vdb says which folders it looked in when it can't find an app to open.
+
 ## 0.7.104
 
 - Developer mode, for vdb: Settings ▸ Developer turns it on, and while the desktop runs, VentureOS listens on port 28455 for a computer sending an app. An app sent is checked as apps are at boot, installed in `/mnt/user/apps`, and opened, replacing an open copy, and what it prints goes back to the computer. A computer VentureOS doesn't know is asked about first, with Trust and Deny. Developer mode and trust last until VentureOS restarts.

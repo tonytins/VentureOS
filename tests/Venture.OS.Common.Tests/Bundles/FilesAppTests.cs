@@ -42,6 +42,10 @@ public sealed class FilesAppTests : IDisposable
             windows: host,
             userAppsDirectory: Path.Combine(AppContext.BaseDirectory, "user", "apps"));
         Assert.True(manager.OpenApp("Files", root, output), string.Join('\n', output.Lines));
+
+        // Files starts with no window, as the desktop starts it for the menu bar; New Window opens one.
+        Assert.Empty(windows.Windows);
+        Assert.True(host.NewWindow("Files"));
     }
 
     public void Dispose()

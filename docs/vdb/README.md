@@ -5,12 +5,13 @@ follow: VentureOS's side is `Venture.OS.Common/Vdb`, and the computer's is the `
 built this way is in [its design](../design/2026-11-18-vdb-design.md).
 
 VentureOS listens while the desktop runs and developer mode is on (Settings ▸ Developer, or
-`venture.developer.enable()`); under QEMU, `./run.sh --vdb` forwards the port. The `vdb` tool doesn't send yet.
+`venture.developer.enable()`); under QEMU, `./run.sh --vdb` forwards the port. The [`vdb` tool](../../tools/vdb/README.md) sends apps.
 
 ## Lines
 
 A connection is lines of UTF-8 text, each ending with `\n`; a `\r` before it is dropped. A line is at most 8,192
-bytes, not counting its line break. Empty lines are ignored. A line that's too long or isn't UTF-8 closes the
+bytes, not counting its line break. Empty lines are ignored, but count as being heard from, so a computer that's
+only listening can send one to keep the connection open. A line that's too long or isn't UTF-8 closes the
 connection, since there's no telling where the next one starts.
 
 A line is a command, a space, and the rest. The computer sends commands; VentureOS answers.

@@ -1,5 +1,5 @@
 # A computer VentureOS hasn't seen waits while the person is asked, then goes on once they trust it.
-> hello vdb/1 0123456789abcdef0123456789abcdef install launch
+> hello vdb/1 0123456789abcdef0123456789abcdef
 < wait trust
 ! wait 5
 ! answer trust 0123456789abcdef0123456789abcdef
