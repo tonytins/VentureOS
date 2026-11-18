@@ -12,6 +12,12 @@
       <CheckBox x:Name="DarkBox" Content="Dark" Margin="16,0,0,0" IsCheckedChanged="OnLookChanged"/>
       <ComboBox x:Name="AccentBox" MinWidth="120" SelectionChanged="OnLookChanged"/>
       <ComboBox x:Name="ZoomBox" MinWidth="90" Margin="16,0,0,0" SelectionChanged="OnZoomChanged"/>
+      <!-- The library and the edits on the selection. -->
+      <Button x:Name="AddButton" Content="Add ▾" Margin="16,0,0,0" IsEnabled="False"/>
+      <Button x:Name="DuplicateButton" Content="Duplicate" Click="OnDuplicateClicked" IsEnabled="False"/>
+      <Button x:Name="DeleteButton" Content="Delete" Click="OnDeleteClicked" IsEnabled="False"/>
+      <Button x:Name="ForwardButton" Content="Forward" Click="OnForwardClicked" IsEnabled="False"/>
+      <Button x:Name="BackwardButton" Content="Backward" Click="OnBackwardClicked" IsEnabled="False"/>
       <ToggleButton x:Name="TextToggle" Content="Text" Margin="16,0,0,0" IsChecked="True" IsCheckedChanged="OnTextToggled"/>
     </StackPanel>
 
@@ -24,7 +30,7 @@
       <DockPanel x:Name="OutlinePane" Grid.Column="0" Margin="8,0,0,0">
         <TextBlock DockPanel.Dock="Top" Text="Outline" FontWeight="SemiBold" Margin="0,0,0,6"/>
         <TextBlock x:Name="OutlineHint" DockPanel.Dock="Top" Text="Open a document to see its elements." TextWrapping="Wrap" Opacity="0.6"/>
-        <ListBox x:Name="OutlineList" SelectionChanged="OnOutlineSelected">
+        <ListBox x:Name="OutlineList" SelectionChanged="OnOutlineSelected" KeyDown="OnDesignKeyDown">
           <ListBox.Styles>
             <!-- An outline is read as a list of names, so its rows are compact. -->
             <Style Selector="ListBoxItem">

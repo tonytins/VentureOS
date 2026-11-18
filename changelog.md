@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.303
+
+- Roundhouse's library: Add ▾ puts a text, button, text field, text area, list, slider, progress bar, or region in the middle of the window, in front, named after its kind, and selects it.
+- Duplicate (Ctrl+D) copies the selection just in front of it, set off a little; Delete removes it with the comment above it; Forward (Ctrl+]) and Backward (Ctrl+[) move a control in front of or behind its neighbour. The shortcuts work while the canvas or outline has focus, so they don't get in the way of typing. Anything VentureOS wouldn't read, such as deleting the window, is refused with the reason.
+
 ## 0.6.302
 
 - Roundhouse's outline lists every element of the document in order, and selecting one there selects it on the canvas, and back. Styles, strings, and menus, which aren't drawn, are selected here.

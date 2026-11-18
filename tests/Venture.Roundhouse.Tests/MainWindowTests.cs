@@ -548,6 +548,90 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void TheLibraryAddsAControlAndSelectsIt() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        var count = window.Document!.Xml!.Children.Count;
+
+        Assert.True(window.AddControl("Slider"));
+
+        Assert.Equal(count, window.Selection);
+        Assert.Contains("""<Slider name="slider" x="46" y="144" width="140" height="20"/>""", window.Text);
+        Assert.NotNull(window.Map!.BoundsOf(count));
+        Assert.Equal("Slider  slider", ((string[])window.FindControl<ListBox>("OutlineList")!.ItemsSource!)[count]);
+        window.Close();
+    });
+
+    [Fact]
+    public void DeleteDuplicateAndRestackWorkFromTheCanvasKeys() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var bounds = window.Map!.BoundsOf(equals)!.Value;
+        Click(window, bounds.X + 10, bounds.Y + 10);
+
+        window.KeyPress(Key.D, RawInputModifiers.Control, PhysicalKey.D, "d");
+        Assert.Equal(equals + 1, window.Selection);
+        Assert.Contains("""<Button name="equals2" x="182" y="264" """, window.Text);
+
+        window.KeyPress(Key.OemOpenBrackets, RawInputModifiers.Control, PhysicalKey.BracketLeft, "[");
+        Assert.Equal(equals, window.Selection);
+        Assert.Equal("equals2", window.Document!.Xml!.Children[equals]["name"]);
+
+        window.KeyPress(Key.Delete, RawInputModifiers.None, PhysicalKey.Delete, null);
+        Assert.Null(window.Selection);
+        Assert.DoesNotContain("equals2", window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void DeletingTheWindowIsRefusedWithTheReason() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        var before = window.Text;
+        window.Select(0);
+
+        Assert.False(window.DeleteSelection());
+
+        Assert.Equal(before, window.Text);
+        Assert.Equal(0, window.Selection);
+        Assert.Contains("needs a <Window>", window.Status);
+        window.Close();
+    });
+
+    [Fact]
+    public void DeleteInTheTextEditorStillDeletesText() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Select(equals);
+        var editor = window.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+        var length = window.Text.Length;
+
+        editor.TextArea.Focus();
+        editor.CaretOffset = 0;
+        window.KeyPress(Key.Delete, RawInputModifiers.None, PhysicalKey.Delete, null);
+
+        Assert.Equal(length - 1, window.Text.Length);
+        Assert.Equal(equals, window.Selection);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheEditButtonsFollowTheSelection() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        Assert.True(window.FindControl<Button>("AddButton")!.IsEnabled);
+        Assert.False(window.FindControl<Button>("DeleteButton")!.IsEnabled);
+
+        window.Select(1);
+        Assert.True(window.FindControl<Button>("DuplicateButton")!.IsEnabled);
+        Assert.False(window.FindControl<Button>("ForwardButton")!.IsEnabled);
+
+        window.Select(equals);
+        Assert.True(window.FindControl<Button>("ForwardButton")!.IsEnabled);
+        window.Close();
+    });
+
     private static Designer.InspectorPanel Inspector(MainWindow window) => window.FindControl<Designer.InspectorPanel>("Inspector")!;
 
     private (MainWindow Window, int EqualsKey) OpenCalculator()

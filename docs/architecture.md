@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 64 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 82 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -153,7 +153,7 @@ VentureOS/
 │  │  └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
 │     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
-│     │                            and InspectorPanel
+│     │                            InspectorPanel, and DesignEdits (the library and selection edits)
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
 │     └─ RenderCommand.cs          Roundhouse --render: a .uix drawn into a PNG file, with no window
 ├─ rootfs/                        files built into the kernel and installed at boot
@@ -890,6 +890,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   and leaves the document alone. Showing the same kind of element again only
   updates values, so typing isn't interrupted. While VentureOS refuses the
   text, both panes are disabled.
+- **The library and selection edits** (`DesignEdits`) add a control in
+  front, centred, named after its kind and set off from one already there;
+  duplicate an element just in front with a new name; and move a control or
+  visual past its next drawn neighbour of the same layer (visuals are all
+  behind controls). Delete is `RemoveElement`. Each goes through one
+  `Apply`, and the shortcuts act only while the canvas or outline has focus.
 - **Roundhouse's window** (`MainWindow`) shows a document's text in
   AvaloniaEdit, with TextMate's XML highlighting, beside the same drawing,
   redrawn 300 ms after typing stops. Text `UIScript` refuses leaves the
@@ -1332,6 +1338,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): the library, Duplicate, Delete, Forward, and Backward, each one edit through `UIDocument`. |
 | 2026-11-18 | minor | Roundhouse (§9): the outline, sharing the canvas's selection, and the inspector, built from `UIScriptSchema`, committing through `UIDocument` and showing refusals under the field. |
 | 2026-11-18 | minor | Roundhouse (§9): the canvas selects, moves, resizes, and nudges, each drag one edit through `Apply`; 100% and 200% zoom. |
 | 2026-11-18 | minor | Roundhouse (§9): the designer's layout, `DesignMap` from canvas points to elements, and `UIScriptSchema` of each element's attributes; the start of 0.6.3xx. |

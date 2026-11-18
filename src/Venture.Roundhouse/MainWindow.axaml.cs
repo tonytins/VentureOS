@@ -3,6 +3,7 @@ using System.Text;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Rectangle = Avalonia.Controls.Shapes.Rectangle;
@@ -71,6 +72,15 @@ public sealed partial class MainWindow : Window
         // pointer mid-drag, so it stays where the person put it.
         CanvasHost.AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true);
         Inspector.Commit = CommitAttribute;
+        MenuFlyout library = new() { Placement = PlacementMode.BottomEdgeAlignedLeft };
+        foreach (var control in DesignEdits.Library)
+        {
+            MenuItem item = new() { Header = control.Element };
+            item.Click += (_, _) => AddControl(control.Element);
+            library.Items.Add(item);
+        }
+
+        AddButton.Flyout = library;
         loading = false;
 
         // XML highlighting, in colors that follow Roundhouse's own light or dark theme.
@@ -281,6 +291,59 @@ public sealed partial class MainWindow : Window
         return problems;
     }
 
+    /// <summary>Adds a control from the library in front of everything else, and selects it.</summary>
+    /// <returns>Whether it was added; when it wasn't, the status line says why.</returns>
+    public bool AddControl(string element) =>
+        Edit(document => DesignEdits.Add(document, element));
+
+    /// <summary>Copies the selection just in front of it, set off a little, and selects the copy.</summary>
+    /// <returns>Whether it was copied; when it wasn't, the status line says why.</returns>
+    public bool DuplicateSelection() =>
+        Selection is { } element && Edit(document => DesignEdits.Duplicate(document, element));
+
+    /// <summary>Deletes the selection with the comments above it, leaving nothing selected.</summary>
+    /// <returns>Whether it was deleted; when it wasn't, such as the window, the status line says why.</returns>
+    public bool DeleteSelection() =>
+        Selection is { } element && Edit(document => (document.RemoveElement(element), null));
+
+    /// <summary>Moves the selected control or visual in front of the next one.</summary>
+    /// <returns>Whether it moved.</returns>
+    public bool BringForward() =>
+        Selection is { } element && Edit(document => DesignEdits.BringForward(document, element));
+
+    /// <summary>Moves the selected control or visual behind the one before it.</summary>
+    /// <returns>Whether it moved.</returns>
+    public bool SendBackward() =>
+        Selection is { } element && Edit(document => DesignEdits.SendBackward(document, element));
+
+    /// <summary>
+    /// Makes one designer edit and selects what it says to, or says in the status line why VentureOS wouldn't read
+    /// the result, leaving the document as it was.
+    /// </summary>
+    private bool Edit(Func<UIDocument, (UIDocument Document, int? Select)> edit)
+    {
+        if (Document is not { IsEditable: true } document)
+            return false;
+
+        try
+        {
+            var (edited, select) = edit(document);
+            if (ReferenceEquals(edited, document))
+                return false;
+
+            // Clear the selection first, so the redraw never shows the old index on a different element.
+            Selection = null;
+            Apply(edited);
+            Select(select);
+            return true;
+        }
+        catch (Exception exception) when (exception is UIScriptException or ArgumentException)
+        {
+            StatusText.Text = $"VentureOS wouldn't read that: {exception.Message}";
+            return false;
+        }
+    }
+
     /// <summary>
     /// Shows the document's elements in the outline and the selected one's attributes in the inspector. A document
     /// VentureOS refuses stays listed but can't be edited until it reads.
@@ -298,6 +361,9 @@ public sealed partial class MainWindow : Window
         syncing = false;
 
         OutlineHint.IsVisible = xml is null;
+        AddButton.IsEnabled = editable;
+        DuplicateButton.IsEnabled = DeleteButton.IsEnabled = editable && Selection is not null;
+        ForwardButton.IsEnabled = BackwardButton.IsEnabled = editable && Selection is { } chosen && CanEdit(chosen);
         OutlinePane.IsEnabled = InspectorPane.IsEnabled = editable;
         InspectorHint.IsVisible = Selection is null;
         InspectorHint.Text = editable || Document is null
@@ -437,6 +503,10 @@ public sealed partial class MainWindow : Window
 
     private void OnCanvasKeyDown(object? sender, KeyEventArgs e)
     {
+        OnDesignKeyDown(sender, e);
+        if (e.Handled)
+            return;
+
         var step = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 8 : 1;
         (int X, int Y)? by = e.Key switch
         {
@@ -452,6 +522,36 @@ public sealed partial class MainWindow : Window
         Nudge(move.X, move.Y);
         e.Handled = true;
     }
+
+    /// <summary>
+    /// The designer's shortcuts, while the canvas or outline has focus, so Delete and Ctrl+D still edit text in the
+    /// editor and the inspector.
+    /// </summary>
+    private void OnDesignKeyDown(object? sender, KeyEventArgs e)
+    {
+        var control = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        Func<bool>? action = (e.Key, control) switch
+        {
+            (Key.Delete or Key.Back, false) => DeleteSelection,
+            (Key.D, true) => DuplicateSelection,
+            (Key.OemCloseBrackets, true) => BringForward,
+            (Key.OemOpenBrackets, true) => SendBackward,
+            _ => null,
+        };
+        if (action is null || Selection is null)
+            return;
+
+        action();
+        e.Handled = true;
+    }
+
+    private void OnDuplicateClicked(object? sender, RoutedEventArgs e) => DuplicateSelection();
+
+    private void OnDeleteClicked(object? sender, RoutedEventArgs e) => DeleteSelection();
+
+    private void OnForwardClicked(object? sender, RoutedEventArgs e) => BringForward();
+
+    private void OnBackwardClicked(object? sender, RoutedEventArgs e) => SendBackward();
 
     private void OnZoomChanged(object? sender, SelectionChangedEventArgs e)
     {
