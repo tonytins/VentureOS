@@ -198,6 +198,13 @@
         <edit:TextEditor x:Name="Editor" Grid.Row="2" ShowLineNumbers="True" FontFamily="Cascadia Code,Fira Code,monospace"
                          FontSize="13" TextChanged="OnTextChanged"/>
       </Grid>
+      <!-- A bundle's other files: text, such as Lua, in an editor of its own, and pictures as they are. -->
+      <edit:TextEditor x:Name="FileEditor" Grid.Column="2" IsVisible="False" ShowLineNumbers="True"
+                       FontFamily="Cascadia Code,Fira Code,monospace" FontSize="13" TextChanged="OnFileTextChanged"/>
+      <ScrollViewer x:Name="ImageView" Grid.Column="2" IsVisible="False" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <Image x:Name="FileImage" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16"
+               RenderOptions.BitmapInterpolationMode="None"/>
+      </ScrollViewer>
       <!-- A file Roundhouse shows no editor for. -->
       <TextBlock x:Name="FilePlaceholder" Grid.Column="2" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
                  TextWrapping="Wrap" TextAlignment="Center" Opacity="0.6" Margin="40"/>

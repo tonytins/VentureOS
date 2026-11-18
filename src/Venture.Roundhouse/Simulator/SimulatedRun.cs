@@ -121,13 +121,16 @@ public sealed class SimulatedRun : IDisposable, IShellHost
 
     /// <summary>
     /// Starts VentureOS from a fresh copy of <paramref name="rootfs"/>, and opens what's being designed: the app
-    /// <paramref name="document"/> is in, with <paramref name="text"/> as its text in place of what's saved, or the
-    /// document alone as a window when it isn't in an app.
+    /// <paramref name="document"/> is in, with <paramref name="edits"/> in place of what's saved, or the document
+    /// alone as a window when it isn't in an app.
     /// </summary>
-    /// <param name="document">The document being designed, by its path on this computer, or <see langword="null"/>.</param>
+    /// <param name="document">A file of what's being designed, by its path on this computer, or <see langword="null"/>.</param>
+    /// <param name="edits">Files' edited text, by their paths on this computer, which run in place of what's saved;
+    /// only those in the app, or the document itself outside one, are used.</param>
     /// <exception cref="DirectoryNotFoundException">There are no VentureOS files at <paramref name="rootfs"/>.</exception>
     /// <exception cref="IOException">The files couldn't be copied.</exception>
-    public static SimulatedRun Start(string rootfs, SkiaFonts fonts, string? document = null, string? text = null)
+    public static SimulatedRun Start(
+        string rootfs, SkiaFonts fonts, string? document = null, IReadOnlyDictionary<string, string>? edits = null)
     {
         ArgumentNullException.ThrowIfNull(fonts);
         var disk = SimulatedDisk.Create(rootfs);
@@ -139,7 +142,7 @@ public sealed class SimulatedRun : IDisposable, IShellHost
             {
                 run.Session.StartFallbackApp();
                 if (document is not null)
-                    run.OpenDesigned(rootfs, document, text);
+                    run.OpenDesigned(rootfs, document, edits ?? new Dictionary<string, string>());
                 run.Session.Update(new DesktopInput(SimulatorWindow.ScreenWidth / 2, SimulatorWindow.ScreenHeight / 2, false));
                 run.Session.Draw(run.painter);
                 return true;
@@ -202,15 +205,15 @@ public sealed class SimulatedRun : IDisposable, IShellHost
     void IShellHost.Shutdown() => stopped = true;
 
     /// <summary>
-    /// Puts the run's copy in place of the document's app, with the editor's text in place of what's saved, and
-    /// opens it; a document outside any app opens as a window of its own, as <c>desktop file.uix</c> shows one.
+    /// Puts the run's copy in place of the document's app, with its files' edits in place of what's saved, and opens
+    /// it; a document outside any app opens as a window of its own, as <c>desktop file.uix</c> shows one.
     /// </summary>
-    private void OpenDesigned(string rootfs, string document, string? text)
+    private void OpenDesigned(string rootfs, string document, IReadOnlyDictionary<string, string> edits)
     {
         var bundle = BundleOf(document);
         if (bundle is null)
         {
-            if (LoadDocument(document, text) is { } script)
+            if (LoadDocument(document, edits.GetValueOrDefault(Path.GetFullPath(document))) is { } script)
                 Session.Windows.Open(new DesktopWindow(Path.GetFileName(document), new UIView(script)));
             return;
         }
@@ -224,8 +227,16 @@ public sealed class SimulatedRun : IDisposable, IShellHost
         if (Directory.Exists(copy))
             Directory.Delete(copy, recursive: true);
         CopyFolder(bundle, copy);
-        if (text is not null)
-            File.WriteAllText(Path.Combine(copy, Path.GetRelativePath(bundle, document)), text);
+        foreach (var (file, text) in edits)
+        {
+            var relative = Path.GetRelativePath(bundle, Path.GetFullPath(file));
+            if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
+                continue;
+
+            var target = Path.Combine(copy, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.WriteAllText(target, text);
+        }
 
         Apps.OpenApp($"{folder}/{Path.GetFileName(bundle)}", SimulatedDisk.UserFolder, appOutput, explainNeeds: false);
     }

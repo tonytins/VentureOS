@@ -50,8 +50,8 @@ public sealed class SimulatorWindow : Window
 
     /// <summary>Starts VentureOS with what's being designed open in it.</summary>
     /// <param name="document">The document being designed, by its path on this computer, or <see langword="null"/>.</param>
-    /// <param name="text">Its text as edited, which runs in place of what's saved.</param>
-    public SimulatorWindow(string? document = null, string? text = null)
+    /// <param name="edits">Files' edited text, by their paths, which run in place of what's saved.</param>
+    public SimulatorWindow(string? document = null, IReadOnlyDictionary<string, string>? edits = null)
     {
         Title = $"VentureOS — {MainWindow.ProductTitle}";
         SizeToContent = SizeToContent.WidthAndHeight;
@@ -110,7 +110,7 @@ public sealed class SimulatorWindow : Window
 
         try
         {
-            Run = SimulatedRun.Start(rootfs, fonts, document, text);
+            Run = SimulatedRun.Start(rootfs, fonts, document, edits);
             Show(Run.Pixels);
             status.IsVisible = Run.Messages.Count > 0;
             status.Text = string.Join("\n", Run.Messages);

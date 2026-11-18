@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.501
+
+- Roundhouse edits a bundle's other files: Lua in an editor with highlighting, other text as plain text, and pictures shown as they are. A file that isn't text says so.
+- Files with unsaved edits are marked ● in the list. File ▸ Save (Ctrl+S) saves the file shown, and Save All (Ctrl+Shift+S) every file with edits.
+- Run runs every unsaved edit of the bundle, not only the interface's. Undo and Redo work in whichever editor is showing.
+
 ## 0.6.500
 
 - Roundhouse opens a whole bundle, such as an app: open its folder (File ▸ Open Bundle…, Ctrl+Shift+O) or any file in it. Its files are listed over the outline, and choosing one shows it: an interface in the designer. Edits stay while you move between files, until they're saved.

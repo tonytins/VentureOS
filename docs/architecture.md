@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,512 tests, and 153 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,512 tests, and 158 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -965,9 +965,18 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   first interface in `Contents/Resources`, or else its `Info.xml`. Leaving a
   file keeps its text in the bundle (`OpenBundle.Edit`), as strict UTF-8,
   until it's saved; text the same as what's saved isn't an edit. An
-  interface opens in the designer from that text; other files show a
-  placeholder for now. A file that can't be read is reported and what was
-  shown stays.
+  interface opens in the designer from that text; other text files open in
+  a file editor of their own, highlighted by TextMate's grammar for their
+  extension (Lua, XML, or none), and edits reach the bundle as they're
+  typed; pictures show in an image view; a file that isn't UTF-8 text says
+  so. A file that can't be read is reported and what was shown stays.
+  Unsaved files are marked ● in the list, which is rebuilt only when which
+  files are unsaved changes. Save saves the file shown; Save All every file
+  with edits, the designer's included, naming any that couldn't be saved.
+  Undo, Redo, and the caret follow whichever editor shows. Run hands the run
+  every unsaved file's text by path (`SimulatedRun.Start`'s edits), which
+  replace those files in the run's copy of the app. Opening a bundle again
+  re-reads its folder.
 - **Run** (0.6.4xx) opens VentureOS in its own window
   (`SimulatorWindow`, 1024x768, the kernel's screen) beside the designer.
   Each run starts from a fresh copy of `rootfs/` (`SimulatedDisk`), laid
@@ -1457,6 +1466,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): editors for a bundle's other files (Lua highlighted, text, pictures), unsaved marks, Save All, and every unsaved file in Run. |
 | 2026-11-18 | minor | Roundhouse (§9): the start of 0.6.5xx, bundles: `OpenBundle`, the navigator over the outline, and edits kept per file. |
 | 2026-11-18 | minor | Roundhouse (§9): a document's menus in VentureOS's menu bar above the canvas's window, selecting menus and items; `MenuBar.TitleBounds` and `EntryBounds`. |
 | 2026-11-18 | minor | Roundhouse (§9): Run runs VentureOS's desktop in a window over a fresh, rooted copy of its files, with the app being designed as edited, its own look, and a 10-second frame limit. |

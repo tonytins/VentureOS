@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Controls;
+using Avalonia.LogicalTree;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Media.Imaging;
@@ -943,7 +944,7 @@ public sealed class MainWindowTests : IDisposable
     });
 
     [Fact]
-    public void AnotherFileShowsAPlaceholderAndComingBackKeepsTheEdit() => TestApp.Run(() =>
+    public void AnotherFileShowsInItsOwnEditorAndComingBackKeepsTheEdit() => TestApp.Run(() =>
     {
         var (window, app) = OpenCalculatorBundle();
         var main = window.CurrentFile!;
@@ -952,7 +953,7 @@ public sealed class MainWindowTests : IDisposable
 
         Select(window, Path.Combine(app, "Contents", "Lua", "main.lua"));
 
-        Assert.True(window.FindControl<TextBlock>("FilePlaceholder")!.IsVisible);
+        Assert.True(window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.IsVisible);
         Assert.False(window.FindControl<Grid>("CenterGrid")!.IsVisible);
         Assert.Null(window.Document);
         Assert.True(window.Bundle!.IsUnsaved(main));
@@ -1002,6 +1003,111 @@ public sealed class MainWindowTests : IDisposable
         Assert.Contains(window.Simulator!.Run!.Apps.Running, running => running.Bundle.Name == "Calculator");
         window.Close();
     });
+
+    [Fact]
+    public void LuaOpensInTheFileEditorAndAnUnsavedEditIsMarkedUntilSaved() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var lua = Path.Combine(app, "Contents", "Lua", "main.lua");
+        Select(window, lua);
+        var editor = window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!;
+
+        Assert.Equal(File.ReadAllText(lua), editor.Text);
+        Assert.Equal("main.lua — Calculator.app", window.FindControl<TextBlock>("DocumentTitle")!.Text);
+
+        editor.Document.Insert(0, "-- edited\n");
+
+        Assert.True(window.Bundle!.IsUnsaved(lua));
+        Assert.Contains("main.lua ●", Labels(window));
+        Assert.True(window.FindControl<Button>("UndoButton")!.IsEnabled);
+
+        Assert.True(window.Save());
+        Assert.StartsWith("-- edited\n", File.ReadAllText(lua));
+        Assert.DoesNotContain("main.lua ●", Labels(window));
+        Assert.Contains("main.lua", Labels(window));
+        window.Close();
+    });
+
+    [Fact]
+    public void UndoInTheFileEditorUndoesTyping() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var lua = Path.Combine(app, "Contents", "Lua", "main.lua");
+        Select(window, lua);
+        var editor = window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!;
+        var before = editor.Text;
+
+        editor.Document.Insert(0, "-- edited\n");
+        window.Undo();
+
+        Assert.Equal(before, editor.Text);
+        Assert.False(window.Bundle!.IsUnsaved(lua));
+        window.Close();
+    });
+
+    [Fact]
+    public void SaveAllSavesEveryEditedFileTheDesignersToo() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var main = window.CurrentFile!;
+        var lua = Path.Combine(app, "Contents", "Lua", "main.lua");
+        window.Text = window.Text.Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal);
+        Select(window, lua);
+        window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.Document.Insert(0, "-- edited\n");
+
+        Assert.True(window.SaveAll());
+
+        Assert.Contains("text=\"Go\"", File.ReadAllText(main));
+        Assert.StartsWith("-- edited\n", File.ReadAllText(lua));
+        Assert.Empty(window.Bundle!.Unsaved);
+        Assert.Equal("Saved 2 files.", window.Status);
+        window.Close();
+    });
+
+    [Fact]
+    public void RunRunsEveryUnsavedFile() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var lua = Path.Combine(app, "Contents", "Lua", "main.lua");
+        Select(window, lua);
+        window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.Document.Insert(0, "-- edited in Roundhouse\n");
+
+        window.Run();
+
+        var run = window.Simulator!.Run!;
+        Assert.StartsWith("-- edited in Roundhouse", File.ReadAllText(run.Disk.HostPath("/mnt/user/apps/Calculator.app/Contents/Lua/main.lua")));
+        Assert.DoesNotContain("edited in Roundhouse", File.ReadAllText(lua));
+        window.Close();
+    });
+
+    [Fact]
+    public void APictureIsShownAndAFileThatIsntTextIsSaidSo() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var icon = Path.Combine(app, "Contents", "Resources", "Icon.png");
+        var data = Path.Combine(app, "Contents", "Resources", "data.bin");
+        File.Copy(Path.Combine(SkiaPainterTests.RepositoryRoot(), "rootfs", "system", "icons", "VentureOS.png"), icon);
+        File.WriteAllBytes(data, [0xFF, 0xFE, 0xC3, 0x28]);
+        window.Open(app);
+
+        Select(window, icon);
+        Assert.True(window.FindControl<ScrollViewer>("ImageView")!.IsVisible);
+        Assert.NotNull(window.FindControl<Image>("FileImage")!.Source);
+
+        Select(window, data);
+        var placeholder = window.FindControl<TextBlock>("FilePlaceholder")!;
+        Assert.True(placeholder.IsVisible);
+        Assert.Contains("isn't text", placeholder.Text);
+        window.Close();
+    });
+
+    /// <summary>The navigator's labels, as shown, unsaved marks included.</summary>
+    private static List<string> Labels(MainWindow window)
+    {
+        var tree = window.FindControl<TreeView>("FileTree")!;
+        window.UpdateLayout();
+        return [.. tree.GetLogicalDescendants().OfType<TextBlock>().Select(block => block.Text ?? "")];
+    }
 
     /// <summary>Opens a copy of Calculator.app, by its folder.</summary>
     private (MainWindow Window, string App) OpenCalculatorBundle()

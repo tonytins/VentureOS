@@ -35,7 +35,7 @@ public sealed class SimulatedRunTests : IDisposable
         var document = Path.Combine(calculator, "Contents", "Resources", "main.uix");
         var edited = File.ReadAllText(document).Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal);
 
-        using var run = SimulatedRun.Start(rootfs, fonts, document, edited);
+        using var run = SimulatedRun.Start(rootfs, fonts, document, new Dictionary<string, string> { [document] = edited });
 
         Assert.Contains(run.Apps.Running, app => app.Bundle.Name == "Calculator");
         Assert.Equal(edited, File.ReadAllText(run.Disk.HostPath("/mnt/user/apps/Calculator.app/Contents/Resources/main.uix")));
@@ -47,7 +47,7 @@ public sealed class SimulatedRunTests : IDisposable
     {
         var about = Path.Combine(rootfs, "system", "interfaces", "about.uix");
 
-        using var run = SimulatedRun.Start(rootfs, fonts, about, File.ReadAllText(about));
+        using var run = SimulatedRun.Start(rootfs, fonts, about, new Dictionary<string, string> { [about] = File.ReadAllText(about) });
 
         Assert.Contains(run.Session.Windows.Windows, window => window.Title == "about.uix");
     }
@@ -57,7 +57,7 @@ public sealed class SimulatedRunTests : IDisposable
     {
         var about = Path.Combine(rootfs, "system", "interfaces", "about.uix");
 
-        using var run = SimulatedRun.Start(rootfs, fonts, about, "<UIScript><Hologram/></UIScript>");
+        using var run = SimulatedRun.Start(rootfs, fonts, about, new Dictionary<string, string> { [about] = "<UIScript><Hologram/></UIScript>" });
 
         Assert.Contains(run.Messages, message => message.StartsWith("about.uix:", StringComparison.Ordinal));
         Assert.Contains(run.Apps.Running, app => app.Bundle.Name == SimulatedRun.FallbackApp);

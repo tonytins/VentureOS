@@ -55,6 +55,14 @@ public sealed partial class MainWindow : Window
     // The drag under way on the canvas, if any.
     private Drag? drag;
 
+    // The file editor's highlighting, sharing the designer's grammars, and whether it's being filled, not typed in.
+    private readonly RegistryOptions highlightOptions;
+    private readonly TextMate.Installation fileHighlighting;
+    private bool loadingFile;
+
+    // The files last marked unsaved in the list.
+    private string[] shownUnsaved = [];
+
     // The menu bar over the canvas, the document its menus came from, and whether it holds the pointer.
     private readonly MenuBar documentMenus = new();
     private UIDocument? menusOf;
@@ -81,6 +89,7 @@ public sealed partial class MainWindow : Window
                      (Key.O, KeyModifiers.Control, () => _ = PickAndOpenAsync()),
                      (Key.O, KeyModifiers.Control | KeyModifiers.Shift, () => _ = PickAndOpenBundleAsync()),
                      (Key.S, KeyModifiers.Control, () => Save()),
+                     (Key.S, KeyModifiers.Control | KeyModifiers.Shift, () => SaveAll()),
                      (Key.Q, KeyModifiers.Control, Close),
                      (Key.Z, KeyModifiers.Control, Undo),
                      (Key.Z, KeyModifiers.Control | KeyModifiers.Shift, Redo),
@@ -97,9 +106,15 @@ public sealed partial class MainWindow : Window
 
         MergeTitleBar(TitleBars.Merges());
         Editor.TextArea.Caret.PositionChanged += (_, _) => ShowCaret();
+        FileEditor.TextArea.Caret.PositionChanged += (_, _) => ShowCaret();
 
+        // A file with edits not yet saved is marked, as editors mark them.
         FileTree.ItemTemplate = new FuncTreeDataTemplate<BundleItem>(
-            (item, _) => new TextBlock { Text = item.Name, FontWeight = item.IsFolder ? FontWeight.SemiBold : FontWeight.Normal },
+            (item, _) => new TextBlock
+            {
+                Text = Bundle?.IsUnsaved(item.Path) == true ? $"{item.Name} ●" : item.Name,
+                FontWeight = item.IsFolder ? FontWeight.SemiBold : FontWeight.Normal,
+            },
             item => item.Children);
 
         // Clicking the canvas focuses it for the arrow keys; scrolling it into view then would slide it under the
@@ -117,10 +132,15 @@ public sealed partial class MainWindow : Window
         ShowPanels();
 
         // XML highlighting, in colors that follow Roundhouse's own light or dark theme.
-        RegistryOptions options = new(HighlightTheme());
-        var highlighting = Editor.InstallTextMate(options);
-        highlighting.SetGrammar(options.GetScopeByLanguageId(options.GetLanguageByExtension(".xml").Id));
-        ActualThemeVariantChanged += (_, _) => highlighting.SetTheme(options.LoadTheme(HighlightTheme()));
+        highlightOptions = new(HighlightTheme());
+        var highlighting = Editor.InstallTextMate(highlightOptions);
+        highlighting.SetGrammar(highlightOptions.GetScopeByLanguageId(highlightOptions.GetLanguageByExtension(".xml").Id));
+        fileHighlighting = FileEditor.InstallTextMate(highlightOptions);
+        ActualThemeVariantChanged += (_, _) =>
+        {
+            highlighting.SetTheme(highlightOptions.LoadTheme(HighlightTheme()));
+            fileHighlighting.SetTheme(highlightOptions.LoadTheme(HighlightTheme()));
+        };
 
         redraw.Tick += (_, _) =>
         {
@@ -173,19 +193,23 @@ public sealed partial class MainWindow : Window
     /// <summary>Undoes the last change to the text, from typing or the designer alike, and redraws.</summary>
     public void Undo()
     {
-        if (!Editor.CanUndo)
+        var editor = ActiveEditor;
+        if (!editor.CanUndo)
             return;
-        Editor.Undo();
-        RenderNow();
+        editor.Undo();
+        if (ReferenceEquals(editor, Editor))
+            RenderNow();
     }
 
     /// <summary>Redoes what <see cref="Undo"/> undid, and redraws.</summary>
     public void Redo()
     {
-        if (!Editor.CanRedo)
+        var editor = ActiveEditor;
+        if (!editor.CanRedo)
             return;
-        Editor.Redo();
-        RenderNow();
+        editor.Redo();
+        if (ReferenceEquals(editor, Editor))
+            RenderNow();
     }
 
     /// <summary>The document open, as a full path, or <see langword="null"/>.</summary>
@@ -301,10 +325,10 @@ public sealed partial class MainWindow : Window
 
         KeepEdit();
         if (bundle != Bundle?.Root)
-        {
             Bundle = bundle is null ? null : new OpenBundle(bundle);
-            ShowFiles();
-        }
+
+        // Read the folder again, even for the bundle already open, so files added since are listed.
+        ShowFiles();
 
         if (full == bundle)
         {
@@ -336,7 +360,7 @@ public sealed partial class MainWindow : Window
             KeepEdit();
             CurrentFile = full;
             SelectInFiles(full);
-            ShowPlaceholder(full);
+            ShowOtherFile(full);
             return;
         }
 
@@ -356,8 +380,7 @@ public sealed partial class MainWindow : Window
 
         CurrentFile = full;
         SelectInFiles(full);
-        CenterGrid.IsVisible = true;
-        FilePlaceholder.IsVisible = false;
+        ShowCenter(CenterGrid);
         path = full;
         Document = document;
         Selection = null;
@@ -372,8 +395,79 @@ public sealed partial class MainWindow : Window
         RenderNow();
     }
 
-    /// <summary>Shows that Roundhouse has no editor for a file, or that a bundle has nothing to show.</summary>
-    private void ShowPlaceholder(string? file)
+    /// <summary>The picture files the image view shows, by extension.</summary>
+    public static IReadOnlyList<string> PictureExtensions { get; } = [".png", ".jpg", ".jpeg", ".bmp", ".gif"];
+
+    /// <summary>The editor showing: the file editor while a text file is open, and otherwise the designer's text.</summary>
+    private AvaloniaEdit.TextEditor ActiveEditor => FileEditor.IsVisible ? FileEditor : Editor;
+
+    /// <summary>
+    /// Shows a file other than an interface: a picture as it is, text in the file editor, highlighted as Lua or XML
+    /// where it's either, and anything else as a file Roundhouse can't edit.
+    /// </summary>
+    private void ShowOtherFile(string file)
+    {
+        LeaveDesigner(file);
+        if (PictureExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
+        {
+            try
+            {
+                FileImage.Source = new Bitmap(file);
+                ShowCenter(ImageView);
+                StatusText.Text = $"{Path.GetFileName(file)}, {FileImage.Source.Size.Width:0} by {FileImage.Source.Size.Height:0}.";
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+            {
+                ShowPlaceholder(file, $"{Path.GetFileName(file)} couldn't be shown: {exception.Message}");
+            }
+
+            return;
+        }
+
+        if (Bundle is not { } open)
+        {
+            ShowPlaceholder(file, $"Open {Path.GetFileName(file)}'s bundle to edit it.");
+            return;
+        }
+
+        string text;
+        try
+        {
+            text = open.Text(file);
+        }
+        catch (InvalidDataException)
+        {
+            ShowPlaceholder(file, $"{Path.GetFileName(file)} isn't text, so Roundhouse can't edit it.");
+            return;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ShowPlaceholder(file, $"{Path.GetFileName(file)} couldn't be read: {exception.Message}");
+            return;
+        }
+
+        loadingFile = true;
+        FileEditor.Text = text;
+        FileEditor.Document.UndoStack.ClearAll();
+        loadingFile = false;
+        var language = highlightOptions.GetLanguageByExtension(Path.GetExtension(file));
+        fileHighlighting.SetGrammar(language is null ? null : highlightOptions.GetScopeByLanguageId(language.Id));
+        ShowCenter(FileEditor);
+        StatusText.Text = "";
+        ShowUndo();
+        ShowCaret();
+    }
+
+    /// <summary>Shows that Roundhouse has no editor for a file, or that a bundle has nothing to show, and why.</summary>
+    private void ShowPlaceholder(string? file, string? why = null)
+    {
+        LeaveDesigner(file);
+        ShowCenter(FilePlaceholder);
+        FilePlaceholder.Text = why ?? $"{Bundle?.Name} has no interface or Info.xml to show; choose a file.";
+    }
+
+    /// <summary>Leaves the designer's document, for a file it doesn't show, and names the file in the bar.</summary>
+    private void LeaveDesigner(string? file)
     {
         path = null;
         Document = null;
@@ -385,16 +479,77 @@ public sealed partial class MainWindow : Window
         Editor.Text = "";
         Editor.Document.UndoStack.ClearAll();
         loading = false;
-        CenterGrid.IsVisible = false;
-        FilePlaceholder.IsVisible = true;
-        FilePlaceholder.Text = file is null
-            ? $"{Bundle?.Name} has no interface or Info.xml to show; choose a file."
-            : $"Roundhouse can't edit {Path.GetFileName(file)} yet.";
         Title = $"{Path.GetFileName(file ?? Bundle?.Root ?? "")} — {ProductTitle}";
         DocumentTitle.Text = file is null ? Bundle?.Name ?? "Roundhouse" : BarTitle(file);
-        StatusText.Text = file is null ? "" : $"{Path.GetFileName(file)} is in {Bundle?.Name ?? Path.GetDirectoryName(file)}.";
+        StatusText.Text = "";
         ShowSelection();
         ShowPanels();
+    }
+
+    /// <summary>Shows one of the centre's views: the designer, the file editor, a picture, or a placeholder.</summary>
+    private void ShowCenter(Control shown)
+    {
+        foreach (var view in (Control[])[CenterGrid, FileEditor, ImageView, FilePlaceholder])
+            view.IsVisible = ReferenceEquals(view, shown);
+    }
+
+    private void OnFileTextChanged(object? sender, EventArgs e)
+    {
+        if (loadingFile || Bundle is not { } open || CurrentFile is not { } file)
+            return;
+
+        open.Edit(file, FileEditor.Text);
+        ShowUnsaved();
+        ShowUndo();
+    }
+
+    /// <summary>
+    /// Marks the files with unsaved edits in the list, redrawing it only when which ones has changed, so typing
+    /// doesn't rebuild it.
+    /// </summary>
+    private void ShowUnsaved()
+    {
+        var unsaved = Bundle?.Unsaved.Order(StringComparer.Ordinal).ToArray() ?? [];
+        if (unsaved.SequenceEqual(shownUnsaved))
+            return;
+
+        shownUnsaved = unsaved;
+        ShowFiles();
+        if (CurrentFile is { } file)
+            SelectInFiles(file);
+    }
+
+    /// <summary>
+    /// Saves every file of the bundle with edits, the designer's included; one that can't be saved keeps its edit,
+    /// and the status line names it.
+    /// </summary>
+    /// <returns>Whether every one was saved.</returns>
+    public bool SaveAll()
+    {
+        if (Bundle is not { } open)
+            return Save();
+
+        KeepEdit();
+        List<string> failed = [];
+        var saved = 0;
+        foreach (var file in open.Unsaved.ToList())
+        {
+            try
+            {
+                if (open.Save(file))
+                    saved++;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
+            {
+                failed.Add($"{Path.GetFileName(file)} ({exception.Message})");
+            }
+        }
+
+        StatusText.Text = failed.Count == 0
+            ? $"Saved {saved} {(saved == 1 ? "file" : "files")}."
+            : $"Saved {saved}; couldn't save {string.Join(", ", failed)}.";
+        ShowUnsaved();
+        return failed.Count == 0;
     }
 
     /// <summary>
@@ -447,6 +602,22 @@ public sealed partial class MainWindow : Window
     /// <returns>Whether it was saved.</returns>
     public bool Save()
     {
+        if (FileEditor.IsVisible && Bundle is { } open && CurrentFile is { } file)
+        {
+            try
+            {
+                open.Save(file);
+                StatusText.Text = $"Saved {Path.GetFileName(file)}.";
+                ShowUnsaved();
+                return true;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
+            {
+                StatusText.Text = $"{Path.GetFileName(file)} couldn't be saved: {exception.Message}";
+                return false;
+            }
+        }
+
         if (path is null)
             return false;
 
@@ -456,6 +627,7 @@ public sealed partial class MainWindow : Window
             document.Save(path);
             Bundle?.Edit(path, document.Text);
             StatusText.Text = $"Saved {Path.GetFileName(path)}.";
+            ShowUnsaved();
             return true;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
@@ -476,6 +648,8 @@ public sealed partial class MainWindow : Window
             return;
 
         var document = Read();
+        KeepEdit();
+        ShowUnsaved();
         ShowPanels();
         if (document.Script is not { } script)
         {
@@ -895,14 +1069,15 @@ public sealed partial class MainWindow : Window
             [
                 new MenuCommand("Open…", () => _ = PickAndOpenAsync(), Ctrl(Key.O)),
                 new MenuCommand("Open Bundle…", () => _ = PickAndOpenBundleAsync(), Ctrl(Key.O, KeyModifiers.Shift)),
-                new MenuCommand("Save", () => Save(), Ctrl(Key.S), HasDocument),
+                new MenuCommand("Save", () => Save(), Ctrl(Key.S), () => HasDocument() || FileEditor.IsVisible),
+                new MenuCommand("Save All", () => SaveAll(), Ctrl(Key.S, KeyModifiers.Shift), () => Bundle is not null || HasDocument()),
                 new MenuSeparator(),
                 new MenuCommand("Quit", Close, Ctrl(Key.Q)),
             ]),
             new("Edit",
             [
-                new MenuCommand("Undo", Undo, Ctrl(Key.Z), () => Editor.CanUndo),
-                new MenuCommand("Redo", Redo, Ctrl(Key.Z, KeyModifiers.Shift), () => Editor.CanRedo),
+                new MenuCommand("Undo", Undo, Ctrl(Key.Z), () => ActiveEditor.CanUndo),
+                new MenuCommand("Redo", Redo, Ctrl(Key.Z, KeyModifiers.Shift), () => ActiveEditor.CanRedo),
                 new MenuSeparator(),
                 new MenuCommand("Duplicate", () => DuplicateSelection(), Ctrl(Key.D), Selected),
                 new MenuCommand("Delete", () => DeleteSelection(), new KeyGesture(Key.Delete), Selected),
@@ -1040,7 +1215,20 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var simulator = new SimulatorWindow(CurrentFile, path is null ? null : Editor.Text);
+        // Every file's edits run, saved or not: the bundle's, or the document's own outside one.
+        KeepEdit();
+        Dictionary<string, string> edits = [];
+        if (Bundle is { } bundle)
+        {
+            foreach (var file in bundle.Unsaved)
+                edits[file] = bundle.Text(file);
+        }
+        else if (path is not null)
+        {
+            edits[path] = byteOrderMark + Editor.Text;
+        }
+
+        var simulator = new SimulatorWindow(CurrentFile, edits);
         Simulator = simulator;
         simulator.Closed += (_, _) =>
         {
@@ -1077,14 +1265,14 @@ public sealed partial class MainWindow : Window
 
     private void ShowUndo()
     {
-        UndoButton.IsEnabled = Editor.CanUndo;
-        RedoButton.IsEnabled = Editor.CanRedo;
+        UndoButton.IsEnabled = ActiveEditor.CanUndo;
+        RedoButton.IsEnabled = ActiveEditor.CanRedo;
     }
 
     private void ShowCaret()
     {
-        var caret = Editor.TextArea.Caret;
-        CaretText.Text = path is null ? "" : $"Ln {caret.Line}, Col {caret.Column}";
+        var caret = ActiveEditor.TextArea.Caret;
+        CaretText.Text = path is null && !FileEditor.IsVisible ? "" : $"Ln {caret.Line}, Col {caret.Column}";
     }
 
     private void OnZoomChanged(object? sender, RoutedEventArgs e)
