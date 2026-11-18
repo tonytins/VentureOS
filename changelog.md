@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.203
+
+- Roundhouse saves a `.uix` exactly as it was opened when you haven't changed it, byte order mark and line endings included, and keeps everything you didn't change when you have.
+- When VentureOS can't read a document, Roundhouse's status line also says that only its text can be edited until it can.
+
 ## 0.6.103
 
 - Roundhouse opens a `.uix` (`Roundhouse document.uix`, or Open… with Ctrl+O) and shows its text, highlighted, beside the window VentureOS would draw. The window redraws a moment after you stop typing. Text VentureOS wouldn't read keeps the last drawing, and the status line names the line that's wrong. Switch Dark and the accent to see either look, and Save (Ctrl+S) writes the text back.

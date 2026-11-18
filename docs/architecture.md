@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,245 tests, and 21 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,246 tests, and 24 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -764,9 +764,12 @@ instead:
 - `RemoveElement(index)` takes the element, and its line when it's alone
   on one.
 - `MoveElement(from, to)` moves an element exactly as written, which
-  changes what's drawn in front. Comments and blank lines stay where they
-  were, so moving an element away and back keeps every element and comment
-  but not always the blank lines between them.
+  changes what's drawn in front.
+- Both take the comments that describe the element with it: those right
+  above it, with no blank line between. A comment past a blank line, or
+  after another element on its line, stays, as do blank lines, so moving
+  an element away and back keeps every element and comment but not always
+  the blank lines between groups.
 
 Elements are named by their index among the root's children, or
 `UIDocument.Root`, since `<Window>` and `<Style>` don't always have names.
@@ -861,7 +864,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   AvaloniaEdit, with TextMate's XML highlighting, beside the same drawing,
   redrawn 300 ms after typing stops. Text `UIScript` refuses leaves the
   last drawing up and puts the reader's message, with its line, in the
-  status line. The Dark and accent switches set VentureOS's look
+  status line, saying only the text can be edited until VentureOS reads
+  it. The window holds the text as a `UIDocument` (`MainWindow.Document`),
+  read again as the canvas redraws, so a save keeps the file's byte order
+  mark and leaves a file nobody edited byte for byte. `Apply` shows an
+  edited document by replacing only the text that changed, so the editor
+  keeps its place and can undo it; the designer will edit through it. The Dark and accent switches set VentureOS's look
   (`DesktopAppearance.Use`) for Roundhouse's process and redraw; nothing is
   written to VentureOS's settings. Save writes the text exactly as edited.
 - **Windows.** `WindowManager` keeps the windows back to front. Pressing a
@@ -1294,6 +1302,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Interface formats and Roundhouse (§9): comments right above an element move and go with it; Roundhouse holds its text as a `UIDocument`, saving byte for byte, and `Apply` shows an edit as the change alone. 0.6.2xx is complete. |
 | 2026-11-18 | minor | Interface formats (§9): `UIDocument` adds, removes, and moves elements, laid out as their neighbours, leaving comments where they are. |
 | 2026-11-18 | minor | Interface formats (§9): `UIDocument` sets and removes attributes in place, laid out as the element's others are, refusing an edit VentureOS would refuse. |
 | 2026-11-18 | minor | Interface formats (§9): `FlatXml` records where each element and attribute sits in the text, and `UIDocument` holds a `.uix` as an editor does, written back byte for byte; the start of 0.6.2xx's round trip. |

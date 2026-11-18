@@ -92,7 +92,7 @@ public sealed class UIDocumentElementTests
     }
 
     [Fact]
-    public void RemovingAnElementWrittenOverSeveralLinesTakesThemAll()
+    public void RemovingAnElementTakesItsLinesAndTheCommentAboveIt()
     {
         var edited = Document.RemoveElement(2);
 
@@ -102,7 +102,6 @@ public sealed class UIDocumentElementTests
               <!-- The window. -->
               <Window width="200" height="120"/>
               <Text name="greeting" x="8" y="8" width="100" height="20" text="Hi"/>
-              <!-- The button. -->
             </UIScript>
             """, edited.Text);
     }
@@ -115,23 +114,51 @@ public sealed class UIDocumentElementTests
     }
 
     [Fact]
-    public void MovingAnElementKeepsItAsWrittenAndChangesWhatsInFront()
+    public void MovingAnElementTakesTheCommentAboveItAndChangesWhatsInFront()
     {
         var edited = Document.MoveElement(2, 1);
 
-        // The comment above the button stays where it was, as comments do.
         Assert.Equal("""
             <?xml version="1.0" encoding="UTF-8"?>
             <UIScript version="1">
               <!-- The window. -->
               <Window width="200" height="120"/>
+              <!-- The button. -->
               <Button name="ok" x="8" y="40" width="60"
                       height="24" text="OK"></Button>
               <Text name="greeting" x="8" y="8" width="100" height="20" text="Hi"/>
-              <!-- The button. -->
             </UIScript>
             """, edited.Text);
         Assert.Equal(["ok", "greeting"], edited.Script!.Controls.Select(control => control.Name));
+        Assert.Equal(Text, edited.MoveElement(1, 2).Text);
+    }
+
+    [Fact]
+    public void StackedCommentsTravelButOnesPastABlankLineOrAfterAnotherElementStay()
+    {
+        var document = UIDocument.Read("""
+            <UIScript>
+              <Window width="10" height="10"/> <!-- About the window. -->
+              <!-- A heading for what follows. -->
+
+              <!-- First about the region. -->
+              <!-- Then more. -->
+              <Region name="r" x="0" y="0" width="5" height="5"/>
+              <Style name="s"/>
+            </UIScript>
+            """);
+
+        Assert.Equal("""
+            <UIScript>
+              <Window width="10" height="10"/> <!-- About the window. -->
+              <!-- A heading for what follows. -->
+
+              <Style name="s"/>
+              <!-- First about the region. -->
+              <!-- Then more. -->
+              <Region name="r" x="0" y="0" width="5" height="5"/>
+            </UIScript>
+            """, document.MoveElement(1, 2).Text);
     }
 
     [Fact]

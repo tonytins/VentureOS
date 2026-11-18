@@ -207,8 +207,8 @@ public sealed class UIDocument
     }
 
     /// <summary>
-    /// Removes the root's child at <paramref name="index"/>; one on a line of its own takes the line. Comments stay
-    /// where they are.
+    /// Removes the root's child at <paramref name="index"/> with the comments that describe it (those right above it,
+    /// with no blank line between); one on a line of its own takes the line.
     /// </summary>
     /// <returns>The edited document; this one is unchanged.</returns>
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
@@ -223,7 +223,8 @@ public sealed class UIDocument
 
     /// <summary>
     /// Moves the root's child at <paramref name="from"/> so it's at <paramref name="to"/>, written exactly as it
-    /// was. Later controls are drawn over earlier ones, so this changes what's in front.
+    /// was, with the comments that describe it (those right above it, with no blank line between). Later controls
+    /// are drawn over earlier ones, so this changes what's in front.
     /// </summary>
     /// <returns>The edited document; this one is unchanged, and it's returned as is when the element doesn't move.</returns>
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
@@ -237,7 +238,7 @@ public sealed class UIDocument
         if (from == to)
             return this;
 
-        var element = xml.Children[from].Source!.Span.Of(Text);
+        var element = Block(Text, xml, from).Of(Text);
         var removed = Remove(Text, xml, from);
 
         // The document between the two steps can lack something VentureOS needs, so it's only read as XML.
@@ -260,9 +261,7 @@ public sealed class UIDocument
             throw new InvalidOperationException("The root is written as <UIScript/>, so it has nowhere to hold an element.");
 
         // The new element follows the one before it, or the root's start tag, and takes its neighbour's layout.
-        var after = index > 0
-            ? children[index - 1].Source!.Span.End
-            : text.IndexOf('>', root.Attributes.Count > 0 ? root.Attributes[^1].Span.End : root.NameEnd) + 1;
+        var after = index > 0 ? children[index - 1].Source!.Span.End : ContentStart(text, root);
         var neighbour = index < children.Count ? children[index] : children.Count > 0 ? children[^1] : null;
 
         string separator;
@@ -279,7 +278,7 @@ public sealed class UIDocument
 
     private static string Remove(string text, FlatXmlDocument xml, int index)
     {
-        var span = xml.Children[index].Source!.Span;
+        var span = Block(text, xml, index);
         var start = span.Start;
         var end = span.End;
 
@@ -300,6 +299,43 @@ public sealed class UIDocument
 
         return string.Concat(text.AsSpan(0, start), text.AsSpan(end));
     }
+
+    /// <summary>
+    /// An element with the comments that describe it: those right above it, each starting its own line, with no
+    /// blank line between, or one just before it on its own line.
+    /// </summary>
+    private static FlatXmlSpan Block(string text, FlatXmlDocument xml, int index)
+    {
+        var span = xml.Children[index].Source!.Span;
+        var floor = index > 0 ? xml.Children[index - 1].Source!.Span.End : ContentStart(text, xml.Root.Source!);
+
+        // Between two elements there's only space and comments, as the reader checked, so they're found going forward.
+        List<FlatXmlSpan> comments = [];
+        for (var at = text.IndexOf("<!--", floor, span.Start - floor, StringComparison.Ordinal); at >= 0;)
+        {
+            var close = text.IndexOf("-->", at + 4, span.Start - at - 4, StringComparison.Ordinal) + 3;
+            comments.Add(new(at, close - at));
+            at = close >= span.Start ? -1 : text.IndexOf("<!--", close, span.Start - close, StringComparison.Ordinal);
+        }
+
+        var start = span.Start;
+        for (var before = comments.Count - 1; before >= 0; before--)
+        {
+            var comment = comments[before];
+            var gap = text.AsSpan(comment.End, start - comment.End);
+            var breaks = gap.Count('\n');
+            LineIndent(text, comment.Start, out var ownLine);
+            if (breaks > 1 || (breaks == 1 && !ownLine))
+                break;
+            start = comment.Start;
+        }
+
+        return new(start, span.End - start);
+    }
+
+    /// <summary>Where the root's children begin: just after its start tag.</summary>
+    private static int ContentStart(string text, FlatXmlElementSource root) =>
+        text.IndexOf('>', root.Attributes.Count > 0 ? root.Attributes[^1].Span.End : root.NameEnd) + 1;
 
     /// <summary>The spaces and tabs before <paramref name="position"/> on its line, and whether nothing else is.</summary>
     private static string LineIndent(string text, int position, out bool ownLine)

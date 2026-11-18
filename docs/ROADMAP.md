@@ -171,7 +171,7 @@ Roundhouse only.
 
 **0.6.2xx, round trip**
 
-- [ ] A document model that writes a `.uix` back with only what was edited
+- [x] A document model that writes a `.uix` back with only what was edited
   changed, keeping comments, unknown attributes, and order. A document with
   an element it refuses opens read-only, saying why.
 
@@ -238,6 +238,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | patch | 0.6.2xx's round trip is done: `UIDocument` edits attributes and elements in place, refusing what VentureOS refuses, and Roundhouse saves through it. The band is complete. |
 | 2026-11-18 | patch | 0.6.1xx's preview is done: Roundhouse opens a `.uix` and redraws it beside its text as you type, in light and dark. The band is complete. |
 | 2026-11-18 | minor | 0.6 is Izumo, Roundhouse, from its approved design, in five bands, designer first; apps no longer ask for `ui`. 0.7 will be Seto. |
 | 2026-11-18 | minor | 0.5, Cassiopeia, is released as `v0.5.506`. Roundhouse is next, being planned. |

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
@@ -34,6 +35,9 @@ public sealed partial class MainWindow : Window
     private readonly SkiaFonts fonts = SkiaFonts.LoadShipped();
     private string? path;
     private bool loading;
+
+    // The editor shows the text without a byte order mark, and the document keeps it, so a save leaves it as it was.
+    private string byteOrderMark = "";
 
     public MainWindow()
     {
@@ -90,32 +94,71 @@ public sealed partial class MainWindow : Window
         set => Editor.Text = value;
     }
 
+    /// <summary>
+    /// The document as last read from the editor's text, with what VentureOS reads from it, or why it refuses it;
+    /// <see langword="null"/> before one is open. It catches up with typing when the canvas redraws.
+    /// </summary>
+    public UIDocument? Document { get; private set; }
+
+    /// <summary>
+    /// Shows an edited document, such as one the designer changed, by replacing only the text that changed, so the
+    /// editor keeps its place and can undo the edit.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">No document is open.</exception>
+    public void Apply(UIDocument edited)
+    {
+        ArgumentNullException.ThrowIfNull(edited);
+        if (path is null)
+            throw new InvalidOperationException("Open a document before editing one.");
+
+        var text = WithoutByteOrderMark(edited.Text);
+        var current = Editor.Text;
+        var prefix = 0;
+        var limit = Math.Min(current.Length, text.Length);
+        while (prefix < limit && current[prefix] == text[prefix])
+            prefix++;
+        var suffix = 0;
+        while (suffix < limit - prefix && current[^(suffix + 1)] == text[^(suffix + 1)])
+            suffix++;
+
+        loading = true;
+        Editor.Document.Replace(prefix, current.Length - prefix - suffix, text.Substring(prefix, text.Length - prefix - suffix));
+        loading = false;
+        RenderNow();
+    }
+
     /// <summary>Opens a document and draws it; one that can't be read says why.</summary>
     public void Open(string file)
     {
         ArgumentNullException.ThrowIfNull(file);
         var full = Path.GetFullPath(file);
-        string text;
+        UIDocument document;
         try
         {
-            text = File.ReadAllText(full);
+            document = UIDocument.Load(full);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             StatusText.Text = $"{file} couldn't be opened: {exception.Message}";
             return;
         }
 
         path = full;
+        Document = document;
+        byteOrderMark = document.Text.StartsWith('\uFEFF') ? "\uFEFF" : "";
         loading = true;
-        Editor.Text = text;
+        Editor.Text = WithoutByteOrderMark(document.Text);
+        Editor.Document.UndoStack.ClearAll();
         loading = false;
         SaveButton.IsEnabled = true;
         Title = $"{Path.GetFileName(full)} — {ProductTitle}";
         RenderNow();
     }
 
-    /// <summary>Saves the text exactly as it is in the editor.</summary>
+    /// <summary>
+    /// Saves the text exactly as it is in the editor, even text VentureOS would refuse, with the byte order mark the
+    /// file had; a file nobody edited is saved byte for byte.
+    /// </summary>
     /// <returns>Whether it was saved.</returns>
     public bool Save()
     {
@@ -124,11 +167,11 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            File.WriteAllText(path, Editor.Text);
+            Read().Save(path);
             StatusText.Text = $"Saved {Path.GetFileName(path)}.";
             return true;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
         {
             StatusText.Text = $"{Path.GetFileName(path)} couldn't be saved: {exception.Message}";
             return false;
@@ -145,15 +188,12 @@ public sealed partial class MainWindow : Window
         if (path is null)
             return;
 
-        UIScript script;
-        try
-        {
-            script = UIScript.Parse(Editor.Text);
-        }
-        catch (UIScriptException exception)
+        var document = Read();
+        if (document.Script is not { } script)
         {
             // The reader's message already starts with the line it stopped on.
-            StatusText.Text = $"{exception.Message.TrimEnd('.')}. The canvas shows the last version VentureOS could read.";
+            StatusText.Text = $"{document.Problem!.Message.TrimEnd('.')}. The canvas shows the last version VentureOS "
+                + "could read, and only the text can be edited until VentureOS reads it.";
             return;
         }
 
@@ -163,6 +203,17 @@ public sealed partial class MainWindow : Window
         PreviewImage.Source = ToBitmap(painter);
         StatusText.Text = problems.Count == 0 ? "VentureOS reads this document." : string.Join(" ", problems);
     }
+
+    /// <summary>Reads the editor's text as the document, keeping the byte order mark the file had.</summary>
+    private UIDocument Read()
+    {
+        var text = byteOrderMark + Editor.Text;
+        if (Document?.Text != text)
+            Document = UIDocument.Read(text);
+        return Document;
+    }
+
+    private static string WithoutByteOrderMark(string text) => text.StartsWith('\uFEFF') ? text[1..] : text;
 
     private ThemeName HighlightTheme() => ActualThemeVariant == ThemeVariant.Dark ? ThemeName.DarkPlus : ThemeName.LightPlus;
 

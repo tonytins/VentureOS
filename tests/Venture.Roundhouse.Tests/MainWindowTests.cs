@@ -148,6 +148,61 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void AnUneditedDocumentIsSavedByteForByteWithItsByteOrderMark() => TestApp.Run(() =>
+    {
+        byte[] original = [0xEF, 0xBB, 0xBF, .. File.ReadAllBytes(document)];
+        File.WriteAllBytes(document, original);
+        MainWindow window = new();
+        window.Show();
+        window.Open(document);
+
+        Assert.False(window.Text.StartsWith('\uFEFF'));
+        Assert.True(window.Save());
+        Assert.Equal(original, File.ReadAllBytes(document));
+        window.Close();
+    });
+
+    [Fact]
+    public void TheDocumentFollowsTheTextAndSaysWhenOnlyTheTextCanBeEdited() => TestApp.Run(() =>
+    {
+        MainWindow window = new();
+        window.Show();
+        window.Open(document);
+        Assert.True(window.Document!.IsEditable);
+
+        window.Text = window.Text.Replace("</UIScript>", "  <Hologram/>\n</UIScript>", StringComparison.Ordinal);
+        window.RenderNow();
+
+        Assert.False(window.Document.IsEditable);
+        Assert.Contains("Hologram", window.Status);
+        Assert.Contains("only the text can be edited", window.Status);
+        window.Close();
+    });
+
+    [Fact]
+    public void AnAppliedEditChangesOnlyItsTextRedrawsAndCanBeUndone() => TestApp.Run(() =>
+    {
+        MainWindow window = new();
+        window.Show();
+        window.Open(document);
+        var before = window.Text;
+        var drawn = window.Preview;
+        var equals = window.Document!.Xml!.Children.ToList().FindIndex(element => element["name"] == "equals");
+
+        window.Apply(window.Document.SetAttribute(equals, "text", "Go"));
+
+        Assert.Equal(before.Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal), window.Text);
+        Assert.Equal("Go", window.Document.Script!.Control("equals")!.Text!.Value);
+        Assert.NotSame(drawn, window.Preview);
+
+        var editor = window.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+        Assert.True(editor.CanUndo);
+        editor.Undo();
+        Assert.Equal(before, window.Text);
+        window.Close();
+    });
+
     private static uint Pixel(WriteableBitmap bitmap, int x, int y)
     {
         using var locked = bitmap.Lock();
