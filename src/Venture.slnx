@@ -10,5 +10,7 @@
   <Project Path="Venture.OS.Kernel\Venture.OS.Kernel.csproj" />
   <Project Path="Venture.OS.Common\Venture.OS.Common.csproj" />
   <Project Path="Venture.OS.Interface/Venture.OS.Interface.csproj" />
+  <Project Path="Venture.Roundhouse/Venture.Roundhouse.csproj" />
   <Project Path="../tests/Venture.OS.Common.Tests/Venture.OS.Common.Tests.csproj" />
+  <Project Path="../tests/Venture.Roundhouse.Tests/Venture.Roundhouse.Tests.csproj" />
 </Solution>

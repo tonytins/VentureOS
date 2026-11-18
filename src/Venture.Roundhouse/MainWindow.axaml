@@ -1,0 +1,8 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Venture.Roundhouse.MainWindow"
+        Width="1100" Height="720" MinWidth="640" MinHeight="400">
+  <!-- Empty until the preview, the next phase, gives it the document's text and its canvas. -->
+  <TextBlock x:Name="Welcome" HorizontalAlignment="Center" VerticalAlignment="Center"
+             Text="Open a .uix file to see it as VentureOS draws it."/>
+</Window>

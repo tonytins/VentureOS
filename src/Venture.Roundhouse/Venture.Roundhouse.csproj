@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Roundhouse, VentureOS's IDE, for Linux, macOS, and Windows. It draws with VentureOS's own code, so it references
+    Venture.OS.Common and Venture.OS.Interface, but they never reference it: Avalonia stays here, and the kernel's
+    build doesn't change. See docs/design/2026-11-18-roundhouse-design.md.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Roundhouse</AssemblyName>
+    <RootNamespace>Venture.Roundhouse</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Roundhouse shares VentureOS's version, from GitInfo.txt at the repository root, as the kernel does. -->
+    <GitIgnoreTagVersion>true</GitIgnoreTagVersion>
+    <GitIgnoreBranchVersion>true</GitIgnoreBranchVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Approved for Roundhouse only. -->
+    <PackageReference Include="Avalonia" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
+    <PackageReference Include="GitInfo" Version="3.6.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Venture.OS.Common/Venture.OS.Common.csproj" />
+    <ProjectReference Include="../Venture.OS.Interface/Venture.OS.Interface.csproj" />
+  </ItemGroup>
+
+</Project>

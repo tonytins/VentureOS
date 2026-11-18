@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Venture.Roundhouse.Tests</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- xUnit v3 test projects are executables. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Runs on Microsoft.Testing.Platform, opted into by global.json at the repository root. -->
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
+    <!--
+      Drives Roundhouse's windows off-screen, as Passenger's tests do, rendering with Skia. Avalonia.Headless.XUnit
+      is built for xUnit v3 3.x and fails with 4.x, so tests hand their work to a headless session themselves.
+    -->
+    <PackageReference Include="Avalonia.Headless" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Skia" Version="12.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Venture.Roundhouse/Venture.Roundhouse.csproj" />
+  </ItemGroup>
+
+</Project>

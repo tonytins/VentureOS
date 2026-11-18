@@ -127,7 +127,7 @@ and the project file, and nothing in the shell.**
 ```text
 VentureOS/
 ├─ src/
-│  ├─ Venture.slnx                 the solution: the three projects below and the tests
+│  ├─ Venture.slnx                 the solution: the four projects below and the tests
 │  ├─ Venture.OS.Kernel/           the kernel (Cosmos SDK): package pins and CosmosKernelClass in Venture.OS.Kernel.csproj
 │  │  ├─ Kernel/                   Venture.OS.Kernel: VentureKernel (boot and the shell loop), KernelLog, KernelPanic
 │  │  ├─ Startup/                  Venture.OS.Startup: Bootstrap (the boot steps) and BootRamDisk
@@ -145,10 +145,11 @@ VentureOS/
 │  │  ├─ Bundles/                  Venture.OS.Bundles: Bundle (Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
 │  │                               and UiLibrary (venture.ui), all drawn through IPainter
-│  └─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
-│     ├─ UIScript.cs               Venture.OS.Interface: .uix (UIScript) documents, with menus, sidebars, and style roles
-│     ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
-│     └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
+│  ├─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
+│  │  ├─ UIScript.cs               Venture.OS.Interface: .uix (UIScript) documents, with menus, sidebars, and style roles
+│  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
+│  │  └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
+│  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
 ├─ rootfs/                        files built into the kernel and installed at boot
 │  ├─ system/                      installed to /mnt/system, which nothing may change
 │  │  ├─ init.lua                  runs once after boot; prints the help hint
@@ -161,7 +162,8 @@ VentureOS/
 │     ├─ apps/                     Calculator, Notes (the sample app), and TextEdit
 │     └─ settings/appearance.xml   the look a boot starts with, which Settings and appearance change
 ├─ tests/
-│  └─ Venture.OS.Common.Tests/     xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with rootfs/ copied in
+│  ├─ Venture.OS.Common.Tests/     xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with rootfs/ copied in
+│  └─ Venture.Roundhouse.Tests/    xUnit v3 tests that drive Roundhouse off-screen with Avalonia.Headless
 ├─ docs/                          architecture, roadmap, scorecard, the app guide, and the UIScript drafts
 ├─ .agents/skills/                C# and Cosmos guidance for agents
 ├─ GitInfo.txt                    the base version, which every commit counts up from
@@ -1238,6 +1240,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Layout (§2): Roundhouse's projects, `src/Venture.Roundhouse` (Avalonia 12) and `tests/Venture.Roundhouse.Tests` (headless), in the solution; the kernel's build doesn't change. |
 | 2026-11-18 | minor | No `ui` scope (§9): apps open windows without asking, and `ui` is accepted and ignored; every script gets `venture.ui.alert`, `preview`, and `launch` through `ISystemInfo.Desktop`, an alert printed without the desktop on the screen. |
 | 2026-11-18 | minor | Docs: the UIScript drafts move to `docs/uiscript/`, whose README says VentureOS's UIScript is a superset of Hudini's and lists what it adds; Hudini adopted the menus, sidebar, and styles drafts, which say so; a new title bar draft covers `subtitle`, and toolbar items' `image` and `placement`. |
 | 2026-11-17 | minor | Automatic dark mode (§9): an `auto` look switches light and dark by the clock as each minute turns; Settings and `appearance auto --from --until` set it. Every band of 0.5 is done. |

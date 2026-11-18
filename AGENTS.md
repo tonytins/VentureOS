@@ -32,8 +32,14 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   for Hudini; the flat XML reader (`Xml/`); and a transitional reader for  
   CST string tables (`Strings/`), until CST.NET follows the new CST  
   specification. It references nothing but the BCL.
+- `src/Venture.Roundhouse` is Roundhouse, VentureOS's IDE: an Avalonia app  
+  for Linux, macOS, and Windows that draws with `Venture.OS.Common`. Avalonia,  
+  AvaloniaEdit, and its TextMate add-on are approved for it alone; the  
+  VentureOS projects never reference them. See  
+  [its design](docs/design/2026-11-18-roundhouse-design.md).
 - `tests/Venture.OS.Common.Tests` covers `Venture.OS.Common` and  
-  `Venture.OS.Interface` with xUnit v3.
+  `Venture.OS.Interface` with xUnit v3, and `tests/Venture.Roundhouse.Tests`  
+  drives Roundhouse off-screen with `Avalonia.Headless`.
 
 [docs/architecture.md](docs/architecture.md) explains how the system works,  
 [docs/ROADMAP.md](docs/ROADMAP.md) tracks releases and ideas, and  
@@ -46,6 +52,7 @@ Never commit build output (`bin/`, `obj/`, `output-*/`, `*.iso`, `*.img`).
 
 ```sh
 dotnet test --project tests/Venture.OS.Common.Tests   # all tests must pass
+dotnet test --project tests/Venture.Roundhouse.Tests  # Roundhouse's, off-screen
 cosmos check                                        # always before building
 cosmos build -p src/Venture.OS.Kernel               # no new warnings
 ./run.sh                                            # boots x64 in QEMU; --headless for serial only
