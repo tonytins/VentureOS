@@ -71,6 +71,8 @@ dotnet run --project src/Venture.Roundhouse -- rootfs/user/apps/Calculator.app/C
 dotnet test --project tests/Venture.Roundhouse.Tests
 ```
 
+Roundhouse keeps a log, shown in its Log tab and written to a file a day, kept for a week, in its own folder of your local application data (`~/.local/share/Roundhouse/logs` on Linux): what it opened, saved, and ran, what VentureOS's apps printed in Run, and any error.
+
 Run ▸ Run (Ctrl+R) runs VentureOS's desktop in a window beside the designer, with the app you're designing open as you've edited it, saved or not. Each run starts from a fresh copy of VentureOS's files, and an app's files stay inside that copy.
 
 To draw a document into a PNG file without opening a window:

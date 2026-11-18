@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.504
+
+- Opening another bundle while one is open in the designer no longer crashes Roundhouse.
+- Leaving a bundle with unsaved edits, by opening another, making a new app, or closing Roundhouse, asks first: Save All, Don't Save, or Cancel.
+- A bundle's `Info.xml` shows its form above its XML, in the same Text tab an interface's XML is in; each follows the other, and Undo takes back a change made in the form. An `Info.xml` VentureOS can't read shows why in the form's place, over its text to fix. Edit as Text is gone, since the text is always there.
+- A Log tab beside Text shows what Roundhouse did and what VentureOS's apps printed in Run, and Roundhouse keeps the same log in a file. An error nothing caught is logged and reported in the status line instead of closing Roundhouse.
+
 ## 0.6.503
 
 - Roundhouse's File ▸ New App (Ctrl+N) makes a window app to start from: give it a name, an identifier (suggested from the name), and a place, and it opens in the designer, ready for Run. Its button counts its presses. A name or identifier VentureOS wouldn't take is explained in the dialog, and nothing is made.

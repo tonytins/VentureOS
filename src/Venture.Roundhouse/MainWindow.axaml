@@ -183,6 +183,10 @@
       </Grid>
       <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
 
+      <!--
+        The centre: what's open on top (the canvas, the Info.xml form, another file's editor, a picture), and below,
+        the Text tab, the XML of a .uix or Info.xml, beside the Log tab.
+      -->
       <Grid x:Name="CenterGrid" Grid.Column="2" RowDefinitions="*,1,240">
         <ScrollViewer x:Name="CanvasScroller" Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
           <!-- The selection is drawn over the canvas by Roundhouse, never into VentureOS's pixels. -->
@@ -195,24 +199,40 @@
             </Grid>
           </LayoutTransformControl>
         </ScrollViewer>
+        <!-- A bundle's other files: text, such as Lua, in an editor of its own, and pictures as they are. -->
+        <edit:TextEditor x:Name="FileEditor" Grid.Row="0" IsVisible="False" ShowLineNumbers="True"
+                         FontFamily="Cascadia Code,Fira Code,monospace" FontSize="13" TextChanged="OnFileTextChanged"/>
+        <ScrollViewer x:Name="ImageView" Grid.Row="0" IsVisible="False" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+          <Image x:Name="FileImage" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16"
+                 RenderOptions.BitmapInterpolationMode="None"/>
+        </ScrollViewer>
+        <!-- A bundle's Info.xml, as a form over its text, or why VentureOS refuses it. -->
+        <ScrollViewer x:Name="InfoView" Grid.Row="0" IsVisible="False" HorizontalScrollBarVisibility="Disabled">
+          <bundles:InfoForm x:Name="InfoForm"/>
+        </ScrollViewer>
+        <!-- A file Roundhouse shows no editor for. -->
+        <TextBlock x:Name="FilePlaceholder" Grid.Row="0" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextWrapping="Wrap" TextAlignment="Center" Opacity="0.6" Margin="40"/>
+
         <GridSplitter x:Name="TextSplitter" Grid.Row="1" ResizeDirection="Rows"/>
-        <edit:TextEditor x:Name="Editor" Grid.Row="2" ShowLineNumbers="True" FontFamily="Cascadia Code,Fira Code,monospace"
-                         FontSize="13" TextChanged="OnTextChanged"/>
+        <TabControl x:Name="BottomTabs" Grid.Row="2" Padding="0">
+          <TabControl.Styles>
+            <Style Selector="TabItem">
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="MinHeight" Value="28"/>
+              <Setter Property="Padding" Value="10,2"/>
+            </Style>
+          </TabControl.Styles>
+          <TabItem x:Name="TextTab" Header="Text">
+            <edit:TextEditor x:Name="Editor" ShowLineNumbers="True" FontFamily="Cascadia Code,Fira Code,monospace"
+                             FontSize="13" TextChanged="OnTextChanged"/>
+          </TabItem>
+          <TabItem x:Name="LogTab" Header="Log">
+            <edit:TextEditor x:Name="LogView" IsReadOnly="True" FontFamily="Cascadia Code,Fira Code,monospace" FontSize="12"
+                             WordWrap="False"/>
+          </TabItem>
+        </TabControl>
       </Grid>
-      <!-- A bundle's other files: text, such as Lua, in an editor of its own, and pictures as they are. -->
-      <edit:TextEditor x:Name="FileEditor" Grid.Column="2" IsVisible="False" ShowLineNumbers="True"
-                       FontFamily="Cascadia Code,Fira Code,monospace" FontSize="13" TextChanged="OnFileTextChanged"/>
-      <ScrollViewer x:Name="ImageView" Grid.Column="2" IsVisible="False" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-        <Image x:Name="FileImage" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16"
-               RenderOptions.BitmapInterpolationMode="None"/>
-      </ScrollViewer>
-      <!-- A bundle's Info.xml, as a form. -->
-      <ScrollViewer x:Name="InfoView" Grid.Column="2" IsVisible="False" HorizontalScrollBarVisibility="Disabled">
-        <bundles:InfoForm x:Name="InfoForm"/>
-      </ScrollViewer>
-      <!-- A file Roundhouse shows no editor for. -->
-      <TextBlock x:Name="FilePlaceholder" Grid.Column="2" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
-                 TextWrapping="Wrap" TextAlignment="Center" Opacity="0.6" Margin="40"/>
 
       <GridSplitter Grid.Column="3" ResizeDirection="Columns"/>
       <DockPanel x:Name="InspectorPane" Grid.Column="4" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">

@@ -5,6 +5,7 @@ using Venture.OS.Interface;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.Roundhouse.Drawing;
+using Venture.Roundhouse.Logging;
 
 namespace Venture.Roundhouse.Simulator;
 
@@ -36,7 +37,10 @@ public sealed class SimulatedRun : IDisposable, IShellHost
 
     private readonly long started = Stopwatch.GetTimestamp();
     private readonly SkiaPainter painter;
-    private readonly HeldOutput appOutput = new();
+    private readonly HeldOutput heldOutput = new();
+
+    // What apps print: held for the desktop's message windows, and logged, under VentureOS.
+    private readonly LoggedOutput appOutput;
     private readonly WindowManager windows = new(SimulatorWindow.ScreenWidth, SimulatorWindow.ScreenHeight);
     private Look look;
 
@@ -45,6 +49,7 @@ public sealed class SimulatedRun : IDisposable, IShellHost
 
     private SimulatedRun(SimulatedDisk disk, SkiaFonts fonts)
     {
+        appOutput = new LoggedOutput(heldOutput, RoundhouseLog.For("VentureOS"));
         Disk = disk;
         System = new SimulatedSystem(disk);
         painter = new SkiaPainter(SimulatorWindow.ScreenWidth, SimulatorWindow.ScreenHeight, fonts);
@@ -85,7 +90,7 @@ public sealed class SimulatedRun : IDisposable, IShellHost
             if (DesktopAppearance.Load().Problem is { } problem)
                 Messages.Add($"Appearance: {problem}");
             return new DesktopSession(
-                SimulatorWindow.ScreenWidth, SimulatorWindow.ScreenHeight, Apps, SimulatedDisk.UserFolder, appOutput, windows, loadImage)
+                SimulatorWindow.ScreenWidth, SimulatorWindow.ScreenHeight, Apps, SimulatedDisk.UserFolder, heldOutput, windows, loadImage)
             {
                 AboutDocument = () => LoadDocument(disk.HostPath("/mnt/system/interfaces/about.uix")),
                 SystemIcon = disk.HostPath("/mnt/system/icons/VentureOS.png"),
@@ -143,6 +148,8 @@ public sealed class SimulatedRun : IDisposable, IShellHost
                 run.Session.StartFallbackApp();
                 if (document is not null)
                     run.OpenDesigned(rootfs, document, edits ?? new Dictionary<string, string>());
+                foreach (var message in run.Messages)
+                    RoundhouseLog.For("VentureOS").Warn(message);
                 run.Session.Update(new DesktopInput(SimulatorWindow.ScreenWidth / 2, SimulatorWindow.ScreenHeight / 2, false));
                 run.Session.Draw(run.painter);
                 return true;

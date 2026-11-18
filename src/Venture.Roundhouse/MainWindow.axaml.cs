@@ -25,6 +25,7 @@ using Venture.OS.Bundles;
 using Venture.Roundhouse.Bundles;
 using Venture.Roundhouse.Designer;
 using Venture.Roundhouse.Drawing;
+using Venture.Roundhouse.Logging;
 using Venture.Roundhouse.Menus;
 using Venture.Roundhouse.Simulator;
 
@@ -61,8 +62,14 @@ public sealed partial class MainWindow : Window
     private readonly TextMate.Installation fileHighlighting;
     private bool loadingFile;
 
-    // Whether Info.xml shows as text rather than as its form, by choice.
-    private bool infoAsText;
+    // Whether closing has asked about unsaved edits already, and may go ahead.
+    private bool closingAsked;
+
+    // The Info.xml whose text the Text tab holds, while it's shown, or null.
+    private string? infoPath;
+
+    // Roundhouse's own log, shown in the Log tab and kept in a file.
+    private static readonly NLog.Logger log = RoundhouseLog.For("Roundhouse");
 
     // The files last marked unsaved in the list.
     private string[] shownUnsaved = [];
@@ -125,9 +132,14 @@ public sealed partial class MainWindow : Window
         // Clicking the canvas focuses it for the arrow keys; scrolling it into view then would slide it under the
         // pointer mid-drag, so it stays where the person put it.
         CanvasHost.AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true);
+        // The Log tab shows what's been logged, and follows it; NLog may write from any thread.
+        LogView.Text = string.Join("\n", RoundhouseLog.Buffer.Lines);
+        Action<string> follow = line => Dispatcher.UIThread.Post(() => ShowLogLine(line));
+        RoundhouseLog.Buffer.Added += follow;
+        Closed += (_, _) => RoundhouseLog.Buffer.Added -= follow;
+
         Inspector.Commit = CommitAttribute;
         InfoForm.Commit = CommitInfo;
-        InfoForm.ShowText = () => ShowInfoAsText(true);
         AddButton.Click += (_, _) =>
         {
             // The Insert menu's entries, read now, so what's enabled is current.
@@ -153,6 +165,15 @@ public sealed partial class MainWindow : Window
         {
             redraw.Stop();
             RenderNow();
+        };
+        AskToLeave = files => new UnsavedDialog(files).ShowDialog<LeaveChoice>(this);
+        Closing += (_, e) =>
+        {
+            // Unsaved edits are asked about before the window goes; the answer closes it, or doesn't.
+            if (closingAsked || UnsavedFiles().Count == 0)
+                return;
+            e.Cancel = true;
+            _ = CloseAfterAskingAsync();
         };
         Closed += (_, _) =>
         {
@@ -285,7 +306,7 @@ public sealed partial class MainWindow : Window
         }
         catch (UIScriptException exception)
         {
-            StatusText.Text = $"VentureOS wouldn't read that: {exception.Message}";
+            Say($"VentureOS wouldn't read that: {exception.Message}", NLog.LogLevel.Warn);
         }
     }
 
@@ -300,7 +321,17 @@ public sealed partial class MainWindow : Window
         if (path is null)
             throw new InvalidOperationException("Open a document before editing one.");
 
-        var text = WithoutByteOrderMark(edited.Text);
+        ReplaceEditorText(edited.Text);
+        RenderNow();
+    }
+
+    /// <summary>
+    /// Puts edited text in the Text tab by replacing only what changed, so the editor keeps its place and its Undo
+    /// takes the change back; the byte order mark stays with the file, not the editor.
+    /// </summary>
+    private void ReplaceEditorText(string edited)
+    {
+        var text = WithoutByteOrderMark(edited);
         var current = Editor.Text;
         var prefix = 0;
         var limit = Math.Min(current.Length, text.Length);
@@ -313,7 +344,6 @@ public sealed partial class MainWindow : Window
         loading = true;
         Editor.Document.Replace(prefix, current.Length - prefix - suffix, text.Substring(prefix, text.Length - prefix - suffix));
         loading = false;
-        RenderNow();
     }
 
     /// <summary>Opens a document and draws it; one that can't be read says why.</summary>
@@ -326,17 +356,23 @@ public sealed partial class MainWindow : Window
         var bundle = OpenBundle.Find(full);
         if (Directory.Exists(full) && bundle != full)
         {
-            StatusText.Text = $"{file} isn't a bundle, such as an .app; open one, or a file.";
+            Say($"{file} isn't a bundle, such as an .app; open one, or a file.", NLog.LogLevel.Warn);
             return;
         }
 
         KeepEdit();
         if (bundle != Bundle?.Root)
+        {
+            // The old bundle's file is let go of first, so nothing of it is kept in the new one.
+            LeaveDesigner(null);
+            CurrentFile = null;
             Bundle = bundle is null ? null : new OpenBundle(bundle);
+        }
 
         // Read the folder again, even for the bundle already open, so files added since are listed.
         ShowFiles();
 
+        log.Info("Opened {Path}", full);
         if (full == bundle)
         {
             if (Bundle!.FirstFile() is { } first)
@@ -380,14 +416,14 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
         {
-            StatusText.Text = $"{Path.GetFileName(full)} couldn't be opened: {exception.Message}";
+            Say($"{Path.GetFileName(full)} couldn't be opened: {exception.Message}", NLog.LogLevel.Warn);
             SelectInFiles(CurrentFile ?? "");
             return;
         }
 
         CurrentFile = full;
         SelectInFiles(full);
-        ShowCenter(CenterGrid);
+        ShowCenter(CanvasScroller);
         path = full;
         Document = document;
         Selection = null;
@@ -437,8 +473,8 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        // A bundle's Info.xml shows as a form while VentureOS reads it, and as text to fix it when it doesn't.
-        if (IsInfo(open, file) && !infoAsText && ShowInfo(open, file))
+        // A bundle's Info.xml shows as a form over its text, or why VentureOS refuses it, over the text to fix.
+        if (IsInfo(open, file) && ShowInfo(open, file))
             return;
 
         string text;
@@ -464,9 +500,7 @@ public sealed partial class MainWindow : Window
         var language = highlightOptions.GetLanguageByExtension(Path.GetExtension(file));
         fileHighlighting.SetGrammar(language is null ? null : highlightOptions.GetScopeByLanguageId(language.Id));
         ShowCenter(FileEditor);
-        StatusText.Text = Info is { Problem: { } problem } && IsInfo(open, file)
-            ? $"{problem.Message} Fix it here, then choose Info.xml in the list again for its form."
-            : "";
+        StatusText.Text = "";
         ShowUndo();
         ShowCaret();
     }
@@ -474,44 +508,54 @@ public sealed partial class MainWindow : Window
     /// <summary>The bundle's <c>Info.xml</c> as last read, while it's the file shown, or <see langword="null"/>.</summary>
     public InfoDocument? Info { get; private set; }
 
-    /// <summary>Whether the <c>Info.xml</c> shows as text, by choice, rather than as its form.</summary>
-    public bool IsInfoAsText => infoAsText;
-
-    /// <summary>Shows a bundle's <c>Info.xml</c> as its form, or as text; the choice lasts until it's changed.</summary>
-    public void ShowInfoAsText(bool asText)
-    {
-        infoAsText = asText;
-        if (CurrentFile is { } file && Bundle is { } open && IsInfo(open, file))
-            ShowFile(file);
-    }
-
     private static bool IsInfo(OpenBundle bundle, string file) =>
         Path.GetFullPath(file) == Path.GetFullPath(Path.Combine(bundle.Root, "Contents", "Info.xml"));
 
-    /// <summary>Shows the form, when VentureOS reads the <c>Info.xml</c>.</summary>
-    /// <returns>Whether it did; when it didn't, the caller shows the text, with <see cref="Info"/> saying why.</returns>
+    /// <summary>
+    /// Shows a bundle's <c>Info.xml</c>: its text in the Text tab, as the designer's is, and above it the form, or why
+    /// VentureOS refuses it. Each follows the other.
+    /// </summary>
+    /// <returns>Whether it did; it doesn't for a folder that isn't a kind of bundle, or text it can't read.</returns>
     private bool ShowInfo(OpenBundle bundle, string file)
     {
-        if (InfoDocument.KindOf(bundle.Root) is not { } kind)
+        if (InfoDocument.KindOf(bundle.Root) is null)
             return false;
 
+        string text;
         try
         {
-            Info = InfoDocument.Read(bundle.Text(file), bundle.Root, kind);
+            text = bundle.Text(file);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
-            Info = null;
             return false;
         }
 
-        if (!Info.IsEditable)
-            return false;
-
-        InfoForm.Show(Info, BundleFiles(bundle));
+        infoPath = file;
+        byteOrderMark = text.StartsWith('\uFEFF') ? "\uFEFF" : "";
+        loading = true;
+        Editor.Text = WithoutByteOrderMark(text);
+        Editor.Document.UndoStack.ClearAll();
+        loading = false;
         ShowCenter(InfoView);
+        ReadInfo();
         StatusText.Text = "";
+        ShowUndo();
+        ShowCaret();
         return true;
+    }
+
+    /// <summary>Reads the Text tab's <c>Info.xml</c>, and shows its form, or why VentureOS refuses it.</summary>
+    private void ReadInfo()
+    {
+        if (infoPath is null || Bundle is not { } open || InfoDocument.KindOf(open.Root) is not { } kind)
+            return;
+
+        Info = InfoDocument.Read(byteOrderMark + Editor.Text, open.Root, kind);
+        if (Info.IsEditable)
+            InfoForm.Show(Info, BundleFiles(open));
+        else
+            InfoForm.ShowProblem(Info.Problem!.Message);
     }
 
     /// <summary>The bundle's files, by their paths inside it with <c>/</c> between folders, for the form's choices.</summary>
@@ -532,16 +576,47 @@ public sealed partial class MainWindow : Window
             if (ReferenceEquals(edited, info))
                 return null;
 
+            // The change goes into the text, where Undo can take it back, and the bundle keeps it.
             Info = edited;
+            ReplaceEditorText(edited.Text);
             open.Edit(file, edited.Text);
             InfoForm.Show(edited, BundleFiles(open));
             ShowUnsaved();
+            ShowUndo();
             return null;
         }
         catch (Exception exception) when (exception is BundleException or ArgumentException or InvalidOperationException)
         {
+            log.Warn("Info.xml: {Attribute} refused: {Reason}", attribute, exception.Message);
             return exception.Message;
         }
+    }
+
+    /// <summary>
+    /// Reports an error that nothing caught: in full in the log, and in the status line, pointing to the Log tab.
+    /// </summary>
+    public void ReportError(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        log.Error(exception, "An error nothing caught: {Message}", exception.Message);
+        StatusText.Text = $"Something went wrong: {exception.Message} The Log tab has the details.";
+    }
+
+    /// <summary>Adds a logged line to the Log tab, keeping it to the buffer's length, and scrolls to it.</summary>
+    private void ShowLogLine(string line)
+    {
+        var document = LogView.Document;
+        document.Insert(document.TextLength, document.TextLength == 0 ? line : "\n" + line);
+        if (document.LineCount > LogBuffer.Capacity)
+            document.Remove(0, document.GetLineByNumber(document.LineCount - LogBuffer.Capacity + 1).Offset);
+        LogView.ScrollToEnd();
+    }
+
+    /// <summary>Shows a message in the status line and records it in the log, so it can be read after it's gone.</summary>
+    private void Say(string message, NLog.LogLevel level)
+    {
+        StatusText.Text = message;
+        log.Log(level, message);
     }
 
     /// <summary>Shows that Roundhouse has no editor for a file, or that a bundle has nothing to show, and why.</summary>
@@ -556,6 +631,7 @@ public sealed partial class MainWindow : Window
     private void LeaveDesigner(string? file)
     {
         path = null;
+        infoPath = null;
         Document = null;
         Map = null;
         MenusShown = null;
@@ -575,10 +651,20 @@ public sealed partial class MainWindow : Window
     /// <summary>Shows one of the centre's views: the designer, the file editor, a picture, or a placeholder.</summary>
     private void ShowCenter(Control shown)
     {
-        foreach (var view in (Control[])[CenterGrid, FileEditor, ImageView, InfoView, FilePlaceholder])
+        foreach (var view in (Control[])[CanvasScroller, FileEditor, ImageView, InfoView, FilePlaceholder])
             view.IsVisible = ReferenceEquals(view, shown);
-        if (!ReferenceEquals(shown, InfoView) && !ReferenceEquals(shown, FileEditor))
+        if (!ReferenceEquals(shown, InfoView))
             Info = null;
+
+        // The Text tab holds a .uix's or Info.xml's text; for anything else, the Log is what's below. Coming back to
+        // text shows the Text tab again.
+        var hasText = ReferenceEquals(shown, CanvasScroller) || ReferenceEquals(shown, InfoView);
+        var hadText = TextTab.IsVisible;
+        TextTab.IsVisible = hasText;
+        if (!hasText)
+            BottomTabs.SelectedItem = LogTab;
+        else if (!hadText)
+            BottomTabs.SelectedItem = TextTab;
     }
 
     private void OnFileTextChanged(object? sender, EventArgs e)
@@ -633,9 +719,9 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        StatusText.Text = failed.Count == 0
+        Say(failed.Count == 0
             ? $"Saved {saved} {(saved == 1 ? "file" : "files")}."
-            : $"Saved {saved}; couldn't save {string.Join(", ", failed)}.";
+            : $"Saved {saved}; couldn't save {string.Join(", ", failed)}.", failed.Count == 0 ? NLog.LogLevel.Info : NLog.LogLevel.Warn);
         ShowUnsaved();
         return failed.Count == 0;
     }
@@ -646,8 +732,70 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void KeepEdit()
     {
-        if (Bundle is { } open && path is not null && File.Exists(path))
-            open.Edit(path, byteOrderMark + Editor.Text);
+        if (Bundle is { } open && (path ?? infoPath) is { } file && open.Contains(file) && File.Exists(file))
+            open.Edit(file, byteOrderMark + Editor.Text);
+    }
+
+    /// <summary>
+    /// The files with edits not yet saved: the bundle's, or a document's outside one. Asking keeps the designer's
+    /// text in the bundle first, so it counts.
+    /// </summary>
+    public IReadOnlyList<string> UnsavedFiles()
+    {
+        KeepEdit();
+        if (Bundle is { } open)
+            return [.. open.Unsaved.Order(StringComparer.Ordinal)];
+
+        if (path is null || !File.Exists(path))
+            return [];
+        try
+        {
+            return UIDocument.Load(path).Text == Read().Text ? [] : [path];
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            return [path];
+        }
+    }
+
+    /// <summary>
+    /// Asks what to do with unsaved edits before leaving them: shows the files and offers Save All, Don't Save, or
+    /// Cancel. Tests answer it themselves.
+    /// </summary>
+    public Func<IReadOnlyList<string>, Task<LeaveChoice>> AskToLeave { get; set; }
+
+    /// <summary>
+    /// Makes ready to leave the open bundle or document: asks about any unsaved edits, and saves them if asked to.
+    /// </summary>
+    /// <returns>Whether to go on: there were none, they were saved, or they're to be left; not when Cancel is chosen or saving fails.</returns>
+    public async Task<bool> LeaveAsync()
+    {
+        var unsaved = UnsavedFiles();
+        if (unsaved.Count == 0)
+            return true;
+
+        return await AskToLeave(unsaved) switch
+        {
+            LeaveChoice.SaveAll => SaveAll(),
+            LeaveChoice.DontSave => true,
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// Opens a file or bundle as <see cref="Open"/> does, first asking about unsaved edits when that leaves the
+    /// bundle or document open now.
+    /// </summary>
+    /// <returns>Whether it opened.</returns>
+    public async Task<bool> OpenAsync(string file)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        var leaving = Bundle is { } open ? !open.Contains(file) && Path.GetFullPath(file) != open.Root : path is not null && Path.GetFullPath(file) != path;
+        if (leaving && !await LeaveAsync())
+            return false;
+
+        Open(file);
+        return true;
     }
 
     /// <summary>Lists the open bundle's files, or hides the list while a document outside one is open.</summary>
@@ -690,19 +838,21 @@ public sealed partial class MainWindow : Window
     /// <returns>Whether it was saved.</returns>
     public bool Save()
     {
+        KeepEdit();
+
         // A bundle's file other than the designer's is saved from the bundle, whichever editor shows it.
         if (path is null && Bundle is { } open && CurrentFile is { } file)
         {
             try
             {
                 open.Save(file);
-                StatusText.Text = $"Saved {Path.GetFileName(file)}.";
+                Say($"Saved {Path.GetFileName(file)}.", NLog.LogLevel.Info);
                 ShowUnsaved();
                 return true;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
             {
-                StatusText.Text = $"{Path.GetFileName(file)} couldn't be saved: {exception.Message}";
+                Say($"{Path.GetFileName(file)} couldn't be saved: {exception.Message}", NLog.LogLevel.Warn);
                 return false;
             }
         }
@@ -715,13 +865,13 @@ public sealed partial class MainWindow : Window
             var document = Read();
             document.Save(path);
             Bundle?.Edit(path, document.Text);
-            StatusText.Text = $"Saved {Path.GetFileName(path)}.";
+            Say($"Saved {Path.GetFileName(path)}.", NLog.LogLevel.Info);
             ShowUnsaved();
             return true;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or EncoderFallbackException)
         {
-            StatusText.Text = $"{Path.GetFileName(path)} couldn't be saved: {exception.Message}";
+            Say($"{Path.GetFileName(path)} couldn't be saved: {exception.Message}", NLog.LogLevel.Warn);
             return false;
         }
     }
@@ -733,6 +883,12 @@ public sealed partial class MainWindow : Window
     public void RenderNow()
     {
         redraw.Stop();
+        if (infoPath is not null)
+        {
+            ReadInfo();
+            return;
+        }
+
         if (path is null)
             return;
 
@@ -900,7 +1056,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception) when (exception is UIScriptException or ArgumentException)
         {
-            StatusText.Text = $"VentureOS wouldn't read that: {exception.Message}";
+            Say($"VentureOS wouldn't read that: {exception.Message}", NLog.LogLevel.Warn);
             return false;
         }
     }
@@ -952,6 +1108,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception) when (exception is UIScriptException or ArgumentException)
         {
+            log.Warn("{File}: {Attribute} refused: {Reason}", Path.GetFileName(path), attribute, exception.Message);
             return exception.Message;
         }
     }
@@ -1065,7 +1222,7 @@ public sealed partial class MainWindow : Window
         }
         catch (UIScriptException exception)
         {
-            StatusText.Text = $"VentureOS wouldn't read that: {exception.Message}";
+            Say($"VentureOS wouldn't read that: {exception.Message}", NLog.LogLevel.Warn);
         }
     }
 
@@ -1189,7 +1346,6 @@ public sealed partial class MainWindow : Window
             new("View",
             [
                 new MenuCommand("Text", () => ShowText(!IsTextShowing), IsChecked: () => IsTextShowing),
-                new MenuCommand("Info.xml as Text", () => ShowInfoAsText(!infoAsText), IsChecked: () => infoAsText),
                 new MenuCommand("Twice the Size", () => SetZoom(Zoom != 2), Ctrl(Key.OemPlus), IsChecked: () => Zoom == 2),
                 new MenuSeparator(),
                 new MenuCommand("Dark", () => SetDark(!IsDark), IsChecked: () => IsDark),
@@ -1328,10 +1484,17 @@ public sealed partial class MainWindow : Window
                 Simulator = null;
         };
         simulator.Show();
+        log.Info("Run started{Edits}", edits.Count == 0 ? "" : $", with {edits.Count} unsaved {(edits.Count == 1 ? "edit" : "edits")}");
     }
 
     /// <summary>Ends the run, deleting its copy of VentureOS's files.</summary>
-    public void StopRun() => Simulator?.Close();
+    public void StopRun()
+    {
+        if (Simulator is not { } running)
+            return;
+        running.Close();
+        log.Info("Run stopped");
+    }
 
     /// <summary>Ends the run and starts a fresh one, with the document as it's edited now.</summary>
     public void RestartRun()
@@ -1364,7 +1527,7 @@ public sealed partial class MainWindow : Window
     private void ShowCaret()
     {
         var caret = ActiveEditor.TextArea.Caret;
-        CaretText.Text = path is null && !FileEditor.IsVisible ? "" : $"Ln {caret.Line}, Col {caret.Column}";
+        CaretText.Text = path is null && infoPath is null && !FileEditor.IsVisible ? "" : $"Ln {caret.Line}, Col {caret.Column}";
     }
 
     private void OnZoomChanged(object? sender, RoutedEventArgs e)
@@ -1390,9 +1553,15 @@ public sealed partial class MainWindow : Window
 
     private void OnTextChanged(object? sender, EventArgs e)
     {
-        // A redraw waits for a pause in typing, since drawing a document takes a moment.
-        if (loading || path is null)
+        // A redraw, or a new reading of Info.xml, waits for a pause in typing.
+        if (loading || (path is null && infoPath is null))
             return;
+        if (infoPath is not null && Bundle is { } open)
+        {
+            open.Edit(infoPath, byteOrderMark + Editor.Text);
+            ShowUnsaved();
+        }
+
         ShowUndo();
         redraw.Stop();
         redraw.Start();
@@ -1422,7 +1591,7 @@ public sealed partial class MainWindow : Window
             row.Height = new GridLength(0);
         }
 
-        Editor.IsVisible = TextSplitter.IsVisible = IsTextShowing;
+        BottomTabs.IsVisible = TextSplitter.IsVisible = IsTextShowing;
     }
 
     private async Task PickAndOpenAsync()
@@ -1435,7 +1604,15 @@ public sealed partial class MainWindow : Window
         });
 
         if (files is [var file, ..] && file.TryGetLocalPath() is { } local)
-            Open(local);
+            await OpenAsync(local);
+    }
+
+    private async Task CloseAfterAskingAsync()
+    {
+        if (!await LeaveAsync())
+            return;
+        closingAsked = true;
+        Close();
     }
 
     /// <summary>Makes a window app from the template, and opens its window in the designer.</summary>
@@ -1446,18 +1623,21 @@ public sealed partial class MainWindow : Window
     {
         var app = AppTemplate.Create(name, identifier, folder);
         Open(app);
-        StatusText.Text = $"Made {Path.GetFileName(app)} in {folder}.";
+        Say($"Made {Path.GetFileName(app)} in {folder}.", NLog.LogLevel.Info);
         return app;
     }
 
     /// <summary>Asks for a new app's name and place, makes it, and opens it.</summary>
     private async Task NewAppAsync()
     {
+        if (!await LeaveAsync())
+            return;
+
         var app = await new NewAppWindow(NewAppWindow.SuggestedFolder()).ShowDialog<string?>(this);
         if (app is not null)
         {
             Open(app);
-            StatusText.Text = $"Made {Path.GetFileName(app)}.";
+            Say($"Made {Path.GetFileName(app)}.", NLog.LogLevel.Info);
         }
     }
 
@@ -1471,7 +1651,7 @@ public sealed partial class MainWindow : Window
         });
 
         if (folders is [var folder, ..] && folder.TryGetLocalPath() is { } local)
-            Open(local);
+            await OpenAsync(local);
     }
 
     /// <summary>The painter's frame as an Avalonia bitmap: its pixels are BGRA, and always opaque.</summary>

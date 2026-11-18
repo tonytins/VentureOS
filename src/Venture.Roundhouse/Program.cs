@@ -1,4 +1,5 @@
 using Avalonia;
+using Venture.Roundhouse.Logging;
 
 namespace Venture.Roundhouse;
 
@@ -12,7 +13,30 @@ public static class Program
         if (args.Length > 0 && args[0] == RenderCommand.Flag)
             return RenderCommand.Run(args[1..], Console.Error);
 
-        return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        // The log starts first, so even a failure to start leaves a trail; errors no one catches are logged before
+        // Roundhouse goes down.
+        RoundhouseLog.Configure(RoundhouseLog.DefaultFolder);
+        var log = RoundhouseLog.For("Roundhouse");
+        log.Info("{Title} starting", MainWindow.ProductTitle);
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            log.Fatal(e.ExceptionObject as Exception, "Roundhouse stopped on an error nothing caught");
+            RoundhouseLog.Flush();
+        };
+
+        try
+        {
+            return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception exception)
+        {
+            log.Fatal(exception, "Roundhouse stopped on an error nothing caught");
+            throw;
+        }
+        finally
+        {
+            RoundhouseLog.Flush();
+        }
     }
 
     /// <summary>Roundhouse's Avalonia app.</summary>

@@ -36,7 +36,7 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   specification. It references nothing but the BCL.
 - `src/Venture.Roundhouse` is Roundhouse, VentureOS's IDE: an Avalonia app  
   for Linux, macOS, and Windows that draws with `Venture.OS.Common`. Avalonia,  
-  AvaloniaEdit, and its TextMate add-on are approved for it alone; the  
+  AvaloniaEdit, its TextMate add-on, and NLog are approved for it alone; the  
   VentureOS projects never reference them. Its Run runs VentureOS's own  
   desktop code over a copy of `rootfs/` (`Simulator/`). See  
   [its design](docs/design/2026-11-18-roundhouse-design.md).

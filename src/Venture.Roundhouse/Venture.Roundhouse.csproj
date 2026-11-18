@@ -31,6 +31,8 @@
     <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
     <!-- Skia, which Avalonia draws with, at Avalonia's own version: Roundhouse's painter draws text with it. -->
     <PackageReference Include="Avalonia.Skia" Version="12.1.5" />
+    <!-- Roundhouse's log, to a file and the Log tab. Approved for Roundhouse only, 2026-11-18. -->
+    <PackageReference Include="NLog" Version="6.2.2" />
     <PackageReference Include="GitInfo" Version="3.6.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

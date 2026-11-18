@@ -225,18 +225,18 @@ public sealed class MainWindowTests : IDisposable
         MainWindow window = new();
         window.Show();
         var center = window.FindControl<Grid>("CenterGrid")!;
-        var editor = window.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+        var tabs = window.FindControl<TabControl>("BottomTabs")!;
         center.RowDefinitions[2].Height = new GridLength(180);
 
         window.FindControl<ToggleButton>("TextToggle")!.IsChecked = false;
 
         Assert.False(window.IsTextShowing);
-        Assert.False(editor.IsVisible);
+        Assert.False(tabs.IsVisible);
         Assert.Equal(0, center.RowDefinitions[2].Height.Value);
 
         window.FindControl<ToggleButton>("TextToggle")!.IsChecked = true;
 
-        Assert.True(editor.IsVisible);
+        Assert.True(tabs.IsVisible);
         Assert.Equal(180, center.RowDefinitions[2].Height.Value);
         window.Close();
     });
@@ -954,7 +954,7 @@ public sealed class MainWindowTests : IDisposable
         Select(window, Path.Combine(app, "Contents", "Lua", "main.lua"));
 
         Assert.True(window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.IsVisible);
-        Assert.False(window.FindControl<Grid>("CenterGrid")!.IsVisible);
+        Assert.False(window.FindControl<ScrollViewer>("CanvasScroller")!.IsVisible);
         Assert.Null(window.Document);
         Assert.True(window.Bundle!.IsUnsaved(main));
 
@@ -1172,31 +1172,91 @@ public sealed class MainWindowTests : IDisposable
     });
 
     [Fact]
-    public void AnInfoXmlVentureOSRefusesOpensAsTextWithTheReason() => TestApp.Run(() =>
+    public void AnInfoXmlVentureOSRefusesShowsWhyOverItsTextAndTheFormComesBackOnceItsFixed() => TestApp.Run(() =>
     {
         var (window, app) = OpenCalculatorBundle();
         var info = Path.Combine(app, "Contents", "Info.xml");
+        var good = File.ReadAllText(info);
         File.WriteAllText(info, "<App version=\"1\"><Info name=\"Calculator\"/></App>");
 
         Select(window, info);
+        var form = window.FindControl<Bundles.InfoForm>("InfoForm")!;
 
-        Assert.True(window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.IsVisible);
-        Assert.Contains("identifier", window.Status);
+        Assert.True(window.FindControl<ScrollViewer>("InfoView")!.IsVisible);
+        Assert.Contains("identifier", form.Refusal);
+        Assert.Equal("<App version=\"1\"><Info name=\"Calculator\"/></App>", window.Text);
+
+        window.Text = good;
+        window.RenderNow();
+
+        Assert.Null(form.Refusal);
+        Assert.Equal("Calculator", ((TextBox)form.Fields["name"]).Text);
+        Assert.True(window.Bundle!.IsUnsaved(info));
         window.Close();
     });
 
     [Fact]
-    public void EditAsTextShowsTheTextAndTheViewMenuBringsTheFormBack() => TestApp.Run(() =>
+    public void InfoXmlsTextIsInTheTextTabAndTheFormAndTextFollowEachOther() => TestApp.Run(() =>
     {
         var (window, app) = OpenCalculatorBundle();
-        Select(window, Path.Combine(app, "Contents", "Info.xml"));
+        var info = Path.Combine(app, "Contents", "Info.xml");
+        Select(window, info);
+        var form = window.FindControl<Bundles.InfoForm>("InfoForm")!;
+        var saved = File.ReadAllText(info);
 
-        window.ShowInfoAsText(true);
-        Assert.True(window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.IsVisible);
+        // The Text tab holds Info.xml's text, as it holds an interface's.
+        Assert.Equal(saved, window.Text);
+        Assert.True(window.FindControl<TabItem>("TextTab")!.IsVisible);
 
-        Command(window, "View", "Info.xml as Text").Run();
-        Assert.False(window.IsInfoAsText);
-        Assert.True(window.FindControl<ScrollViewer>("InfoView")!.IsVisible);
+        // Typing in the text changes the form, once the typing stops.
+        window.Text = saved.Replace("name=\"Calculator\"", "name=\"Adder\"", StringComparison.Ordinal);
+        window.RenderNow();
+        Assert.Equal("Adder", ((TextBox)form.Fields["name"]).Text);
+
+        // A change in the form goes into the text, where Undo takes it back.
+        ((CheckBox)form.Fields["needs.files"]).IsChecked = true;
+        Assert.Contains("files", window.Text);
+        window.Undo();
+        Assert.DoesNotContain("files", window.Text);
+        Assert.False(((CheckBox)form.Fields["needs.files"]).IsChecked);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheLogTabShowsWhatsLoggedAndTakesTheTextTabsPlaceForOtherFiles() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var logView = window.FindControl<AvaloniaEdit.TextEditor>("LogView")!;
+        var tabs = window.FindControl<TabControl>("BottomTabs")!;
+
+        Assert.Same(window.FindControl<TabItem>("TextTab"), tabs.SelectedItem);
+
+        // A line no test has logged before, so it can only be there if the tab follows the log.
+        var unique = $"followed {Guid.NewGuid():N}";
+        Logging.RoundhouseLog.For("Test").Info(unique);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(unique, logView.Text);
+        Assert.Contains(Logging.RoundhouseLog.Buffer.Lines, line => line.Contains("Opened " + app, StringComparison.Ordinal));
+
+        Select(window, Path.Combine(app, "Contents", "Lua", "main.lua"));
+        Assert.False(window.FindControl<TabItem>("TextTab")!.IsVisible);
+        Assert.Same(window.FindControl<TabItem>("LogTab"), tabs.SelectedItem);
+
+        Select(window, Path.Combine(app, "Contents", "Resources", "main.uix"));
+        Assert.Same(window.FindControl<TabItem>("TextTab"), tabs.SelectedItem);
+        window.Close();
+    });
+
+    [Fact]
+    public void AnErrorNothingCaughtIsLoggedAndReported() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+
+        window.ReportError(new InvalidOperationException("a test's own failure"));
+
+        Assert.Contains("a test's own failure", window.Status);
+        Assert.Contains("Log tab", window.Status);
+        Assert.Contains(Logging.RoundhouseLog.Buffer.Lines, line => line.Contains("ERROR", StringComparison.Ordinal) && line.Contains("a test's own failure", StringComparison.Ordinal));
         window.Close();
     });
 
@@ -1236,6 +1296,114 @@ public sealed class MainWindowTests : IDisposable
         Assert.Equal("dev.mine.dice", Venture.OS.Bundles.Bundle.Read(Path.Combine(folder, "Dice.app"), Venture.OS.Bundles.BundleKind.App).Identifier);
     });
 
+    [Fact]
+    public void OpeningAnotherBundleFromTheDesignerOpensIt() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculatorBundle();
+        window.Text = window.Text.Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal);
+        var files = CopyFiles();
+
+        window.Open(files);
+
+        Assert.Equal("Files.app", window.Bundle!.Name);
+        Assert.Equal(Path.Combine(files, "Contents", "Resources", "main.uix"), window.CurrentFile);
+        window.Close();
+    });
+
+    [Theory]
+    [InlineData(Bundles.LeaveChoice.Cancel, "Calculator.app", true)]
+    [InlineData(Bundles.LeaveChoice.DontSave, "Files.app", true)]
+    [InlineData(Bundles.LeaveChoice.SaveAll, "Files.app", false)]
+    public void LeavingABundleWithUnsavedEditsAsksFirst(Bundles.LeaveChoice answer, string opened, bool editUnsavedOnDisk) => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        var main = window.CurrentFile!;
+        var saved = File.ReadAllText(main);
+        window.Text = window.Text.Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal);
+        IReadOnlyList<string>? asked = null;
+        window.AskToLeave = files =>
+        {
+            asked = files;
+            return Task.FromResult(answer);
+        };
+
+        var files = CopyFiles();
+        window.OpenAsync(files).GetAwaiter().GetResult();
+
+        Assert.Equal([main], asked);
+        Assert.Equal(opened, window.Bundle!.Name);
+        Assert.Equal(editUnsavedOnDisk, File.ReadAllText(main) == saved);
+        window.AskToLeave = DontSave;
+        window.Close();
+    });
+
+    [Fact]
+    public void AnotherFileInTheSameBundleDoesntAsk() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle();
+        window.Text = window.Text.Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal);
+        window.AskToLeave = _ => throw new InvalidOperationException("Asked about another file of the same bundle.");
+
+        Assert.True(window.OpenAsync(Path.Combine(app, "Contents", "Lua", "main.lua")).GetAwaiter().GetResult());
+        Assert.True(window.Bundle!.IsUnsaved(Path.Combine(app, "Contents", "Resources", "main.uix")));
+        window.AskToLeave = DontSave;
+        window.Close();
+    });
+
+    [Fact]
+    public void ClosingWithUnsavedEditsAsksAndCancelKeepsTheWindowOpen() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculatorBundle();
+        window.Text = window.Text.Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal);
+        var asked = 0;
+        window.AskToLeave = _ =>
+        {
+            asked++;
+            return Task.FromResult(Bundles.LeaveChoice.Cancel);
+        };
+        var closed = false;
+        window.Closed += (_, _) => closed = true;
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, asked);
+        Assert.False(closed);
+
+        window.AskToLeave = DontSave;
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(closed);
+    });
+
+    [Fact]
+    public void ADocumentOutsideABundleCountsItsOwnUnsavedEdit() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        Assert.Empty(window.UnsavedFiles());
+
+        window.Text = window.Text.Replace("text=\"=\"", "text=\"Go\"", StringComparison.Ordinal);
+
+        Assert.Equal([document], window.UnsavedFiles());
+        window.Close();
+    });
+
+    private static Task<Bundles.LeaveChoice> DontSave(IReadOnlyList<string> files) => Task.FromResult(Bundles.LeaveChoice.DontSave);
+
+    /// <summary>Copies Files.app beside the test's other files, and gives its folder.</summary>
+    private string CopyFiles()
+    {
+        var files = Path.Combine(folder, "Files.app");
+        var source = Path.Combine(SkiaPainterTests.RepositoryRoot(), "rootfs", "system", "apps", "Files.app");
+        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            var target = Path.Combine(files, Path.GetRelativePath(source, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target);
+        }
+
+        return files;
+    }
+
     /// <summary>The navigator's labels, as shown, unsaved marks included.</summary>
     private static List<string> Labels(MainWindow window)
     {
@@ -1256,7 +1424,7 @@ public sealed class MainWindowTests : IDisposable
             File.Copy(file, target);
         }
 
-        MainWindow window = new();
+        MainWindow window = new() { AskToLeave = DontSave };
         window.Show();
         window.Open(app);
         Dispatcher.UIThread.RunJobs();
@@ -1286,7 +1454,7 @@ public sealed class MainWindowTests : IDisposable
 
     private (MainWindow Window, int EqualsKey) OpenCalculator()
     {
-        MainWindow window = new();
+        MainWindow window = new() { AskToLeave = DontSave };
         window.Show();
         window.Open(document);
         Dispatcher.UIThread.RunJobs();

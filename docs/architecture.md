@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,525 tests, and 179 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,525 tests, and 188 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -158,6 +158,7 @@ VentureOS/
 │     │                            InspectorPanel, and DesignEdits (the library and selection edits)
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
 │     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedRun, SimulatedDisk, SimulatedSystem
+│     ├─ Logging/                  Venture.Roundhouse.Logging: RoundhouseLog (NLog), LogBuffer, LoggedOutput
 │     ├─ Menus/                    Venture.Roundhouse.Menus: AppMenu, one list for the global menu bar and the ☰ button
 │     ├─ TitleBars.cs              where the coloured bar can be the window's title bar
 │     ├─ TitleBarPanel.cs          the bar's layout, as VentureOS's title bar's
@@ -978,6 +979,25 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   every unsaved file's text by path (`SimulatedRun.Start`'s edits), which
   replace those files in the run's copy of the app. Opening a bundle again
   re-reads its folder.
+- **The centre** shows what's open on top (the canvas, the `Info.xml` form,
+  another file's editor, a picture) and, below the divider, two tabs: Text,
+  the XML of a `.uix` or `Info.xml` in one editor, and Log. Files without
+  XML hide the Text tab and show the Log.
+- **The log** (`RoundhouseLog`, NLog, set up in code) goes to the Log tab
+  (`LogBuffer`, the newest 2,000 lines) and, in Roundhouse proper, to a file
+  a day in its local application data, files older than a week deleted at
+  start. It records opening, saving, making apps, runs, every status-line
+  message, refused edits, what apps print in Run (`LoggedOutput`, under
+  VentureOS), and errors: one on the window's thread that nothing caught is
+  logged in full and reported in the status line, and Roundhouse carries on,
+  so unsaved work isn't lost; any other is logged before the process ends.
+  Tests keep the log in memory only.
+- **Leaving unsaved edits:** opening another bundle or document, making a
+  new app, or closing asks Save All, Don't Save, or Cancel
+  (`UnsavedDialog`, through `AskToLeave`, which tests answer), naming the
+  files (`UnsavedFiles`: the bundle's, or a document's outside one). Another
+  file of the same bundle doesn't ask. Switching bundles lets go of the old
+  file before the new bundle opens.
 - **The `Info.xml` form** (`InfoForm`) edits a bundle's `Info.xml` through
   `InfoDocument` (`Venture.OS.Common`), which checks every edit with
   `Bundle.FromInfo`, the same checks `Bundle.Read` makes on a saved file, and
@@ -987,8 +1007,10 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   from the bundle's files; the icon shows through `DesktopIcon` as the dock
   shows it. A refusal shows under its field. The form updates in place
   after a change, keeping the focused field, and is built again only for a
-  new bundle, files, or picture. An `Info.xml` VentureOS refuses, or one
-  chosen as text, opens in the file editor.
+  new bundle, files, or picture. Its text is in the Text tab: typing there
+  re-reads it a moment after typing stops, and a form change goes into the
+  text as the change alone, so Undo takes it back. An `Info.xml` VentureOS
+  refuses shows why in the form's place, over its text.
 - **New App** (`AppTemplate`, `NewAppWindow`) copies the window-app
   template beside Roundhouse (`Templates/WindowApp`: `Info.xml`, a
   `main.lua` that opens `main.uix`, and a window with a label and a button
@@ -1487,6 +1509,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): NLog and the Log tab; `Info.xml` in the Text tab under its form; a prompt before leaving unsaved edits; opening another bundle from the designer no longer crashes. |
 | 2026-11-18 | minor | Roundhouse (§9): New App, a window app from the template beside Roundhouse, checked by `Bundle.Read`. |
 | 2026-11-18 | minor | Interface formats, bundles, and Roundhouse (§9): `FlatXmlEditor`, moved out of `UIDocument`; `Bundle.FromInfo` and `InfoDocument`; the `Info.xml` form. |
 | 2026-11-18 | minor | Roundhouse (§9): editors for a bundle's other files (Lua highlighted, text, pictures), unsaved marks, Save All, and every unsaved file in Run. |

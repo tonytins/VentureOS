@@ -71,6 +71,13 @@ public sealed class OpenBundle
     /// <summary>The bundle's files and folders, read from the disk now, with the bundle itself at the top.</summary>
     public BundleItem Tree() => new(Name, Root, IsFolder: true, Children(Root));
 
+    /// <summary>Whether a path is inside the bundle.</summary>
+    public bool Contains(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return Path.GetFullPath(path).StartsWith(Root + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+    }
+
     /// <summary>Whether a file in the bundle has text edited but not saved.</summary>
     public bool IsUnsaved(string file) => unsaved.ContainsKey(Path.GetFullPath(file));
 

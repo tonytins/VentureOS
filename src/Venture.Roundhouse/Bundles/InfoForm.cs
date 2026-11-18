@@ -44,9 +44,6 @@ public sealed class InfoForm : StackPanel
     /// <summary>Commits an attribute's new value, or removes it for <see langword="null"/>, giving the reason it's refused, or <see langword="null"/>.</summary>
     public Func<string, string?, string?>? Commit { get; set; }
 
-    /// <summary>Asked to show the text instead of the form.</summary>
-    public Action? ShowText { get; set; }
-
     /// <summary>The fields, by attribute: text boxes, the needs' check boxes (as <c>needs.shell</c> and so on), and choices.</summary>
     public IReadOnlyDictionary<string, Control> Fields => fields;
 
@@ -78,9 +75,6 @@ public sealed class InfoForm : StackPanel
         updating = true;
 
         Children.Add(new TextBlock { Text = $"{Path.GetFileName(document.Root)} — Info.xml", FontWeight = FontWeight.SemiBold, FontSize = 15 });
-        Button text = new() { Content = "Edit as Text", Margin = new(0, 4, 0, 4) };
-        text.Click += (_, _) => ShowText?.Invoke();
-        Children.Add(text);
 
         Heading("Identity");
         TextField(document, "name", "Name", required: true);
@@ -109,6 +103,30 @@ public sealed class InfoForm : StackPanel
         Preview(document);
         updating = false;
     }
+
+    /// <summary>
+    /// Shows why VentureOS refuses the <c>Info.xml</c> in place of the form, while its text, in the Text tab, is fixed.
+    /// </summary>
+    public void ShowProblem(string problem)
+    {
+        ArgumentNullException.ThrowIfNull(problem);
+        Children.Clear();
+        fields.Clear();
+        problems.Clear();
+        (current, builtFor) = (null, null);
+        Children.Add(new TextBlock { Text = "VentureOS can't read this Info.xml", FontWeight = FontWeight.SemiBold, FontSize = 15 });
+        Children.Add(new TextBlock { Text = problem, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.IndianRed, Margin = new(0, 8, 0, 0) });
+        Children.Add(new TextBlock
+        {
+            Text = "Fix it in the Text tab below, and the form comes back once VentureOS reads it.",
+            TextWrapping = TextWrapping.Wrap,
+            Opacity = 0.7,
+            Margin = new(0, 8, 0, 0),
+        });
+    }
+
+    /// <summary>The problem shown in place of the form, or <see langword="null"/> while the form shows.</summary>
+    public string? Refusal => current is null && Children.Count > 1 && Children[1] is TextBlock { Text: var text } ? text : null;
 
     /// <summary>Puts a document's values in the fields, leaving a focused text box as it's being typed.</summary>
     private void Update(InfoDocument document)

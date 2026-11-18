@@ -15,11 +15,17 @@ public static class TestApp
 {
     private static readonly HeadlessUnitTestSession Session = HeadlessUnitTestSession.StartNew(typeof(TestApp));
 
-    /// <summary>Avalonia finds the app here, as it does in Program.</summary>
-    public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<App>()
+    /// <summary>
+    /// Avalonia finds the app here, as it does in Program. Its log is kept only for the Log tab, so tests leave no
+    /// files.
+    /// </summary>
+    public static AppBuilder BuildAvaloniaApp()
+    {
+        Logging.RoundhouseLog.Configure(null);
+        return AppBuilder.Configure<App>()
             .UseSkia()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
+    }
 
     /// <summary>Runs work on Avalonia's thread and waits for it.</summary>
     public static void Run(Action work) => Session.Dispatch(work, CancellationToken.None).GetAwaiter().GetResult();
