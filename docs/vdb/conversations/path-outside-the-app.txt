@@ -1,0 +1,17 @@
+# A path that could reach outside the app is refused, the rest of that file is passed over, and the install ends.
+! trusted 0123456789abcdef0123456789abcdef
+> hello vdb/1 0123456789abcdef0123456789abcdef
+< ok vdb/1 install launch
+> install Dice.app
+< ok
+> file ../init.lua 4
+> data AAAAAA==
+> end
+< error "../init.lua" has an empty, . or .. part; a path names a file inside the bundle; Dice.app was thrown away
+! staging-empty
+> file Contents/Info.xml 4
+> data AAAAAA==
+> end
+< error no app is being sent; start one with install
+> bye
+< ok

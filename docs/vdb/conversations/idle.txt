@@ -1,0 +1,8 @@
+# A connection that sends nothing for 30 seconds is closed.
+! trusted 0123456789abcdef0123456789abcdef
+> hello vdb/1 0123456789abcdef0123456789abcdef
+< ok vdb/1 install launch
+! wait 29
+! wait 1
+< error closing nothing was sent for 30 seconds
+! closed

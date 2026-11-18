@@ -1,0 +1,4 @@
+# Anything before hello closes the connection.
+> install Dice.app
+< error closing say hello first
+! closed

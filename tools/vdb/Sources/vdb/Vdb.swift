@@ -8,6 +8,6 @@ struct Vdb: ParsableCommand {
         commandName: "vdb",
         abstract: "Sends apps to a running VentureOS.",
         discussion: "Speaks \(VdbProtocol.version), on port \(VdbProtocol.defaultPort) by default.",
-        version: VdbProtocol.version
+        version: "\(GitVersion.version) (\(VdbProtocol.version))"
     )
 }

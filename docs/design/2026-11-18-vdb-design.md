@@ -102,7 +102,7 @@ needs the desktop anyway, and so does the Trust alert.
 
 ## The protocol, vdb/1
 
-Lines of UTF-8 text, each ending with `\n` (a `\r` before it is ignored), at most 8,192 characters. Words are split by
+Lines of UTF-8 text, each ending with `\n` (a `\r` before it is ignored), at most 8,192 bytes. The full reference, as built, is [docs/vdb](../vdb/README.md). Words are split by
 single spaces; the last field of a line may contain spaces where noted. The computer sends commands; VentureOS
 answers each with `ok …` or `error <reason>`, and an error ends the command, not the connection, unless it says
 `error closing <reason>`.
@@ -150,7 +150,7 @@ answers each with `ok …` or `error <reason>`, and an error ends the command, n
 
 Everything that crosses the connection is checked before it's used, and a failure is an `error` with the reason:
 
-- A line longer than 8,192 characters, text that isn't UTF-8, or an unknown command.
+- A line longer than 8,192 bytes, text that isn't UTF-8, or an unknown command.
 - A path that's empty, absolute, has a `\`, an empty, `.`, or `..` segment, a control character, or is longer than 255
   characters; a path sent twice.
 - A size that isn't a whole number from 0 to 4 MiB; base64 that doesn't decode; more bytes than the size said, or fewer

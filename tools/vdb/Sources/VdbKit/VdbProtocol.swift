@@ -9,7 +9,7 @@ public enum VdbProtocol {
     /// The port VentureOS listens on: five digits, so it meets nothing else's, adb's included.
     public static let defaultPort = 28455
 
-    /// The longest line either side sends, in characters, not counting its line break.
+    /// The longest line either side sends, in bytes of UTF-8, not counting its line break.
     public static let maximumLineLength = 8192
 
     /// The most bytes one `data` line carries: the most whose base64, after `data `, fits in a line.

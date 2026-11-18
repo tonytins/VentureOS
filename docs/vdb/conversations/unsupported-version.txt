@@ -1,0 +1,4 @@
+# A version this VentureOS doesn't speak is refused, naming the one it does.
+> hello vdb/2 0123456789abcdef0123456789abcdef
+< error closing unsupported version, this VentureOS speaks vdb/1
+! closed

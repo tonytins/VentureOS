@@ -1,0 +1,7 @@
+# The person refuses the computer, and the connection closes.
+> hello vdb/1 0123456789abcdef0123456789abcdef
+< wait trust
+! answer deny 0123456789abcdef0123456789abcdef
+! wait 1
+< error closing this computer wasn't trusted
+! closed

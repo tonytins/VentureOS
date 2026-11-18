@@ -13,7 +13,7 @@ public static class VdbProtocol
     /// <summary>The port VentureOS listens on: five digits, so it meets nothing else's, adb's included.</summary>
     public const int DefaultPort = 28455;
 
-    /// <summary>The longest line either side sends, in characters, not counting its line break.</summary>
+    /// <summary>The longest line either side sends, in bytes of UTF-8, not counting its line break.</summary>
     public const int MaximumLineLength = 8192;
 
     /// <summary>

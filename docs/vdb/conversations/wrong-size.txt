@@ -1,0 +1,13 @@
+# A file shorter than the size it was sent as is refused at its end.
+! trusted 0123456789abcdef0123456789abcdef
+> hello vdb/1 0123456789abcdef0123456789abcdef
+< ok vdb/1 install launch
+> install Dice.app
+< ok
+> file Contents/Info.xml 10
+> data c2hvcnQ=
+> end
+< error Contents/Info.xml is 5 bytes, not the 10 it was sent as; Dice.app was thrown away
+! staging-empty
+> bye
+< ok

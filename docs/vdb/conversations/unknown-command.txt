@@ -1,0 +1,8 @@
+# A command this VentureOS doesn't know is answered with an error, and the connection goes on.
+! trusted 0123456789abcdef0123456789abcdef
+> hello vdb/1 0123456789abcdef0123456789abcdef
+< ok vdb/1 install launch
+> shell ls
+< error "shell" isn't a vdb command
+> bye
+< ok

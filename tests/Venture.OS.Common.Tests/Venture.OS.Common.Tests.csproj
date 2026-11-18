@@ -31,6 +31,7 @@
     <None Include="../../rootfs/user/**/*" LinkBase="user" CopyToOutputDirectory="PreserveNewest" />
     <!-- The app tutorial, whose examples are built and run, so the guide can't drift from what works. -->
     <None Include="../../docs/writing-apps.md" Link="docs/writing-apps.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../docs/vdb/conversations/*.txt" LinkBase="vdb/conversations" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Interface/Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

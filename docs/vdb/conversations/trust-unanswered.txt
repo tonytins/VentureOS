@@ -1,0 +1,7 @@
+# Nobody answers within 60 seconds, which counts as a refusal.
+> hello vdb/1 0123456789abcdef0123456789abcdef
+< wait trust
+! wait 59
+! wait 1
+< error closing nobody answered within 60 seconds whether to trust this computer
+! closed

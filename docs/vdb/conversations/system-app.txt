@@ -1,0 +1,20 @@
+# An app with a system app's identifier is refused, since vdb can't replace system apps.
+! trusted 0123456789abcdef0123456789abcdef
+! system-app dev.example.dice
+> hello vdb/1 0123456789abcdef0123456789abcdef
+< ok vdb/1 install launch
+> install Dice.app
+< ok
+> file Contents/Info.xml 116
+> data PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPEFwcCB2ZXJzaW9uPSIxIj4KICA8SW5mbyBpZGVudGlmaWVyPSJkZXYuZXhhbXBsZS5kaWNlIiBuYW1lPSJEaWNlIi8+CjwvQXBwPgo=
+> end
+< ok
+> file Contents/Lua/main.lua 37
+> data cHJpbnQoIlJvbGxlZCBhICIgLi4gbWF0aC5yYW5kb20oNikpCg==
+> end
+< ok
+> commit
+< error dev.example.dice is a system app's, which vdb can't replace; Dice.app was thrown away
+! not-installed Dice.app
+> bye
+< ok
