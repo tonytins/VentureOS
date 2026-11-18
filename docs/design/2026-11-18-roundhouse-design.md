@@ -1,6 +1,6 @@
 # Roundhouse: design
 
-> **Status:** draft for approval · **Date:** 2026-11-18 · **Release:** VentureOS 0.6, Izumo
+> **Status:** approved 2026-11-18 · **Date:** 2026-11-18 · **Release:** VentureOS 0.6, Izumo
 
 Roundhouse is VentureOS's IDE, named after where locomotives are built and serviced. This document says what it is,
 why, and how it gets built, so the plan for 0.6 can be made from it.

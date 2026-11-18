@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-18 · **Latest release:** 0.5, Cassiopeia · **Next:** Roundhouse, VentureOS's IDE, being planned
+> **Last updated:** 2026-11-18 · **Latest release:** 0.5, Cassiopeia · **Next:** 0.6, Izumo (Roundhouse), in development
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -43,6 +43,7 @@ stage to the next, and add a line to the revision history.
 | 0.3 | (the desktop) | released 2026-11-11, `v0.3.18`; [notes](./releases/0.3.md) | The desktop, its apps, Settings, and the look |
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
+| 0.6 | Izumo | in development | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
 
 ## 0.4, Pere Marquette
 
@@ -146,29 +147,56 @@ automatic dark mode. Window buttons stay on the left, macOS-style.
   `appearance auto --from 19:00 --until 07:00`. Real sunset and sunrise,
   from a location, could follow.
 
-## After 0.5: Roundhouse
+## 0.6, Izumo
 
-Roundhouse is VentureOS's IDE, named after where locomotives are built and
-serviced. It comes after 0.5, so its canvas shows the finished look.
+Named after the Sunrise Izumo sleeper. 0.6 is Roundhouse, VentureOS's IDE, named
+after where locomotives are built and serviced: a real interface designer,
+which outside Windows and macOS doesn't exist, for VentureOS's own apps and
+anyone else's. Roundhouse shares VentureOS's version, as Xcode ships with the
+SDK it builds for. Its [design](./design/2026-11-18-roundhouse-design.md) has
+the why, the decisions, and how the parts fit.
 
 **The desktop version** is a C# app on Avalonia, for macOS, Linux, and
-Windows, in this repository. It edits an app's bundle: a navigator for its
-files, a Lua editor with highlighting (AvaloniaEdit), a form for `Info.xml`,
-and an Xcode-style interface builder for `.uix` files (a canvas, selection
-handles, an outline, an inspector, a library of controls, window settings,
-and menus). The canvas is drawn by VentureOS's own `UIView` through an
-Avalonia painter, so it looks exactly as VentureOS draws it, and Run starts
-the app in a simulated VentureOS desktop built from the same code, with no
-QEMU. Avalonia and AvaloniaEdit are approved, for Roundhouse only.
+Windows, in this repository. Its canvas is drawn by VentureOS's own code, so
+what you design is what the app shows, close but not pixel-perfect in text.
+Avalonia, AvaloniaEdit, and AvaloniaEdit's TextMate add-on are approved, for
+Roundhouse only.
 
-It needs a UIScript writer that keeps what it doesn't understand: comments,
-unknown attributes, and element order. A document with an element it
-refuses opens read-only, saying why.
+**0.6.1xx, preview, and no `ui` scope**
 
-**The native version,** an app on VentureOS itself, comes after the desktop
-one. It needs from the platform: a `<Region>` that hosts and draws another
-`.uix`, pointer input in regions, UIScript to and from Lua, text with more
-than one style, and persistence.
+- [ ] Apps don't ask for `ui`; commands, `init.lua`, and the `lua` prompt can
+  show an alert, Quick Look, and launch an app.
+- [ ] Roundhouse opens a `.uix` and draws it beside its text, as VentureOS
+  does, redrawing as you type, in light and dark.
+
+**0.6.2xx, round trip**
+
+- [ ] A document model that writes a `.uix` back with only what was edited
+  changed, keeping comments, unknown attributes, and order. A document with
+  an element it refuses opens read-only, saying why.
+
+**0.6.3xx, designer**
+
+- [ ] Select, move, and resize; an outline, an inspector, and a library of
+  controls; window settings, the title bar, menus, and the sidebar; Undo and
+  Redo.
+
+**0.6.4xx, Run**
+
+- [ ] A simulated VentureOS desktop in Roundhouse, built from the same code,
+  running the app being edited, with no QEMU.
+
+**0.6.5xx, bundles**
+
+- [ ] A navigator for a bundle's files, a Lua editor with highlighting, a form
+  for `Info.xml`, and a new app from a template.
+
+**The native version,** an app on VentureOS itself, comes after 0.6. It needs
+from the platform: a `<Region>` that hosts and draws another `.uix`, pointer
+input in regions, UIScript to and from Lua, text with more than one style, and
+persistence.
+
+0.7, whatever it holds, is Seto, after Izumo's sister train.
 
 ## Ideas
 
@@ -210,6 +238,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | 0.6 is Izumo, Roundhouse, from its approved design, in five bands, designer first; apps no longer ask for `ui`. 0.7 will be Seto. |
 | 2026-11-18 | minor | 0.5, Cassiopeia, is released as `v0.5.506`. Roundhouse is next, being planned. |
 | 2026-11-17 | minor | 0.5.5xx done, in four phases: the look grows, rounded corners, wallpapers with a picker, and automatic dark mode on a schedule, which I chose over sunset times for now. Every band of 0.5 is done. |
 | 2026-11-17 | minor | 0.5.4xx gains a fourth phase at my suggestion: Settings' panes in a sidebar. |
