@@ -2,6 +2,7 @@ using Venture.OS.Bundles;
 using Venture.OS.Desktop;
 using Venture.OS.Interface;
 using Venture.OS.Startup;
+using Venture.OS.Vdb;
 
 namespace Venture.OS.Shell.Commands;
 
@@ -22,7 +23,9 @@ namespace Venture.OS.Shell.Commands;
 /// <param name="apps">The system's apps, for the dock.</param>
 /// <param name="windows">The system's windows, which apps' windows stay in between visits.</param>
 /// <param name="appOutput">Where apps write while the desktop shows; held then, and passed to the shell after.</param>
-internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windows, HeldOutput appOutput) : IShellCommand
+/// <param name="vdb">Listens for vdb each frame while developer mode is on, once the shell has set it up.</param>
+internal sealed class DesktopCommand(
+    Func<AppManager?> apps, WindowManager windows, HeldOutput appOutput, Func<VdbListener?> vdb) : IShellCommand
 {
     /// <summary>The app that is the desktop, as Finder is on a Mac.</summary>
     private const string FilesApp = "Files";
@@ -104,6 +107,10 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
                 if (scroll != 0)
                     MouseManager.ResetScrollDelta();
 
+                // vdb's changes, such as its Trust alert, come before the frame, so it draws them.
+                if (vdb()?.Poll(Stopwatch.GetElapsedTime(opening)) == true)
+                    session.RequestRedraw();
+
                 DesktopInput input = new(
                     MouseManager.X, MouseManager.Y, MouseManager.LeftButton, scroll, ReadKeys(), Stopwatch.GetElapsedTime(opening));
                 if (!session.Update(input))
@@ -134,6 +141,8 @@ internal sealed class DesktopCommand(Func<AppManager?> apps, WindowManager windo
     /// </summary>
     private void Leave(DesktopSession? session, IShellOutput output)
     {
+        // vdb listens only while the desktop runs, since the shell's prompt can't check it while it waits.
+        vdb()?.Stop();
         windows.IsShowing = false;
         session?.CloseDesktopWindows();
         foreach (var line in appOutput.Take())

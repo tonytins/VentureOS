@@ -4,7 +4,8 @@ vdb sends an app to a running VentureOS and opens it, from another computer. Thi
 follow: VentureOS's side is `Venture.OS.Common/Vdb`, and the computer's is the `vdb` tool in `tools/vdb`. Why it's
 built this way is in [its design](../design/2026-11-18-vdb-design.md).
 
-VentureOS's side is written and tested; it doesn't listen for connections yet, and the tool doesn't send yet.
+VentureOS listens while the desktop runs and developer mode is on (Settings ▸ Developer, or
+`venture.developer.enable()`); under QEMU, `./run.sh --vdb` forwards the port. The `vdb` tool doesn't send yet.
 
 ## Lines
 

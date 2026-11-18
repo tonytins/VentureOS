@@ -21,7 +21,7 @@ public sealed class SettingsAppTests : IDisposable
     private readonly RecordingOutput events = new();
     private readonly WindowManager windows = new(1024, 768);
     private readonly AppManager manager;
-    private readonly FakeSystemInfo system = new();
+    private readonly FakeSystemInfo system = new() { Developer = new() };
 
     public SettingsAppTests()
     {
@@ -239,7 +239,7 @@ public sealed class SettingsAppTests : IDisposable
     [Fact]
     public void OpensOnAppearanceWithClockInTheSidebar()
     {
-        Assert.Equal(["Appearance", "Clock"], Window.View.List("panes")!.Items);
+        Assert.Equal(["Appearance", "Clock", "Developer"], Window.View.List("panes")!.Items);
         Assert.Equal(0, Window.View.List("panes")!.SelectedIndex);
         Assert.Equal("Appearance", Window.Title);
         Assert.False(Window.View.IsHidden("swatch1"));
@@ -273,6 +273,48 @@ public sealed class SettingsAppTests : IDisposable
 
         Assert.Equal(TimeSpan.FromMinutes(330), system.WallClock!.UtcOffset);
         Assert.Equal("Wed 2:15 AM, UTC+05:30", Window.View.Text("clockShown"));
+    }
+
+    [Fact]
+    public void DeveloperShowsItsPaneAloneAndStartsOff()
+    {
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
+
+        Assert.Equal("Developer", Window.Title);
+        Assert.False(Window.View.IsHidden("developerOn"));
+        Assert.True(Window.View.IsHidden("utcOffset"));
+        Assert.True(Window.View.IsHidden("swatch1"));
+        Assert.True(Window.View.IsSelected("developerOff"));
+        Assert.Equal("Off. 0 computers are trusted.", Window.View.Text("developerStatus"));
+    }
+
+    [Fact]
+    public void OnTurnsDeveloperModeOnAndOffTurnsItOff()
+    {
+        Send(new UIEvent(UIEventKind.Pressed, "developerOn"));
+
+        Assert.True(system.Developer!.IsEnabled);
+        Assert.True(Window.View.IsSelected("developerOn"));
+        Assert.Equal("Listening on port 28455. 0 computers are trusted.", Window.View.Text("developerStatus"));
+
+        Send(new UIEvent(UIEventKind.Pressed, "developerOff"));
+
+        Assert.False(system.Developer.IsEnabled);
+        Assert.True(Window.View.IsSelected("developerOff"));
+    }
+
+    [Fact]
+    public void DeveloperSaysWhyItIsNotListening()
+    {
+        // As the kernel's listener leaves it when there's nothing to listen on; opening the pane shows it afresh.
+        Send(new UIEvent(UIEventKind.Pressed, "developerOn"));
+        system.Developer!.Disable();
+        system.Developer.Problem = "there's no network device to listen on";
+        system.Developer.Trust.Trust("0123456789abcdef0123456789abcdef");
+
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
+
+        Assert.Equal("Not listening: there's no network device to listen on. 1 computer is trusted.", Window.View.Text("developerStatus"));
     }
 
     private void Send(UIEvent uiEvent) => Window.EventHandler!(Window, uiEvent);

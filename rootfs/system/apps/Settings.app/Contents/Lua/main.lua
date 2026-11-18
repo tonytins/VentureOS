@@ -1,7 +1,8 @@
 -- Settings: panes in a sidebar, as GNOME Settings has them. Appearance holds
 -- the desktop's look, light or dark, and its accent color; Clock holds the
--- clock's offset from UTC. Each choice applies at once and is saved in
--- /mnt/user/settings, as the appearance and clock commands' are.
+-- clock's offset from UTC; Developer turns on developer mode, for vdb. Each
+-- look and clock choice applies at once and is saved in /mnt/user/settings,
+-- as the appearance and clock commands' are; developer mode isn't saved.
 
 local window = venture.ui.open("main.uix")
 
@@ -134,6 +135,41 @@ end)
 -- The time shown keeps up, as the menu bar's does.
 window:every(30, function() showClock() end)
 
+-- Developer mode, for vdb: on or off, and what it's doing. It lasts until
+-- VentureOS restarts, like everything else in memory; init.lua can turn it on
+-- at every boot.
+local function showDeveloper()
+  local status = venture.developer.status()
+  if not status then
+    window:setChecked("developerOn", false)
+    window:setChecked("developerOff", false)
+    window:setText("developerStatus", "This system has no developer mode.")
+    return
+  end
+
+  window:setChecked("developerOn", status.enabled)
+  window:setChecked("developerOff", not status.enabled)
+  local text
+  if status.problem then
+    text = "Not listening: " .. status.problem .. "."
+  elseif not status.enabled then
+    text = "Off."
+  elseif status.connected then
+    text = "A computer is connected."
+  else
+    text = "Listening on port " .. status.port .. "."
+  end
+  local trusted = status.trusted == 1 and "1 computer is" or (status.trusted .. " computers are")
+  window:setText("developerStatus", text .. " " .. trusted .. " trusted.")
+end
+
+window:setText("developerAbout",
+  "vdb sends apps to VentureOS from another computer, which you're asked to trust "
+  .. "first. It listens while the desktop runs. Developer mode lasts until VentureOS restarts.")
+window:on("developerOn", function() venture.developer.enable(); showDeveloper() end)
+window:on("developerOff", function() venture.developer.disable(); showDeveloper() end)
+window:every(2, function() showDeveloper() end)
+
 -- The panes, in the sidebar's order, and the controls each one shows; every
 -- pane's controls sit in the same place, and only the chosen pane's show.
 local PANES = {
@@ -147,6 +183,10 @@ local PANES = {
     },
   },
   { name = "Clock", controls = { "offsetHeading", "utcLabel", "utcOffset", "clockShown" } },
+  {
+    name = "Developer",
+    controls = { "developerHeading", "developerOn", "developerOff", "developerAbout", "developerStatus" },
+  },
 }
 
 -- Wallpaper slots past the last wallpaper stay hidden on every pane.
@@ -161,6 +201,7 @@ local function showPane(number)
   end
   window:setTitle(PANES[number].name)
   window:select("panes", number)
+  if PANES[number].name == "Developer" then showDeveloper() end
 end
 
 local names = {}
@@ -172,4 +213,5 @@ end)
 
 show()
 showClock()
+showDeveloper()
 showPane(1)

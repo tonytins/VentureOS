@@ -2,6 +2,7 @@ using Cosmos.Executable.Lua;
 using Venture.OS.Network;
 using Venture.OS.Shell;
 using Venture.OS.Time;
+using Venture.OS.Vdb;
 
 namespace Venture.OS.Scripting;
 
@@ -25,6 +26,10 @@ namespace Venture.OS.Scripting;
 /// set, also <c>text</c> (as the menu bar shows it), <c>year</c>, <c>month</c>, <c>day</c>, <c>hour</c>, <c>minute</c>,
 /// <c>second</c>, <c>weekday</c>, and <c>utc</c>; <c>nil</c> without a clock. <c>venture.setUtcOffset(offset)</c>
 /// takes an offset such as <c>"-05:00"</c> and saves it, returning as <c>setAppearance</c> does.</description></item>
+/// <item><description><c>venture.developer.enable()</c> and <c>disable()</c> turn developer mode on and off, for vdb;
+/// <c>venture.developer.trust(identity)</c> trusts a computer without asking; and <c>venture.developer.status()</c>
+/// is <c>{ enabled, port, trusted, connected, problem }</c>, or <c>nil</c> without developer mode. All last until
+/// VentureOS restarts.</description></item>
 /// </list>
 /// <para>The functions other than <c>setAppearance</c> and <c>setUtcOffset</c> take no arguments and ignore any they're given. An exception from
 /// <see cref="ISystemInfo"/> becomes a Lua error, which <c>pcall</c> can catch, so a failing device can't stop the
@@ -98,7 +103,70 @@ public static class VentureLibrary
         });
         state.SetField(-2, "launch");
         state.SetField(-2, "ui");
+
+        state.L_NewLib(
+        [
+            Gated("enable", ScriptScopes.System, scopes, "developer.", lua => SetDeveloperMode(lua, system.Developer, on: true)),
+            Gated("disable", ScriptScopes.System, scopes, "developer.", lua => SetDeveloperMode(lua, system.Developer, on: false)),
+            Gated("trust", ScriptScopes.System, scopes, "developer.", lua => TrustComputer(lua, system.Developer)),
+            Gated("status", ScriptScopes.System, scopes, "developer.", lua => PushDeveloperStatus(lua, system.Developer)),
+        ]);
+        state.SetField(-2, "developer");
         state.SetGlobal(GlobalName);
+    }
+
+    private const string NoDeveloperMode = "this system has no developer mode";
+
+    /// <summary>
+    /// <c>venture.developer.enable()</c> and <c>disable()</c>: turn developer mode on or off, so VentureOS listens for
+    /// vdb while the desktop runs, until it restarts. Return <see langword="true"/>, or <c>nil</c> and why.
+    /// </summary>
+    private static int SetDeveloperMode(ILuaState lua, VdbDeveloperMode? developer, bool on)
+    {
+        if (developer is null)
+            return Refuse(lua, NoDeveloperMode);
+        if (on)
+            developer.Enable();
+        else
+            developer.Disable();
+        return Done(lua);
+    }
+
+    /// <summary>
+    /// <c>venture.developer.trust(identity)</c>: trusts the computer whose vdb printed this identity, without asking,
+    /// until VentureOS restarts. Returns <see langword="true"/>, or <c>nil</c> and why.
+    /// </summary>
+    private static int TrustComputer(ILuaState lua, VdbDeveloperMode? developer)
+    {
+        var identity = LuaText.Decode(lua.L_CheckString(1));
+        if (developer is null)
+            return Refuse(lua, NoDeveloperMode);
+        if (!VdbTrust.IsIdentity(identity))
+            return Refuse(lua, $"\"{identity}\" isn't a vdb identity, which is 32 lowercase hexadecimal characters; vdb identity prints it");
+        developer.Trust.Trust(identity);
+        return Done(lua);
+    }
+
+    /// <summary>
+    /// <c>venture.developer.status()</c>: <c>{ enabled, port, trusted, connected, problem }</c>, where
+    /// <c>trusted</c> counts the computers trusted and <c>problem</c> says why it isn't listening, if it isn't; or
+    /// <c>nil</c> on a system without developer mode.
+    /// </summary>
+    private static int PushDeveloperStatus(ILuaState lua, VdbDeveloperMode? developer)
+    {
+        if (developer is null)
+        {
+            lua.PushNil();
+            return 1;
+        }
+
+        lua.NewTable();
+        SetBoolean(lua, "enabled", developer.IsEnabled);
+        SetInteger(lua, "port", (ulong)developer.Port);
+        SetInteger(lua, "trusted", (ulong)developer.Trust.TrustedCount);
+        SetBoolean(lua, "connected", developer.IsConnected);
+        SetString(lua, "problem", developer.Problem);
+        return 1;
     }
 
     /// <summary>
@@ -154,12 +222,17 @@ public static class VentureLibrary
 
     private static NameFuncPair Gated(
         string name, ScriptScopes scope, ScriptScopes granted, CSharpFunctionDelegate function) =>
+        Gated(name, scope, granted, "", function);
+
+    /// <param name="table">Where the function sits under <c>venture</c>, such as <c>developer.</c>, for its message.</param>
+    private static NameFuncPair Gated(
+        string name, ScriptScopes scope, ScriptScopes granted, string table, CSharpFunctionDelegate function) =>
         (granted & scope) != 0
             ? new(name, function)
             : new(name, lua =>
             {
                 // Pushed rather than passed to L_Error, which would treat the message as a format string.
-                lua.PushString(LuaText.Encode(UndeclaredMessage(name, scope)));
+                lua.PushString(LuaText.Encode(UndeclaredMessage(table + name, scope)));
                 return lua.Error();
             });
 

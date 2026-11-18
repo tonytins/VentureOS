@@ -83,4 +83,11 @@
   <Text name="utcLabel" x="12" y="43" width="34" height="20" text="UTC"/>
   <TextField name="utcOffset" x="48" y="40" width="90" height="26" placeholder="-05:00" tooltip="utcOffsetHint"/>
   <Text name="clockShown" x="148" y="43" width="220" height="20" style="quiet"/>
+
+  <!-- Developer: developer mode, for vdb, which sends apps from another computer while the desktop runs. -->
+  <Text name="developerHeading" x="12" y="10" width="356" height="24" style="heading" text="Developer mode"/>
+  <Button name="developerOn" x="12" y="40" width="84" height="26" text="On"/>
+  <Button name="developerOff" x="102" y="40" width="84" height="26" text="Off"/>
+  <FormattedText name="developerAbout" x="12" y="78" width="356" height="60" style="quiet"/>
+  <Text name="developerStatus" x="12" y="146" width="356" height="20"/>
 </UIScript>

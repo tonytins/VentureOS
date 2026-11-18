@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-17 · **Change:** minor (pictures) · **Target:** Cosmos gen3 3.0.97, x64 (ARM64 builds)
 
-## Current state (2026-11-17)
+## Current state (2026-11-18)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,525 tests, and 188 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,630 tests, and 188 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -39,8 +39,9 @@ the code wins and this page is out of date.
   with the system files built into the kernel installed to `/mnt/system`,
   which nothing may change, and the user's to `/mnt/user`, which the user may.
   Nothing persists across boots.
-- **Network:** DHCP on the first NIC when one is present. Nothing uses the
-  network after boot.
+- **Network:** DHCP on the first NIC when one is present. After boot, scripts
+  resolve and ping, and with developer mode on, the desktop listens for vdb,
+  which installs and opens apps sent from another computer (§8).
 - **Desktop:** `desktop` opens a graphical desktop with a menu bar, a dock
   that opens the system's apps, and movable windows that show `.uix`
   interfaces, over the Earthset wallpaper, with apps' icons in the dock and
@@ -133,6 +134,7 @@ VentureOS/
 │  │  ├─ Startup/                  Venture.OS.Startup: Bootstrap (the boot steps) and BootRamDisk
 │  │  ├─ Shell/                    Venture.OS.Shell: ConsoleShellOutput, and Commands/, one class per built-in command
 │  │  ├─ Scripting/                Venture.OS.Scripting: KernelSystemInfo, ISystemInfo read from Cosmos
+│  │  ├─ Vdb/                      Venture.OS.Vdb: VdbListener, vdb from the desktop's frame loop
 │  │  ├─ Desktop/CanvasPainter.cs  draws the desktop on Cosmos's canvas with the system fonts
 │  │  ├─ HostInfo.cs               name, version, and build number
 │  │  ├─ GlobalUsings.cs           every Cosmos namespace, plus Venture.OS.Kernel
@@ -143,6 +145,7 @@ VentureOS/
 │  │  ├─ Scripting/                Venture.OS.Scripting: running Lua, script commands, owners, and the venture table
 │  │  │                            (VentureLibrary, ShellLibrary, FilesLibrary), backed by ISystemInfo and IAppearance
 │  │  ├─ Bundles/                  Venture.OS.Bundles: Bundle (Contents/Info.xml), AppManager, AppLibrary (venture.app)
+│  │  ├─ Vdb/                      Venture.OS.Vdb: vdb/1 without sockets (VdbSession), trust, and developer mode
 │  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
 │  │                               and UiLibrary (venture.ui), all drawn through IPainter
 │  ├─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
@@ -165,7 +168,7 @@ VentureOS/
 │     └─ RenderCommand.cs          Roundhouse --render: a .uix drawn into a PNG file, with no window
 ├─ rootfs/                        files built into the kernel and installed at boot
 │  ├─ system/                      installed to /mnt/system, which nothing may change
-│  │  ├─ init.lua                  runs once after boot; prints the help hint
+│  │  ├─ init.lua                  runs once after boot; prints the help hint, and runs developer.local.lua if a build has one
 │  │  ├─ apps/                     Files, Settings, System Monitor, and Terminal
 │  │  ├─ commands/                 Lua commands: echo, info, net, appearance, ls, cat, write, mkdir, rm, df, pwd
 │  │  ├─ lib/venture/args.lua      the system library: the venture.args argument parser
@@ -177,13 +180,14 @@ VentureOS/
 ├─ tests/
 │  ├─ Venture.OS.Common.Tests/     xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with rootfs/ copied in
 │  └─ Venture.Roundhouse.Tests/    xUnit v3 tests that drive Roundhouse off-screen with Avalonia.Headless
+├─ tools/vdb/                     vdb, a Swift command-line tool that sends apps to VentureOS (here until it has its own repository)
 ├─ packaging/                     Roundhouse's packages for Linux, Windows, and macOS, after CityLimits'; writes dist/
-├─ docs/                          architecture, roadmap, scorecard, the app guide, and the UIScript drafts
+├─ docs/                          architecture, roadmap, scorecard, the app guide, the UIScript drafts, and vdb's protocol
 ├─ .agents/skills/                C# and Cosmos guidance for agents
 ├─ GitInfo.txt                    the base version, which every commit counts up from
 ├─ global.json                    opts dotnet test into Microsoft.Testing.Platform
 ├─ changelog.md                   user-facing history
-└─ run.sh                         check, build, and run x64 locally (--headless for serial only)
+└─ run.sh                         check, build, and run x64 locally (--headless for serial only, --vdb for vdb's port)
 ```
 
 **Naming.** The kernel class is `VentureKernel` rather than `Kernel`,
@@ -456,6 +460,39 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
   bounded by a count of tries, not a time, and can't be shortened without
   Cosmos's experimental packet API.
 - Cosmos's limits apply: no TLS, and TCP doesn't retransmit.
+
+### 8.1 vdb
+
+vdb sends an app from another computer and opens it, while VentureOS can't
+yet keep files or install from a disk. Its [design](./design/2026-11-18-vdb-design.md)
+has the why, and [docs/vdb](./vdb/README.md) the protocol.
+
+- **Developer mode** (`VdbDeveloperMode`, on `ISystemInfo.Developer`) is off
+  at every boot. Settings' Developer pane or `venture.developer.enable()`
+  turns it on, until restart. `init.lua` runs `/mnt/system/developer.local.lua`
+  when a build has one: a git-ignored file that turns developer mode on and
+  trusts the owner's own vdb, so their builds need no prompt and nobody
+  else's carries it.
+- **Listening.** Sockets in Cosmos are safe on one thread only, and the shell
+  blocks in `Console.ReadLine`, so vdb listens only while the desktop runs:
+  `DesktopCommand`'s frame loop calls `VdbListener.Poll` each frame, which
+  checks `Pending()` and `DataAvailable`, neither of which blocks, and reads
+  at most 16 × 4 KiB a frame. Leaving the desktop stops listening. One
+  computer at a time; a second is told it's busy.
+- **The protocol** is in Common (`Vdb/`), with no sockets: `VdbSession` is
+  handed bytes and the time and answers in lines, so it's tested without a
+  kernel. Apps are staged in `/mnt/user/.vdb`, checked with `Bundle.Read`,
+  and copied into `/mnt/user/apps`; a system app's identifier is refused.
+- **Trust.** An unknown computer gets an alert with Trust and Deny and no
+  close button; 60 seconds without an answer is Deny. Identities are plain
+  text, so this guards against accidents, not against someone on the
+  network. Trust lasts until restart.
+- **Output.** `HeldOutput.Echo` copies what apps print to a trusted
+  computer, as `out` lines.
+- **Failures** end the connection, or turn listening off with the reason in
+  Settings; none reaches the desktop. With no NIC, turning it on reports
+  that there's nothing to listen on.
+- Under QEMU, `./run.sh --vdb` forwards port 28455 from the host.
 
 ---
 
@@ -1465,7 +1502,7 @@ builds and runs its example, so it can't drift from what works.
 - **Locally:** `dotnet test --project tests/Venture.OS.Common.Tests`, then
   `cosmos check` (always first before building: tool status and CLI updates),
   `cosmos build -p src/Venture.OS.Kernel`, then `./run.sh` (add `--headless`
-  for serial only) or `cosmos run -p src/Venture.OS.Kernel --headless`. `--nic none`
+  for serial only, and `--vdb` to forward vdb's port) or `cosmos run -p src/Venture.OS.Kernel --headless`. `--nic none`
   boots without a network card.
 - **CI:** none for now. The kernel needs Cosmos's toolchain and doesn't build
   like a typical .NET project, so the workflow was removed (2026-11-11).
@@ -1509,6 +1546,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | vdb (§8.1): developer mode, the protocol in Common, the desktop's listener, the Trust alert, `developer.local.lua`, and `run.sh --vdb`. |
 | 2026-11-18 | minor | Roundhouse (§9): NLog and the Log tab; `Info.xml` in the Text tab under its form; a prompt before leaving unsaved edits; opening another bundle from the designer no longer crashes. |
 | 2026-11-18 | minor | Roundhouse (§9): New App, a window app from the template beside Roundhouse, checked by `Bundle.Read`. |
 | 2026-11-18 | minor | Interface formats, bundles, and Roundhouse (§9): `FlatXmlEditor`, moved out of `UIDocument`; `Bundle.FromInfo` and `InfoDocument`; the `Info.xml` form. |

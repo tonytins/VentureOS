@@ -75,6 +75,12 @@ public interface ISystemInfo
     /// scripts' paths are kept within; <see langword="null"/> in the kernel, whose disk is the whole world.
     /// </summary>
     FileRoot? Root { get; }
+
+    /// <summary>
+    /// Developer mode, which <c>venture.developer</c> turns on and off for vdb, or <see langword="null"/> on a system
+    /// that can't listen for it, such as Roundhouse's Run.
+    /// </summary>
+    Vdb.VdbDeveloperMode? Developer { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>

@@ -258,6 +258,48 @@ public sealed class VentureLibraryTests
         Assert.Throws<ArgumentNullException>(() => VentureLibrary.Open(lua.State, null!));
     }
 
+    [Fact]
+    public void DeveloperModeTurnsOnAndOffAndTrusts()
+    {
+        Venture.OS.Vdb.VdbDeveloperMode developer = new();
+        Run(new FakeSystemInfo { Developer = developer }, """
+            local s = venture.developer.status()
+            print(s.enabled, s.port, s.trusted, s.connected, s.problem)
+            print(venture.developer.enable())
+            print(venture.developer.trust("0123456789abcdef0123456789abcdef"))
+            s = venture.developer.status()
+            print(s.enabled, s.trusted)
+            print(venture.developer.disable(), venture.developer.status().enabled)
+            """);
+
+        Assert.Equal(["false	28455	0	false	nil", "true", "true", "true	1", "true	false"], output.Lines);
+        Assert.Equal(Venture.OS.Vdb.VdbTrustState.Trusted, developer.Trust.State("0123456789abcdef0123456789abcdef"));
+    }
+
+    [Fact]
+    public void DeveloperModeRefusesWhatIsNotAnIdentity()
+    {
+        Run(new FakeSystemInfo { Developer = new() }, """print(venture.developer.trust("my laptop"))""");
+
+        Assert.StartsWith("nil	\"my laptop\" isn't a vdb identity", output.Lines.Single());
+    }
+
+    [Fact]
+    public void DeveloperModeIsMissingWhereTheSystemHasNone()
+    {
+        Run(new FakeSystemInfo(), "print(venture.developer.status()) print(venture.developer.enable())");
+
+        Assert.Equal(["nil", "nil	this system has no developer mode"], output.Lines);
+    }
+
+    [Fact]
+    public void DeveloperModeNeedsTheSystemScope()
+    {
+        Assert.False(Run(new FakeSystemInfo { Developer = new() }, "venture.developer.enable()", ScriptScopes.Network));
+
+        Assert.Contains(output.Lines, line => line.Contains("venture.developer.enable needs the system scope", StringComparison.Ordinal));
+    }
+
     private bool Run(ISystemInfo system, string code, ScriptScopes scopes = ScriptScopes.All) =>
         LuaRunner.Run(output, Path.GetTempPath(), lua => lua.DoString(code), system, scopes: scopes);
 }

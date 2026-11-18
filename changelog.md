@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.104
+
+- Developer mode, for vdb: Settings ▸ Developer turns it on, and while the desktop runs, VentureOS listens on port 28455 for a computer sending an app. An app sent is checked as apps are at boot, installed in `/mnt/user/apps`, and opened, replacing an open copy, and what it prints goes back to the computer. A computer VentureOS doesn't know is asked about first, with Trust and Deny. Developer mode and trust last until VentureOS restarts.
+- Scripts can turn developer mode on and off, trust a computer, and check it with `venture.developer.enable()`, `disable()`, `trust(identity)`, and `status()`, under the `system` scope.
+- `init.lua` runs `developer.local.lua` beside it when a build has one, to turn developer mode on at every boot; it's git-ignored, so only your own builds have it.
+- `./run.sh --vdb` forwards vdb's port into QEMU.
+
 ## 0.6.505
 
 - VentureOS 0.6, Izumo, is released. See [the release notes](docs/releases/0.6.md).

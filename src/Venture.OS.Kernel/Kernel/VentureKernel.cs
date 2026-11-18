@@ -4,6 +4,7 @@ using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Shell.Commands;
 using Venture.OS.Startup;
+using Venture.OS.Vdb;
 
 namespace Venture.OS.Kernel;
 
@@ -34,6 +35,9 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
     // Where apps write while the desktop shows, and their event handlers always; passed to the shell otherwise.
     private readonly HeldOutput desktopOutput = new();
+
+    // Listens for vdb while the desktop runs; set up with the shell.
+    private VdbListener? vdb;
 
     // init.lua's interpreter and what it set up, kept for the whole boot so its commands keep working.
     private LuaOwner? initOwner;
@@ -114,7 +118,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
         commands.Register(new OpenCommand(() => appManager));
         commands.Register(new CloseCommand(() => appManager));
         commands.Register(new AppsCommand(() => appManager));
-        commands.Register(new DesktopCommand(() => appManager, windows, desktopOutput));
+        commands.Register(new DesktopCommand(() => appManager, windows, desktopOutput, () => vdb));
 
         ScriptCommands scripts = new(
             Bootstrap.CommandsDirectoryPath,
@@ -145,6 +149,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
         // Every script, app or not, can show an alert, Quick Look, or open an app through the same desktop.
         system.Desktop = new ScriptDesktop(appWindows, () => appManager);
+        vdb = new VdbListener(system.Developer!, windows, appWindows, () => appManager, desktopOutput);
 
         shellContext = new ShellContext(new ConsoleShellOutput(), this, commands)
         {

@@ -68,4 +68,7 @@ public sealed class SimulatedSystem(SimulatedDisk disk) : ISystemInfo
 
     /// <summary>The run's copy of VentureOS's files, which scripts' paths are kept within.</summary>
     public FileRoot? Root { get; } = new(disk.Root);
+
+    /// <summary>None: a run has no network to listen on, so Settings' Developer pane says developer mode isn't here.</summary>
+    public Venture.OS.Vdb.VdbDeveloperMode? Developer => null;
 }

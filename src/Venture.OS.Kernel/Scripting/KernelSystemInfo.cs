@@ -27,6 +27,9 @@ internal sealed class KernelSystemInfo : ISystemInfo
     /// <summary>None: the kernel's disk is VentureOS's whole world.</summary>
     public FileRoot? Root => null;
 
+    /// <summary>Developer mode, which the desktop's vdb listener follows.</summary>
+    public Venture.OS.Vdb.VdbDeveloperMode? Developer { get; } = new();
+
     /// <summary>The system's clock, whose offset the clock boot step restores.</summary>
     public Time.WallClock? WallClock => Startup.Bootstrap.WallClock;
 

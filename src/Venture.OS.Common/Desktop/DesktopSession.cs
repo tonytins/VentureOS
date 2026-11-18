@@ -124,6 +124,9 @@ public sealed class DesktopSession
     private (string? App, DesktopWindow? Window, bool NewWindow, bool Built) menuSource;
     private DesktopInput last;
     private bool drawn;
+
+    // Set by RequestRedraw, and cleared once a frame has said whether to draw.
+    private bool redrawRequested;
     private PointerOwner owner;
 
     // The window in front when focus was last checked, so a window opened between frames, such as About when the
@@ -409,6 +412,12 @@ public sealed class DesktopSession
     /// </summary>
     public void StartFallbackApp() => KeepFallbackRunning();
 
+    /// <summary>
+    /// Asks for the next frame to be drawn, for a change made from outside a frame, such as vdb opening an alert or
+    /// an app between frames.
+    /// </summary>
+    public void RequestRedraw() => redrawRequested = true;
+
     /// <summary>Takes a frame's input.</summary>
     /// <returns>Whether the desktop needs drawing again.</returns>
     public bool Update(DesktopInput input)
@@ -496,12 +505,13 @@ public sealed class DesktopSession
 
         // The clock is brought up to date every frame, even when something else already calls for a redraw.
         var clockChanged = UpdateClock();
-        var changed = !drawn || clockChanged || input.HasEvents
+        var changed = !drawn || clockChanged || input.HasEvents || redrawRequested
             || !string.Equals(DesktopAppearance.Current.Wallpaper, backgroundWallpaper, StringComparison.Ordinal) || happened.Count > 0 || restarted || ticked
             || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
             || !ReferenceEquals(Windows.Tooltip, drawnTooltip)
             || x != last.PointerX || y != last.PointerY || input.PointerDown != last.PointerDown;
         last = new DesktopInput(x, y, input.PointerDown);
+        redrawRequested = false;
         if (released)
             owner = PointerOwner.None;
         return changed;

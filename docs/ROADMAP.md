@@ -206,9 +206,9 @@ It stands in until VentureOS can keep files and install from a disk. Its
 The tool is written in Swift, in `tools/vdb/` for now; Swift Argument Parser
 and swift-log are approved for it alone.
 
-- [ ] Developer mode, in Settings and from scripts, and trusting a computer,
+- [x] Developer mode, in Settings and from scripts, and trusting a computer,
   by an alert or ahead of time on the owner's own builds.
-- [ ] The vdb/1 protocol: installing an app, checked as boot checks apps, and
+- [x] The vdb/1 protocol: installing an app, checked as boot checks apps, and
   opening it, with what it prints sent back.
 - [ ] The `vdb` tool, for Linux, macOS, and Windows.
 
@@ -259,6 +259,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | patch | VentureOS's side of vdb is done: developer mode, the Trust alert, the protocol, and listening from the desktop, checked by sending an app into QEMU. The `vdb` tool is next. GitVersion gains a tag switch, so vdb reports VentureOS's version. |
 | 2026-11-18 | minor | 0.7, Seto, begins with 0.7.1xx, vdb, from its approved design: developer mode, trusting a computer, a plain-text protocol with files in base64, and a Swift tool. Roundhouse on VentureOS follows, a text editor first. |
 | 2026-11-18 | minor | 0.6, Izumo, is released as `v0.6.505`. 0.7, Seto, is being planned. |
 | 2026-11-18 | patch | 0.6.5xx's bundles are done: a navigator, editors for Lua and text, the `Info.xml` form, New App, a Log tab, and a prompt before leaving unsaved edits. Every band of 0.6 is complete; shipping it is the owner's call. |

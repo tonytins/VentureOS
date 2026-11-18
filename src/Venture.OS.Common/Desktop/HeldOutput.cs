@@ -25,9 +25,16 @@ public sealed class HeldOutput : IShellOutput
     /// <summary>Whether any lines are waiting.</summary>
     public bool HasLines => held.Count > 0;
 
+    /// <summary>
+    /// Also given every line as it's written, however it's then shown, such as vdb sending apps' output back to the
+    /// computer that opened them; or <see langword="null"/>.
+    /// </summary>
+    public Action<string>? Echo { get; set; }
+
     public void WriteLine(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
+        Echo?.Invoke(text);
         if (PassTo is { } output)
         {
             output.WriteLine(text);

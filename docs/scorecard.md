@@ -14,10 +14,10 @@ change. Statuses are `done`, `partial`, and `missing`.
 |---|---:|---:|---:|---|
 | [Boot](#boot) | 8 | 0 | 0 | 9 boot steps: 3 critical, 6 optional |
 | [Storage](#storage) | 4 | 0 | 1 | 32 MiB RAM disk, FAT16 at `/mnt`; system files at `/mnt/system`, read-only to file commands |
-| [Network](#network) | 4 | 0 | 0 | DHCP lease 10.0.2.15 under QEMU; `resolve` and `ping` |
+| [Network](#network) | 5 | 0 | 0 | DHCP lease 10.0.2.15 under QEMU; `resolve` and `ping`; vdb on port 28455 |
 | [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 14 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.97, .NET 10; x64 ISO 10.6 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 1,525 tests, and 188 for Roundhouse, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 1,630 tests, and 188 for Roundhouse, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 7 | 0 | 0 | Version 0.5; opens in 177 ms at 1024x768, over the Earthset wallpaper |
 | [Desktop apps](#desktop-apps) | 5 | 0 | 0 | Keystone complete; Files, Settings, System Monitor, Terminal, Notes, Calculator, and TextEdit |
@@ -71,6 +71,7 @@ output stays on the console.
 | NET-2 | No NIC means network setup is skipped without touching the adapter | done | `NetworkManager.DeviceCount` guard; boot with `--nic none` reaches `Calling Run()` |
 | NET-3 | DNS resolution | done | DHCP registers its server with Cosmos; `KernelNetworkTools.Resolve`, `venture.resolve`, `resolve`; tests for names, the Lua function, and the command. Boot test 2026-11-12 (QEMU user networking): `net` showed DNS 10.0.2.3, and `resolve example.com` answered 104.20.23.154 |
 | NET-4 | Anything uses the network after boot | done | `venture.ping`, `ping`; tests for the function, the count, and no reply. Boot test 2026-11-12: `ping -c 2 10.0.2.2` got 2 replies (0 ms, as Cosmos times in 10 ms steps), and `ping -c 1 10.0.2.99` reported no reply after Cosmos's ARP wait of several seconds |
+| NET-5 | With developer mode on, an app sent from another computer over vdb is checked, installed, and opened | done | `VdbSession` (Common, 14 recorded conversations and 89 more tests), `VdbListener` in the desktop's frame loop. Boot test 2026-11-18 (x64, QEMU user networking, `--hostfwd tcp::28455-:28455`, developer mode and trust from a test `developer.local.lua`): a Python client sent `Dice.app`, which was installed in `/mnt/user/apps` and opened, its window and dock icon showing, and its `print` came back as `out Dice says hello over vdb`; sending it again closed and replaced the open copy; a second computer was told `busy`; an untrusted computer got the Trust alert, and with no answer was refused after 60 seconds, and the alert closed. Pressing Trust by hand isn't checked: the virtual display's pointer doesn't reach QEMU's mouse |
 
 ## Shell
 

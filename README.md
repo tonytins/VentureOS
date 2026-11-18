@@ -45,6 +45,7 @@ From the repository root, `run.sh` checks the Cosmos tools, builds the kernel, a
 ```
 ./run.sh              # boot with a window
 ./run.sh --headless   # boot with serial output only
+./run.sh --vdb        # also forward vdb's port, 28455, to send apps in
 ```
 
 To run each step yourself, point the Cosmos CLI at the kernel project:

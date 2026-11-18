@@ -96,4 +96,19 @@ public sealed class IdleFrameTests : IDisposable
         Assert.False(changed);
         Assert.Equal(0, fewest);
     }
+
+    [Fact]
+    public void ARequestedRedrawDrawsOneIdleFrame()
+    {
+        DesktopInput still = new(500, 400, false);
+        for (var frame = 0; frame < 5; frame++)
+            session.Update(still with { Time = now += TimeSpan.FromMilliseconds(10) });
+        session.Draw(new RecordingPainter(1024, 768));
+        Assert.False(session.Update(still with { Time = now += TimeSpan.FromMilliseconds(10) }));
+
+        session.RequestRedraw();
+
+        Assert.True(session.Update(still with { Time = now += TimeSpan.FromMilliseconds(10) }));
+        Assert.False(session.Update(still with { Time = now += TimeSpan.FromMilliseconds(10) }));
+    }
 }

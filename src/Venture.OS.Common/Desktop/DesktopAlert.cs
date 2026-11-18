@@ -24,6 +24,59 @@ public static class DesktopAlert
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(message);
 
+        var (view, buttonY) = Layout(message, buttonY => $"""
+              <Button name="ok" x="{Width - Margin - 74}" y="{buttonY}" width="74" height="24" text="OK"/>
+            """);
+        return new DesktopWindow(title, view)
+        {
+            App = app,
+            EventHandler = (window, uiEvent) =>
+            {
+                if (uiEvent is { Kind: UIEventKind.Pressed, Control: "ok" })
+                    window.RequestClose();
+            },
+        };
+    }
+
+    /// <summary>
+    /// Makes a window that asks a question, with two buttons, the one that agrees on the right, and no close button,
+    /// so it ends only with an answer, or when whoever asked closes it.
+    /// </summary>
+    /// <param name="title">The window's title.</param>
+    /// <param name="message">The question, with line breaks where it has them.</param>
+    /// <param name="yes">The agreeing button's text, such as <c>Trust</c>.</param>
+    /// <param name="no">The other button's text, such as <c>Deny</c>.</param>
+    /// <param name="answered">Given <see langword="true"/> for <paramref name="yes"/>, once, as the window closes.</param>
+    public static DesktopWindow Ask(string title, string message, string yes, string no, Action<bool> answered)
+    {
+        ArgumentNullException.ThrowIfNull(title);
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(yes);
+        ArgumentNullException.ThrowIfNull(no);
+        ArgumentNullException.ThrowIfNull(answered);
+
+        // The buttons' text is set on the view, like the message, so nothing in it is read as markup.
+        var (view, _) = Layout(message, buttonY => $"""
+              <Button name="no" x="{Width - Margin - 74 - 8 - 74}" y="{buttonY}" width="74" height="24"/>
+              <Button name="yes" x="{Width - Margin - 74}" y="{buttonY}" width="74" height="24"/>
+            """);
+        view.SetText("yes", yes);
+        view.SetText("no", no);
+        return new DesktopWindow(title, view, closable: false)
+        {
+            EventHandler = (window, uiEvent) =>
+            {
+                if (uiEvent is not { Kind: UIEventKind.Pressed, Control: "yes" or "no" } || window.IsCloseRequested)
+                    return;
+                window.RequestClose();
+                answered(uiEvent.Control == "yes");
+            },
+        };
+    }
+
+    // The message sized to the window's width, with the buttons a row below it.
+    private static (UIView View, int ButtonY) Layout(string message, Func<int, string> buttons)
+    {
         var textWidth = Width - (2 * Margin);
         var lines = 0;
         foreach (var paragraph in message.Split('\n'))
@@ -40,20 +93,12 @@ public static class DesktopAlert
               <Window width="{Width}" height="{height}"/>
               <Style name="plain" backgroundColor="#F0F3F7"/>
               <FormattedText name="message" x="{Margin}" y="{Margin}" width="{textWidth}" height="{textHeight}" style="plain"/>
-              <Button name="ok" x="{Width - Margin - 74}" y="{buttonY}" width="74" height="24" text="OK"/>
+            {buttons(buttonY)}
             </UIScript>
             """;
 
         UIView view = new(UIScript.Parse(document));
         view.SetText("message", message);
-        return new DesktopWindow(title, view)
-        {
-            App = app,
-            EventHandler = (window, uiEvent) =>
-            {
-                if (uiEvent is { Kind: UIEventKind.Pressed, Control: "ok" })
-                    window.RequestClose();
-            },
-        };
+        return (view, buttonY);
     }
 }
