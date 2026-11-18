@@ -412,7 +412,7 @@ public sealed class UIScript
         return Parse(File.ReadAllText(path, System.Text.Encoding.UTF8));
     }
 
-    private static UIScript Build(FlatXmlDocument document)
+    internal static UIScript Build(FlatXmlDocument document)
     {
         var root = document.Root;
         if (root.Name != "UIScript")

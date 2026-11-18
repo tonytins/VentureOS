@@ -3,10 +3,41 @@ using System.Text;
 
 namespace Venture.OS.Interface.Xml;
 
+/// <summary>A stretch of a document's text, by the index of its first character and its length.</summary>
+public readonly record struct FlatXmlSpan(int Start, int Length)
+{
+    /// <summary>The index just past the span's last character.</summary>
+    public int End => Start + Length;
+
+    /// <summary>The span's text in <paramref name="text"/>.</summary>
+    public string Of(string text) => text.Substring(Start, Length);
+}
+
+/// <summary>
+/// Where one attribute sits in the text, so it can be edited in place: the whole attribute, from its name through its
+/// closing quote, and its value as written, between the quotes, with its entities still encoded.
+/// </summary>
+public sealed record FlatXmlAttributeSource(string Name, FlatXmlSpan Span, FlatXmlSpan Value, char Quote);
+
+/// <summary>
+/// Where an element sits in the text: the whole element, from its <c>&lt;</c> through its closing <c>&gt;</c> (and
+/// its children's, for the root), the end of its name, its attributes, and, when it isn't written as
+/// <c>&lt;Name/&gt;</c>, where its closing tag begins.
+/// </summary>
+public sealed record FlatXmlElementSource(
+    FlatXmlSpan Span,
+    int NameEnd,
+    IReadOnlyList<FlatXmlAttributeSource> Attributes,
+    int? CloseStart);
+
 /// <summary>
 /// One element of a <see cref="FlatXml"/> document: a name, its attributes in document order, and its line.
 /// </summary>
-public sealed class FlatXmlElement(string name, IReadOnlyList<KeyValuePair<string, string>> attributes, int line)
+public sealed class FlatXmlElement(
+    string name,
+    IReadOnlyList<KeyValuePair<string, string>> attributes,
+    int line,
+    FlatXmlElementSource? source = null)
 {
     /// <summary>The element's name, such as <c>Info</c>.</summary>
     public string Name { get; } = name;
@@ -16,6 +47,12 @@ public sealed class FlatXmlElement(string name, IReadOnlyList<KeyValuePair<strin
 
     /// <summary>The line the element starts on, from 1.</summary>
     public int Line { get; } = line;
+
+    /// <summary>
+    /// Where the element sits in the text it was read from, so an editor can change it in place; <see
+    /// langword="null"/> for an element that wasn't read from text.
+    /// </summary>
+    public FlatXmlElementSource? Source { get; } = source;
 
     /// <summary>The value of an attribute, or <see langword="null"/> when it's absent. Names match exactly.</summary>
     public string? this[string attribute]
@@ -108,8 +145,9 @@ public static class FlatXml
                 throw Error("The document is empty.");
 
             var rootLine = line;
-            var (rootName, rootAttributes, rootEmpty) = ReadStartTag();
-            var root = new FlatXmlElement(rootName, rootAttributes, rootLine);
+            var rootStart = position;
+            var (rootName, rootAttributes, rootEmpty, rootNameEnd, rootSources) = ReadStartTag();
+            int? rootClose = null;
             List<FlatXmlElement> children = [];
 
             if (!rootEmpty)
@@ -121,6 +159,7 @@ public static class FlatXml
                         throw Error($"<{rootName}> is never closed.");
                     if (StartsWith("</"))
                     {
+                        rootClose = position;
                         ReadEndTag(rootName);
                         break;
                     }
@@ -129,18 +168,25 @@ public static class FlatXml
                         throw Error($"Text isn't allowed inside <{rootName}>; put it in an attribute.");
 
                     var childLine = line;
-                    var (name, attributes, empty) = ReadStartTag();
+                    var childStart = position;
+                    var (name, attributes, empty, nameEnd, sources) = ReadStartTag();
+                    int? close = null;
                     if (!empty)
                     {
                         SkipMisc();
                         if (!StartsWith("</"))
                             throw Error($"<{name}> can't hold text or other elements.");
+                        close = position;
                         ReadEndTag(name);
                     }
 
-                    children.Add(new FlatXmlElement(name, attributes, childLine));
+                    FlatXmlElementSource childSource = new(new(childStart, position - childStart), nameEnd, sources, close);
+                    children.Add(new FlatXmlElement(name, attributes, childLine, childSource));
                 }
             }
+
+            FlatXmlElementSource rootSource = new(new(rootStart, position - rootStart), rootNameEnd, rootSources, rootClose);
+            var root = new FlatXmlElement(rootName, rootAttributes, rootLine, rootSource);
 
             SkipMisc();
             if (!AtEnd)
@@ -211,14 +257,17 @@ public static class FlatXml
             Advance(end + 2 - position);
         }
 
-        private (string Name, List<KeyValuePair<string, string>> Attributes, bool Empty) ReadStartTag()
+        private (string Name, List<KeyValuePair<string, string>> Attributes, bool Empty, int NameEnd,
+            List<FlatXmlAttributeSource> Sources) ReadStartTag()
         {
             if (Peek() != '<')
                 throw Error("Expected an element.");
             Advance();
 
             var name = ReadName("an element name");
+            var nameEnd = position;
             List<KeyValuePair<string, string>> attributes = [];
+            List<FlatXmlAttributeSource> sources = [];
 
             while (true)
             {
@@ -230,19 +279,20 @@ public static class FlatXml
                 if (StartsWith("/>"))
                 {
                     Advance(2);
-                    return (name, attributes, true);
+                    return (name, attributes, true, nameEnd, sources);
                 }
 
                 if (Peek() == '>')
                 {
                     Advance();
-                    return (name, attributes, false);
+                    return (name, attributes, false, nameEnd, sources);
                 }
 
                 if (!hadSpace)
                     throw Error($"Expected a space before the next attribute of <{name}>.");
 
                 var attributeLine = line;
+                var attributeStart = position;
                 var attribute = ReadName("an attribute name");
                 SkipWhitespace();
                 if (Peek() != '=')
@@ -250,7 +300,10 @@ public static class FlatXml
                 Advance();
                 SkipWhitespace();
 
+                var quote = Peek();
+                var valueStart = position + 1;
                 var value = ReadValue(attribute);
+                FlatXmlSpan valueSpan = new(valueStart, position - 1 - valueStart);
                 foreach (var (existing, _) in attributes)
                 {
                     if (existing == attribute)
@@ -258,6 +311,7 @@ public static class FlatXml
                 }
 
                 attributes.Add(new(attribute, value));
+                sources.Add(new(attribute, new(attributeStart, position - attributeStart), valueSpan, quote));
             }
         }
 
