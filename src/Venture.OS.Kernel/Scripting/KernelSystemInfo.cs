@@ -24,6 +24,9 @@ internal sealed class KernelSystemInfo : ISystemInfo
     /// <summary>The desktop's alerts, Quick Look, and apps for every script, once the shell has made the apps.</summary>
     public IScriptDesktop? Desktop { get; set; }
 
+    /// <summary>None: the kernel's disk is VentureOS's whole world.</summary>
+    public FileRoot? Root => null;
+
     /// <summary>The system's clock, whose offset the clock boot step restores.</summary>
     public Time.WallClock? WallClock => Startup.Bootstrap.WallClock;
 

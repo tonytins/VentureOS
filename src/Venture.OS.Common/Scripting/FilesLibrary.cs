@@ -89,15 +89,15 @@ public static class FilesLibrary
             var path = PathArgument(lua, 1, optional: true);
             return Guard(lua, () =>
             {
-                if (File.Exists(path))
+                if (File.Exists(Host(path)))
                     return Missing(lua, $"{path} is a file, not a folder");
-                if (!Directory.Exists(path))
+                if (!Directory.Exists(Host(path)))
                     return Missing(lua, $"there's no folder at {path}");
 
                 List<(string Name, bool IsFolder, long Size)> entries = [];
-                foreach (var folder in Directory.GetDirectories(path))
+                foreach (var folder in Directory.GetDirectories(Host(path)))
                     entries.Add((Path.GetFileName(folder), true, 0));
-                foreach (var file in Directory.GetFiles(path))
+                foreach (var file in Directory.GetFiles(Host(path)))
                     entries.Add((Path.GetFileName(file), false, new FileInfo(file).Length));
 
                 entries.Sort((left, right) => StringComparer.OrdinalIgnoreCase.Compare(left.Name, right.Name));
@@ -125,10 +125,10 @@ public static class FilesLibrary
             {
                 bool isFolder;
                 long size;
-                if (Directory.Exists(path))
+                if (Directory.Exists(Host(path)))
                     (isFolder, size) = (true, 0);
-                else if (File.Exists(path))
-                    (isFolder, size) = (false, new FileInfo(path).Length);
+                else if (File.Exists(Host(path)))
+                    (isFolder, size) = (false, new FileInfo(Host(path)).Length);
                 else
                     return Missing(lua, $"there's no file or folder at {path}");
 
@@ -147,12 +147,12 @@ public static class FilesLibrary
             var path = PathArgument(lua, 1, optional: false);
             return Guard(lua, () =>
             {
-                if (Directory.Exists(path))
+                if (Directory.Exists(Host(path)))
                     return Missing(lua, $"{path} is a folder, not a file");
-                if (!File.Exists(path))
+                if (!File.Exists(Host(path)))
                     return Missing(lua, $"there's no file at {path}");
 
-                lua.PushString(FromBytes(File.ReadAllBytes(path)));
+                lua.PushString(FromBytes(File.ReadAllBytes(Host(path))));
                 return 1;
             });
         }
@@ -166,20 +166,20 @@ public static class FilesLibrary
             {
                 if (Protected(lua, path) is { } refused)
                     return refused;
-                if (Directory.Exists(path))
+                if (Directory.Exists(Host(path)))
                     return Missing(lua, $"{path} is a folder, not a file");
-                if (!Directory.Exists(Parent(path)))
+                if (!Directory.Exists(Host(Parent(path))))
                     return Missing(lua, $"there's no folder at {Parent(path)}");
 
                 var bytes = ToBytes(data);
                 if (append)
                 {
-                    using var stream = new FileStream(path, FileMode.Append, FileAccess.Write);
+                    using var stream = new FileStream(Host(path), FileMode.Append, FileAccess.Write);
                     stream.Write(bytes);
                 }
                 else
                 {
-                    File.WriteAllBytes(path, bytes);
+                    File.WriteAllBytes(Host(path), bytes);
                 }
 
                 lua.PushBoolean(true);
@@ -195,9 +195,9 @@ public static class FilesLibrary
             {
                 if (Protected(lua, path) is { } refused)
                     return refused;
-                if (File.Exists(path))
+                if (File.Exists(Host(path)))
                     return Missing(lua, $"{path} is a file");
-                if (Directory.Exists(path))
+                if (Directory.Exists(Host(path)))
                 {
                     if (parents)
                     {
@@ -208,10 +208,10 @@ public static class FilesLibrary
                     return Missing(lua, $"{path} already exists");
                 }
 
-                if (!parents && !Directory.Exists(Parent(path)))
+                if (!parents && !Directory.Exists(Host(Parent(path))))
                     return Missing(lua, $"there's no folder at {Parent(path)}");
 
-                Directory.CreateDirectory(path);
+                Directory.CreateDirectory(Host(path));
                 lua.PushBoolean(true);
                 return 1;
             });
@@ -230,16 +230,16 @@ public static class FilesLibrary
                 if (system?.SystemDirectory is { } systemFolder && ShellPaths.IsWithin(systemFolder, path))
                     return Missing(lua, $"{path} holds the system's own folder, {systemFolder}");
 
-                if (File.Exists(path))
+                if (File.Exists(Host(path)))
                 {
-                    File.Delete(path);
+                    File.Delete(Host(path));
                 }
-                else if (Directory.Exists(path))
+                else if (Directory.Exists(Host(path)))
                 {
-                    if (!recursive && (Directory.GetFiles(path).Length > 0 || Directory.GetDirectories(path).Length > 0))
+                    if (!recursive && (Directory.GetFiles(Host(path)).Length > 0 || Directory.GetDirectories(Host(path)).Length > 0))
                         return Missing(lua, $"{path} is a folder with things in it");
 
-                    Directory.Delete(path, recursive);
+                    Directory.Delete(Host(path), recursive);
                 }
                 else
                 {
@@ -282,6 +282,12 @@ public static class FilesLibrary
         }
 
         /// <summary>Refuses a change inside the system folder, or returns <see langword="null"/> to go on.</summary>
+        /// <summary>
+        /// Where a script's path is on the host: itself in the kernel, and inside the root where VentureOS runs within
+        /// another system, which refuses a path leading out.
+        /// </summary>
+        private string Host(string path) => FileRoot.Host(system?.Root, path);
+
         private int? Protected(ILuaState lua, string path) =>
             system?.SystemDirectory is { } folder && ShellPaths.IsWithin(path, folder)
                 ? Missing(lua, $"{folder} is the system's own folder, rebuilt at every boot, and can't be changed")

@@ -169,8 +169,53 @@ public static class LuaRunner
             SetLibraryDirectory(lua.State, libraryDirectory);
 
         resetStop = stop is null ? () => { } : InstallStopHook(lua, stop);
+
+        // Inside another system, scripts reach files only through venture.files, which keeps them within the root.
+        if (system?.Root is not null)
+            lua.DoString(RootedChunk, "=rooted");
         return lua;
     }
+
+    /// <summary>
+    /// What a script loses where VentureOS runs inside another system, as in Roundhouse: Lua's own ways to the host's
+    /// files and programs, which would go around the root. Each says so when called. <c>require</c> keeps working,
+    /// but only from the folders it was given, which a script can no longer change. VentureOS's own scripts use none
+    /// of these; <c>io.write</c> and <c>io.read</c> stay.
+    /// </summary>
+    private const string RootedChunk = """
+        local function refuse(name)
+            return function()
+                error(name .. " isn't available while VentureOS runs inside Roundhouse; use venture.files", 2)
+            end
+        end
+
+        -- Kept here, under names of their own, so replacing the globals below doesn't replace these.
+        local load_file, search_path, path = loadfile, package.searchpath, package.path
+        local searchers = package.searchers
+        searchers[2] = function(name)
+            local file, problem = search_path(name, path)
+            if not file then
+                return problem
+            end
+            local chunk, failure = load_file(file)
+            if not chunk then
+                error(failure, 2)
+            end
+            -- require hands this to the module and its caller; the module's name, not the host's path to it.
+            return chunk, name
+        end
+        searchers[3], searchers[4] = nil, nil
+        package.loadlib, package.searchpath, package.cpath = nil, nil, ""
+
+        for _, name in ipairs({ "open", "lines", "popen", "input", "output", "close", "tmpfile" }) do
+            io[name] = refuse("io." .. name)
+        end
+        for _, name in ipairs({ "execute", "remove", "rename", "tmpname", "getenv" }) do
+            os[name] = refuse("os." .. name)
+        end
+        dofile, loadfile = refuse("dofile"), refuse("loadfile")
+        debug = nil
+        """;
 
     /// <summary>
     /// Points <c>require</c> at <paramref name="directory"/> only, so <c>require("venture.args")</c> loads

@@ -835,7 +835,7 @@ public sealed class DesktopSession
 
             // A user app opens by its path, so it can't be mistaken for a system app with the same name.
             var extension = Bundle.Extension(BundleKind.App);
-            var target = listing.IsUser ? listing.Path
+            var target = listing.IsUser ? apps!.ScriptPath(listing.Path)
                 : listing.Folder.EndsWith(extension, StringComparison.OrdinalIgnoreCase) ? listing.Folder[..^extension.Length]
                 : listing.Folder;
             DockItem item = new(

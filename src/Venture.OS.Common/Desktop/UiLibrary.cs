@@ -46,6 +46,13 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     /// </summary>
     public string? SystemFolder { get; init; }
 
+    /// <summary>
+    /// The folder that stands for VentureOS's <c>/</c> where it runs inside another system, which scripts' paths to
+    /// previews, apps, and pictures are kept within; <see langword="null"/> in the kernel. <see cref="SystemFolder"/>
+    /// is a VentureOS path either way.
+    /// </summary>
+    public FileRoot? Root { get; init; }
+
     /// <summary>Whether an app said how to open a new window, which puts New Window in its app menu.</summary>
     public bool HasNewWindow(string app) => newWindowHandlers.ContainsKey(app);
 
@@ -192,9 +199,20 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
 
     /// <summary>Opens a Quick Look preview of a file or folder.</summary>
     /// <returns>Why there's no preview, or <see langword="null"/> when it opened.</returns>
+    /// <param name="path">A full VentureOS path, as a script names it.</param>
     public string? Preview(string path)
     {
-        if (!QuickLook.TryCreate(path, out var window, out var problem))
+        string host;
+        try
+        {
+            host = FileRoot.Host(Root, path);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return exception.Message;
+        }
+
+        if (!QuickLook.TryCreate(host, out var window, out var problem))
             return problem;
 
         Windows.Open(window);
@@ -418,27 +436,41 @@ public static class UiLibrary
         ArgumentNullException.ThrowIfNull(apps);
         ArgumentNullException.ThrowIfNull(given);
 
+        // The app as a script names it (a VentureOS path), and where it is on the host, to read it.
         var path = ShellPaths.Resolve(workingDirectory, given);
+        string hostPath;
         if (!given.Contains('/') && !given.EndsWith(Bundle.Extension(BundleKind.App), StringComparison.OrdinalIgnoreCase))
         {
-            path = "";
+            hostPath = "";
             foreach (var listing in apps.Available())
             {
                 if (listing.Bundle is { } named && named.Name.Equals(given, StringComparison.OrdinalIgnoreCase))
                 {
-                    path = listing.Path;
+                    hostPath = listing.Path;
                     break;
                 }
             }
 
-            if (path.Length == 0)
+            if (hostPath.Length == 0)
                 return $"there's no app called {given}";
+            path = apps.ScriptPath(hostPath);
+        }
+        else
+        {
+            try
+            {
+                hostPath = FileRoot.Host(host.Root, path);
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return exception.Message;
+            }
         }
 
         Bundle bundle;
         try
         {
-            bundle = Bundle.Read(path, BundleKind.App);
+            bundle = Bundle.Read(hostPath, BundleKind.App);
         }
         catch (BundleException exception)
         {
@@ -773,11 +805,22 @@ public static class UiLibrary
         string path;
         if (given.StartsWith('/'))
         {
-            path = given;
-            var allowed = (handle.App is { } app && (ShellPaths.IsWithin(path, app.Path) || app.Needs.HasFlag(ScriptScopes.Files)))
-                || (handle.Host.SystemFolder is { } system && ShellPaths.IsWithin(path, system));
+            // A script's full path is a VentureOS path; the app's folder is the host's, so it's compared as scripts see it.
+            var root = handle.Host.Root;
+            var venture = ShellPaths.Resolve("/", given);
+            var allowed = (handle.App is { } app && (ShellPaths.IsWithin(venture, FileRoot.Venture(root, app.Path)) || app.Needs.HasFlag(ScriptScopes.Files)))
+                || (handle.Host.SystemFolder is { } system && ShellPaths.IsWithin(venture, system));
             if (!allowed)
                 return Refuse(lua, $"{given} isn't in the app or the system's folder; showing it needs the files scope");
+
+            try
+            {
+                path = FileRoot.Host(root, venture);
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return Refuse(lua, exception.Message);
+            }
         }
         else if (SystemDirectory.IsValidPath(given))
         {

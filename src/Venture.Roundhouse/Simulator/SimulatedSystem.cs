@@ -63,4 +63,7 @@ public sealed class SimulatedSystem(SimulatedDisk disk) : ISystemInfo
     public WallClock? WallClock { get; } = new(() => DateTime.UtcNow);
 
     public IScriptDesktop? Desktop => null;
+
+    /// <summary>The run's copy of VentureOS's files, which scripts' paths are kept within.</summary>
+    public FileRoot? Root { get; } = new(disk.Root);
 }

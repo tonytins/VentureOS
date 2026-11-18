@@ -19,7 +19,9 @@ namespace Venture.OS.Bundles;
 public static class AppLibrary
 {
     /// <summary>Puts <c>venture.app</c> in the <c>venture</c> table, creating the table if it's missing.</summary>
-    public static void Open(ILuaState state, Bundle app)
+    /// <param name="root">Where VentureOS's <c>/</c> is when it runs inside another system, so the app's paths are
+    /// given as scripts name them; <see langword="null"/> in the kernel.</param>
+    public static void Open(ILuaState state, Bundle app, FileRoot? root = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(app);
@@ -35,11 +37,12 @@ public static class AppLibrary
         state.NewTable();
         SetString(state, "name", app.Name);
         SetString(state, "identifier", app.Identifier);
-        SetString(state, "path", app.Path);
+        var path = FileRoot.Venture(root, app.Path);
+        SetString(state, "path", path);
         if (app.Version is { } version)
             SetString(state, "version", version);
 
-        var resources = $"{app.Path}/Contents/Resources";
+        var resources = $"{path}/Contents/Resources";
         state.PushCSharpFunction(lua =>
         {
             var relative = LuaText.Decode(lua.L_CheckString(1));

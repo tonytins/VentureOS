@@ -38,6 +38,9 @@ internal sealed class FakeSystemInfo : ISystemInfo
     /// <summary>No desktop, by default; a <see cref="FakeScriptDesktop"/> records what scripts ask of one.</summary>
     public IScriptDesktop? Desktop { get; init; }
 
+    /// <summary>No root, by default, as in the kernel; a test gives one to run scripts as Roundhouse does.</summary>
+    public FileRoot? Root { get; init; }
+
     /// <summary>When set, reading <see cref="Uptime"/> throws it, as a failing device might.</summary>
     public Exception? UptimeFailure { get; init; }
 

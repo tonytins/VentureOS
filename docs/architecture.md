@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 127 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,511 tests, and 127 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -645,6 +645,34 @@ Nothing that changes files works inside `/mnt/system`
 (`ISystemInfo.SystemDirectory`), or removes a folder holding it: it's
 rebuilt at every boot, and a stray `rm -r` mustn't break the running system.
 Reading it is fine.
+
+**Running inside another system.** Where VentureOS runs inside another
+system, as in Roundhouse's Run, `ISystemInfo.Root` is a `FileRoot`: a host
+folder standing for VentureOS's `/`. The kernel has none, so nothing changes
+there. Inside VentureOS's code, paths the system sets up (the apps' folders,
+the settings) are the host's, and only paths crossing to or from scripts are
+converted:
+
+- In: every path `venture.files` touches, `venture.ui.preview` and `launch`,
+  `window:setImage`, and `open <path>` (`AppManager`), through
+  `FileRoot.ToHost`. `..` stops at `/`, as in VentureOS, and a path whose
+  symbolic links lead outside the root is refused, as a failure the script
+  sees.
+- Out: `venture.app.path` and `resource`, and the dock's user apps
+  (`AppManager.ScriptPath`), through `FileRoot.ToVenture`.
+- Lua's own ways to the host are switched off, each saying so when called:
+  `io.open`, `lines`, `popen`, `input`, `output`, `close`, and `tmpfile`;
+  `os.execute`, `remove`, `rename`, `tmpname`, and `getenv`; `dofile` and
+  `loadfile`; `package.loadlib` and `searchpath`; and `debug`. `require`
+  keeps working, from the folders it was given, which a script can no longer
+  change, and returns a module's name rather than the host's path to it.
+  `io.write`, `io.read`, and `load` stay. VentureOS's own scripts use none of
+  what's switched off.
+
+This keeps an app's mistakes, such as a stray `rm -r /`, inside the run's
+copy. It isn't a wall against hostile code running in the same process: a
+link made between a path's check and its use isn't caught, though scripts
+can't make links, and an error message can still name a host path.
 
 **Owners and undo.** After the ideas in "A Programming Paradigm for
 Spatiotemporal Composability", lasting Lua code runs as a `LuaOwner`: one
@@ -1394,6 +1422,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Scripts (§9): `ISystemInfo.Root` and `FileRoot`, which keep scripts' paths within a folder where VentureOS runs inside another system, and switch off Lua's own file and program access there; none in the kernel, which is unchanged. |
 | 2026-11-18 | minor | Roundhouse (§9): the start of 0.6.4xx, Run: a simulator window over a fresh copy of `rootfs/` and Roundhouse's own `ISystemInfo`; the bar's title on one line. |
 | 2026-11-18 | minor | Layout (§2) and Roundhouse (§9): `packaging/`, after CityLimits', builds Roundhouse for Linux, Windows, and macOS; a placeholder icon. 0.6.3xx, the designer, is complete. |
 | 2026-11-18 | minor | Roundhouse (§9): the window, title bar items, title field, menus, and sidebar in the designer, with each kind's own handles and the features they need added to `requires`. |

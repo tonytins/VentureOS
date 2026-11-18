@@ -69,6 +69,12 @@ public interface ISystemInfo
     /// <see langword="null"/> on a system without a desktop.
     /// </summary>
     IScriptDesktop? Desktop { get; }
+
+    /// <summary>
+    /// The folder that stands for VentureOS's <c>/</c> when it runs inside another system, as in Roundhouse, which
+    /// scripts' paths are kept within; <see langword="null"/> in the kernel, whose disk is the whole world.
+    /// </summary>
+    FileRoot? Root { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>

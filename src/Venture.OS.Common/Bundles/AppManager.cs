@@ -166,7 +166,7 @@ public sealed class AppManager(
             commands,
             runShell,
             openShell);
-        AppLibrary.Open(owner.Interpreter.State, bundle);
+        AppLibrary.Open(owner.Interpreter.State, bundle, system?.Root);
         UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
 
         bool started;
@@ -220,6 +220,12 @@ public sealed class AppManager(
     /// <summary>Whether an app with this identifier is open.</summary>
     public bool IsOpen(string identifier) => FindOpen(identifier) is not null;
 
+    /// <summary>
+    /// A bundle's host path, from <see cref="Available"/>, as scripts and <see cref="OpenApp"/> name it: itself in the
+    /// kernel, and a VentureOS path where VentureOS runs inside another system.
+    /// </summary>
+    public string ScriptPath(string hostPath) => FileRoot.Venture(system?.Root, hostPath);
+
     /// <summary>The scopes an app needs, as words, such as <c>files and shell</c>, or <c>nothing extra</c>.</summary>
     public static string DescribeNeeds(ScriptScopes needs)
     {
@@ -239,7 +245,16 @@ public sealed class AppManager(
         // A path, such as ./Notes.app or /mnt/Notes.app.
         if (target.Contains('/') || target.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
         {
-            var path = ShellPaths.Resolve(currentDirectory, target);
+            string path;
+            try
+            {
+                path = FileRoot.Host(system?.Root, ShellPaths.Resolve(currentDirectory, target));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return null;
+            }
+
             if (Directory.Exists(path))
                 return path;
             if (target.Contains('/'))
