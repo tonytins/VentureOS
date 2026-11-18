@@ -37,7 +37,8 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
 - `src/Venture.Roundhouse` is Roundhouse, VentureOS's IDE: an Avalonia app  
   for Linux, macOS, and Windows that draws with `Venture.OS.Common`. Avalonia,  
   AvaloniaEdit, and its TextMate add-on are approved for it alone; the  
-  VentureOS projects never reference them. See  
+  VentureOS projects never reference them. Its Run runs VentureOS's own  
+  desktop code over a copy of `rootfs/` (`Simulator/`). See  
   [its design](docs/design/2026-11-18-roundhouse-design.md).
 - `packaging/` holds the scripts that build Roundhouse into packages for  
   Linux, Windows, and macOS, after CityLimits', writing to `dist/`; see  
@@ -147,6 +148,12 @@ There is no host process underneath: an unhandled exception stops the machine wi
   [docs/writing-apps.md](docs/writing-apps.md) to write one, and keep it  
   accurate: `WritingAppsTutorialTests` builds and runs its Dice example, so  
   change the guide and the code together.
+- Paths that cross between scripts and the system go through `FileRoot`  
+  (`ISystemInfo.Root`): `FileRoot.Host` for a path a script names before it's  
+  opened, and `FileRoot.Venture` for a host path a script is shown. The  
+  kernel has no root, so both pass paths through; Roundhouse's Run keeps  
+  scripts inside its copy with them. A new way for scripts to reach files  
+  needs both, and a rooted test, as `RootedScriptTests` has.
 - Anything Lua code sets up that should outlive a single run goes through a  
   `LuaOwner` and registers it's undo with `AddUndo`, so ending the owner  
   removes it.

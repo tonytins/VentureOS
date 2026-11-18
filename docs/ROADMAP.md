@@ -183,7 +183,7 @@ Roundhouse only.
 
 **0.6.4xx, Run**
 
-- [ ] A simulated VentureOS desktop in Roundhouse, built from the same code,
+- [x] A simulated VentureOS desktop in Roundhouse, built from the same code,
   running the app being edited, with no QEMU.
 
 **0.6.5xx, bundles**
@@ -238,6 +238,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | patch | 0.6.4xx's Run is done: VentureOS's desktop runs in Roundhouse over a fresh copy of its files, with scripts' paths kept within it, and the designer shows a document's menus above its window, as Xcode does. The band is complete. |
 | 2026-11-18 | patch | 0.6.3xx's designer is done, with Roundhouse's own menus for the global menu bar, a title bar after VentureOS's, and packaging for Linux, Windows, and macOS, after CityLimits'. The band is complete. |
 | 2026-11-18 | patch | 0.6.2xx's round trip is done: `UIDocument` edits attributes and elements in place, refusing what VentureOS refuses, and Roundhouse saves through it. The band is complete. |
 | 2026-11-18 | patch | 0.6.1xx's preview is done: Roundhouse opens a `.uix` and redraws it beside its text as you type, in light and dark. The band is complete. |
