@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 82 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,482 tests, and 97 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -155,6 +155,8 @@ VentureOS/
 │     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
 │     │                            InspectorPanel, and DesignEdits (the library and selection edits)
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
+│     ├─ Menus/                    Venture.Roundhouse.Menus: AppMenu, one list for the global menu bar and the ☰ button
+│     ├─ TitleBars.cs              where the coloured bar can be the window's title bar
 │     └─ RenderCommand.cs          Roundhouse --render: a .uix drawn into a PNG file, with no window
 ├─ rootfs/                        files built into the kernel and installed at boot
 │  ├─ system/                      installed to /mnt/system, which nothing may change
@@ -896,6 +898,19 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   visual past its next drawn neighbour of the same layer (visuals are all
   behind controls). Delete is `RemoveElement`. Each goes through one
   `Apply`, and the shortcuts act only while the canvas or outline has focus.
+- **Roundhouse's menus** are one list (`AppMenu`, `MenuCommand`,
+  `AppMenuGroup`), after Passenger's: `AppMenu.Fill` makes it the window's
+  `NativeMenu`, which Avalonia hands to the desktop's global menu bar (KDE's
+  over D-Bus, macOS's own), refilled as what's enabled and checked changes;
+  `AppMenu.Flyout` makes the same list the ☰ button's dropdown, and the
+  button hides when `NativeMenu.IsNativeMenuExported` says the desktop has
+  the menus. The shortcuts are window key bindings, so a focused editor or
+  field handles its own first.
+- **The coloured bar** is the window's title bar (`ExtendClientAreaToDecorationsHint`)
+  where `TitleBars.Merges` allows: Windows, macOS, and a named Linux desktop
+  that isn't a tiling window manager or WSL. On Linux Roundhouse draws the
+  window buttons itself, as Avalonia doesn't on X11, and double-clicking the
+  bar maximizes. Elsewhere the bar sits under the window manager's title bar.
 - **Roundhouse's window** (`MainWindow`) shows a document's text in
   AvaloniaEdit, with TextMate's XML highlighting, beside the same drawing,
   redrawn 300 ms after typing stops. Text `UIScript` refuses leaves the
@@ -1338,6 +1353,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Roundhouse (§9): menus exported to the desktop's global menu bar and behind ☰, a merged blue-to-teal title bar with its own window buttons on Linux, compact panes, and a status bar. |
 | 2026-11-18 | minor | Roundhouse (§9): the library, Duplicate, Delete, Forward, and Backward, each one edit through `UIDocument`. |
 | 2026-11-18 | minor | Roundhouse (§9): the outline, sharing the canvas's selection, and the inspector, built from `UIScriptSchema`, committing through `UIDocument` and showing refusals under the field. |
 | 2026-11-18 | minor | Roundhouse (§9): the canvas selects, moves, resizes, and nudges, each drag one edit through `Apply`; 100% and 200% zoom. |

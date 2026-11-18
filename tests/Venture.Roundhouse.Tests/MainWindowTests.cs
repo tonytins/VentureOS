@@ -129,7 +129,7 @@ public sealed class MainWindowTests : IDisposable
         window.Open(document);
         var light = Pixel(window.Preview!, 40, 60);
 
-        window.FindControl<CheckBox>("DarkBox")!.IsChecked = true;
+        window.SetDark(true);
 
         Assert.NotEqual(light, Pixel(window.Preview!, 40, 60));
         window.Close();
@@ -366,7 +366,7 @@ public sealed class MainWindowTests : IDisposable
     public void AtTwiceTheSizeADragMovesHalfAsFar() => TestApp.Run(() =>
     {
         var (window, _) = OpenCalculator();
-        window.FindControl<ComboBox>("ZoomBox")!.SelectedIndex = 1;
+        window.SetZoom(true);
         Assert.Equal(2, window.Zoom);
         window.UpdateLayout();
 
@@ -617,20 +617,119 @@ public sealed class MainWindowTests : IDisposable
     });
 
     [Fact]
-    public void TheEditButtonsFollowTheSelection() => TestApp.Run(() =>
+    public void TheMenusFollowTheSelection() => TestApp.Run(() =>
     {
         var (window, equals) = OpenCalculator();
         Assert.True(window.FindControl<Button>("AddButton")!.IsEnabled);
-        Assert.False(window.FindControl<Button>("DeleteButton")!.IsEnabled);
+        Assert.False(Command(window, "Edit", "Delete").IsEnabled!());
 
         window.Select(1);
-        Assert.True(window.FindControl<Button>("DuplicateButton")!.IsEnabled);
-        Assert.False(window.FindControl<Button>("ForwardButton")!.IsEnabled);
+        Assert.True(Command(window, "Edit", "Duplicate").IsEnabled!());
+        Assert.False(Command(window, "Arrange", "Bring Forward").IsEnabled!());
 
         window.Select(equals);
-        Assert.True(window.FindControl<Button>("ForwardButton")!.IsEnabled);
+        Assert.True(Command(window, "Arrange", "Bring Forward").IsEnabled!());
         window.Close();
     });
+
+    [Fact]
+    public void TheGlobalMenuHasEveryMenuWithItsShortcuts() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Select(equals);
+        var menu = NativeMenu.GetMenu(window)!;
+
+        Assert.Equal(["File", "Edit", "Insert", "Arrange", "View"], menu.Items.OfType<NativeMenuItem>().Select(item => item.Header));
+        var edit = menu.Items.OfType<NativeMenuItem>().Single(item => item.Header == "Edit").Menu!;
+        var duplicate = edit.Items.OfType<NativeMenuItem>().Single(item => item.Header == "Duplicate");
+        Assert.Equal(new KeyGesture(Key.D, KeyModifiers.Control), duplicate.Gesture);
+        Assert.True(duplicate.IsEnabled);
+
+        window.Select(null);
+        edit = NativeMenu.GetMenu(window)!.Items.OfType<NativeMenuItem>().Single(item => item.Header == "Edit").Menu!;
+        Assert.False(edit.Items.OfType<NativeMenuItem>().Single(item => item.Header == "Duplicate").IsEnabled);
+        window.Close();
+    });
+
+    [Fact]
+    public void RunningAMenuCommandDoesWhatItSays() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        window.Select(equals);
+
+        Command(window, "Edit", "Duplicate").Run();
+        Assert.Contains("equals2", window.Text);
+
+        Command(window, "Edit", "Undo").Run();
+        Assert.DoesNotContain("equals2", window.Text);
+        Command(window, "Edit", "Redo").Run();
+        Assert.Contains("equals2", window.Text);
+
+        Command(window, "View", "Dark").Run();
+        Assert.True(window.IsDark);
+        Assert.True(Command(window, "View", "Dark").IsChecked!());
+
+        Command(window, "View", "Teal").Run();
+        Assert.Equal(1, window.Accent);
+        Assert.True(Command(window, "View", "Teal").IsChecked!());
+
+        Command(window, "Insert", "Slider").Run();
+        Assert.Contains("<Slider name=\"slider\"", window.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheMenuButtonOpensTheSameMenus() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+
+        var flyout = Menus.AppMenu.Flyout(window.Menus);
+
+        Assert.Equal(["File", "Edit", "Insert", "Arrange", "View"], flyout.Items.OfType<MenuItem>().Select(item => (string)item.Header!));
+        Assert.True(window.FindControl<Button>("MenuButton")!.IsVisible);
+        window.Close();
+    });
+
+    [Fact]
+    public void UndoAndRedoInTheBarFollowTheEditor() => TestApp.Run(() =>
+    {
+        var (window, equals) = OpenCalculator();
+        var undo = window.FindControl<Button>("UndoButton")!;
+        Assert.False(undo.IsEnabled);
+
+        window.Select(equals);
+        window.DuplicateSelection();
+
+        Assert.True(undo.IsEnabled);
+        window.Undo();
+        Assert.True(window.FindControl<Button>("RedoButton")!.IsEnabled);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheStatusBarShowsWhereTheCaretIs() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+        var editor = window.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+
+        editor.TextArea.Caret.Line = 3;
+        editor.TextArea.Caret.Column = 5;
+
+        Assert.Equal("Ln 3, Col 5", window.FindControl<TextBlock>("CaretText")!.Text);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheBarShowsTheDocumentsName() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+
+        Assert.Equal("main.uix", window.FindControl<TextBlock>("DocumentTitle")!.Text);
+        window.Close();
+    });
+
+    private static Menus.MenuCommand Command(MainWindow window, string menu, string title) =>
+        Menus.AppMenu.Find(window.Menus, menu, title) ?? throw new InvalidOperationException($"No {menu} ▸ {title}.");
 
     private static Designer.InspectorPanel Inspector(MainWindow window) => window.FindControl<Designer.InspectorPanel>("Inspector")!;
 

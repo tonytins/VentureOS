@@ -3,6 +3,9 @@ using System.Text;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Chrome;
+using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -19,6 +22,7 @@ using Venture.OS.Desktop;
 using Venture.OS.Interface;
 using Venture.Roundhouse.Designer;
 using Venture.Roundhouse.Drawing;
+using Venture.Roundhouse.Menus;
 
 namespace Venture.Roundhouse;
 
@@ -51,22 +55,36 @@ public sealed partial class MainWindow : Window
     // Set while the outline is updated to match, so it doesn't select in turn.
     private bool syncing;
 
+    // The menus as the desktop's global menu bar shows them, refilled as what's enabled and checked changes.
+    private readonly NativeMenu nativeMenu = new();
+
     public MainWindow()
     {
         InitializeComponent();
         Title = ProductTitle;
-        OpenCommand = new Command(() => _ = PickAndOpenAsync());
-        SaveCommand = new Command(() => Save());
-        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.O, KeyModifiers.Control), Command = OpenCommand });
-        KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(Key.S, KeyModifiers.Control), Command = SaveCommand });
-
-        // The switches start on VentureOS's standard look, which the canvas shows until they change.
+        // The look starts on VentureOS's standard one, which the canvas shows until View changes it.
         DesktopAppearance.Use(DesktopLook.Standard);
         loading = true;
-        AccentBox.ItemsSource = AccentNames;
-        AccentBox.SelectedIndex = 0;
-        ZoomBox.ItemsSource = (string[])["100%", "200%"];
-        ZoomBox.SelectedIndex = 0;
+
+        Menus = BuildMenus();
+        NativeMenu.SetMenu(this, nativeMenu);
+        foreach (var (key, modifiers, run) in (ReadOnlySpan<(Key, KeyModifiers, Action)>)
+                 [
+                     (Key.O, KeyModifiers.Control, () => _ = PickAndOpenAsync()),
+                     (Key.S, KeyModifiers.Control, () => Save()),
+                     (Key.Q, KeyModifiers.Control, Close),
+                     (Key.Z, KeyModifiers.Control, Undo),
+                     (Key.Z, KeyModifiers.Control | KeyModifiers.Shift, Redo),
+                     (Key.Y, KeyModifiers.Control, Redo),
+                     (Key.OemPlus, KeyModifiers.Control, () => ZoomToggle.IsChecked = ZoomToggle.IsChecked != true),
+                 ])
+        {
+            // Bound to the window, so they act only when the focused control, such as the editor, hasn't already.
+            KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(key, modifiers), Command = new Command(run) });
+        }
+
+        MergeTitleBar(TitleBars.Merges());
+        Editor.TextArea.Caret.PositionChanged += (_, _) => ShowCaret();
 
         // Clicking the canvas focuses it for the arrow keys; scrolling it into view then would slide it under the
         // pointer mid-drag, so it stays where the person put it.
@@ -82,6 +100,7 @@ public sealed partial class MainWindow : Window
 
         AddButton.Flyout = library;
         loading = false;
+        ShowPanels();
 
         // XML highlighting, in colors that follow Roundhouse's own light or dark theme.
         RegistryOptions options = new(HighlightTheme());
@@ -100,11 +119,55 @@ public sealed partial class MainWindow : Window
     /// <summary>The window's title: Roundhouse and its version, such as <c>Roundhouse 0.6.101</c>.</summary>
     public static string ProductTitle => $"Roundhouse {ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}";
 
-    /// <summary>Ctrl+O: choose a document and open it.</summary>
-    public ICommand OpenCommand { get; }
+    /// <summary>
+    /// Roundhouse's menus, shown in the desktop's global menu bar where there is one and behind the ☰ button where
+    /// there isn't. Each command reads whether it can run, and whether it's checked, when the menus are shown.
+    /// </summary>
+    public IReadOnlyList<AppMenuGroup> Menus { get; }
 
-    /// <summary>Ctrl+S: save the text as it is.</summary>
-    public ICommand SaveCommand { get; }
+    /// <summary>Whether the coloured bar is the window's title bar, with the window buttons at its end.</summary>
+    public bool IsTitleBarMerged { get; private set; }
+
+    /// <summary>Whether the canvas shows VentureOS's dark look.</summary>
+    public bool IsDark { get; private set; }
+
+    /// <summary>Which of VentureOS's nine accents the canvas shows, from 0, GNOME blue.</summary>
+    public int Accent { get; private set; }
+
+    /// <summary>Shows the canvas in VentureOS's light or dark look, and redraws it.</summary>
+    public void SetDark(bool dark)
+    {
+        IsDark = dark;
+        UseLook();
+    }
+
+    /// <summary>Shows the canvas with one of VentureOS's nine accents, from 0, and redraws it.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such accent.</exception>
+    public void SetAccent(int accent)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(accent);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(accent, DesktopPalette.Swatches.Count);
+        Accent = accent;
+        UseLook();
+    }
+
+    /// <summary>Undoes the last change to the text, from typing or the designer alike, and redraws.</summary>
+    public void Undo()
+    {
+        if (!Editor.CanUndo)
+            return;
+        Editor.Undo();
+        RenderNow();
+    }
+
+    /// <summary>Redoes what <see cref="Undo"/> undid, and redraws.</summary>
+    public void Redo()
+    {
+        if (!Editor.CanRedo)
+            return;
+        Editor.Redo();
+        RenderNow();
+    }
 
     /// <summary>The document open, as a full path, or <see langword="null"/>.</summary>
     public string? DocumentPath => path;
@@ -137,6 +200,9 @@ public sealed partial class MainWindow : Window
     /// <summary>Whether the text is showing below the canvas.</summary>
     public bool IsTextShowing => TextToggle.IsChecked == true;
 
+    /// <summary>Shows or hides the text below the canvas.</summary>
+    public void ShowText(bool show) => TextToggle.IsChecked = show;
+
     /// <summary>Selects an element, by its index among the root's children, or nothing.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The document has no such element.</exception>
     public void Select(int? element)
@@ -149,7 +215,10 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>How much the canvas is magnified: 1 or 2, so each of VentureOS's pixels stays a whole number of the screen's.</summary>
-    public double Zoom => ZoomBox.SelectedIndex == 1 ? 2 : 1;
+    public double Zoom => ZoomToggle.IsChecked == true ? 2 : 1;
+
+    /// <summary>Shows the canvas at 100% or, with <paramref name="twice"/>, 200%.</summary>
+    public void SetZoom(bool twice) => ZoomToggle.IsChecked = twice;
 
     /// <summary>
     /// Moves the selected control or visual by whole pixels, as the arrow keys do. Nothing happens without one, and a
@@ -222,8 +291,8 @@ public sealed partial class MainWindow : Window
         Editor.Text = WithoutByteOrderMark(document.Text);
         Editor.Document.UndoStack.ClearAll();
         loading = false;
-        SaveButton.IsEnabled = true;
         Title = $"{Path.GetFileName(full)} — {ProductTitle}";
+        DocumentTitle.Text = Path.GetFileName(full);
         RenderNow();
     }
 
@@ -362,8 +431,8 @@ public sealed partial class MainWindow : Window
 
         OutlineHint.IsVisible = xml is null;
         AddButton.IsEnabled = editable;
-        DuplicateButton.IsEnabled = DeleteButton.IsEnabled = editable && Selection is not null;
-        ForwardButton.IsEnabled = BackwardButton.IsEnabled = editable && Selection is { } chosen && CanEdit(chosen);
+        ShowUndo();
+        AppMenu.Fill(nativeMenu, Menus);
         OutlinePane.IsEnabled = InspectorPane.IsEnabled = editable;
         InspectorHint.IsVisible = Selection is null;
         InspectorHint.Text = editable || Document is null
@@ -545,15 +614,130 @@ public sealed partial class MainWindow : Window
         e.Handled = true;
     }
 
-    private void OnDuplicateClicked(object? sender, RoutedEventArgs e) => DuplicateSelection();
+    /// <summary>Roundhouse's menus: File, Edit, Insert, Arrange, and View.</summary>
+    private List<AppMenuGroup> BuildMenus()
+    {
+        bool HasDocument() => path is not null;
+        bool Editable() => Document?.IsEditable == true;
+        bool Selected() => Editable() && Selection is not null;
+        bool Framed() => Editable() && Selection is { } element && CanEdit(element);
+        KeyGesture Ctrl(Key key, KeyModifiers more = KeyModifiers.None) => new(key, KeyModifiers.Control | more);
 
-    private void OnDeleteClicked(object? sender, RoutedEventArgs e) => DeleteSelection();
+        return
+        [
+            new("File",
+            [
+                new MenuCommand("Open…", () => _ = PickAndOpenAsync(), Ctrl(Key.O)),
+                new MenuCommand("Save", () => Save(), Ctrl(Key.S), HasDocument),
+                new MenuSeparator(),
+                new MenuCommand("Quit", Close, Ctrl(Key.Q)),
+            ]),
+            new("Edit",
+            [
+                new MenuCommand("Undo", Undo, Ctrl(Key.Z), () => Editor.CanUndo),
+                new MenuCommand("Redo", Redo, Ctrl(Key.Z, KeyModifiers.Shift), () => Editor.CanRedo),
+                new MenuSeparator(),
+                new MenuCommand("Duplicate", () => DuplicateSelection(), Ctrl(Key.D), Selected),
+                new MenuCommand("Delete", () => DeleteSelection(), new KeyGesture(Key.Delete), Selected),
+            ]),
+            new("Insert", [.. DesignEdits.Library.Select(control =>
+                new MenuCommand(control.Element, () => AddControl(control.Element), IsEnabled: Editable))]),
+            new("Arrange",
+            [
+                new MenuCommand("Bring Forward", () => BringForward(), Ctrl(Key.OemCloseBrackets), Framed),
+                new MenuCommand("Send Backward", () => SendBackward(), Ctrl(Key.OemOpenBrackets), Framed),
+            ]),
+            new("View",
+            [
+                new MenuCommand("Text", () => ShowText(!IsTextShowing), IsChecked: () => IsTextShowing),
+                new MenuCommand("Twice the Size", () => SetZoom(Zoom != 2), Ctrl(Key.OemPlus), IsChecked: () => Zoom == 2),
+                new MenuSeparator(),
+                new MenuCommand("Dark", () => SetDark(!IsDark), IsChecked: () => IsDark),
+                new AppMenuGroup("Accent", [.. AccentNames.Select((name, index) =>
+                    new MenuCommand(name, () => SetAccent(index), IsChecked: () => Accent == index))]),
+            ]),
+        ];
+    }
 
-    private void OnForwardClicked(object? sender, RoutedEventArgs e) => BringForward();
+    /// <summary>
+    /// Makes the coloured bar the window's title bar, with Avalonia drawing the window buttons at its end, or leaves
+    /// the window manager's title bar above it.
+    /// </summary>
+    private void MergeTitleBar(bool merged)
+    {
+        IsTitleBarMerged = merged;
+        ExtendClientAreaToDecorationsHint = merged;
+        ExtendClientAreaTitleBarHeightHint = merged ? TitleBar.Height : -1;
 
-    private void OnBackwardClicked(object? sender, RoutedEventArgs e) => SendBackward();
+        // The bar drags the window; what's on it takes clicks.
+        WindowDecorationProperties.SetElementRole(TitleBar, merged ? WindowDecorationsElementRole.TitleBar : WindowDecorationsElementRole.None);
+        foreach (var control in TitleBar.GetLogicalDescendants().OfType<Button>())
+            WindowDecorationProperties.SetElementRole(control, merged ? WindowDecorationsElementRole.User : WindowDecorationsElementRole.None);
 
-    private void OnZoomChanged(object? sender, SelectionChangedEventArgs e)
+        // Avalonia doesn't draw the window buttons on X11 when the content reaches the top, so Roundhouse does, as
+        // Passenger does. Windows and macOS draw their own.
+        WindowButtons.IsVisible = merged && OperatingSystem.IsLinux() && WindowState != WindowState.FullScreen;
+        PlaceTitleBarContent();
+    }
+
+    /// <summary>Keeps the bar's own buttons clear of the window buttons drawn at its right end.</summary>
+    private void PlaceTitleBarContent() =>
+        TitleBarContent.Margin = new Thickness(6, 0, 8 + (IsTitleBarMerged ? WindowDecorationMargin.Right : 0), 0);
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == WindowDecorationMarginProperty && TitleBarContent is not null)
+            PlaceTitleBarContent();
+        else if (change.Property == WindowStateProperty && MaximizeButton is not null)
+        {
+            var maximized = WindowState == WindowState.Maximized;
+            MaximizeButton.Content = maximized ? "❐" : "□";
+            ToolTip.SetTip(MaximizeButton, maximized ? "Restore" : "Maximize");
+            WindowButtons.IsVisible = IsTitleBarMerged && OperatingSystem.IsLinux() && WindowState != WindowState.FullScreen;
+        }
+        else if (change.Property == NativeMenu.IsNativeMenuExportedProperty && MenuButton is not null)
+            MenuButton.IsVisible = !NativeMenu.GetIsNativeMenuExported(this);
+    }
+
+    private void OnMenuClicked(object? sender, RoutedEventArgs e)
+    {
+        var flyout = AppMenu.Flyout(Menus);
+        flyout.Placement = PlacementMode.BottomEdgeAlignedLeft;
+        flyout.ShowAt(MenuButton);
+    }
+
+    private void OnMinimizeClicked(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void OnMaximizeClicked(object? sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    private void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
+
+    private void OnTitleBarDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        // Double-clicking the bar itself, not a button on it, maximizes or restores, as a title bar does.
+        if (IsTitleBarMerged && e.Source is Visual source && source.FindAncestorOfType<Button>(includeSelf: true) is null)
+            OnMaximizeClicked(sender, e);
+    }
+
+    private void OnUndoClicked(object? sender, RoutedEventArgs e) => Undo();
+
+    private void OnRedoClicked(object? sender, RoutedEventArgs e) => Redo();
+
+    private void ShowUndo()
+    {
+        UndoButton.IsEnabled = Editor.CanUndo;
+        RedoButton.IsEnabled = Editor.CanRedo;
+    }
+
+    private void ShowCaret()
+    {
+        var caret = Editor.TextArea.Caret;
+        CaretText.Text = path is null ? "" : $"Ln {caret.Line}, Col {caret.Column}";
+    }
+
+    private void OnZoomChanged(object? sender, RoutedEventArgs e)
     {
         if (CanvasZoom is null)
             return;
@@ -579,22 +763,21 @@ public sealed partial class MainWindow : Window
         // A redraw waits for a pause in typing, since drawing a document takes a moment.
         if (loading || path is null)
             return;
+        ShowUndo();
         redraw.Stop();
         redraw.Start();
     }
 
-    private void OnLookChanged(object? sender, RoutedEventArgs e)
+    /// <summary>Shows the canvas in the look View has chosen, and redraws it.</summary>
+    private void UseLook()
     {
-        if (loading || AccentBox is null || DarkBox is null)
-            return;
-
-        var accent = DesktopPalette.Swatches[Math.Max(0, AccentBox.SelectedIndex)];
         DesktopAppearance.Use(DesktopLook.Standard with
         {
-            Mode = DarkBox.IsChecked == true ? LookMode.Dark : LookMode.Light,
-            Accent = accent,
+            Mode = IsDark ? LookMode.Dark : LookMode.Light,
+            Accent = DesktopPalette.Swatches[Accent],
         });
         RenderNow();
+        AppMenu.Fill(nativeMenu, Menus);
     }
 
     private void OnTextToggled(object? sender, RoutedEventArgs e)
@@ -611,10 +794,6 @@ public sealed partial class MainWindow : Window
 
         Editor.IsVisible = TextSplitter.IsVisible = IsTextShowing;
     }
-
-    private void OnOpenClicked(object? sender, RoutedEventArgs e) => _ = PickAndOpenAsync();
-
-    private void OnSaveClicked(object? sender, RoutedEventArgs e) => Save();
 
     private async Task PickAndOpenAsync()
     {

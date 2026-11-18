@@ -3,7 +3,8 @@
              x:Class="Venture.Roundhouse.App"
              RequestedThemeVariant="Default">
   <Application.Styles>
-    <FluentTheme/>
+    <!-- Compact, as IDEs are: more of the document fits beside the panes. -->
+    <FluentTheme DensityStyle="Compact"/>
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"/>
   </Application.Styles>
 </Application>

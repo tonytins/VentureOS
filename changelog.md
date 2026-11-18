@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.304
+
+- Roundhouse has menus: File, Edit, Insert, Arrange, and View, with their shortcuts. On KDE and macOS they appear in the desktop's global menu bar; elsewhere, the ☰ button opens them.
+- A new look, as a desktop IDE has: a blue-to-teal bar across the top, which is also the window's title bar where the desktop allows, with Add, Undo, Redo, 2×, and Text on it; compact panes headed OUTLINE and INSPECTOR; and a status bar showing the caret's line and column. Dark and the accent moved to the View menu, and Duplicate, Delete, Forward, and Backward to Edit and Arrange.
+
 ## 0.6.303
 
 - Roundhouse's library: Add ▾ puts a text, button, text field, text area, list, slider, progress bar, or region in the middle of the window, in front, named after its kind, and selects it.

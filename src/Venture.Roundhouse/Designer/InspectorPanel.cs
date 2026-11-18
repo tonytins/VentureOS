@@ -118,6 +118,7 @@ public sealed class InspectorPanel : StackPanel
             var label = new TextBlock
             {
                 Text = info.IsRequired ? $"{info.Name} *" : info.Name,
+                FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
             };
@@ -176,7 +177,8 @@ public sealed class InspectorPanel : StackPanel
 
         private TextBox MakeTextBox()
         {
-            TextBox box = new() { MinHeight = 26, Padding = new(6, 2) };
+            // Short fields, as an IDE's property grid has, so more of an element fits without scrolling.
+            TextBox box = new() { Height = 26, MinHeight = 0, FontSize = 12, Padding = new(6, 0), VerticalContentAlignment = VerticalAlignment.Center };
             box.LostFocus += (_, _) => CommitText(box);
             box.KeyDown += (_, e) =>
             {
@@ -213,7 +215,15 @@ public sealed class InspectorPanel : StackPanel
 
         private ComboBox MakeChoices(IReadOnlyList<string> choices)
         {
-            ComboBox box = new() { ItemsSource = (List<string>)["(default)", .. choices], HorizontalAlignment = HorizontalAlignment.Stretch };
+            ComboBox box = new()
+            {
+                ItemsSource = (List<string>)["(default)", .. choices],
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Height = 26,
+                MinHeight = 0,
+                FontSize = 12,
+                Padding = new(6, 0),
+            };
             box.SelectionChanged += (_, _) =>
             {
                 var chosen = box.SelectedIndex <= 0 ? null : (string)box.SelectedItem!;
