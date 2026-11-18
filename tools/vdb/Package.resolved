@@ -1,13 +1,13 @@
 {
-  "originHash" : "409ccb07c93c62d50c23475fc7438672ecd403ee61d8e1bf68f799655867ffb6",
+  "originHash" : "680322cf04b58bf14516a039214d8b78a72e163e98db58e76cacbca9987eceb6",
   "pins" : [
     {
       "identity" : "gitversion",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonytins/GitVersion.git",
       "state" : {
-        "revision" : "bf5ac2bb4540b72b3347503912dadfded9cf5e8d",
-        "version" : "0.3.1"
+        "branch" : "main",
+        "revision" : "1f43aa004c8099d186b754c912bb045fd11de54e"
       }
     },
     {

@@ -12,7 +12,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", "1.8.2"..<"1.9.0"),
         .package(url: "https://github.com/apple/swift-log.git", "1.16.2"..<"1.17.0"),
-        .package(url: "https://github.com/tonytins/GitVersion.git", "0.3.1"..<"0.4.0"),
+        // main, for GITVERSION_IGNORE_TAG_VERSION in GitVersion.env, until a release has it.
+        .package(url: "https://github.com/tonytins/GitVersion.git", branch: "main"),
     ],
     targets: [
         // What vdb/1 is, apart from the command line, so it can be tested.
