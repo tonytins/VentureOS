@@ -505,14 +505,9 @@ public static class UiLibrary
             return Fail(lua, $"venture.ui.open: {given}: {exception.Message}");
         }
 
-        // A document's <String>s come from the CST tables beside it, such as an app's Contents/Resources.
-        StringTables tables = new(Path.GetDirectoryName(path) ?? "/");
-        UIView view = new(script, tables.Find);
-        foreach (var problem in tables.Problems)
-            host.Output.WriteLine($"{app.Name}: {given}: {problem}");
-        foreach (var missing in view.MissingStrings)
-            host.Output.WriteLine($"{app.Name}: {given}: no text for the string \"{missing}\" in its tables.");
-        LoadImages(view, Path.GetDirectoryName(path) ?? "/", host, $"{app.Name}: {given}");
+        // A document's <String>s and <Image>s come from beside it, such as an app's Contents/Resources.
+        var view = DocumentView.Open(
+            script, Path.GetDirectoryName(path) ?? "/", host.LoadImage, problem => host.Output.WriteLine($"{app.Name}: {given}: {problem}"));
 
         Handle handle = new(owner, host, view, Path.GetFileName(path)) { Folder = Path.GetDirectoryName(path) ?? "/", App = app };
         handle.Window = new DesktopWindow(title, handle.View)
@@ -528,34 +523,6 @@ public static class UiLibrary
 
         PushHandle(lua, handle);
         return 1;
-    }
-
-    /// <summary>
-    /// Supplies a document's <c>&lt;Image&gt;</c>s from the files their paths name, beside the document, such as
-    /// <c>icons/add.png</c> in an app's <c>Contents/Resources</c>. One that can't be read stays outlined, and says why.
-    /// </summary>
-    private static void LoadImages(UIView view, string folder, AppWindows host, string label)
-    {
-        if (host.LoadImage is not { } load)
-            return;
-
-        foreach (var image in view.Script.Images.Values)
-        {
-            // An image named only by asset ID is TSO's, which VentureOS can't look up.
-            if (image.Path is not { } relative)
-                continue;
-
-            if (!SystemDirectory.IsValidPath(relative))
-            {
-                host.Output.WriteLine($"{label}: the image \"{image.Name}\" has path=\"{relative}\", which isn't a path beside the document.");
-                continue;
-            }
-
-            if (load($"{folder}/{relative}") is { } picture)
-                view.SetImage(image.Name, picture);
-            else
-                host.Output.WriteLine($"{label}: the image \"{image.Name}\" couldn't be read from {relative}.");
-        }
     }
 
     private static void PushHandle(ILuaState lua, Handle handle)

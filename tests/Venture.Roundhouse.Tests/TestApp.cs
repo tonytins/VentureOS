@@ -3,6 +3,10 @@ using Avalonia.Headless;
 
 namespace Venture.Roundhouse.Tests;
 
+/// <summary>Tests that draw with VentureOS's palette, which is shared, so they run alone.</summary>
+[CollectionDefinition(nameof(PaletteCollection), DisableParallelization = true)]
+public sealed class PaletteCollection;
+
 /// <summary>
 /// Roundhouse's app, off-screen: rendered with Skia, so tests can look at real frames. Avalonia starts once a
 /// process, so every test shares one session and hands it its work.

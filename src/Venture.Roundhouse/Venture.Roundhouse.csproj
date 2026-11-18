@@ -24,10 +24,17 @@
     <PackageReference Include="Avalonia" Version="12.1.5" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
+    <!-- Skia, which Avalonia draws with, at Avalonia's own version: Roundhouse's painter draws text with it. -->
+    <PackageReference Include="Avalonia.Skia" Version="12.1.5" />
     <PackageReference Include="GitInfo" Version="3.6.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- VentureOS's own fonts, so Roundhouse draws text in the same faces VentureOS does. -->
+    <None Include="../../rootfs/system/fonts/*" LinkBase="fonts" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

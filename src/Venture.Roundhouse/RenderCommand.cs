@@ -1,0 +1,111 @@
+using Venture.OS.Desktop;
+using Venture.OS.Interface;
+using Venture.Roundhouse.Drawing;
+
+namespace Venture.Roundhouse;
+
+/// <summary>
+/// <c>Roundhouse --render document.uix picture.png</c>: draws a document as VentureOS would show it in a window, over
+/// the sky, into a PNG file, with no window of Roundhouse's own, so a script or a test can look at a design.
+/// </summary>
+public static class RenderCommand
+{
+    /// <summary>The flag that asks for a render, first on the command line.</summary>
+    public const string Flag = "--render";
+
+    /// <summary>What it takes.</summary>
+    public const string Usage = "Usage: Roundhouse --render <document.uix> <picture.png> [--dark] [--accent #RRGGBB]";
+
+    // Room around the window for its shadow and a little of the sky.
+    private const int Margin = 24;
+
+    /// <summary>Renders, saying what went wrong on <paramref name="error"/>.</summary>
+    /// <param name="arguments">What follows <see cref="Flag"/>.</param>
+    /// <returns>0 when the picture was written, 1 when the document or picture couldn't be, and 2 for a wrong command.</returns>
+    public static int Run(IReadOnlyList<string> arguments, TextWriter error)
+    {
+        ArgumentNullException.ThrowIfNull(arguments);
+        ArgumentNullException.ThrowIfNull(error);
+
+        List<string> paths = [];
+        var dark = false;
+        var accent = DesktopPalette.StandardAccent;
+        for (var index = 0; index < arguments.Count; index++)
+        {
+            switch (arguments[index])
+            {
+                case "--dark":
+                    dark = true;
+                    break;
+                case "--accent" when index + 1 < arguments.Count && DesktopPalette.TryParseColor(arguments[index + 1], out var chosen):
+                    accent = chosen;
+                    index++;
+                    break;
+                case "--accent":
+                    error.WriteLine("Roundhouse: --accent needs a color written #RRGGBB, such as #3584E4.");
+                    error.WriteLine(Usage);
+                    return 2;
+                case var word when word.StartsWith("--", StringComparison.Ordinal):
+                    error.WriteLine($"Roundhouse: {word} isn't an option.");
+                    error.WriteLine(Usage);
+                    return 2;
+                default:
+                    paths.Add(arguments[index]);
+                    break;
+            }
+        }
+
+        if (paths.Count != 2)
+        {
+            error.WriteLine(Usage);
+            return 2;
+        }
+
+        var (document, picture) = (paths[0], paths[1]);
+        DesktopAppearance.Use(DesktopLook.Standard with { Mode = dark ? LookMode.Dark : LookMode.Light, Accent = accent });
+
+        UIView view;
+        try
+        {
+            // The document's own report names a picture that couldn't be read, so the loader needn't say it too.
+            view = DocumentView.Open(Path.GetFullPath(document), path => SkiaImages.Load(path),
+                problem => error.WriteLine($"Roundhouse: {document}: {problem}"));
+        }
+        catch (Exception exception) when (exception is UIScriptException or IOException or UnauthorizedAccessException)
+        {
+            error.WriteLine($"Roundhouse: {document}: {exception.Message}");
+            return 1;
+        }
+
+        try
+        {
+            File.WriteAllBytes(picture, Render(view, Path.GetFileName(document)));
+            return 0;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            error.WriteLine($"Roundhouse: {picture}: {exception.Message}");
+            return 1;
+        }
+    }
+
+    /// <summary>Draws a view in a window over the sky, as a PNG file's bytes.</summary>
+    /// <exception cref="FileNotFoundException">VentureOS's fonts aren't beside Roundhouse.</exception>
+    public static byte[] Render(UIView view, string title)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        ArgumentNullException.ThrowIfNull(title);
+
+        DesktopWindow window = new(title, view);
+        var (width, height) = (window.Width + (2 * Margin), window.Height + (2 * Margin));
+        WindowManager windows = new(width, height);
+        windows.Open(window);
+        (window.X, window.Y) = (Margin, Margin);
+
+        using var fonts = SkiaFonts.LoadShipped();
+        using SkiaPainter painter = new(width, height, fonts);
+        painter.DrawPixels(DesktopBackground.Render(width, height), 0, 0, width, height);
+        windows.Draw(painter);
+        return painter.EncodePng();
+    }
+}

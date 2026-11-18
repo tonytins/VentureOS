@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,110 tests, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,116 tests, and 15 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
@@ -150,6 +150,8 @@ VentureOS/
 │  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
 │  │  └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
+│     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
+│     └─ RenderCommand.cs          Roundhouse --render: a .uix drawn into a PNG file, with no window
 ├─ rootfs/                        files built into the kernel and installed at boot
 │  ├─ system/                      installed to /mnt/system, which nothing may change
 │  │  ├─ init.lua                  runs once after boot; prints the help hint
@@ -809,7 +811,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   (`AppWindows.SystemFolder`), or anywhere with the `files` scope.
 - **Translucency.** The canvas's own drawing doesn't blend, so
   `CanvasPainter` blends a translucent fill (window shadows, the fade over
-  inactive windows) into the canvas's buffer itself.
+  inactive windows) into the canvas's buffer itself, with `FrameBuffer`,
+  whose arithmetic Roundhouse's painter shares, so both land on the same
+  values.
+- **Roundhouse's painter** (`SkiaPainter`) keeps a frame of VentureOS's own
+  pixels and draws everything but text through `FrameBuffer` and
+  `DesktopImage`, as the kernel does, and text with Skia, from the same
+  Open Sans and Fira Code files, so a text's width can differ by a pixel.
+  `Roundhouse --render document.uix picture.png [--dark] [--accent
+  #RRGGBB]` draws a document in a window over the sky, with its strings
+  and images from beside it (`DocumentView`), with no window of its own.
 - **Windows.** `WindowManager` keeps the windows back to front. Pressing a
   window brings it to the front and focuses it; its title bar drags it,
   kept on screen far enough to grab again; its close button closes it on
@@ -1240,6 +1251,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Drawing (§9): `FrameBuffer` holds the fill, blend, copy, and read-back arithmetic the kernel's painter used, now shared with Roundhouse's `SkiaPainter`, which draws everything but text through it and text with Skia in VentureOS's fonts; `DocumentView` opens a `.uix` with its strings and images for apps and Roundhouse alike; `Roundhouse --render` draws one to a PNG file. |
 | 2026-11-18 | minor | Layout (§2): Roundhouse's projects, `src/Venture.Roundhouse` (Avalonia 12) and `tests/Venture.Roundhouse.Tests` (headless), in the solution; the kernel's build doesn't change. |
 | 2026-11-18 | minor | No `ui` scope (§9): apps open windows without asking, and `ui` is accepted and ignored; every script gets `venture.ui.alert`, `preview`, and `launch` through `ISystemInfo.Desktop`, an alert printed without the desktop on the screen. |
 | 2026-11-18 | minor | Docs: the UIScript drafts move to `docs/uiscript/`, whose README says VentureOS's UIScript is a superset of Hudini's and lists what it adds; Hudini adopted the menus, sidebar, and styles drafts, which say so; a new title bar draft covers `subtitle`, and toolbar items' `image` and `placement`. |

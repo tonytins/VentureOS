@@ -19,17 +19,10 @@ internal sealed class CanvasPainter(Canvas canvas, TrueTypeFont interfaceFont, T
 
     public void ReadPixels(int[] into, int x, int y, int width, int height)
     {
-        var buffer = canvas.GetBuffer();
-        for (var row = 0; row < height; row++)
-        {
-            for (var column = 0; column < width; column++)
-            {
-                var (px, py) = (x + column, y + row);
-                into[(row * width) + column] = buffer is not null && px >= 0 && py >= 0 && px < canvas.Width && py < canvas.Height
-                    ? buffer[(py * canvas.Width) + px]
-                    : 0;
-            }
-        }
+        if (canvas.GetBuffer() is { } buffer)
+            FrameBuffer.Read(buffer, canvas.Width, canvas.Height, into, x, y, width, height);
+        else
+            Array.Clear(into, 0, Math.Min(into.Length, Math.Max(0, width) * Math.Max(0, height)));
     }
 
     public void DrawImage(DesktopImage image, int x, int y)
@@ -60,32 +53,13 @@ internal sealed class CanvasPainter(Canvas canvas, TrueTypeFont interfaceFont, T
     }
 
     /// <summary>
-    /// Lays a translucent color over the frame, pixel by pixel, since the canvas's own drawing doesn't blend.
+    /// Lays a translucent color over the frame, pixel by pixel, since the canvas's own drawing doesn't blend, with
+    /// the same arithmetic Roundhouse's painter uses.
     /// </summary>
     private void Blend(int x, int y, int width, int height, UIColor color)
     {
-        if (canvas.GetBuffer() is not { } buffer)
-            return;
-
-        var left = Math.Max(0, x);
-        var top = Math.Max(0, y);
-        var right = Math.Min(canvas.Width, x + width);
-        var bottom = Math.Min(canvas.Height, y + height);
-        var alpha = color.Alpha;
-        var keep = 255 - alpha;
-
-        for (var row = top; row < bottom; row++)
-        {
-            var index = (row * canvas.Width) + left;
-            for (var column = left; column < right; column++, index++)
-            {
-                var under = buffer[index];
-                var red = ((((under >> 16) & 0xFF) * keep) + (color.Red * alpha)) / 255;
-                var green = ((((under >> 8) & 0xFF) * keep) + (color.Green * alpha)) / 255;
-                var blue = (((under & 0xFF) * keep) + (color.Blue * alpha)) / 255;
-                buffer[index] = unchecked((int)0xFF000000) | (red << 16) | (green << 8) | blue;
-            }
-        }
+        if (canvas.GetBuffer() is { } buffer)
+            FrameBuffer.Fill(buffer, canvas.Width, canvas.Height, x, y, width, height, color);
     }
 
     public void DrawText(string text, int x, int y, UIColor color, int size, DesktopFont font = DesktopFont.Interface)

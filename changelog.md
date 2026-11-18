@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.102
+
+- Roundhouse: `Roundhouse --render document.uix picture.png` draws a `.uix` as VentureOS shows it, in a window over the sky, into a PNG file, in light or `--dark` and with any `--accent`.
+
 ## 0.6.100
 
 - Apps open windows without listing `ui` in `needs`. An app or script that still lists it works as before.
