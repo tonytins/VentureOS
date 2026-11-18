@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.506
+
+- VentureOS 0.5, Cassiopeia, is released. See [the release notes](docs/releases/0.5.md).
+
 ## 0.5.505
 
 - Automatic dark mode: choose Auto in Settings ▸ Appearance ▸ Style, and the desktop is dark from 7 PM until 7 AM, by the clock, switching on the minute. Change the times beside it, or with `appearance auto --from 20:00 --until 06:30`.

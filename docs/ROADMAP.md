@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-17 · **Latest release:** 0.4, Pere Marquette · **Next:** 0.5, Cassiopeia, in development
+> **Last updated:** 2026-11-18 · **Latest release:** 0.5, Cassiopeia · **Next:** Roundhouse, VentureOS's IDE, being planned
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -42,7 +42,7 @@ stage to the next, and add a line to the revision history.
 |---|---|---|---|
 | 0.3 | (the desktop) | released 2026-11-11, `v0.3.18`; [notes](./releases/0.3.md) | The desktop, its apps, Settings, and the look |
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
-| 0.5 | Cassiopeia | in development | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
+| 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 
 ## 0.4, Pere Marquette
 
@@ -210,6 +210,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | 0.5, Cassiopeia, is released as `v0.5.506`. Roundhouse is next, being planned. |
 | 2026-11-17 | minor | 0.5.5xx done, in four phases: the look grows, rounded corners, wallpapers with a picker, and automatic dark mode on a schedule, which I chose over sunset times for now. Every band of 0.5 is done. |
 | 2026-11-17 | minor | 0.5.4xx gains a fourth phase at my suggestion: Settings' panes in a sidebar. |
 | 2026-11-17 | minor | 0.5.4xx done, in three phases: sidebar rows with icons, a rounded selection, and separators between groups. Shipped sidebars keep text until their icons are drawn. |
