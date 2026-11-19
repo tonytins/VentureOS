@@ -17,6 +17,32 @@ public enum UIControlType
     Slider,
     ProgressBar,
     Region,
+
+    /// <summary>
+    /// A row of icons with labels and open-dots, such as the dock's (the <c>shelf</c> feature); the app fills it with
+    /// items, as it fills a list.
+    /// </summary>
+    Shelf,
+}
+
+/// <summary>What a window is to the desktop.</summary>
+public enum UIWindowRole
+{
+    /// <summary>An ordinary window, with a title bar, that can be moved and focused.</summary>
+    Window,
+
+    /// <summary>
+    /// A panel pinned to an edge of the screen, such as the dock or the menu bar: no title bar, not moved or focused,
+    /// kept above ordinary windows, which the desktop keeps clear of it.
+    /// </summary>
+    Panel,
+}
+
+/// <summary>The edge of the screen a panel is pinned to.</summary>
+public enum UIEdge
+{
+    Top,
+    Bottom,
 }
 
 /// <summary>How text sits in its control.</summary>
@@ -68,9 +94,17 @@ public sealed record UIFrame(float X, float Y, float? Width, float? Height, UIEd
 /// <summary>
 /// The interface's size, the smallest size it lays out at, whether the desktop lets people resize it, and a line
 /// shown under the title, which VentureOS adds. A reader that skips <c>resizable</c> or <c>subtitle</c> shows a fixed
-/// window, or one without the line, that still lays out correctly, so neither is a required feature.
+/// window, or one without the line, that still lays out correctly, so neither is a required feature. Nor are
+/// <c>role</c> and <c>edge</c>, which VentureOS adds too: a reader without panels shows the panel as an ordinary
+/// window, plainer, but working.
 /// </summary>
-public sealed record UIWindow(UISize Size, UISize? MinimumSize, bool IsResizable = false, string? Subtitle = null);
+public sealed record UIWindow(
+    UISize Size,
+    UISize? MinimumSize,
+    bool IsResizable = false,
+    string? Subtitle = null,
+    UIWindowRole Role = UIWindowRole.Window,
+    UIEdge? Edge = null);
 
 /// <summary>An image the host loads, by path, asset ID, or both, with 1, 4, or 6 equal-width states.</summary>
 public sealed record UIImageResource(string Name, string? Path, string? AssetId, int StateCount);
@@ -322,7 +356,7 @@ public sealed class UIScript
     public const int SupportedVersion = 1;
 
     /// <summary>The <c>requires</c> features this reader understands.</summary>
-    public static readonly IReadOnlyList<string> SupportedFeatures = [MenusFeature, SidebarFeature];
+    public static readonly IReadOnlyList<string> SupportedFeatures = [MenusFeature, SidebarFeature, ShelfFeature];
 
     /// <summary>The feature that adds <c>&lt;Menu&gt;</c>, <c>&lt;MenuItem&gt;</c>, and <c>&lt;MenuSeparator&gt;</c>.</summary>
     public const string MenusFeature = "menus";
@@ -332,6 +366,12 @@ public sealed class UIScript
     /// around, so it's a feature older readers refuse rather than an element they could ignore.
     /// </summary>
     public const string SidebarFeature = "sidebar";
+
+    /// <summary>
+    /// The feature that adds <c>&lt;Shelf&gt;</c>. A new element refuses a document in an older reader, so a shelf is
+    /// a feature it can name in its refusal, rather than an element it would trip over.
+    /// </summary>
+    public const string ShelfFeature = "shelf";
 
     private UIScript()
     {
@@ -431,12 +471,15 @@ public sealed class UIScript
             StringSplitOptions.RemoveEmptyEntries);
         var hasMenus = false;
         var hasSidebar = false;
+        var hasShelf = false;
         foreach (var feature in features)
         {
             if (feature == MenusFeature)
                 hasMenus = true;
             else if (feature == SidebarFeature)
                 hasSidebar = true;
+            else if (feature == ShelfFeature)
+                hasShelf = true;
             else
                 throw new UIScriptException(
                     $"This document requires \"{feature}\", which this reader doesn't support; it needs a newer VentureOS.");
@@ -464,7 +507,7 @@ public sealed class UIScript
                 case "Window":
                     if (window is not null)
                         throw new UIScriptException("There's more than one <Window>.", element.Line);
-                    window = ReadWindow(reader);
+                    window = ReadWindow(reader, element.Line, ignored);
                     break;
 
                 case "Image":
@@ -555,12 +598,13 @@ public sealed class UIScript
                     break;
 
                 default:
-                    if (ControlType(element.Name) is not { } type)
+                    if (ControlType(element.Name) is not { } type || (type == UIControlType.Shelf && !hasShelf))
                     {
                         var hint = element.Name switch
                         {
                             "Menu" or "MenuItem" or "MenuSeparator" => $" Add requires=\"{MenusFeature}\" to <UIScript> to use menus.",
                             "Sidebar" => $" Add requires=\"{SidebarFeature}\" to <UIScript> to use a sidebar.",
+                            "Shelf" => $" Add requires=\"{ShelfFeature}\" to <UIScript> to use a shelf.",
                             _ => "",
                         };
                         throw new UIScriptException($"<{element.Name}> isn't a UIScript element.{hint}", element.Line);
@@ -596,6 +640,25 @@ public sealed class UIScript
         return script;
     }
 
+    /// <summary>
+    /// A panel has no title bar, so nothing that lives in one, and isn't resized by hand; it needs an edge to sit on.
+    /// </summary>
+    private void ValidatePanel()
+    {
+        if (Window.Edge is null)
+            throw new UIScriptException("A panel needs an edge to sit on: edge=\"top\" or edge=\"bottom\".");
+        if (Window.IsResizable)
+            throw new UIScriptException("A panel can't be resizable; it's as large as its document says.");
+        if (Window.Subtitle is not null)
+            throw new UIScriptException("A panel has no title bar, so no subtitle.");
+        if (ToolbarItems.Count > 0)
+            throw new UIScriptException("A panel has no title bar, so no toolbar items.", ToolbarItems[0].Line);
+        if (TitleField is { } field)
+            throw new UIScriptException("A panel has no title bar, so no title field.", field.Line);
+        if (Sidebar is { } side)
+            throw new UIScriptException("A panel can't have a sidebar.", side.Line);
+    }
+
     private static UIControlType? ControlType(string element) => element switch
     {
         "Text" => UIControlType.Text,
@@ -607,23 +670,45 @@ public sealed class UIScript
         "Slider" => UIControlType.Slider,
         "ProgressBar" => UIControlType.ProgressBar,
         "Region" => UIControlType.Region,
+        "Shelf" => UIControlType.Shelf,
         _ => null,
     };
 
-    private static UIWindow ReadWindow(Attributes reader)
+    private static UIWindow ReadWindow(Attributes reader, int line, List<UIIgnoredAttribute> ignored)
     {
         UISize size = new(reader.RequiredNumber("width"), reader.RequiredNumber("height"));
         var minimumWidth = reader.Number("minWidth");
         var minimumHeight = reader.Number("minHeight");
         var resizable = reader.Boolean("resizable") ?? false;
         var subtitle = reader.String("subtitle");
-        return (minimumWidth, minimumHeight) switch
+
+        // A role this reader doesn't know is a newer document's; the window still works as an ordinary one.
+        var role = reader.String("role") switch
         {
-            (null, null) => new UIWindow(size, null, resizable, subtitle),
-            ({ } width, { } height) => new UIWindow(size, new UISize(width, height), resizable, subtitle),
+            null or "window" => UIWindowRole.Window,
+            "panel" => UIWindowRole.Panel,
+            _ => (UIWindowRole?)null,
+        };
+        if (role is null)
+            ignored.Add(new UIIgnoredAttribute("Window", "role", line));
+
+        // An edge this reader doesn't know is refused rather than guessed, so a panel never lands where it wasn't meant to.
+        var edge = reader.String("edge") switch
+        {
+            null => (UIEdge?)null,
+            "top" => UIEdge.Top,
+            "bottom" => UIEdge.Bottom,
+            var other => throw new UIScriptException($"A panel's edge is top or bottom, not \"{other}\".", line),
+        };
+
+        UISize? minimum = (minimumWidth, minimumHeight) switch
+        {
+            (null, null) => null,
+            ({ } width, { } height) => new UISize(width, height),
             (null, _) => throw reader.Missing("minWidth"),
             _ => throw reader.Missing("minHeight"),
         };
+        return new UIWindow(size, minimum, resizable, subtitle, role ?? UIWindowRole.Window, edge);
     }
 
     private static UIFrame ReadFrame(Attributes reader)
@@ -744,6 +829,9 @@ public sealed class UIScript
             if (image.StateCount is not (1 or 4 or 6))
                 throw new UIScriptException($"The image \"{image.Name}\" has stateCount {image.StateCount}; use 1, 4, or 6.");
         }
+
+        if (Window.Role == UIWindowRole.Panel)
+            ValidatePanel();
 
         if (Sidebar is { Width: <= 0 } narrow)
             throw new UIScriptException($"The sidebar \"{narrow.Name}\" needs a positive width.", narrow.Line);

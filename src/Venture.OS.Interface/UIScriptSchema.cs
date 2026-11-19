@@ -148,6 +148,8 @@ public static class UIScriptSchema
             new("minHeight", UIAttributeGroup.Frame, UIAttributeKind.Number),
             new("resizable", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean),
             new("subtitle", UIAttributeGroup.Text, UIAttributeKind.Text),
+            new("role", UIAttributeGroup.Behaviour, UIAttributeKind.Choice, Choices: ["window", "panel"]),
+            new("edge", UIAttributeGroup.Frame, UIAttributeKind.Choice, Choices: ["top", "bottom"]),
         ],
         ["Image"] =
         [
@@ -214,6 +216,7 @@ public static class UIScriptSchema
         ["Text"] = Control,
         ["FormattedText"] = Control,
         ["Region"] = Control,
+        ["Shelf"] = Control,
         ["Button"] =
         [
             .. Control,
@@ -239,7 +242,7 @@ public static class UIScriptSchema
 
     /// <summary>The controls: the elements drawn in the window, which take a frame, text, and a style.</summary>
     public static IReadOnlyList<string> Controls { get; } =
-        ["Text", "FormattedText", "Button", "TextField", "TextArea", "List", "Slider", "ProgressBar", "Region"];
+        ["Text", "FormattedText", "Button", "TextField", "TextArea", "List", "Slider", "ProgressBar", "Region", "Shelf"];
 
     /// <summary>The attributes <paramref name="element"/> takes, in the order an inspector shows them; none for an element UIScript doesn't read.</summary>
     public static IReadOnlyList<UIAttributeInfo> For(string element)

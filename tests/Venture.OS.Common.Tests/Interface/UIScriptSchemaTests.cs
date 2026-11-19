@@ -57,9 +57,9 @@ public sealed class UIScriptSchemaTests
 
         var text = element switch
         {
-            "UIScript" => $"""<UIScript {(attribute == "requires" ? "" : """requires="menus sidebar" """)}{probe}><Window width="300" height="200"/>{Declarations}</UIScript>""",
-            "Window" => $"""<UIScript requires="menus sidebar"><Window width="300" height="200" {(attribute is "width" or "height" ? "" : probe)}/>{Declarations}</UIScript>""",
-            _ => $"""<UIScript requires="menus sidebar"><Window width="300" height="200"/>{Declarations}<{element} {Required(element, attribute)}{probe}/></UIScript>""",
+            "UIScript" => $"""<UIScript {(attribute == "requires" ? "" : """requires="menus sidebar shelf" """)}{probe}><Window width="300" height="200"/>{Declarations}</UIScript>""",
+            "Window" => $"""<UIScript requires="menus sidebar shelf"><Window width="300" height="200" {(attribute is "width" or "height" ? "" : probe)}/>{Declarations}</UIScript>""",
+            _ => $"""<UIScript requires="menus sidebar shelf"><Window width="300" height="200"/>{Declarations}<{element} {Required(element, attribute)}{probe}/></UIScript>""",
         };
 
         var script = UIScript.Parse(text);
@@ -88,8 +88,9 @@ public sealed class UIScriptSchemaTests
     public void EveryElementTheReaderKnowsIsListed()
     {
         Assert.Equal(
-            ["Button", "FormattedText", "Image", "List", "Menu", "MenuItem", "MenuSeparator", "ProgressBar", "Region", "Sidebar",
-                "Slider", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript", "Visual", "Window"],
+            ["Button", "FormattedText", "Image", "List", "Menu", "MenuItem", "MenuSeparator", "ProgressBar", "Region", "Shelf",
+                "Sidebar", "Slider", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript",
+                "Visual", "Window"],
             UIScriptSchema.Elements.Order(StringComparer.Ordinal));
         Assert.All(UIScriptSchema.Controls, control => Assert.NotNull(UIScriptSchema.Find(control, "x")));
         Assert.Empty(UIScriptSchema.For("Hologram"));
@@ -117,7 +118,7 @@ public sealed class UIScriptSchemaTests
     {
         var text = $"""<UIScript><Window width="300" height="200"/>{Declarations}<{element} {Required(element, attribute)}{attribute}="{(attribute == "minValue" ? "0" : attribute is "selectable" or "follows" ? "true" : attribute == "image" ? "img" : attribute == "orientation" ? "vertical" : "x")}"/></UIScript>""";
 
-        Assert.Throws<UIScriptException>(() => UIScript.Parse(text.Replace("<UIScript>", """<UIScript requires="menus sidebar">""", StringComparison.Ordinal)));
+        Assert.Throws<UIScriptException>(() => UIScript.Parse(text.Replace("<UIScript>", """<UIScript requires="menus sidebar shelf">""", StringComparison.Ordinal)));
     }
 
     private static string Required(string element, string except)
@@ -157,7 +158,7 @@ public sealed class UIScriptSchemaTests
         },
         UIAttributeKind.Hotkey => "q",
         UIAttributeKind.Shortcut => "Ctrl+K",
-        UIAttributeKind.Features => "menus sidebar",
+        UIAttributeKind.Features => "menus sidebar shelf",
         UIAttributeKind.Path => "p.png",
         _ => throw new ArgumentOutOfRangeException(nameof(info)),
     };

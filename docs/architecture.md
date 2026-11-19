@@ -1581,6 +1581,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | UIScript: `role` and `edge` on `<Window>`, and the `shelf` module, read but not yet drawn (0.7.3xx). |
 | 2026-11-19 | minor | Apps (§9): `ps`, `kill`, `venture.processes()`, and `venture.kill()`; `ISystemInfo.Processes`. |
 | 2026-11-18 | minor | Apps (§9): crashes (three failures in a minute) and kept apps, restarted by the supervisor; Files is one. |
 | 2026-11-18 | minor | Apps (§9): every app runs as a process, through `AppManager.Supervisor` and its owner's `Gate`. |
