@@ -1,0 +1,10 @@
+// The words every app's buttons and alerts share, so apps say them alike: name one
+// in a .uix with <String name="ok" table="100" index="1"/>. Tables 100 and up are
+// VentureOS's shared ones; an app numbers its own below 100.
+1 ^OK^
+2 ^Cancel^
+3 ^Save^
+4 ^Don't Save^
+5 ^Open^
+6 ^Close^
+7 ^Delete^

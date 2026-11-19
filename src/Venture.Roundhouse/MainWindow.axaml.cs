@@ -59,6 +59,9 @@ public sealed partial class MainWindow : Window
 
     // The file editor's highlighting, sharing the designer's grammars, and whether it's being filled, not typed in.
     private readonly RegistryOptions highlightOptions;
+
+    // The shared string tables a preview finds shared <String>s in, from the rootfs Roundhouse runs, or null.
+    private readonly string? sharedStrings = SimulatedDisk.FindSharedStrings();
     private readonly TextMate.Installation fileHighlighting;
     private bool loadingFile;
 
@@ -951,7 +954,8 @@ public sealed partial class MainWindow : Window
     {
         var file = path ?? throw new InvalidOperationException("Only an open document is drawn.");
         List<string> problems = [];
-        var view = DocumentView.Open(script, Path.GetDirectoryName(file) ?? "/", image => SkiaImages.Load(image), problems.Add);
+        var view = DocumentView.Open(
+            script, Path.GetDirectoryName(file) ?? "/", image => SkiaImages.Load(image), problems.Add, sharedStrings);
         ShowPane(view, script);
         var menus = MenusFor(document, script, file);
         using var painter = RenderCommand.Draw(view, Path.GetFileName(file), fonts, out var drawn, menus);

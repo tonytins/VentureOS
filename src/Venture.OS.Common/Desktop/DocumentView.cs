@@ -14,26 +14,29 @@ public static class DocumentView
     /// <summary>Reads a document and what it names, saying what's missing through <paramref name="report"/>.</summary>
     /// <param name="loadImage">Reads a picture file, or gives <see langword="null"/>; without it, images stay outlined.</param>
     /// <param name="report">Hears each problem: a string table, a string, or an image that couldn't be had.</param>
+    /// <param name="sharedStrings">The folder of tables every app shares, such as <c>/mnt/system/strings</c>.</param>
     /// <exception cref="UIScriptException">The document isn't one VentureOS reads.</exception>
     /// <exception cref="IOException">The file couldn't be read.</exception>
-    public static UIView Open(string path, Func<string, DesktopImage?>? loadImage, Action<string> report)
+    public static UIView Open(
+        string path, Func<string, DesktopImage?>? loadImage, Action<string> report, string? sharedStrings = null)
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(report);
-        return Open(UIScript.Load(path), Path.GetDirectoryName(path) ?? "/", loadImage, report);
+        return Open(UIScript.Load(path), Path.GetDirectoryName(path) ?? "/", loadImage, report, sharedStrings);
     }
 
     /// <summary>
     /// Makes a view of a document already read, such as text being edited, with its strings and images from
-    /// <paramref name="folder"/>.
+    /// <paramref name="folder"/>, and strings from the shared tables in <paramref name="sharedStrings"/> too.
     /// </summary>
-    public static UIView Open(UIScript script, string folder, Func<string, DesktopImage?>? loadImage, Action<string> report)
+    public static UIView Open(
+        UIScript script, string folder, Func<string, DesktopImage?>? loadImage, Action<string> report, string? sharedStrings = null)
     {
         ArgumentNullException.ThrowIfNull(script);
         ArgumentNullException.ThrowIfNull(folder);
         ArgumentNullException.ThrowIfNull(report);
 
-        StringTables tables = new(folder);
+        StringTables tables = new(folder, sharedStrings);
         UIView view = new(script, tables.Find);
         foreach (var problem in tables.Problems)
             report(problem);

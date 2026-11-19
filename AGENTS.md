@@ -14,7 +14,8 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   `CosmosKernelClass` and the package versions are in `Venture.OS.Kernel.csproj`.
 - `rootfs/` holds the files the kernel is built with and installs at boot.  
   `rootfs/system/` holds the system files (Lua scripts, apps, fonts, icons,  
-  wallpapers, and the desktop's `.uix` interfaces), which the build turns into C# and boot  
+  wallpapers, the shared string tables in `strings/`, and the desktop's  
+  `.uix` interfaces), which the build turns into C# and boot  
   installs to `/mnt/system`, where nothing may change them; `rootfs/user/`  
   holds the user's files, such as `apps/Calculator.app` and  
   `settings/appearance.xml`, installed to `/mnt/user`, where the user may;  

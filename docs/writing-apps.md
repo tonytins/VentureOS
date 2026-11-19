@@ -279,8 +279,15 @@ new number. `roll` still works in the shell, since both live in the same app.
   `<String name="saveTip" table="1" index="3"/>`, and put its text in a
   table beside your `.uix`, named `_1_<anything>.cst`, as `3 ^Save the file^`.
   It shows after the pointer rests on the control for half a second.
-  Settings' color swatches do this. VentureOS reads keys on the same line
-  as their text for now, and tells you about anything else in the table.
+  Settings' color swatches do this. Tables follow the
+  [CST specification](https://github.com/tonytins/swift-cst/blob/main/doc/CST.md),
+  and VentureOS tells you about anything wrong in one. Number your own
+  tables below 100.
+- **Shared text:** tables 100 and up are VentureOS's, in
+  `/mnt/system/strings`, for words every app uses alike. Table 100 holds
+  OK, Cancel, Save, Don't Save, Open, Close, and Delete, keyed 1 to 7, so
+  `<String name="ok" table="100" index="1"/>` and `string="ok"` on a button
+  gives it "OK".
 - **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen
   item reports `pressed` with its name, like a button. Every app already

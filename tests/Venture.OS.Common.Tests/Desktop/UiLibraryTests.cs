@@ -454,6 +454,37 @@ public sealed class UiLibraryTests : IDisposable
         apps.CloseApp("Pad", new RecordingOutput());
     }
 
+    [Fact]
+    public void AnAppsWindowFindsTheSharedTables()
+    {
+        var system = Path.Combine(root, "system");
+        Directory.CreateDirectory(Path.Combine(system, "strings"));
+        File.WriteAllText(Path.Combine(system, "strings", "_100_common.cst"), "1 ^OK^\n");
+        AppWindows withStrings = new(windows, events) { SystemFolder = system };
+        CommandRegistry registry = new();
+        AppManager apps = new(Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: withStrings);
+        Write("""venture.ui.open("main.uix")""");
+        var resources = Path.Combine(root, "apps", "Pad.app", "Contents", "Resources");
+        File.WriteAllText(Path.Combine(resources, "_1_pad.cst"), "1 ^Mine^\n");
+        File.WriteAllText(Path.Combine(resources, "main.uix"), """
+            <UIScript version="1">
+              <Window width="200" height="120"/>
+              <String name="ok" table="100" index="1"/>
+              <String name="mine" table="1" index="1"/>
+              <Button name="done" x="10" y="10" width="60" height="30" string="ok"/>
+              <Text name="label" x="10" y="50" width="100" height="20" string="mine"/>
+            </UIScript>
+            """);
+
+        Assert.True(apps.OpenApp("Pad", root, output), string.Join('\n', output.Lines));
+
+        var view = Assert.Single(windows.Windows).View;
+        Assert.Equal("OK", view.Text("done"));
+        Assert.Equal("Mine", view.Text("label"));
+        Assert.Empty(view.MissingStrings);
+        apps.CloseApp("Pad", new RecordingOutput());
+    }
+
     private static void Send(DesktopWindow window, UIEvent uiEvent) => window.EventHandler!(window, uiEvent);
 
     private void Open(string main)

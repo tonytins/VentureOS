@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.500
+
+- Apps can use VentureOS's shared words: tables numbered 100 and up come from `/mnt/system/strings`, beside an app's own tables, which are numbered below 100. Table 100 holds OK, Cancel, Save, Don't Save, Open, Close, and Delete, so `<String table="100" index="1"/>` reads "OK".
+- An app's table numbered 100 or more is now reported and skipped, since that range belongs to the shared tables.
+
 ## 0.7.411
 
 - Apps' string tables (`_<id>_<name>.cst`) are read to the full CST specification, by CST.NET: a key on the line above its value, and numbered keys such as `3.label`, now find their text, where before they were reported and skipped.

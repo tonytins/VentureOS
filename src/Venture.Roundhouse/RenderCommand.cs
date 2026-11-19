@@ -1,6 +1,7 @@
 using Venture.OS.Desktop;
 using Venture.OS.Interface;
 using Venture.Roundhouse.Drawing;
+using Venture.Roundhouse.Simulator;
 
 namespace Venture.Roundhouse;
 
@@ -69,7 +70,7 @@ public static class RenderCommand
         {
             // The document's own report names a picture that couldn't be read, so the loader needn't say it too.
             view = DocumentView.Open(Path.GetFullPath(document), path => SkiaImages.Load(path),
-                problem => error.WriteLine($"Roundhouse: {document}: {problem}"));
+                problem => error.WriteLine($"Roundhouse: {document}: {problem}"), SimulatedDisk.FindSharedStrings());
         }
         catch (Exception exception) when (exception is UIScriptException or IOException or UnauthorizedAccessException)
         {

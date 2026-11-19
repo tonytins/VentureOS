@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,872 tests, and 208 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,878 tests, and 208 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -177,6 +177,7 @@ VentureOS/
 │  │  ├─ commands/                 Lua commands: echo, info, net, appearance, ps, kill, ls, cat, write, mkdir, rm, df, pwd
 │  │  ├─ lib/venture/args.lua      the system library: the venture.args argument parser
 │  │  ├─ interfaces/about.uix      the About VentureOS window
+│  │  ├─ strings/                  the shared CST tables, 100 and up: _100_common.cst, the words buttons share
 │  │  └─ fonts/                    Open Sans and Fira Code, with their licenses
 │  └─ user/                        installed to /mnt/user, which the user may change
 │     ├─ apps/                     Calculator, Notes (the sample app), and TextEdit
@@ -1265,7 +1266,15 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   table to the CST specification, including keys above their values and
   numbered keys such as `3.label`; `StringTables` reads the file itself as
   UTF-8 and looks values up by key, not by position. A repeated key keeps
-  the first value, and a value never closed is skipped. Table problems and missing strings go to the
+  the first value, and a value never closed is skipped. Tables are layered,
+  as the specification's wrapper describes: the document's own, then the
+  shared tables in `/mnt/system/strings` (`venture.ui.open` finds them from
+  `AppWindows.SystemFolder`; Roundhouse's preview from its `rootfs/`). An
+  app's tables are numbered below 100 and the shared ones from 100, and a
+  table in the other's range is reported and skipped, so a key an app's
+  table lacks never finds a shared table's text. An empty value is text.
+  `_100_common.cst` holds the words buttons share (OK, Cancel, Save). Table
+  problems and missing strings go to the
   app's messages. After the pointer rests half a second on a control with
   hover text, `WindowManager` shows it in a box below the pointer, drawn
   over everything but the pointer, until the pointer moves or presses.
@@ -1723,6 +1732,7 @@ in the clear (2026-11-11).
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
+| 2026-11-19 | minor | Hover text (§9): string tables are layered, an app's (below 100) over the system's shared ones in `/mnt/system/strings` (100 and up), starting with `_100_common.cst`. |
 | 2026-11-19 | minor | Layout (§2, §3), hover text (§9): CST.NET 2.1 (`CSTNet` 2.1.200) reads CST tables to the specification, in place of the transitional `CstTable`; rule 7 allows it in `Venture.OS.Interface`. |
 | 2026-11-17 | minor | Menu bar (§9): VentureOS's icon in place of the VentureOS menu's name, a silhouette while open, and in About VentureOS; icons' smoothed edges unmixed from the key. |
 | 2026-11-17 | minor | Pictures (§9): `DesktopImage`, `IPainter.DrawImage`, and the kernel's `PngLoader`; apps' icons in the dock and About (`DesktopIcon`: full backgrounds rounded to a tile, `#00FF01` clear for shaped icons), a `<Visual>`'s supplied image, and the Earthset wallpaper over the sky. |

@@ -44,7 +44,7 @@ stage to the next, and add a line to the revision history.
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
-| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; then Roundhouse on VentureOS itself |
+| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; UIScript 2; then Roundhouse on VentureOS itself |
 
 ## 0.4, Pere Marquette
 
@@ -264,6 +264,31 @@ approved for the `vdb` tool alone.
 - [x] CST.NET 2.1 for CST tables, in place of the transitional reader, so
   they're read to the full specification.
 
+**0.7.5xx, the CST specification**
+
+Apps' text, through CST.NET, as far as the specification reaches: shared
+tables beside an app's own, text that fills in values, Lua reaching tables,
+and Roundhouse editing them. References go through `StringTables` until
+CST.NET's `CSTLayers` takes them, upstream.
+
+- [x] Layers: an app's tables (numbered below 100) over the system's shared
+  ones in `/mnt/system/strings` (100 and up), starting with table 100's
+  common words. An empty value is text, as in The Sims Online.
+- [ ] References between tables (`U+0002<cst>…`), one step, with their
+  arguments.
+- [ ] Placeholders and `venture.strings`, for apps' Lua.
+- [ ] Roundhouse: highlighting `.cst` files, their problems in the Log, and
+  the designer redrawing when a table changes.
+
+**0.7.6xx, UIScript 2**
+
+UIScript `version="2"`, which nests: a `<Window>` holds its controls, a
+`<Sidebar>` its `<Pane>`s and each pane its controls, and a `<Menu>` its
+items and submenus. VentureOS reads version 1, Hudini's flat form, and
+version 2, nested only; Hudini refuses version 2 until it takes the draft.
+The shipped apps move to version 2, and `FlatXml`, `UIDocument`, and
+Roundhouse's designer learn to nest. Not yet planned in detail.
+
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer
 like the desktop version's, gaining widgets as it needs them. A designer needs
@@ -309,6 +334,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | 0.7.5xx, the CST specification, begins, by my decision, with layers: apps' tables below 100 over the system's shared ones from 100. 0.7.6xx, UIScript 2, nested and refused by Hudini until it follows, comes after. |
 | 2026-11-19 | patch | 0.7.4xx: CST.NET 2.1 (`CSTNet` 2.1.200) replaces the transitional CST reader, by my decision, and leaves Ideas. `Venture.OS.Interface` may reference it. |
 | 2026-11-19 | minor | 0.7.4xx is complete: Roundhouse runs the app it has open on VentureOS over vdb, with Common's client. The next band is the owner's to plan. |
 | 2026-11-19 | patch | 0.7.4xx: vdb/1 is sealed, with VentureOS's own SHA-256, HKDF, and ChaCha20-Poly1305, and the identity sent only at pairing. |

@@ -111,6 +111,76 @@ public sealed class StringTablesTests : IDisposable
     }
 
     [Fact]
+    public void FindsSharedTablesAfterTheDocumentsOwn()
+    {
+        var shared = Shared();
+        File.WriteAllText(Path.Combine(root, "_1_settings.cst"), "1 ^Mine^\n");
+        File.WriteAllText(Path.Combine(shared, "_100_common.cst"), "1 ^OK^\n2 ^^\n");
+        StringTables tables = new(root, shared);
+
+        Assert.Equal("Mine", tables.Find(new UIStringResource("mine", "1", 1)));
+        Assert.Equal("OK", tables.Find(new UIStringResource("ok", "100", 1)));
+        Assert.Null(tables.Find(new UIStringResource("none", "100", 9)));
+        Assert.Null(new StringTables(root).Find(new UIStringResource("ok", "100", 1)));
+        Assert.Empty(tables.Problems);
+    }
+
+    [Fact]
+    public void AnEmptySharedValueIsText()
+    {
+        // As in The Sims Online: empty is what the table says, not a reason to look in another layer.
+        var shared = Shared();
+        File.WriteAllText(Path.Combine(shared, "_100_common.cst"), "2 ^^\n");
+
+        Assert.Equal("", new StringTables(root, shared).Find(new UIStringResource("blank", "100", 2)));
+    }
+
+    [Fact]
+    public void ReportsAndSkipsAnAppTableInTheSharedRange()
+    {
+        // Otherwise an app's table 100 would hide the system's.
+        var shared = Shared();
+        File.WriteAllText(Path.Combine(root, "_100_mine.cst"), "1 ^Mine^\n");
+        File.WriteAllText(Path.Combine(shared, "_100_common.cst"), "1 ^OK^\n");
+        StringTables tables = new(root, shared);
+
+        Assert.Equal("OK", tables.Find(new UIStringResource("ok", "100", 1)));
+        Assert.Contains("_100_mine.cst is numbered 100 or more", Assert.Single(tables.Problems), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReportsAndSkipsASharedTableInTheAppsRange()
+    {
+        // Otherwise a key an app's table lacks would turn up text from a shared table it never named.
+        var shared = Shared();
+        File.WriteAllText(Path.Combine(root, "_1_settings.cst"), "1 ^Mine^\n");
+        File.WriteAllText(Path.Combine(shared, "_1_common.cst"), "1 ^Theirs^\n2 ^Theirs too^\n");
+        StringTables tables = new(root, shared);
+
+        Assert.Null(tables.Find(new UIStringResource("two", "1", 2)));
+        Assert.Contains("_1_common.cst is a shared table numbered below 100", Assert.Single(tables.Problems), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheShippedSharedTablesReadCleanly()
+    {
+        var shipped = Path.Combine(AppContext.BaseDirectory, "system", "strings");
+        StringTables tables = new(root, shipped);
+
+        Assert.Equal("OK", tables.Find(new UIStringResource("ok", "100", 1)));
+        Assert.Equal("Cancel", tables.Find(new UIStringResource("cancel", "100", 2)));
+        Assert.Equal("Don't Save", tables.Find(new UIStringResource("dontSave", "100", 4)));
+        Assert.Empty(tables.Problems);
+    }
+
+    private string Shared()
+    {
+        var shared = Path.Combine(root, "shared");
+        Directory.CreateDirectory(shared);
+        return shared;
+    }
+
+    [Fact]
     public void IgnoresOtherFilesAndAMissingFolder()
     {
         File.WriteAllText(Path.Combine(root, "notes.cst"), "1 ^not a table^\n");

@@ -115,6 +115,12 @@ public sealed class SimulatedDisk : IDisposable
     }
 
     /// <summary>
+    /// The shared string tables in <see cref="FindRootfs"/>'s <c>system/strings</c>, which a preview finds a document's
+    /// shared <c>&lt;String&gt;</c>s in, as VentureOS does; <see langword="null"/> without a <c>rootfs/</c>.
+    /// </summary>
+    public static string? FindSharedStrings() => FindRootfs() is { } rootfs ? Path.Combine(rootfs, "system", "strings") : null;
+
+    /// <summary>
     /// Where one of the disk's folders, named as VentureOS names it (<c>/mnt/user</c>), is on this computer. It's for
     /// the folders Roundhouse sets up itself; scripts' own paths go through the file root.
     /// </summary>

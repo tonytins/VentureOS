@@ -652,9 +652,15 @@ public static class UiLibrary
         if (script.Window.Edge == UIEdge.Top && host.Windows.TopPanel is { } top)
             return Fail(lua, $"venture.ui.open: {given} is a top panel, and the top edge holds the menu bar, which {top.App ?? top.Title} shows");
 
-        // A document's <String>s and <Image>s come from beside it, such as an app's Contents/Resources.
+        // A document's <String>s and <Image>s come from beside it, such as an app's Contents/Resources, and its
+        // <String>s from the system's shared tables too.
+        var shared = host.SystemFolder is { } system ? FileRoot.Host(host.Root, system + "/strings") : null;
         var view = DocumentView.Open(
-            script, Path.GetDirectoryName(path) ?? "/", host.LoadImage, problem => host.Output.WriteLine($"{app.Name}: {given}: {problem}"));
+            script,
+            Path.GetDirectoryName(path) ?? "/",
+            host.LoadImage,
+            problem => host.Output.WriteLine($"{app.Name}: {given}: {problem}"),
+            shared);
 
         Handle handle = new(owner, host, view, Path.GetFileName(path)) { Folder = Path.GetDirectoryName(path) ?? "/", App = app };
         handle.Window = new DesktopWindow(title, handle.View)
