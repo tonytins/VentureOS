@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,681 tests, and 188 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,737 tests, and 190 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1128,6 +1128,24 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   window brings it to the front and focuses it; its title bar drags it,
   kept on screen far enough to grab again; its close button closes it on
   release.
+- **Panels** (0.7.3xx, [draft](./uiscript/panel.md)): a window whose
+  document says `role="panel"` and an `edge`. `WindowManager.Arrange` pins
+  it each frame, a top one across the screen and a bottom one as wide as its
+  shelf, centred. It has no title bar or frame, draws only its content,
+  is drawn and found above every ordinary window, and is never focused,
+  brought to the front, minimized, or zoomed; a press on it reaches its view
+  without changing the window in front. The **work area**
+  (`WindowManager.WorkArea`) runs from below the top panel, or `TopInset`,
+  to the top of the bottom panel: new windows open in it and zoom fills it,
+  and a window can't be dragged above it, though it can be dragged over a
+  bottom panel, as on macOS.
+- **Shelves** (`Shelf`, [draft](./uiscript/shelf.md)): the dock's drawing,
+  moved out of `Dock` so a `<Shelf>` control draws the same way, from its
+  frame's left. Apps fill one with `window:setItems`, each item a table of
+  `title`, `icon` (a PNG, which may be in any app's bundle, read once and
+  kept by `AppWindows.Icon`), `open`, `group`, and `window`; a click is a
+  `pressed` event with its index. The desktop's own `Dock` is now a thin
+  wrapper over a `Shelf`, until the dock becomes an app.
 - **The unified title bar** (`DesktopWindow`), after CityLimits' window
   frame and GNOME's header bars: one flat band (`BarHeight`: 30 px, or 42
   with a subtitle or toolbar images) in `HeaderBar`, which blends with the
@@ -1240,8 +1258,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   along it the outline, blended by how much of each pixel the curve
   covers. Settings' Appearance pane switches them.
 - **Zoom.** A resizable window has a green third button, which zooms it
-  to fill the screen below the menu bar (`TopInset`), over the dock, as
-  macOS does, and a second click puts it back where it was, at its old
+  to fill the work area, between the menu bar and any bottom panel (the
+  desktop's own dock isn't one yet, so zoom still runs under it), and a
+  second click puts it back where it was, at its old
   size (`WindowManager.Zoom`). Moving or resizing a zoomed window forgets
   the old frame, so the next zoom fills the screen again. Over any of the
   three buttons, all show their marks; zoom's is a plus.
@@ -1581,6 +1600,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Desktop (§9): panels and the work area in `WindowManager`; `Shelf`, drawn by `<Shelf>` and the dock; Roundhouse draws panels as designed. |
 | 2026-11-19 | minor | UIScript: `role` and `edge` on `<Window>`, and the `shelf` module, read but not yet drawn (0.7.3xx). |
 | 2026-11-19 | minor | Apps (§9): `ps`, `kill`, `venture.processes()`, and `venture.kill()`; `ISystemInfo.Processes`. |
 | 2026-11-18 | minor | Apps (§9): crashes (three failures in a minute) and kept apps, restarted by the supervisor; Files is one. |

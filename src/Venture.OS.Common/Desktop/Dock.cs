@@ -18,8 +18,8 @@ public sealed record DockItem(
 }
 
 /// <summary>
-/// The dock: a glassy shelf along the bottom of the screen with an icon for each app, the system's then the user's,
-/// then a tile for each minimized window, with a divider between the groups.
+/// The dock: a <see cref="Shelf"/> along the bottom of the screen with an icon for each app, the system's then the
+/// user's, then a tile for each minimized window, with a divider between the groups.
 /// </summary>
 /// <remarks>
 /// <para>Clicking an icon reports its item, so the desktop can open the app; a press that leaves the icon before the
@@ -32,23 +32,9 @@ public sealed record DockItem(
 public sealed class Dock(int screenWidth, int screenHeight)
 {
     /// <summary>An icon's width and height.</summary>
-    public const int IconSize = 48;
+    public const int IconSize = Shelf.IconSize;
 
-    private const int Gap = 10;
-    private const int Padding = 8;
-    private const int DotRoom = 8;
-
-    // The extra room each divider between groups takes, on top of the usual gap.
-    private const int DividerRoom = 12;
-    private const int LabelSize = DesktopTheme.TextSize;
-
-    // Tile colors, picked by the app's name.
-    private static readonly UIColor[] Colors =
-    [
-        new(46, 132, 222), new(62, 168, 92), new(232, 146, 40), new(152, 92, 204),
-        new(214, 72, 92), new(34, 160, 170), new(120, 128, 140),
-    ];
-
+    private readonly Shelf shelf = new();
     private IReadOnlyList<DockItem> items = [];
     private int pressed = -1;
     private int hovered = -1;
@@ -60,26 +46,25 @@ public sealed class Dock(int screenWidth, int screenHeight)
     public DockItem? Hovered => hovered >= 0 && hovered < items.Count ? items[hovered] : null;
 
     /// <summary>The shelf's height, which windows may sit over.</summary>
-    public static int Height => IconSize + (2 * Padding) + DotRoom;
+    public static int Height => Shelf.Height;
 
     /// <summary>The shelf, centered along the bottom; empty with no apps.</summary>
-    public UIRect Bounds
-    {
-        get
-        {
-            if (items.Count == 0)
-                return default;
-
-            var width = (items.Count * IconSize) + ((items.Count - 1) * Gap) + (2 * Padding) + (DividersBefore(items.Count) * DividerRoom);
-            return new UIRect((screenWidth - width) / 2, screenHeight - Height, width, Height);
-        }
-    }
+    public UIRect Bounds => shelf.Bounds;
 
     /// <summary>Replaces the apps, such as after one opens or closes.</summary>
     public void SetItems(IReadOnlyList<DockItem> newItems)
     {
         ArgumentNullException.ThrowIfNull(newItems);
         items = newItems;
+        var shown = new ShelfItem[newItems.Count];
+        for (var index = 0; index < shown.Length; index++)
+        {
+            var item = newItems[index];
+            shown[index] = new ShelfItem(item.Name, item.Icon, item.IsOpen, item.Group, item.Window is not null);
+        }
+
+        shelf.SetItems(shown);
+        shelf.Place((screenWidth - shelf.Width) / 2, screenHeight - Height);
         if (pressed >= items.Count)
             pressed = -1;
         if (hovered >= items.Count)
@@ -90,32 +75,14 @@ public sealed class Dock(int screenWidth, int screenHeight)
     public bool Contains(int x, int y) => items.Count > 0 && Bounds.Contains(x, y);
 
     /// <summary>Where an icon is.</summary>
-    public UIRect IconBounds(int index)
-    {
-        var shelf = Bounds;
-        var divider = DividersBefore(index + 1) * DividerRoom;
-        return new UIRect(shelf.X + Padding + (index * (IconSize + Gap)) + divider, shelf.Y + Padding, IconSize, IconSize);
-    }
-
-    /// <summary>How many dividers come before the item at <paramref name="end"/>: one at each change of group.</summary>
-    private int DividersBefore(int end)
-    {
-        var count = 0;
-        for (var index = 1; index < Math.Min(end, items.Count); index++)
-        {
-            if (items[index].Group != items[index - 1].Group)
-                count++;
-        }
-
-        return count;
-    }
+    public UIRect IconBounds(int index) => shelf.IconBounds(index);
 
     /// <summary>Handles the pointer for a frame.</summary>
     /// <param name="owned">Whether the dock has the pointer: the button went down on it, or isn't down at all.</param>
     /// <returns>The app clicked, if one was.</returns>
     public DockItem? Update(int x, int y, bool owned, bool justPressed, bool released)
     {
-        hovered = owned ? IconAt(x, y) : -1;
+        hovered = owned ? shelf.IndexAt(x, y) : -1;
 
         if (justPressed && owned)
             pressed = hovered;
@@ -123,118 +90,11 @@ public sealed class Dock(int screenWidth, int screenHeight)
         if (!released)
             return null;
 
-        var clicked = pressed >= 0 && pressed == IconAt(x, y) ? items[pressed] : null;
+        var clicked = pressed >= 0 && pressed == shelf.IndexAt(x, y) ? items[pressed] : null;
         pressed = -1;
         return clicked;
     }
 
     /// <summary>Draws the shelf, the icons, the dots under open apps, and the name of the icon under the pointer.</summary>
-    public void Draw(IPainter painter)
-    {
-        ArgumentNullException.ThrowIfNull(painter);
-        if (items.Count == 0)
-            return;
-
-        var shelf = Bounds;
-        var (shelfX, shelfY, shelfWidth) = ((int)shelf.X, (int)shelf.Y, (int)shelf.Width);
-        painter.FillRectangle(shelfX, shelfY, shelfWidth, Height, DesktopTheme.DockShelf);
-        painter.FillRectangle(shelfX, shelfY, shelfWidth, 1, DesktopTheme.DockEdge);
-        painter.FillRectangle(shelfX, shelfY + 1, 1, Height - 1, DesktopTheme.DockEdge);
-        painter.FillRectangle(shelfX + shelfWidth - 1, shelfY + 1, 1, Height - 1, DesktopTheme.DockEdge);
-
-        for (var index = 0; index < items.Count; index++)
-            DrawIcon(painter, index);
-
-        for (var index = 1; index < items.Count; index++)
-        {
-            if (items[index].Group == items[index - 1].Group)
-                continue;
-
-            var x = (int)IconBounds(index).X - ((Gap + DividerRoom) / 2);
-            painter.FillRectangle(x, shelfY + Padding, 1, IconSize, DesktopTheme.DockEdge);
-        }
-
-        if (Hovered is { } item)
-            DrawLabel(painter, item.Name, IconBounds(hovered));
-    }
-
-    private void DrawIcon(IPainter painter, int index)
-    {
-        var item = items[index];
-        var icon = IconBounds(index);
-        var (x, y) = ((int)icon.X, (int)icon.Y);
-        if (item.Icon is { } appIcon)
-        {
-            // A shaped icon carries its own shadow; a tile gets the same one the letter tiles have.
-            if (appIcon.IsTile)
-                DesktopTheme.FillRoundedGradient(painter, x, y + 2, IconSize, IconSize, 10, DesktopTheme.Shadow, DesktopTheme.Shadow);
-            painter.DrawImage(appIcon.Image, x, y);
-            DrawPressedAndOpen(painter, index, item, x, y);
-            return;
-        }
-
-        // A minimized window is a pale tile, so it reads as a window rather than an app.
-        var color = item.Window is not null ? DesktopTheme.TitleBarBottom : ColorFor(item.Name);
-        var light = DesktopTheme.Blend(color, new UIColor(255, 255, 255), 0.45f);
-
-        DesktopTheme.FillRoundedGradient(painter, x, y + 2, IconSize, IconSize, 10, DesktopTheme.Shadow, DesktopTheme.Shadow);
-        DesktopTheme.FillRoundedGradient(painter, x, y, IconSize, IconSize, 10, light, color);
-
-        // The initial, in heavier text.
-        const int InitialSize = 26;
-        var initial = item.Name.Length > 0 ? char.ToUpperInvariant(item.Name[0]).ToString() : "?";
-        var initialX = x + ((IconSize - painter.MeasureText(initial, InitialSize)) / 2);
-        var initialY = y + ((IconSize - (int)MathF.Ceiling(InitialSize * 1.35f)) / 2);
-        var ink = item.Window is not null ? DesktopTheme.Text : DesktopTheme.HighlightedText;
-        painter.DrawText(initial, initialX, initialY, ink, InitialSize);
-        painter.DrawText(initial, initialX + 1, initialY, ink, InitialSize);
-        if (item.Window is not null)
-            DesktopTheme.Outline(painter, x + 4, y + 4, IconSize - 8, IconSize - 8, DesktopTheme.Border);
-
-        DrawPressedAndOpen(painter, index, item, x, y);
-    }
-
-    private void DrawPressedAndOpen(IPainter painter, int index, DockItem item, int x, int y)
-    {
-        if (index == pressed && index == hovered)
-            DesktopTheme.FillRoundedGradient(painter, x, y, IconSize, IconSize, 10, DesktopTheme.IconPressed, DesktopTheme.IconPressed);
-
-        if (item.IsOpen)
-            painter.FillRectangle(x + (IconSize / 2) - 2, y + IconSize + 3, 4, 4, DesktopTheme.OpenAppDot);
-    }
-
-    private void DrawLabel(IPainter painter, string name, UIRect icon)
-    {
-        var textWidth = painter.MeasureText(name, LabelSize);
-        var width = textWidth + 16;
-        const int LabelHeight = 22;
-        var x = Math.Clamp((int)(icon.X + (icon.Width / 2)) - (width / 2), 0, Math.Max(0, screenWidth - width));
-        var y = (int)Bounds.Y - LabelHeight - 6;
-
-        DesktopTheme.FillRoundedGradient(painter, x, y, width, LabelHeight, 11, DesktopTheme.DockLabel, DesktopTheme.DockLabel);
-        painter.DrawText(name, x + 8, y + ((LabelHeight - (int)MathF.Ceiling(LabelSize * 1.35f)) / 2), DesktopTheme.HighlightedText, LabelSize);
-    }
-
-    private int IconAt(int x, int y)
-    {
-        if (!Contains(x, y))
-            return -1;
-
-        for (var index = 0; index < items.Count; index++)
-        {
-            if (IconBounds(index).Contains(x, y))
-                return index;
-        }
-
-        return -1;
-    }
-
-    /// <summary>A color that depends only on the name, so an app looks the same every time.</summary>
-    private static UIColor ColorFor(string name)
-    {
-        var hash = 0;
-        foreach (var character in name)
-            hash = unchecked((hash * 31) + char.ToUpperInvariant(character));
-        return Colors[(hash & int.MaxValue) % Colors.Length];
-    }
+    public void Draw(IPainter painter) => shelf.Draw(painter, hovered, pressed, screenWidth);
 }

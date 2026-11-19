@@ -1,3 +1,5 @@
+using Venture.OS.Interface;
+
 namespace Venture.OS.Desktop;
 
 /// <summary>Something that happened to a window this frame: one of its events, or its closing.</summary>
@@ -46,14 +48,17 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     /// <summary>The windows from back to front, minimized ones included.</summary>
     public IReadOnlyList<DesktopWindow> Windows => windows;
 
-    /// <summary>The window in front, which has focus, or <see langword="null"/>. Never a minimized one.</summary>
+    /// <summary>
+    /// The window in front, which has focus, or <see langword="null"/>. Never a minimized one, or a panel, which never
+    /// takes focus.
+    /// </summary>
     public DesktopWindow? Focused
     {
         get
         {
             for (var index = windows.Count - 1; index >= 0; index--)
             {
-                if (!windows[index].IsMinimized)
+                if (!windows[index].IsMinimized && !windows[index].IsPanel)
                     return windows[index];
             }
 
@@ -61,8 +66,32 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         }
     }
 
-    /// <summary>The top of the area windows may use, below anything along the screen's top edge.</summary>
+    /// <summary>
+    /// Room kept along the screen's top edge by something that isn't a panel, such as the desktop's own menu bar;
+    /// see <see cref="WorkArea"/>.
+    /// </summary>
     public int TopInset { get; set; }
+
+    /// <summary>
+    /// The area windows open in and zoom to: below the top panel, or <see cref="TopInset"/>, whichever is lower, and
+    /// above the bottom panel. Windows can still be dragged over a bottom panel, as on macOS, which stays on top.
+    /// </summary>
+    public UIRect WorkArea
+    {
+        get
+        {
+            var (top, bottom) = (TopInset, screenHeight);
+            foreach (var window in windows)
+            {
+                if (window.Edge == UIEdge.Top)
+                    top = Math.Max(top, window.Y + window.Height);
+                else if (window.Edge == UIEdge.Bottom)
+                    bottom = Math.Min(bottom, window.Y);
+            }
+
+            return new UIRect(0, top, screenWidth, Math.Max(0, bottom - top));
+        }
+    }
 
     /// <summary>
     /// Whether the desktop is on the screen. The windows outlast it, but an alert shown while it isn't would wait
@@ -81,6 +110,28 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
         screenWidth = width;
         screenHeight = height;
+        Arrange();
+    }
+
+    /// <summary>
+    /// Pins each panel to its edge: a top one across the screen, a bottom one as wide as its shelf, if it has one, and
+    /// centred. Run as panels open and every frame, since a shelf's width changes as it's filled.
+    /// </summary>
+    public void Arrange()
+    {
+        foreach (var window in windows)
+        {
+            if (window.Edge is not { } edge)
+                continue;
+
+            var height = window.View.Script.Window.Size.Height;
+            var width = edge == UIEdge.Top ? screenWidth : window.View.ShelfWidth ?? (int)window.View.Script.Window.Size.Width;
+            if ((int)window.View.WindowSize.Width != width)
+                window.View.SetWindowSize(new UISize(width, height));
+
+            window.X = (screenWidth - window.Width) / 2;
+            window.Y = edge == UIEdge.Top ? 0 : screenHeight - window.Height;
+        }
     }
 
     /// <summary>
@@ -98,16 +149,25 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             return;
         }
 
+        // A panel goes to its edge, and leaves the window in front where it is.
+        if (window.IsPanel)
+        {
+            windows.Add(window);
+            Arrange();
+            return;
+        }
+
+        var area = WorkArea;
         var offset = Cascade * (windows.Count % 6);
         window.X = Math.Max(0, ((screenWidth - window.Width) / 2) + offset);
-        window.Y = Math.Max(TopInset, ((screenHeight - window.Height) / 2) + offset - Cascade);
+        window.Y = Math.Max((int)area.Y, (int)area.Y + (((int)area.Height - window.Height) / 2) + offset - Cascade);
         Unfocus(Focused);
         windows.Add(window);
     }
 
     /// <summary>
-    /// Zooms a resizable window to fill the screen below the menu bar, over the dock, as macOS does, or puts a zoomed
-    /// one back where it was, at its old size. A window can't be made smaller than its document allows.
+    /// Zooms a resizable window to fill the <see cref="WorkArea"/>, between the panels, or puts a zoomed one back where
+    /// it was, at its old size. A window can't be made smaller than its document allows.
     /// </summary>
     /// <returns>Whether it changed: a fixed window doesn't zoom.</returns>
     public bool Zoom(DesktopWindow window)
@@ -124,9 +184,10 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             return true;
         }
 
+        var area = WorkArea;
         window.unzoomed = window.Bounds;
-        window.Resize(screenWidth, screenHeight - TopInset);
-        (window.X, window.Y) = (0, TopInset);
+        window.Resize((int)area.Width, (int)area.Height);
+        (window.X, window.Y) = (0, (int)area.Y);
         return true;
     }
 
@@ -134,7 +195,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     /// <returns>Whether it was open and not already minimized.</returns>
     public bool Minimize(DesktopWindow window)
     {
-        if (!windows.Contains(window) || window.IsMinimized)
+        if (!windows.Contains(window) || window.IsMinimized || window.IsPanel)
             return false;
 
         Unfocus(window);
@@ -166,6 +227,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var (x, y) = (input.PointerX, input.PointerY);
         pointerAt = (x, y);
         var pressed = input.PointerDown && !wasDown;
+        Arrange();
 
         // Hover text waits for the pointer to rest, and goes as soon as it moves or presses.
         if ((x, y) != restingAt || input.PointerDown || !ShowsHover)
@@ -190,7 +252,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             // place, so the next zoom fills the screen again.
             var (oldX, oldY) = (moving.Window.X, moving.Window.Y);
             moving.Window.X = Math.Clamp(x - moving.OffsetX, 40 - moving.Window.Width, screenWidth - 40);
-            moving.Window.Y = Math.Clamp(y - moving.OffsetY, TopInset, screenHeight - moving.Window.BarHeight);
+            moving.Window.Y = Math.Clamp(y - moving.OffsetY, (int)WorkArea.Y, screenHeight - moving.Window.BarHeight);
             if (moving.Window.X != oldX || moving.Window.Y != oldY)
                 moving.Window.unzoomed = null;
         }
@@ -317,20 +379,34 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var under = ShowsHover && !wasDown ? WindowAt(pointerAt.X, pointerAt.Y) : null;
         foreach (var window in windows)
         {
-            if (window.IsMinimized)
+            if (window.IsMinimized || window.IsPanel)
                 continue;
 
             var held = armed is { Part: FramePart.ToolbarItem } item && item.Window == window ? item.Index : -1;
             window.Draw(painter, window == focused, held, window == under ? pointerAt : null);
+        }
+
+        // Panels sit above every ordinary window; while one is pressed, it shows the press, wherever the pointer is.
+        foreach (var window in windows)
+        {
+            if (window.IsPanel)
+                window.Draw(painter, active: true, pointer: window == under || window == captured ? pointerAt : null);
         }
     }
 
     /// <summary>The frontmost window under a point, or <see langword="null"/>.</summary>
     public DesktopWindow? WindowAt(int x, int y)
     {
+        // Panels first, since they're drawn above.
         for (var index = windows.Count - 1; index >= 0; index--)
         {
-            if (!windows[index].IsMinimized && windows[index].Bounds.Contains(x, y))
+            if (windows[index].IsPanel && windows[index].Bounds.Contains(x, y))
+                return windows[index];
+        }
+
+        for (var index = windows.Count - 1; index >= 0; index--)
+        {
+            if (!windows[index].IsMinimized && !windows[index].IsPanel && windows[index].Bounds.Contains(x, y))
                 return windows[index];
         }
 
@@ -352,6 +428,13 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
 
         if (target is null)
             return;
+
+        // A panel takes the press, and leaves the window in front where it is.
+        if (target.IsPanel)
+        {
+            captured = target;
+            return;
+        }
 
         BringToFront(target);
         var (part, index) = target.Hit(x, y);

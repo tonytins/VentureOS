@@ -125,6 +125,9 @@ public sealed class UIView
 
     // Where the pointer is over the view, for drawing; see SetHover.
     private (int X, int Y)? hover;
+
+    // The shelf icon a press landed on, which is pressed if the release lands on it too.
+    private (string Shelf, int Index)? shelfPress;
     private (string List, int Index, TimeSpan Time)? lastListClick;
 
     // Reused every frame, since the desktop updates views without pause; see Update.
@@ -165,6 +168,7 @@ public sealed class UIView
                 Tooltip = control.Tooltip is { } tooltip ? Resolve(UIText.Reference(tooltip), resolveString) : null,
                 Value = control.ValueRange?.Minimum ?? 0,
                 List = control.Type == UIControlType.List ? new UIListState() : null,
+                Shelf = control.Type == UIControlType.Shelf ? new Shelf() : null,
             };
 
             // A list's text is its first item.
@@ -219,7 +223,9 @@ public sealed class UIView
     public UISize WindowSize { get; private set; }
 
     /// <summary>The smallest size the view lays out at: the document's minimum, or its size when it gives none.</summary>
-    public UISize MinimumWindowSize => script.Window.MinimumSize ?? script.Window.Size;
+    /// <remarks>A panel without one may be as narrow as its content, such as a shelf with few icons.</remarks>
+    public UISize MinimumWindowSize => script.Window.MinimumSize
+        ?? (script.Window.Role == UIWindowRole.Panel ? new UISize(0, script.Window.Size.Height) : script.Window.Size);
 
     /// <summary>
     /// Lays the view out at a new size, as Hudini's <c>setWindowSize</c> does, such as when its window is resized:
@@ -471,6 +477,27 @@ public sealed class UIView
     /// <summary>The list with this name, or <see langword="null"/>.</summary>
     public UIListState? List(string name) => Find(name)?.List;
 
+    /// <summary>A shelf, which its owner fills, by name, or <see langword="null"/> when the name isn't one.</summary>
+    public Shelf? Shelf(string name) => Find(name)?.Shelf;
+
+    /// <summary>
+    /// How wide the view's first shelf is with its icons, for a panel that's as wide as its content, or
+    /// <see langword="null"/> without a shelf.
+    /// </summary>
+    public int? ShelfWidth
+    {
+        get
+        {
+            foreach (var control in script.Controls)
+            {
+                if (control.Type == UIControlType.Shelf)
+                    return states[control.Name].Shelf!.Width;
+            }
+
+            return null;
+        }
+    }
+
     /// <summary>Shows or hides a control or visual.</summary>
     public void SetHidden(bool hidden, string name)
     {
@@ -588,7 +615,7 @@ public sealed class UIView
         FollowLists();
 
         if (input.PointerPressed)
-            Press(x, y, input.Time, events);
+            Press(x, y, input.Time, events, originX, originY);
 
         if (dragging is not null && input.PointerDown)
             Drag(dragging, x, y, events);
@@ -602,6 +629,12 @@ public sealed class UIView
             if (armed is not null && Hit(x, y) is { } released && released.Name == armed)
                 Release(released, events);
 
+            // A shelf icon is pressed when the release lands on the icon the press did.
+            if (shelfPress is { } press && states[press.Shelf].Shelf is { } shelf
+                && shelf.IndexAt(x + originX, y + originY) == press.Index)
+                events.Add(new UIEvent(UIEventKind.Pressed, press.Shelf, shelf.Items[press.Index].Title, Index: press.Index));
+
+            shelfPress = null;
             armed = null;
             dragging = null;
             selecting = null;
@@ -703,6 +736,9 @@ public sealed class UIView
                 case UIControlType.Region:
                     drawRegion?.Invoke(control.Name, bounds);
                     break;
+                case UIControlType.Shelf:
+                    DrawShelf(painter, control, state.Shelf!, bounds, originX, originY);
+                    break;
             }
         }
 
@@ -712,7 +748,7 @@ public sealed class UIView
 
     // ---- Input ----
 
-    private void Press(int x, int y, TimeSpan time, List<UIEvent> events)
+    private void Press(int x, int y, TimeSpan time, List<UIEvent> events, int originX = 0, int originY = 0)
     {
         var hit = Hit(x, y);
         if (hit is null || hit.Type is not (UIControlType.TextField or UIControlType.TextArea))
@@ -769,6 +805,11 @@ public sealed class UIView
 
             case UIControlType.Slider:
                 dragging = hit.Name;
+                break;
+
+            // Shelves are placed on the screen as they're drawn, so the press is found in the screen's terms.
+            case UIControlType.Shelf when state.Shelf!.IndexAt(x + originX, y + originY) is >= 0 and var icon:
+                shelfPress = (hit.Name, icon);
                 break;
         }
     }
@@ -1733,6 +1774,9 @@ public sealed class UIView
         public int FirstShown { get; set; }
         public UIListState? List { get; init; }
 
+        // A shelf control's icons, which its owner fills.
+        public Shelf? Shelf { get; init; }
+
         // A text area's wrapped lines as last drawn, as (start, length) into Text, and what they were made from.
         public List<(int Start, int Length)>? Lines { get; set; }
         public string? LinesText { get; set; }
@@ -1742,6 +1786,18 @@ public sealed class UIView
 
         // The painter a text area was last drawn with, which measures text for clicks between draws.
         public IPainter? Measurer { get; set; }
+    }
+
+    /// <summary>
+    /// Draws a shelf from its frame's left, as wide as its icons, the icon under the pointer named above it and shaded
+    /// while it's pressed. A panel holding it is made as wide, and centred.
+    /// </summary>
+    private void DrawShelf(IPainter painter, UIControl control, Shelf shelf, UIRect bounds, int originX, int originY)
+    {
+        shelf.Place((int)bounds.X, (int)bounds.Y);
+        var hovered = hover is { } point ? shelf.IndexAt(point.X + originX, point.Y + originY) : -1;
+        var pressed = shelfPress is { } press && press.Shelf == control.Name ? press.Index : -1;
+        shelf.Draw(painter, hovered, pressed, painter.Width);
     }
 
     /// <summary>The painter to draw a control with: one in the monospace font when its style asks for it.</summary>

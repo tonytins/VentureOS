@@ -133,6 +133,19 @@ public static class RenderCommand
 
         WindowManager windows = new(width, height);
         windows.Open(window);
+
+        // A panel is drawn as designed, at its document's size, rather than pinned to an edge and sized to its content,
+        // and an empty shelf shows a few sample icons, since its app fills it only when it runs.
+        if (window.IsPanel)
+        {
+            view.SetWindowSize(view.Script.Window.Size);
+            foreach (var control in view.Script.Controls)
+            {
+                if (view.Shelf(control.Name) is { Items.Count: 0 } shelf)
+                    shelf.SetItems(SampleIcons);
+            }
+        }
+
         (window.X, window.Y) = (Margin, Margin + top);
 
         SkiaPainter painter = new(width, height, fonts);
@@ -142,6 +155,10 @@ public static class RenderCommand
         drawn = window;
         return painter;
     }
+
+    // What an empty shelf shows in a design: apps of the system's and the user's, and a minimized window.
+    private static readonly ShelfItem[] SampleIcons =
+        [new("Files"), new("Terminal"), new("Notes", IsOpen: true, Group: 1), new("Untitled", Group: 2, IsWindow: true)];
 
     // At least as tall as one of a menu's rows, separators included.
     private const int MenuRow = 22;

@@ -39,6 +39,33 @@ public sealed class WindowPartsTests : IDisposable
     }
 
     [Fact]
+    public void AShelfAddsTheShelfFeature()
+    {
+        var (edited, shelf) = DesignEdits.Add(UIDocument.Read(Plain), "Shelf", null);
+
+        Assert.Contains("""<UIScript version="1" requires="shelf">""", edited.Text, StringComparison.Ordinal);
+        Assert.Equal(UIControlType.Shelf, edited.Script!.Controls.Single(control => control.Name == "shelf").Type);
+        Assert.Equal("Shelf", edited.Xml!.Children[shelf].Name);
+    }
+
+    [Fact]
+    public void APanelIsDrawnAsDesignedWithSampleIcons()
+    {
+        UIView view = new(UIScript.Parse("""
+            <UIScript version="1" requires="shelf">
+              <Window width="400" height="72" role="panel" edge="bottom"/>
+              <Shelf name="apps" x="0" y="0" width="400" height="72"/>
+            </UIScript>
+            """));
+
+        using var painter = RenderCommand.Draw(view, "dock.uix", fonts, out var window);
+
+        Assert.True(window.IsPanel);
+        Assert.Equal(new UIRect(24, 24, 400, 72), window.Bounds);
+        Assert.Equal(4, view.Shelf("apps")!.Items.Count);
+    }
+
+    [Fact]
     public void AFeatureAlreadyRequiredIsKeptWithTheNewOne()
     {
         var document = UIDocument.Read(Plain.Replace("""version="1">""", """version="1" requires="menus">""", StringComparison.Ordinal));

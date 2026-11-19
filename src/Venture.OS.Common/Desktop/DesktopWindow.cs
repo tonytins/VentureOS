@@ -58,7 +58,17 @@ public sealed class DesktopWindow
     /// </summary>
     /// <remarks>It's asked many times a frame, so whether the document has toolbar images is worked out once.</remarks>
     public int BarHeight =>
-        View.Subtitle is { Length: > 0 } || HasImageItems ? DesktopTheme.TallTitleBarHeight : DesktopTheme.TitleBarHeight;
+        IsPanel ? 0
+        : View.Subtitle is { Length: > 0 } || HasImageItems ? DesktopTheme.TallTitleBarHeight : DesktopTheme.TitleBarHeight;
+
+    /// <summary>
+    /// Whether it's a panel, pinned to an edge of the screen, such as the dock: no title bar or frame, never moved,
+    /// focused, minimized, or zoomed, and above ordinary windows. See <see cref="WindowManager"/>.
+    /// </summary>
+    public bool IsPanel => View.Script.Window.Role == UIWindowRole.Panel;
+
+    /// <summary>The edge a panel is pinned to, or <see langword="null"/> for an ordinary window.</summary>
+    public UIEdge? Edge => IsPanel ? View.Script.Window.Edge : null;
 
     private bool HasImageItems => hasImageItems ??= AnyImageItems(View.Script.ToolbarItems);
 
@@ -139,7 +149,7 @@ public sealed class DesktopWindow
         ArgumentNullException.ThrowIfNull(view);
         Title = title;
         View = view;
-        IsClosable = closable;
+        IsClosable = closable && view.Script.Window.Role != UIWindowRole.Panel;
     }
 
     /// <summary>The plain title, and the window's name in the dock when it's minimized.</summary>
@@ -195,7 +205,7 @@ public sealed class DesktopWindow
     public Action<DesktopWindow, UIEvent>? EventHandler { get; set; }
 
     /// <summary>Whether the document lets the window be resized, by its grip.</summary>
-    public bool IsResizable => View.Script.Window.IsResizable;
+    public bool IsResizable => View.Script.Window.IsResizable && !IsPanel;
 
     /// <summary>The grip in the bottom-right corner, which resizes a resizable window.</summary>
     public UIRect ResizeGrip => new(X + Width - GripSize, Y + Height - GripSize, GripSize, GripSize);
@@ -276,6 +286,10 @@ public sealed class DesktopWindow
     /// <summary>The part of the frame a point is on, and for a toolbar item, which one.</summary>
     public (FramePart Part, int Index) Hit(int x, int y)
     {
+        // A panel is all content.
+        if (IsPanel)
+            return (FramePart.None, -1);
+
         if (IsResizable && ResizeGrip.Contains(x, y))
             return (FramePart.Grip, -1);
         if (!TitleBar.Contains(x, y))
@@ -496,6 +510,15 @@ public sealed class DesktopWindow
     public void Draw(IPainter painter, bool active, int pressedItem = -1, (int X, int Y)? pointer = null)
     {
         ArgumentNullException.ThrowIfNull(painter);
+
+        // A panel is only its content, which draws its own background, as a shelf draws its glass.
+        if (IsPanel)
+        {
+            View.SetHover(pointer is { } over ? (over.X - X, over.Y - Y) : null);
+            View.Draw(painter, X, Y);
+            return;
+        }
+
         const int Shadow = DesktopTheme.ShadowSize;
         var bar = BarHeight;
 

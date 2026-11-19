@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.301
+
+- Apps can open panels: a window whose `.uix` says `role="panel"` and `edge="bottom"` or `"top"` is pinned to that edge, with no title bar, above every other window, and never takes the keyboard. New windows open between the panels, and zoom fills the space between them.
+- A `<Shelf>` (with `requires="shelf"`) shows a row of icons, as the dock does; an app fills it with `window:setItems`, each item a `title`, an `icon`, `open`, `group`, and `window`, and hears which was clicked.
+- Roundhouse's library has a shelf, and its designer shows a panel as designed, with sample icons on an empty shelf.
+
 ## 0.7.204
 
 - `ps` lists the running apps: each one's ID, how long it has run, and whether VentureOS keeps it running. `kill` ends one by its ID, name, or identifier, such as `kill 3` or `kill calculator`; an app VentureOS keeps, such as Files, starts again, and it says so.

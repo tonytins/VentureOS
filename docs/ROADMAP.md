@@ -237,7 +237,7 @@ The dock gains a choice of always visible, hiding on its own, or hiding when
 a window would cover it. Its [design](./design/2026-11-18-dock-app-design.md)
 adds panel windows and a shelf to UIScript.
 
-- [ ] Panel windows, top and bottom, and the work area between them.
+- [x] Panel windows, top and bottom, and the work area between them.
 - [ ] The shelf, `venture.desktop`, and `Dock.app`.
 - [ ] The menu bar as Files' top panel.
 - [ ] The dock's three modes, in Settings.

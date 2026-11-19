@@ -53,6 +53,24 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     /// </summary>
     public FileRoot? Root { get; init; }
 
+    // Icons as shelves show them, by host path and size, read once, so a shelf filled again doesn't read them again.
+    private readonly Dictionary<(string Path, int Size), DesktopIcon?> icons = [];
+
+    /// <summary>
+    /// A picture as an icon at <paramref name="size"/>, as the dock shows icons, read once and kept; or
+    /// <see langword="null"/> when it can't be read, or this desktop can't read pictures.
+    /// </summary>
+    public DesktopIcon? Icon(string path, int size)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        if (icons.TryGetValue((path, size), out var known))
+            return known;
+
+        var icon = LoadImage?.Invoke(path) is { } picture ? DesktopIcon.From(picture, size) : null;
+        icons[(path, size)] = icon;
+        return icon;
+    }
+
     /// <summary>Whether an app said how to open a new window, which puts New Window in its app menu.</summary>
     public bool HasNewWindow(string app) => newWindowHandlers.ContainsKey(app);
 
@@ -706,6 +724,9 @@ public static class UiLibrary
     private static int SetItems(ILuaState lua, Handle handle)
     {
         var name = Name(lua, handle, "setItems");
+        if (handle.View.Shelf(name) is { } shelf)
+            return SetShelfItems(lua, handle, name, shelf);
+
         var list = List(lua, handle, "setItems");
         if (lua.Type(3) != LuaType.LUA_TTABLE)
             return Fail(lua, "window:setItems needs a list of items, such as { \"Milk\", \"Eggs\" }");
@@ -802,34 +823,8 @@ public static class UiLibrary
         }
 
         var given = LuaText.Decode(lua.L_CheckString(3));
-        string path;
-        if (given.StartsWith('/'))
-        {
-            // A script's full path is a VentureOS path; the app's folder is the host's, so it's compared as scripts see it.
-            var root = handle.Host.Root;
-            var venture = ShellPaths.Resolve("/", given);
-            var allowed = (handle.App is { } app && (ShellPaths.IsWithin(venture, FileRoot.Venture(root, app.Path)) || app.Needs.HasFlag(ScriptScopes.Files)))
-                || (handle.Host.SystemFolder is { } system && ShellPaths.IsWithin(venture, system));
-            if (!allowed)
-                return Refuse(lua, $"{given} isn't in the app or the system's folder; showing it needs the files scope");
-
-            try
-            {
-                path = FileRoot.Host(root, venture);
-            }
-            catch (UnauthorizedAccessException exception)
-            {
-                return Refuse(lua, exception.Message);
-            }
-        }
-        else if (SystemDirectory.IsValidPath(given))
-        {
-            path = $"{handle.Folder}/{given}";
-        }
-        else
-        {
-            return Refuse(lua, $"\"{given}\" isn't a path beside the document");
-        }
+        if (PicturePath(handle, given, fromAnyApp: false, out var path) is { } problem)
+            return Refuse(lua, problem);
 
         if (handle.Host.LoadImage is not { } load)
             return Refuse(lua, "this desktop can't show pictures");
@@ -839,6 +834,105 @@ public static class UiLibrary
         handle.View.SetImage(name, picture);
         lua.PushBoolean(true);
         return 1;
+    }
+
+    /// <summary>
+    /// Where a picture an app names is on the host: a path beside its document, or a full path in the app, the system's
+    /// folder, or, with <paramref name="fromAnyApp"/>, any app bundle, since apps' icons are theirs to show; anywhere
+    /// with the <c>files</c> scope, since a picture shows what a file holds.
+    /// </summary>
+    /// <returns>Why it can't be shown, or <see langword="null"/>.</returns>
+    private static string? PicturePath(Handle handle, string given, bool fromAnyApp, out string path)
+    {
+        path = "";
+        if (!given.StartsWith('/'))
+        {
+            if (!SystemDirectory.IsValidPath(given))
+                return $"\"{given}\" isn't a path beside the document";
+            path = $"{handle.Folder}/{given}";
+            return null;
+        }
+
+        // A script's full path is a VentureOS path; the app's folder is the host's, so it's compared as scripts see it.
+        var root = handle.Host.Root;
+        var venture = ShellPaths.Resolve("/", given);
+        var allowed = (handle.App is { } app && (ShellPaths.IsWithin(venture, FileRoot.Venture(root, app.Path)) || app.Needs.HasFlag(ScriptScopes.Files)))
+            || (handle.Host.SystemFolder is { } system && ShellPaths.IsWithin(venture, system))
+            || (fromAnyApp && venture.Contains(".app/Contents/", StringComparison.OrdinalIgnoreCase));
+        if (!allowed)
+            return $"{given} isn't in the app or the system's folder; showing it needs the files scope";
+
+        try
+        {
+            path = FileRoot.Host(root, venture);
+            return null;
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return exception.Message;
+        }
+    }
+
+    /// <summary>
+    /// <c>window:setItems(name, items)</c> for a shelf: each item a table with a <c>title</c>, and optionally an
+    /// <c>icon</c> (a PNG, as <c>setImage</c> takes, or one in any app's bundle), <c>open</c> for a dot under it,
+    /// <c>group</c>, a number, with a divider between groups, and <c>window</c> for a window's pale tile. An icon that
+    /// can't be read shows the title's initial. Nothing changes when an entry is wrong.
+    /// </summary>
+    private static int SetShelfItems(ILuaState lua, Handle handle, string name, Shelf shelf)
+    {
+        if (lua.Type(3) != LuaType.LUA_TTABLE)
+            return Fail(lua, "window:setItems needs a list of items, such as { { title = \"Files\", icon = \"...\" } }");
+
+        List<ShelfItem> items = [];
+        var count = lua.RawLen(3);
+        for (var index = 1; index <= count; index++)
+        {
+            lua.RawGetI(3, index);
+            if (lua.Type(-1) != LuaType.LUA_TTABLE)
+            {
+                lua.Pop(1);
+                return Fail(lua, $"window:setItems: item {index} of the shelf \"{name}\" needs to be a table, such as {{ title = \"Files\" }}");
+            }
+
+            lua.GetField(-1, "title");
+            var title = lua.Type(-1) == LuaType.LUA_TSTRING ? LuaText.Decode(lua.ToString(-1)) : null;
+            lua.Pop(1);
+            lua.GetField(-1, "icon");
+            var iconGiven = !lua.IsNoneOrNil(-1);
+            var icon = lua.Type(-1) == LuaType.LUA_TSTRING ? LuaText.Decode(lua.ToString(-1)) : null;
+            lua.Pop(1);
+            lua.GetField(-1, "group");
+            var groupGiven = !lua.IsNoneOrNil(-1);
+            var group = lua.Type(-1) == LuaType.LUA_TNUMBER ? lua.ToNumber(-1) : double.NaN;
+            lua.Pop(1);
+            lua.GetField(-1, "open");
+            var open = lua.ToBoolean(-1);
+            lua.Pop(1);
+            lua.GetField(-1, "window");
+            var window = lua.ToBoolean(-1);
+            lua.Pop(2);
+
+            if (title is null)
+                return Fail(lua, $"window:setItems: item {index} needs a title, such as {{ title = \"Files\" }}");
+            if (iconGiven && icon is null)
+                return Fail(lua, $"window:setItems: item {index}'s icon must be a path to a PNG");
+            if (groupGiven && (double.IsNaN(group) || group != Math.Floor(group) || group < int.MinValue || group > int.MaxValue))
+                return Fail(lua, $"window:setItems: item {index}'s group must be a whole number");
+
+            DesktopIcon? picture = null;
+            if (icon is not null)
+            {
+                if (PicturePath(handle, icon, fromAnyApp: true, out var path) is { } problem)
+                    return Fail(lua, $"window:setItems: item {index}'s icon: {problem}");
+                picture = handle.Host.Icon(path, Shelf.IconSize);
+            }
+
+            items.Add(new ShelfItem(title, picture, open, groupGiven ? (int)group : 0, window));
+        }
+
+        shelf.SetItems(items);
+        return 0;
     }
 
     private static int Refuse(ILuaState lua, string reason)

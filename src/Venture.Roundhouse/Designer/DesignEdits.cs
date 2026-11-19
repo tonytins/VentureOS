@@ -33,6 +33,7 @@ public static class DesignEdits
         new("Slider", 140, 20, null),
         new("ProgressBar", 140, 12, null),
         new("Region", 100, 60, null),
+        new("Shelf", 200, 72, null),
     ];
 
     /// <summary>
@@ -99,6 +100,10 @@ public static class DesignEdits
 
         var control = Library.FirstOrDefault(item => item.Element == element)
             ?? throw new ArgumentException($"The library has no <{element}>.", nameof(element));
+
+        // A shelf is a feature, as menus and the sidebar are, which the document says it requires.
+        if (element == "Shelf")
+            document = Require(document, UIScript.ShelfFeature);
         var script = document.Script ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
 
         var x = (int)MathF.Max(0, MathF.Round((script.Window.Size.Width - control.Width) / 2));
