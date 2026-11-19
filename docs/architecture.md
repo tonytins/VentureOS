@@ -14,7 +14,8 @@ the code wins and this page is out of date.
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
   for the library, `Venture.OS.Common.Tests` (1,632 tests, and 188 for Roundhouse, including runs of
-  the shipped scripts, library, `Notes.app`, and the tutorial's example).
+  the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
+  command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.

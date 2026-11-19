@@ -1,6 +1,6 @@
 # vdb: sending apps to VentureOS
 
-**Status:** proposed, for 0.7, Seto. **Date:** 2026-11-18.
+**Status:** built in 0.7.1xx, Seto; where this differs from what was built, [docs/vdb](../vdb/README.md) and the [tool's README](../../tools/vdb/README.md) say how it works. **Date:** 2026-11-18.
 
 vdb is a way to put an app on a running VentureOS from another computer, and open it, while VentureOS can't yet
 keep files across reboots or install from a disk. It's named after Android's adb, which it borrows from in spirit:

@@ -197,6 +197,10 @@ Roundhouse only.
 Named after the Sunrise Seto, which runs coupled to the Izumo. 0.7 takes
 Roundhouse onto VentureOS itself, starting with a way to get apps there.
 
+0.7 is a Snow Leopard: it started small, and with vdb making it quick to try
+changes on the real system, it's as much about refining what's there, such as
+the dock, as about new features. It may run longer than earlier releases.
+
 **0.7.1xx, vdb**
 
 vdb sends an app to a running VentureOS and opens it, from a command-line tool
@@ -270,6 +274,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | 0.7.1xx is complete, closed out with a boot that follows the README's vdb steps. 0.7 is a Snow Leopard, refining as much as adding, and may run longer than earlier releases. 0.7.2xx, the dock as an app, is next, being planned. |
 | 2026-11-18 | minor | 0.7.1xx's vdb is done, with the `vdb` tool in Swift. The desktop no longer opens a Files window. The dock becomes an app in a band of its own, 0.7.2xx, by my decision. |
 | 2026-11-18 | patch | VentureOS's side of vdb is done: developer mode, the Trust alert, the protocol, and listening from the desktop, checked by sending an app into QEMU. The `vdb` tool is next. GitVersion gains a tag switch, so vdb reports VentureOS's version. |
 | 2026-11-18 | minor | 0.7, Seto, begins with 0.7.1xx, vdb, from its approved design: developer mode, trusting a computer, a plain-text protocol with files in base64, and a Swift tool. Roundhouse on VentureOS follows, a text editor first. |

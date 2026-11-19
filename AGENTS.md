@@ -40,6 +40,11 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   VentureOS projects never reference them. Its Run runs VentureOS's own  
   desktop code over a copy of `rootfs/` (`Simulator/`). See  
   [its design](docs/design/2026-11-18-roundhouse-design.md).
+- `tools/vdb/` is vdb, a Swift package (`swift build`, `swift test`) that  
+  sends apps to a running VentureOS over [vdb/1](docs/vdb/README.md), whose  
+  recorded conversations both its tests and Common's replay. Swift Argument  
+  Parser, swift-log, and GitVersion are approved for it alone. It moves to a  
+  repository of its own later.
 - `packaging/` holds the scripts that build Roundhouse into packages for  
   Linux, Windows, and macOS, after CityLimits', writing to `dist/`; see  
   [its README](packaging/README.md). Its icon is a placeholder, made from  
@@ -62,8 +67,14 @@ dotnet test --project tests/Venture.OS.Common.Tests   # all tests must pass
 dotnet test --project tests/Venture.Roundhouse.Tests  # Roundhouse's, off-screen
 cosmos check                                        # always before building
 cosmos build -p src/Venture.OS.Kernel               # no new warnings
-./run.sh                                            # boots x64 in QEMU; --headless for serial only
+./run.sh                                            # boots x64 in QEMU; --headless for serial only, --vdb for vdb's port
+(cd tools/vdb && swift test)                        # vdb's, when it or the protocol changes
 ```
+
+- To try a change on the running system, `./run.sh --vdb`, open the desktop,  
+  and send it with `vdb install <App>.app --launch --for 5`. A git-ignored  
+  `rootfs/system/developer.local.lua` (from `vdb identity --lua`) turns on  
+  developer mode and trusts the computer at boot, so no one has to press Trust.
 
 - `cosmos check` also reports updates to the Cosmos CLI. Mention one to the  
   owner after the build succeeds.
