@@ -80,24 +80,6 @@ public sealed class UserAppsTests : IDisposable
         Assert.Equal(["Radio needs shell."], output.Lines);
     }
 
-    [Fact]
-    public void TheDockPutsUserAppsAfterADividerAndOpensThemByPath()
-    {
-        DesktopSession session = new(800, 600, manager, root);
-
-        var items = session.Dock.Items;
-        Assert.Equal(["Clock", "Clock", "Weather"], items.Select(item => item.Name));
-        Assert.Equal([false, true, true], items.Select(item => item.IsUser));
-        Assert.Equal("Clock", items[0].Target);
-        Assert.EndsWith("/user/Clock.app", items[1].Target.Replace('\\', '/'));
-
-        // Two 10-pixel gaps between three icons, plus 12 for the divider.
-        Assert.Equal(48 + 10, (int)(session.Dock.IconBounds(1).X - session.Dock.IconBounds(0).X) - 12);
-        Assert.Equal(48 + 10, (int)(session.Dock.IconBounds(2).X - session.Dock.IconBounds(1).X));
-        RecordingPainter painter = new(800, 600);
-        session.Dock.Draw(painter);
-    }
-
     private void Write(string folder, string name, string identifier, string needs)
     {
         var contents = Path.Combine(root, folder, $"{name}.app", "Contents");

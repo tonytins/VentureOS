@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,737 tests, and 190 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,753 tests, and 190 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -171,7 +171,7 @@ VentureOS/
 ├─ rootfs/                        files built into the kernel and installed at boot
 │  ├─ system/                      installed to /mnt/system, which nothing may change
 │  │  ├─ init.lua                  runs once after boot; prints the help hint, and runs developer.local.lua if a build has one
-│  │  ├─ apps/                     Files, Settings, System Monitor, and Terminal
+│  │  ├─ apps/                     Files, Dock, Settings, System Monitor, and Terminal
 │  │  ├─ commands/                 Lua commands: echo, info, net, appearance, ps, kill, ls, cat, write, mkdir, rm, df, pwd
 │  │  ├─ lib/venture/args.lua      the system library: the venture.args argument parser
 │  │  ├─ interfaces/about.uix      the About VentureOS window
@@ -1140,12 +1140,11 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   and a window can't be dragged above it, though it can be dragged over a
   bottom panel, as on macOS.
 - **Shelves** (`Shelf`, [draft](./uiscript/shelf.md)): the dock's drawing,
-  moved out of `Dock` so a `<Shelf>` control draws the same way, from its
+  moved out of the desktop so a `<Shelf>` control draws it, from its
   frame's left. Apps fill one with `window:setItems`, each item a table of
   `title`, `icon` (a PNG, which may be in any app's bundle, read once and
   kept by `AppWindows.Icon`), `open`, `group`, and `window`; a click is a
-  `pressed` event with its index. The desktop's own `Dock` is now a thin
-  wrapper over a `Shelf`, until the dock becomes an app.
+  `pressed` event with its index. `Dock.app` is one.
 - **The unified title bar** (`DesktopWindow`), after CityLimits' window
   frame and GNOME's header bars: one flat band (`BarHeight`: 30 px, or 42
   with a subtitle or toolbar images) in `HeaderBar`, which blends with the
@@ -1258,8 +1257,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   along it the outline, blended by how much of each pixel the curve
   covers. Settings' Appearance pane switches them.
 - **Zoom.** A resizable window has a green third button, which zooms it
-  to fill the work area, between the menu bar and any bottom panel (the
-  desktop's own dock isn't one yet, so zoom still runs under it), and a
+  to fill the work area, between the menu bar and the dock, and a
   second click puts it back where it was, at its old
   size (`WindowManager.Zoom`). Moving or resizing a zoomed window forgets
   the old frame, so the next zoom fills the screen again. Over any of the
@@ -1306,15 +1304,25 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   as a pressed event with the item's name, and items are disabled and
   checked by name through the window's `UIView`. Titles and items are laid
   out when drawn, so the pointer hits what was last on screen.
-- **Dock.** `Dock` shows the system's apps, then the user's after a divider
-  (`AppManager.Available`), as
-  the icon each app's `Info.xml` names, scaled to 48 pixels, as a rounded
-  tile with a tile's shadow or a shape with its own, or a colored
-  tile with its initial for an app without one, with a
-  dot under open ones and the name over the one under the pointer. A click
-  opens the app from the current folder, or brings an open one forward. A
-  user app opens by its path, so it can't be mistaken for a system app with
-  the same name.
+- **Dock** (0.7.3xx, [design](./design/2026-11-18-dock-app-design.md)):
+  `Dock.app`, a system app in Lua, which the desktop keeps running as it
+  keeps Files (`DesktopSession.DockApp`). Its window is a bottom panel
+  holding a shelf, which it fills from `venture.desktop.apps()` and
+  `minimized()`: Files first, then the system's apps, the user's after a
+  divider, and minimized windows after another, as the icon each app's
+  `Info.xml` names, scaled to 48 pixels, or a colored tile with its initial,
+  with a dot under open ones and the name over the one under the pointer. A
+  click calls `venture.desktop.open(path)`, which is `AppWindows.OpenApp`:
+  it opens the app from the current folder, with a new window if it opens
+  none, or brings an open one forward, and makes it the active app either
+  way (`ActivatedApp`); a window's tile calls `restore(id)`. A user app
+  opens by its path, so it can't be mistaken for a system app with the
+  same name. The desktop tells the dock when apps open, close, start, or
+  end, or windows are minimized or restored, through
+  `AppWindows.MarkDesktopChanged`, which reaches `venture.desktop.onChange`
+  at most once a frame; the dock also looks again every 5 seconds, for apps
+  installed meanwhile. If it's killed or crashes, the supervisor starts it
+  again at once.
 - **App output.** An app keeps the output it opened with, and the console
   would draw over the desktop, so apps opened from the dock, and every
   window event handler, write to one `HeldOutput` the kernel keeps. What
@@ -1347,7 +1355,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   first kilobyte holds a zero byte. Previews belong to the desktop and close
   with it.
 - **Input order.** The open menu, then shortcuts and menu hotkeys, then the
-  bar, the dock, and the windows. A press belongs to what it landed on until
+  bar, and the windows, panels first. A press belongs to what it landed on until
   release. Windows ask to close with `RequestClose`, and the window manager
   closes them at the end of the frame.
 - **Opening.** `desktop` starts Files, then opens each `.uix` named on the
@@ -1600,6 +1608,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Desktop (§9): the dock is `Dock.app`, a kept process, filled through `venture.desktop`; the C# `Dock` is gone. |
 | 2026-11-19 | minor | Desktop (§9): panels and the work area in `WindowManager`; `Shelf`, drawn by `<Shelf>` and the dock; Roundhouse draws panels as designed. |
 | 2026-11-19 | minor | UIScript: `role` and `edge` on `<Window>`, and the `shelf` module, read but not yet drawn (0.7.3xx). |
 | 2026-11-19 | minor | Apps (§9): `ps`, `kill`, `venture.processes()`, and `venture.kill()`; `ISystemInfo.Processes`. |

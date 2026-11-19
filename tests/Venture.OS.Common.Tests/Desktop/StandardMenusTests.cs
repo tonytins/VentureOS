@@ -187,25 +187,6 @@ public sealed class StandardMenusTests : IDisposable
         Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
     }
 
-    [Fact]
-    public void TheDockShowsAnAppsIconAndATileForOneWithout()
-    {
-        var items = session.Dock.Items;
-        var writer = items.Single(item => item.Name == "Writer");
-        Assert.NotNull(writer.Icon);
-        Assert.Equal((Dock.IconSize, Dock.IconSize), (writer.Icon.Image.Width, writer.Icon.Image.Height));
-        Assert.True(writer.Icon.IsTile);
-        Assert.Null(items.Single(item => item.Name == "Plain").Icon);
-
-        RecordingPainter painter = new(1024, 768);
-        session.Draw(painter);
-
-        var bounds = session.Dock.IconBounds(items.ToList().IndexOf(writer));
-        Assert.Contains(painter.Images, drawn => ReferenceEquals(drawn.Image, writer.Icon.Image) && drawn.X == (int)bounds.X && drawn.Y == (int)bounds.Y);
-        Assert.DoesNotContain(painter.Texts, text => text.Text == "W");
-        Assert.Contains(painter.Texts, text => text.Text == "P");
-    }
-
     private void App(string name, string info, string menus)
     {
         var contents = Path.Combine(root, "apps", $"{name}.app", "Contents");

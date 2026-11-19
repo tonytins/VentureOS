@@ -25,6 +25,9 @@ public sealed class SimulatedRun : IDisposable, IShellHost
     /// <summary>The app that is the desktop, as in the kernel.</summary>
     public const string FallbackApp = "Files";
 
+    /// <summary>The dock, which runs as VentureOS runs it.</summary>
+    public const string DockApp = "Dock";
+
     private static readonly TimeSpan AppStartupLimit = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan UiEventLimit = TimeSpan.FromSeconds(5);
 
@@ -98,6 +101,7 @@ public sealed class SimulatedRun : IDisposable, IShellHost
                 WallClock = System.WallClock,
                 SystemVersion = $"Version {System.Version} (Build {System.BuildNumber})",
                 FallbackApp = FallbackApp,
+                DockApp = DockApp,
             };
         });
     }

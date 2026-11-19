@@ -151,6 +151,97 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
         NewWindow(app);
     }
 
+    /// <summary>
+    /// The app that is the desktop, as Files is, by name, which <c>venture.desktop.apps()</c> lists first, as the
+    /// dock shows it; or <see langword="null"/>.
+    /// </summary>
+    public string? FallbackApp { get; set; }
+
+    // Who hears that the desktop changed, and whether it has since they last heard.
+    private readonly List<Action> desktopListeners = [];
+    private bool desktopChanged;
+
+    /// <summary>
+    /// Notes that what the dock shows has changed: an app opened, closed, or was installed, or a window was minimized
+    /// or restored. Listeners hear at the next tick, once however many changes there were.
+    /// </summary>
+    public void MarkDesktopChanged() => desktopChanged = true;
+
+    /// <summary>Adds a listener for <see cref="MarkDesktopChanged"/>.</summary>
+    /// <returns>What removes it again.</returns>
+    public Action ListenToDesktop(Action listener)
+    {
+        ArgumentNullException.ThrowIfNull(listener);
+        desktopListeners.Add(listener);
+        return () => desktopListeners.Remove(listener);
+    }
+
+    /// <summary>
+    /// Opens an app as the dock does: brings it forward when it's open, with a new window when it has none; opens it
+    /// otherwise, from <paramref name="workingDirectory"/>, with a new window when it opens none of its own.
+    /// </summary>
+    /// <param name="path">The app's bundle, as scripts name it.</param>
+    /// <returns>Why it didn't open, or <see langword="null"/> when it did; what the app said goes to <see cref="Output"/>.</returns>
+    public string? OpenApp(AppManager apps, string path, string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(apps);
+        ArgumentNullException.ThrowIfNull(path);
+        foreach (var running in apps.Running)
+        {
+            if (apps.ScriptPath(running.Bundle.Path) == path)
+            {
+                Activate(running.Bundle.Name);
+                ActivatedApp = running.Bundle.Name;
+                return null;
+            }
+        }
+
+        if (!apps.OpenApp(path, workingDirectory, Output, explainNeeds: false))
+            return $"{Path.GetFileName(path)} didn't open";
+
+        foreach (var running in apps.Running)
+        {
+            if (apps.ScriptPath(running.Bundle.Path) == path)
+            {
+                if (!HasWindow(running.Bundle.Name))
+                    NewWindow(running.Bundle.Name);
+                ActivatedApp = running.Bundle.Name;
+            }
+        }
+
+        MarkDesktopChanged();
+        return null;
+    }
+
+    /// <summary>
+    /// The app <see cref="OpenApp"/> last brought forward, which the desktop makes the active one, its menu in the
+    /// bar, even when it has no window to put in front; the desktop takes it each frame.
+    /// </summary>
+    public string? ActivatedApp { get; private set; }
+
+    /// <summary>Takes <see cref="ActivatedApp"/>, leaving none.</summary>
+    public string? TakeActivatedApp()
+    {
+        var app = ActivatedApp;
+        ActivatedApp = null;
+        return app;
+    }
+
+    private bool TellDesktopChanged()
+    {
+        if (!desktopChanged || desktopListeners.Count == 0)
+            return false;
+
+        desktopChanged = false;
+        for (var index = desktopListeners.Count - 1; index >= 0; index--)
+        {
+            if (index < desktopListeners.Count)
+                desktopListeners[index]();
+        }
+
+        return true;
+    }
+
     /// <summary>The timers running now, such as for tests.</summary>
     public int TimerCount => timers.Count;
 
@@ -181,7 +272,7 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     /// <returns>Whether any ran, so the desktop knows to draw again.</returns>
     public bool Tick(TimeSpan now)
     {
-        var ran = false;
+        var ran = TellDesktopChanged();
         if (timers.Count == 0)
             return ran;
 

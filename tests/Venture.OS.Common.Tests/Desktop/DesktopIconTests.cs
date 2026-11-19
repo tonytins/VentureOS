@@ -130,17 +130,18 @@ public sealed class DesktopIconTests
     [Fact]
     public void TheDockGivesATileATilesShadowAndAShapeNone()
     {
-        Dock dock = new(800, 600);
+        Shelf dock = new();
         var shape = Enumerable.Repeat(0, 64 * 64).ToArray();
         dock.SetItems(
         [
-            new DockItem("Tile", "Tile", IsOpen: false, Icon: DesktopIcon.From(Square(64, White), Dock.IconSize)),
-            new DockItem("Shape", "Shape", IsOpen: false, Icon: DesktopIcon.From(new DesktopImage(64, 64, shape), Dock.IconSize)),
+            new ShelfItem("Tile", DesktopIcon.From(Square(64, White), Shelf.IconSize)),
+            new ShelfItem("Shape", DesktopIcon.From(new DesktopImage(64, 64, shape), Shelf.IconSize)),
         ]);
+        dock.Place(100, 500);
         RecordingPainter painter = new(800, 600);
         Array.Fill(painter.Pixels, White);
 
-        dock.Draw(painter);
+        dock.Draw(painter, -1, -1, 800);
 
         // Just below each icon's bottom edge, in the middle: the tile's shadow darkens the shelf; the clear shape
         // casts none.

@@ -207,6 +207,7 @@ public sealed class AppManager(
             starting.Attach(owner);
             AppLibrary.Open(owner.Interpreter.State, bundle, system?.Root);
             UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
+            DesktopLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
 
             // A main script that failed partway is undone when the process ends, so nothing half-open is left.
             return owner.Run(lua => lua.DoFile(bundle.Main!), startupStop?.Invoke())

@@ -30,6 +30,9 @@ internal sealed class DesktopCommand(
     /// <summary>The app that is the desktop, as Finder is on a Mac.</summary>
     private const string FilesApp = "Files";
 
+    /// <summary>The app that's the dock, which the desktop keeps running too.</summary>
+    private const string DockApp = "Dock";
+
     public string Name => "desktop";
     public string Summary => "Open the desktop, with any .uix files as windows. Ctrl+Shift+Q comes back.";
     public string Usage => "desktop [interface.uix...]";
@@ -89,6 +92,7 @@ internal sealed class DesktopCommand(
                 WallClock = Bootstrap.WallClock,
                 SystemVersion = $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})",
                 FallbackApp = FilesApp,
+                DockApp = DockApp,
             };
             CanvasPainter painter = new(canvas, interfaceFont, monospaceFont);
             session.StartFallbackApp();

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.302
+
+- The dock is an app, Dock, which VentureOS keeps running: it shows the same apps and windows, but as a panel, so zoomed and new windows now stop above it instead of running underneath. If it stops, it's back at once, and `ps` lists it.
+- Apps with the `system` scope can do what the dock does with `venture.desktop`: list the apps (`apps()`), open one as the dock does (`open(path)`), list and bring back minimized windows (`minimized()`, `restore(id)`), and hear when any of that changes (`onChange`).
+
 ## 0.7.301
 
 - Apps can open panels: a window whose `.uix` says `role="panel"` and `edge="bottom"` or `"top"` is pinned to that edge, with no title bar, above every other window, and never takes the keyboard. New windows open between the panels, and zoom fills the space between them.

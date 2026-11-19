@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dock: the row of apps along the bottom of the screen, kept running by the desktop. -->
+<App version="1">
+  <Info identifier="dev.tonytins.ventureos.dock" name="Dock" version="1.0" needs="system" description="Shows the apps along the bottom of the screen, opens them, and brings back minimized windows."/>
+</App>

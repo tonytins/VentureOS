@@ -65,7 +65,6 @@ public sealed class FallbackAppTests : IDisposable
         Frame();
 
         Assert.True(apps.IsOpen("dev.example.shelf"));
-        Assert.Equal(new DockItem("Shelf", "Shelf", IsOpen: true), session.Dock.Items[0]);
         Assert.Equal(["VentureOS", "Shelf", "File", "Edit", "Help"], Titles());
         Assert.Equal(["newWindow"], Items(session.MenuBar.Menus[1]));
 
@@ -97,9 +96,7 @@ public sealed class FallbackAppTests : IDisposable
 
         foreach (var window in (DesktopWindow[])[.. windows.Windows])
             windows.Close(window);
-        var icon = session.Dock.IconBounds(0);
-        Frame((int)icon.X + 10, (int)icon.Y + 10, down: true);
-        Frame((int)icon.X + 10, (int)icon.Y + 10);
+        OpenFromDock();
 
         Assert.Single(windows.Windows);
     }
@@ -141,11 +138,10 @@ public sealed class FallbackAppTests : IDisposable
         Frame();
 
         Assert.True(apps.IsOpen("dev.example.shelf"));
-        Assert.True(session.Dock.Items[0].IsOpen);
     }
 
     [Fact]
-    public void MinimizedWindowsGoToTheDockAndComeBack()
+    public void TheMinimizeButtonSendsAWindowAway()
     {
         session.StartFallbackApp();
         Frame();
@@ -156,16 +152,7 @@ public sealed class FallbackAppTests : IDisposable
         Frame((int)minimize.X + 6, (int)minimize.Y + 6);
 
         Assert.True(window.IsMinimized);
-        var tile = session.Dock.Items[^1];
-        Assert.Same(window, tile.Window);
-        Assert.Equal(2, tile.Group);
-
-        var icon = session.Dock.IconBounds(session.Dock.Items.Count - 1);
-        Frame((int)icon.X + 10, (int)icon.Y + 10, down: true);
-        Frame((int)icon.X + 10, (int)icon.Y + 10);
-
-        Assert.False(window.IsMinimized);
-        Assert.Null(session.Dock.Items[^1].Window);
+        Assert.Null(windows.Focused);
     }
 
     [Fact]
@@ -176,9 +163,7 @@ public sealed class FallbackAppTests : IDisposable
         windows.Minimize(window);
         Frame();
 
-        var icon = session.Dock.IconBounds(0);
-        Frame((int)icon.X + 10, (int)icon.Y + 10, down: true);
-        Frame((int)icon.X + 10, (int)icon.Y + 10);
+        OpenFromDock();
 
         Assert.False(window.IsMinimized);
         Assert.Single(windows.Windows);
@@ -252,6 +237,13 @@ public sealed class FallbackAppTests : IDisposable
         Frame();
 
         Assert.True(apps.IsOpen("dev.example.shelf"));
+    }
+
+    /// <summary>Opens Shelf the way the dock does, then runs a frame, as a click on its icon would.</summary>
+    private void OpenFromDock()
+    {
+        Assert.Null(apps.Windows!.OpenApp(apps, $"{root.Replace('\\', '/')}/apps/Shelf.app", root));
+        Frame();
     }
 
     private void Frame(int x = 400, int y = 300, bool down = false, KeyPress[]? keys = null)

@@ -27,6 +27,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     private const int Cascade = 24;
 
     private readonly List<DesktopWindow> windows = [];
+    private int lastId;
 
     // Reused every frame, since the desktop runs its frame loop without pause; see Update.
     private readonly List<WindowEvent> frameEvents = [];
@@ -44,6 +45,18 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
 
     // A window being resized by its grip: where the press started, and the frame's size then.
     private (DesktopWindow Window, int StartX, int StartY, int Width, int Height)? resizing;
+
+    /// <summary>A window by its <see cref="DesktopWindow.Id"/>, or <see langword="null"/>.</summary>
+    public DesktopWindow? Find(int id)
+    {
+        foreach (var window in windows)
+        {
+            if (window.Id == id)
+                return window;
+        }
+
+        return null;
+    }
 
     /// <summary>The windows from back to front, minimized ones included.</summary>
     public IReadOnlyList<DesktopWindow> Windows => windows;
@@ -142,6 +155,8 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     {
         ArgumentNullException.ThrowIfNull(window);
         window.ClearCloseRequest();
+        if (window.Id == 0)
+            window.Id = ++lastId;
         if (windows.Contains(window))
         {
             window.IsMinimized = false;

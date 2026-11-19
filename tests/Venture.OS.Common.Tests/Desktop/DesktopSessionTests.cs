@@ -84,11 +84,8 @@ public sealed class DesktopSessionTests : IDisposable
     }
 
     [Fact]
-    public void TheDockShowsTheSystemsApps()
-    {
-        Assert.Equal([new DockItem("Chatty", "Chatty", IsOpen: false), new DockItem("Viewer", "Viewer", IsOpen: false)], session.Dock.Items);
+    public void WithNoAppInFrontTheBarShowsTheSystemsMenus() =>
         Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
-    }
 
     [Fact]
     public void ClickingAnIconOpensTheAppAndShowsWhatItSaid()
@@ -96,7 +93,6 @@ public sealed class DesktopSessionTests : IDisposable
         ClickIcon(0);
 
         Assert.True(apps.IsOpen("dev.example.chatty"));
-        Assert.True(session.Dock.Items[0].IsOpen);
         Assert.Equal("Chatty", session.ActiveApp);
         // What Chatty said is in a message in front, which File's Close Window closes; Help has About Chatty.
         Assert.Equal(["VentureOS", "Chatty", "File", "Edit", "Help"], Titles());
@@ -115,7 +111,6 @@ public sealed class DesktopSessionTests : IDisposable
         Frame(400, 300, keys: [new KeyPress(DesktopKey.Character, 'q', Control: true)]);
 
         Assert.False(apps.IsOpen("dev.example.chatty"));
-        Assert.False(session.Dock.Items[0].IsOpen);
         Assert.Null(session.ActiveApp);
         Assert.Equal(["VentureOS", "File", "Edit", "Help"], Titles());
     }
@@ -186,14 +181,12 @@ public sealed class DesktopSessionTests : IDisposable
         ClickIcon(1);
         var window = Assert.Single(session.Windows.Windows);
         Assert.Equal("Viewer", session.ActiveApp);
-        Assert.True(session.Dock.Items[1].IsOpen);
 
         var close = window.CloseButton;
         Frame((int)close.X + 6, (int)close.Y + 6, down: true);
         Frame((int)close.X + 6, (int)close.Y + 6);
 
         Assert.False(apps.IsOpen("dev.example.viewer"));
-        Assert.False(session.Dock.Items[1].IsOpen);
         Assert.Null(session.ActiveApp);
     }
 
@@ -284,12 +277,12 @@ public sealed class DesktopSessionTests : IDisposable
         Assert.Equal("line 5", kept[0]);
     }
 
+    /// <summary>Opens an app the way the dock does, then runs a frame, as a click on its icon would.</summary>
     private void ClickIcon(int index)
     {
-        var icon = session.Dock.IconBounds(index);
-        var (x, y) = ((int)icon.X + 10, (int)icon.Y + 10);
-        Frame(x, y, down: true);
-        Frame(x, y);
+        var app = (string[])["Chatty", "Viewer"];
+        Assert.Null(apps.Windows!.OpenApp(apps, $"{root.Replace('\\', '/')}/apps/{app[index]}.app", root));
+        Frame(400, 300);
     }
 
     private void Frame(int x, int y, bool down = false, KeyPress[]? keys = null)

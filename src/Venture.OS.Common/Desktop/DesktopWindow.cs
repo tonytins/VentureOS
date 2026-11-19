@@ -152,6 +152,12 @@ public sealed class DesktopWindow
         IsClosable = closable && view.Script.Window.Role != UIWindowRole.Panel;
     }
 
+    /// <summary>
+    /// Its ID, given the first time it opens, counting up from 1 and never reused while the desktop runs, by which
+    /// scripts restore it; 0 before it opens.
+    /// </summary>
+    public int Id { get; internal set; }
+
     /// <summary>The plain title, and the window's name in the dock when it's minimized.</summary>
     public string Title { get; set; }
 

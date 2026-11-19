@@ -135,14 +135,9 @@ public sealed class TextEditAppTests : IDisposable
     [Fact]
     public void TheDockGivesItAWindow()
     {
-        DesktopSession session = new(1024, 768, manager, root, new HeldOutput(), windows);
-        var index = session.Dock.Items.ToList().FindIndex(item => item.Name == "TextEdit");
-        var icon = session.Dock.IconBounds(index);
-        RecordingPainter painter = new(1024, 768);
-        session.Draw(painter);
+        var textEdit = manager.Available().Single(listing => listing.Bundle?.Name == "TextEdit");
 
-        session.Update(new DesktopInput((int)icon.X + 10, (int)icon.Y + 10, true));
-        session.Update(new DesktopInput((int)icon.X + 10, (int)icon.Y + 10, false));
+        Assert.Null(host.OpenApp(manager, manager.ScriptPath(textEdit.Path), root));
 
         Assert.True(manager.IsOpen("dev.tonytins.ventureos.textedit"));
         Assert.Equal("Untitled", Assert.Single(windows.Windows).Title);

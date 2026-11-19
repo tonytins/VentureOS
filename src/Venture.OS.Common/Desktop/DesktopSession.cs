@@ -140,8 +140,8 @@ public sealed class DesktopSession
     private readonly Dictionary<string, string> startProblems = new(StringComparer.Ordinal);
     private bool watching;
 
-    // How many apps were open, and which windows were minimized, when the dock was last filled, so it's filled again
-    // only when one of those changes.
+    // How many apps were open, and which windows were minimized, when the dock last heard, so it hears again only when
+    // one of those changes.
     private int dockedRunning = -1;
     private readonly List<DesktopWindow> dockedWindows = [];
 
@@ -149,7 +149,6 @@ public sealed class DesktopSession
     {
         None,
         Bar,
-        Dock,
         Windows,
     }
 
@@ -186,8 +185,7 @@ public sealed class DesktopSession
         Windows.TopInset = MenuBar.Height + 4;
         ActiveApp = Windows.Focused?.App;
         lastFocused = Windows.Focused;
-        Dock = new Dock(width, height);
-        RefreshDock();
+        apps?.Windows?.MarkDesktopChanged();
         RefreshMenus();
     }
 
@@ -200,9 +198,6 @@ public sealed class DesktopSession
 
     /// <summary>The menu bar along the top.</summary>
     public MenuBar MenuBar { get; } = new();
-
-    /// <summary>The dock along the bottom.</summary>
-    public Dock Dock { get; }
 
     /// <summary>
     /// Reads the About window's document, which About VentureOS and every app's About share, or gives
@@ -253,6 +248,12 @@ public sealed class DesktopSession
     /// the dock. <see langword="null"/> for none.
     /// </summary>
     public string? FallbackApp { get; init; }
+
+    /// <summary>
+    /// The app that's the dock, by name, such as <c>Dock</c>, which the desktop starts and keeps running as it keeps
+    /// the fallback app; <see langword="null"/> for none.
+    /// </summary>
+    public string? DockApp { get; init; }
 
     /// <summary>The time, for waiting between attempts to start the fallback app.</summary>
     public Func<TimeSpan> Clock { get; init; } = () => Stopwatch.GetElapsedTime(Started);
@@ -471,9 +472,7 @@ public sealed class DesktopSession
         // The pointer: a press belongs to what it lands on until it's released.
         if (pressed)
         {
-            owner = MenuBar.IsOpen || MenuBar.Contains(x, y) ? PointerOwner.Bar
-                : Dock.Contains(x, y) ? PointerOwner.Dock
-                : PointerOwner.Windows;
+            owner = MenuBar.IsOpen || MenuBar.Contains(x, y) ? PointerOwner.Bar : PointerOwner.Windows;
         }
 
         if (owner == PointerOwner.Bar || MenuBar.IsOpen)
@@ -483,11 +482,7 @@ public sealed class DesktopSession
                 Choose(chosen, happened);
         }
 
-        var dockOwned = !MenuBar.IsOpen && (input.PointerDown || released ? owner == PointerOwner.Dock : true);
-        if (Dock.Update(x, y, dockOwned, pressed, released && owner == PointerOwner.Dock) is { } clicked)
-            OpenFromDock(clicked);
-
-        var overWindows = !MenuBar.IsOpen && !MenuBar.Contains(x, y) && !Dock.Contains(x, y);
+        var overWindows = !MenuBar.IsOpen && !MenuBar.Contains(x, y);
         Windows.ShowsHover = overWindows;
         DesktopInput windowInput = new(
             x,
@@ -509,8 +504,15 @@ public sealed class DesktopSession
 
         // Before the apps' messages, since it shows what the app said while it failed.
         ReportStartFailures();
+
+        // An app the dock opened or brought forward is the active one, with or without a window in front.
+        if (apps?.Windows?.TakeActivatedApp() is { } activated)
+        {
+            ActiveApp = activated;
+            lastFocused = Windows.Focused;
+        }
         if ((apps is not null && apps.Running.Count != dockedRunning) || MinimizedChanged())
-            RefreshDock();
+            TellDock();
         ShowMessages(ActiveApp ?? "VentureOS", ActiveApp);
 
         // After the apps' own messages, so the crash that explains them is in front of them.
@@ -578,7 +580,6 @@ public sealed class DesktopSession
 
         painter.DrawPixels(background, 0, 0, Width, Height);
         Windows.Draw(painter);
-        Dock.Draw(painter);
         MenuBar.Draw(painter);
         Windows.DrawTooltip(painter);
         drawnTooltip = Windows.Tooltip;
@@ -725,53 +726,6 @@ public sealed class DesktopSession
         return false;
     }
 
-    private void OpenFromDock(DockItem item)
-    {
-        // A minimized window's tile restores it.
-        if (item.Window is { } window)
-        {
-            Windows.Open(window);
-            return;
-        }
-
-        if (apps is null)
-            return;
-
-        if (item.IsOpen)
-        {
-            // Bring the app forward: its menu, and its front window, or a new one when it has none.
-            ActiveApp = item.Name;
-            if (apps.Windows is { } host)
-            {
-                host.Activate(item.Name);
-            }
-            else
-            {
-                for (var index = Windows.Windows.Count - 1; index >= 0; index--)
-                {
-                    if (Windows.Windows[index].App == item.Name)
-                    {
-                        Windows.Open(Windows.Windows[index]);
-                        break;
-                    }
-                }
-            }
-
-            return;
-        }
-
-        if (apps.OpenApp(item.Target, workingDirectory, appOutput, explainNeeds: false))
-        {
-            ActiveApp = item.Name;
-
-            // An app that opens no window of its own, such as TextEdit waiting for a file, gets a new one.
-            if (apps.Windows is { } host && !host.HasWindow(item.Name))
-                host.NewWindow(item.Name);
-        }
-
-        ShowMessages(item.Name, ActiveApp);
-        RefreshDock();
-    }
 
     private void Quit(string app)
     {
@@ -789,7 +743,7 @@ public sealed class DesktopSession
 
         ActiveApp = null;
         ShowMessages(app, null);
-        RefreshDock();
+        TellDock();
     }
 
     /// <summary>Shows what apps wrote, in a window titled for the app, so nothing they said is lost.</summary>
@@ -811,20 +765,30 @@ public sealed class DesktopSession
     /// <returns>Whether it started now.</returns>
     private bool KeepFallbackRunning()
     {
-        if (FallbackApp is not { } fallback || apps is null || fallbackKept)
+        if (apps is null || fallbackKept)
             return false;
 
         Watch();
         fallbackKept = true;
-        if (IsAppOpen(fallback))
-            return false;
+        if (apps.Windows is { } host)
+            host.FallbackApp = FallbackApp;
 
-        if (!apps.OpenApp(fallback, workingDirectory, appOutput, explainNeeds: true, RestartPolicy.Always))
-            return false;
+        // The fallback app first, so its windows land behind the dock's panel and anything opened after.
+        var started = false;
+        foreach (var kept in (ReadOnlySpan<string?>)[FallbackApp, DockApp])
+        {
+            if (kept is null || IsAppOpen(kept))
+                continue;
+            if (!apps.OpenApp(kept, workingDirectory, appOutput, explainNeeds: true, RestartPolicy.Always))
+                continue;
 
-        ShowMessages(fallback, fallback);
-        RefreshDock();
-        return true;
+            ShowMessages(kept, kept);
+            started = true;
+        }
+
+        if (started)
+            TellDock();
+        return started;
     }
 
     private void Watch()
@@ -837,10 +801,15 @@ public sealed class DesktopSession
         watching = true;
     }
 
-    private void OnProcessStarted(AppProcess process) => startProblems.Remove(process.Bundle.Identifier);
+    private void OnProcessStarted(AppProcess process)
+    {
+        startProblems.Remove(process.Bundle.Identifier);
+        TellDock();
+    }
 
     private void OnProcessEnded(AppProcess process)
     {
+        TellDock();
         switch (process.Ending)
         {
             case { Kind: EndingKind.Crashed }:
@@ -912,42 +881,21 @@ public sealed class DesktopSession
         return count != dockedWindows.Count;
     }
 
-    private void RefreshDock()
+    /// <summary>
+    /// Tells the dock, and any app listening through <c>venture.desktop.onChange</c>, that what it shows changed, and
+    /// notes what it was told about, so it's told again only when that changes.
+    /// </summary>
+    private void TellDock()
     {
-        List<DockItem> items = [];
         dockedRunning = apps?.Running.Count ?? 0;
-        foreach (var listing in apps?.Available() ?? [])
-        {
-            // An app that can't be read stays out of the dock; `apps` in the shell says why.
-            if (listing.Bundle is not { } bundle)
-                continue;
-
-            // A user app opens by its path, so it can't be mistaken for a system app with the same name.
-            var extension = Bundle.Extension(BundleKind.App);
-            var target = listing.IsUser ? apps!.ScriptPath(listing.Path)
-                : listing.Folder.EndsWith(extension, StringComparison.OrdinalIgnoreCase) ? listing.Folder[..^extension.Length]
-                : listing.Folder;
-            DockItem item = new(
-                bundle.Name, target, apps!.IsOpen(bundle.Identifier), listing.IsUser,
-                Icon: Icon(bundle.Icon, Dock.IconSize));
-            if (bundle.Name == FallbackApp)
-                items.Insert(0, item);
-            else
-                items.Add(item);
-        }
-
-        // Minimized windows, oldest first, after the apps.
         dockedWindows.Clear();
         foreach (var window in Windows.Windows)
         {
             if (window.IsMinimized)
-            {
                 dockedWindows.Add(window);
-                items.Add(new DockItem(window.Title, "", IsOpen: false, Window: window));
-            }
         }
 
-        Dock.SetItems(items);
+        apps?.Windows?.MarkDesktopChanged();
     }
 
     private void RefreshMenus()
