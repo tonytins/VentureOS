@@ -289,6 +289,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | 0.7.3xx is complete: panels and shelves, Dock.app, the menu bar as Files' top panel, and the dock's three modes. The next band is the owner's to plan. |
 | 2026-11-19 | minor | 0.7.2xx is complete: apps run as supervised processes, with crashes, kept apps, `ps`, and `kill`. 0.7.3xx, the dock and the menu bar as apps, is next, being planned. |
 | 2026-11-18 | minor | 0.7.2xx begins: apps as supervised processes, from its approved design. The dock moves to 0.7.3xx, with the menu bar as a panel Files hosts, built on processes. Designs get an index, `docs/design/README.md`. |
 | 2026-11-18 | minor | 0.7.1xx is complete, closed out with a boot that follows the README's vdb steps. 0.7 is a Snow Leopard, refining as much as adding, and may run longer than earlier releases. 0.7.2xx, the dock as an app, is next, being planned. |

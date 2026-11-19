@@ -1,6 +1,6 @@
 # The dock and the menu bar as apps
 
-**Status:** proposed, for 0.7.3xx, Seto, after [supervised processes](./2026-11-18-processes-design.md) in 0.7.2xx.
+**Status:** built in 0.7.3xx, Seto; the [architecture](../architecture.md) and [writing apps](../writing-apps.md) say how it works now. The bar's panel is its own `menubar.uix` in Files, beside `main.uix`, and a desktop without a bar app, as in tests, still draws the bar itself.
 **Date:** 2026-11-18.
 
 The dock becomes `Dock.app`, a system app written in Lua like Files, instead of code inside the desktop, and the

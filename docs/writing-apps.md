@@ -343,6 +343,46 @@ new number. `roll` still works in the shell, since both live in the same app.
 
 `Notes.app` has a fuller window: a text field, a list, and a menu.
 
+## Panels and shelves
+
+A window can be a **panel**, pinned to an edge of the screen with no title
+bar, as the dock is. Give its `<Window>` a `role` and an `edge`:
+
+```xml
+<UIScript version="1" requires="shelf">
+  <Window width="400" height="72" role="panel" edge="bottom"/>
+  <Shelf name="apps" x="0" y="0" width="400" height="72"/>
+</UIScript>
+```
+
+- A panel sits above every other window, never takes the keyboard, and
+  can't be moved, closed by a button, minimized, or zoomed. A bottom panel
+  is as wide as its shelf and centred, and follows the dock's setting in
+  Settings; a top panel spans the screen.
+- The top edge holds the menu bar, Files' top panel, and there's one top
+  panel at a time, so opening another is an error.
+- A **shelf** (`<Shelf>`, with `requires="shelf"`) is a row of icons. Fill
+  it with `window:setItems`, each item a table: `title`, and if you like an
+  `icon` (a PNG, in your app or any app's bundle), `open = true` for a dot
+  under it, a `group` number, with a divider between groups, and
+  `window = true` for a window's pale tile. A click is a `pressed` event with
+  the item's `index`.
+- See [panels](uiscript/panel.md) and [the shelf](uiscript/shelf.md) for the
+  rules.
+
+An app with the `system` scope can do what the dock does through
+`venture.desktop`:
+
+| Function | Does |
+|---|---|
+| `venture.desktop.apps()` | Every app, Files first, then the system's and the user's: `{ name, path, icon, identifier, user, open }` each |
+| `venture.desktop.open(path)` | Opens an app as the dock does: brings it forward if it's open, with a new window if it has none |
+| `venture.desktop.minimized()` | Minimized windows, `{ id, title, app }` each |
+| `venture.desktop.restore(id)` | Brings a minimized window back |
+| `venture.desktop.onChange(fn)` | Calls `fn` when apps open, close, start, or end, or windows are minimized or restored, at most once a frame |
+
+`Dock.app` in `rootfs/system/apps` is all of this in about fifty lines.
+
 ## Test your app
 
 The tests in `tests/Venture.OS.Common.Tests` run on ordinary .NET, without
