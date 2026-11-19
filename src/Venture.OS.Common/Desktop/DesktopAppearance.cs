@@ -132,7 +132,7 @@ public static class DesktopAppearance
         return string.Create(CultureInfo.InvariantCulture, $"""
             <?xml version="1.0" encoding="UTF-8"?>
             <!-- The desktop's look, which Settings and the appearance command change. -->
-            <Appearance version="{SupportedVersion}" mode="{DesktopLook.FormatMode(look.Mode)}" accent="{DesktopPalette.Format(look.Accent)}" corners="{(look.RoundedCorners ? "rounded" : "square")}" wallpaper="{look.Wallpaper}" darkFrom="{DesktopLook.FormatTime(look.DarkFrom)}" darkUntil="{DesktopLook.FormatTime(look.DarkUntil)}"/>
+            <Appearance version="{SupportedVersion}" mode="{DesktopLook.FormatMode(look.Mode)}" accent="{DesktopPalette.Format(look.Accent)}" corners="{(look.RoundedCorners ? "rounded" : "square")}" wallpaper="{look.Wallpaper}" darkFrom="{DesktopLook.FormatTime(look.DarkFrom)}" darkUntil="{DesktopLook.FormatTime(look.DarkUntil)}" dock="{DesktopLook.FormatDock(look.Dock)}"/>
 
             """);
     }
@@ -174,6 +174,9 @@ public static class DesktopAppearance
             "square" => look with { RoundedCorners = false },
             var corners => throw new FormatException($"Corners are rounded or square, not \"{corners}\"."),
         };
+
+        // A dock mode this VentureOS doesn't know is a newer one's; the dock stays always visible, as it always was.
+        look = look with { Dock = DesktopLook.TryParseDock(root["dock"], out var dock) ? dock : DockMode.Always };
 
         if (root["wallpaper"] is { } wallpaper)
         {

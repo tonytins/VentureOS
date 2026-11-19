@@ -16,6 +16,19 @@ public enum LookMode
     Auto,
 }
 
+/// <summary>How the dock behaves.</summary>
+public enum DockMode
+{
+    /// <summary>Always shown; zoomed and new windows stop above it.</summary>
+    Always,
+
+    /// <summary>Hidden until the pointer reaches the bottom of the screen, and hidden again a moment after it leaves.</summary>
+    AutoHide,
+
+    /// <summary>Shown unless a window would cover it, and shown when the pointer reaches the bottom of the screen.</summary>
+    Dodge,
+}
+
 /// <summary>
 /// The desktop's look as the user chose it: light, dark, or on a schedule; the accent; rounded or square window
 /// corners; and the wallpaper, by name, or the sky.
@@ -26,9 +39,32 @@ public enum LookMode
 /// <param name="Wallpaper">The wallpaper bundle's name, such as <c>Earthset</c>, or <see cref="Sky"/>.</param>
 /// <param name="DarkFrom">When a scheduled look turns dark, as a time of day.</param>
 /// <param name="DarkUntil">When it turns light again; before <paramref name="DarkFrom"/>, the dark runs overnight.</param>
+/// <param name="Dock">How the dock behaves.</param>
 public sealed record DesktopLook(
-    LookMode Mode, UIColor Accent, bool RoundedCorners, string Wallpaper, TimeSpan DarkFrom, TimeSpan DarkUntil)
+    LookMode Mode, UIColor Accent, bool RoundedCorners, string Wallpaper, TimeSpan DarkFrom, TimeSpan DarkUntil,
+    DockMode Dock = DockMode.Always)
 {
+    /// <summary>A dock mode as written: <c>always</c>, <c>autohide</c>, or <c>dodge</c>.</summary>
+    public static string FormatDock(DockMode mode) => mode switch
+    {
+        DockMode.AutoHide => "autohide",
+        DockMode.Dodge => "dodge",
+        _ => "always",
+    };
+
+    /// <summary>Reads a dock mode as written, or gives <see langword="false"/>.</summary>
+    public static bool TryParseDock(string? text, out DockMode mode)
+    {
+        (var known, mode) = text switch
+        {
+            "always" => (true, DockMode.Always),
+            "autohide" => (true, DockMode.AutoHide),
+            "dodge" => (true, DockMode.Dodge),
+            _ => (false, DockMode.Always),
+        };
+        return known;
+    }
+
     /// <summary>The wallpaper name for the sky, the gradient the palette draws, in place of a picture.</summary>
     public const string Sky = "sky";
 

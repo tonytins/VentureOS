@@ -32,7 +32,7 @@ public sealed class DesktopAppearanceTests : IDisposable
         Assert.Null(problem);
         Assert.True(DesktopTheme.Palette.IsDark);
         Assert.Contains(
-            """<Appearance version="1" mode="dark" accent="#E8922A" corners="rounded" wallpaper="Earthset" darkFrom="19:00" darkUntil="07:00"/>""",
+            """<Appearance version="1" mode="dark" accent="#E8922A" corners="rounded" wallpaper="Earthset" darkFrom="19:00" darkUntil="07:00" dock="always"/>""",
             File.ReadAllText(SettingsFile));
     }
 
@@ -48,6 +48,32 @@ public sealed class DesktopAppearanceTests : IDisposable
         Assert.True(DesktopTheme.Palette.IsDark);
         Assert.Equal(new UIColor(232, 146, 42), DesktopTheme.Palette.ChosenAccent);
         Assert.Equal("dark, accent #E8922A", result.Description);
+    }
+
+    [Theory]
+    [InlineData(DockMode.Always, "always")]
+    [InlineData(DockMode.AutoHide, "autohide")]
+    [InlineData(DockMode.Dodge, "dodge")]
+    public void SavesAndRestoresTheDocksMode(DockMode mode, string written)
+    {
+        DesktopAppearance.Apply(DesktopLook.Standard with { Dock = mode });
+        DesktopAppearance.Use(DesktopLook.Standard);
+
+        Assert.Contains($"""dock="{written}" """.TrimEnd(), File.ReadAllText(SettingsFile));
+        Assert.Null(DesktopAppearance.Load().Problem);
+        Assert.Equal(mode, DesktopAppearance.Current.Dock);
+    }
+
+    [Theory]
+    [InlineData("""<Appearance version="1" mode="light"/>""")]
+    [InlineData("""<Appearance version="1" mode="light" dock="magnify"/>""")]
+    public void ADockModeMissingOrUnknownIsAlways(string file)
+    {
+        DesktopAppearance.Apply(DesktopLook.Standard with { Dock = DockMode.Dodge });
+        File.WriteAllText(SettingsFile, file);
+
+        Assert.Null(DesktopAppearance.Load().Problem);
+        Assert.Equal(DockMode.Always, DesktopAppearance.Current.Dock);
     }
 
     [Fact]

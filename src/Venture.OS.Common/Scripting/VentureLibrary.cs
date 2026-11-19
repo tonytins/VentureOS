@@ -19,7 +19,7 @@ namespace Venture.OS.Scripting;
 /// <c>{ device, mac, link_up, ready, address, subnet, gateway }</c>, where the last three are <c>nil</c> until
 /// IPv4 is configured.</description></item>
 /// <item><description><c>venture.appearance()</c>: the desktop's look, <c>{ mode, dark, accent, corners, wallpaper,
-/// darkFrom, darkUntil }</c>, and <c>venture.setAppearance(mode, accent)</c> or <c>venture.setAppearance{ ... }</c>
+/// darkFrom, darkUntil, dock }</c>, and <c>venture.setAppearance(mode, accent)</c> or <c>venture.setAppearance{ ... }</c>
 /// with any of those but <c>dark</c>, which changes them and saves the look, returning <c>true</c> (and why it
 /// wasn't saved, if it wasn't), or <c>nil</c> and why.</description></item>
 /// <item><description><c>venture.time()</c>: the clock, <c>{ set, offset, zone }</c>, and when the hardware clock is
@@ -367,6 +367,7 @@ public static class VentureLibrary
         SetBoolean(lua, "dark", appearance.IsDark);
         SetString(lua, "accent", appearance.Accent);
         SetString(lua, "corners", appearance.RoundedCorners ? "rounded" : "square");
+        SetString(lua, "dock", appearance.Dock);
         SetString(lua, "wallpaper", appearance.Wallpaper);
         SetString(lua, "darkFrom", appearance.DarkFrom);
         SetString(lua, "darkUntil", appearance.DarkUntil);
@@ -403,7 +404,7 @@ public static class VentureLibrary
 
     /// <summary>
     /// <c>venture.setAppearance(mode, accent)</c>, or <c>venture.setAppearance{ mode, accent, corners, wallpaper,
-    /// darkFrom, darkUntil }</c>: changes what's given, keeps the rest, and saves the look. Returns
+    /// darkFrom, darkUntil, dock }</c>: changes what's given, keeps the rest, and saves the look. Returns
     /// <see langword="true"/>, with why it couldn't be saved when that failed, or <see langword="nil"/> and why,
     /// changing nothing, when anything is wrong. The desktop shows it on its next frame.
     /// </summary>
@@ -424,7 +425,8 @@ public static class VentureLibrary
             try
             {
                 request = new AppearanceRequest(
-                    Field("mode"), Field("accent"), Field("corners"), Field("wallpaper"), Field("darkFrom"), Field("darkUntil"));
+                    Field("mode"), Field("accent"), Field("corners"), Field("wallpaper"), Field("darkFrom"), Field("darkUntil"),
+                    Field("dock"));
             }
             catch (ArgumentException exception)
             {

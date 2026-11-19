@@ -21,6 +21,9 @@ public sealed class ScriptAppearance : IAppearance
     public bool RoundedCorners => DesktopAppearance.Current.RoundedCorners;
 
     /// <inheritdoc/>
+    public string Dock => DesktopLook.FormatDock(DesktopAppearance.Current.Dock);
+
+    /// <inheritdoc/>
     public string Wallpaper => DesktopAppearance.Current.Wallpaper;
 
     /// <inheritdoc/>
@@ -66,6 +69,13 @@ public sealed class ScriptAppearance : IAppearance
             if (corners is not ("rounded" or "square"))
                 return Refuse($"corners are rounded or square, not \"{corners}\"");
             look = look with { RoundedCorners = corners == "rounded" };
+        }
+
+        if (request.Dock is { } dock)
+        {
+            if (!DesktopLook.TryParseDock(dock, out var dockMode))
+                return Refuse($"the dock is always, autohide, or dodge, not \"{dock}\"");
+            look = look with { Dock = dockMode };
         }
 
         if (request.Wallpaper is { } wallpaper)

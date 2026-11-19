@@ -29,6 +29,24 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     private readonly List<DesktopWindow> windows = [];
     private int lastId;
 
+    // When the panels last slid, so a slide takes the same time however often frames come.
+    private TimeSpan? lastSlide;
+
+    /// <summary>How long the dock takes to slide away or back.</summary>
+    public static readonly TimeSpan SlideTime = TimeSpan.FromMilliseconds(150);
+
+    /// <summary>How long a revealed dock stays after the pointer leaves it.</summary>
+    public static readonly TimeSpan HideDelay = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// How bottom panels, such as the dock, behave: always shown, keeping windows above them; hidden until the pointer
+    /// reaches the bottom of the screen; or hidden while a window would cover them, and at the bottom edge shown.
+    /// </summary>
+    public DockMode DockMode { get; set; }
+
+    /// <summary>Whether a panel is sliding, so the desktop draws again.</summary>
+    public bool IsSliding { get; private set; }
+
     // Reused every frame, since the desktop runs its frame loop without pause; see Update.
     private readonly List<WindowEvent> frameEvents = [];
     private bool wasDown;
@@ -113,8 +131,10 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
             {
                 if (window.Edge == UIEdge.Top)
                     top = Math.Max(top, window.Y + window.Height);
-                else if (window.Edge == UIEdge.Bottom)
-                    bottom = Math.Min(bottom, window.Y);
+
+                // Only a dock that's always there keeps windows above it; one that hides lets them run to the bottom.
+                else if (window.Edge == UIEdge.Bottom && DockMode == DockMode.Always)
+                    bottom = Math.Min(bottom, screenHeight - window.Height);
             }
 
             return new UIRect(0, top, screenWidth, Math.Max(0, bottom - top));
@@ -158,8 +178,60 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
                 window.View.SetWindowSize(new UISize(width, height));
 
             window.X = (screenWidth - window.Width) / 2;
-            window.Y = edge == UIEdge.Top ? 0 : screenHeight - window.Height;
+            window.Y = edge == UIEdge.Top ? 0 : screenHeight - (int)MathF.Round(window.Height * window.Shown);
         }
+    }
+
+    /// <summary>
+    /// Shows or hides each bottom panel as <see cref="DockMode"/> says, sliding it over <see cref="SlideTime"/>: the
+    /// pointer at the bottom edge, or over the panel, keeps it shown until <see cref="HideDelay"/> after it leaves.
+    /// </summary>
+    private void Slide(int x, int y, TimeSpan now)
+    {
+        var elapsed = lastSlide is { } before && now > before ? now - before : TimeSpan.Zero;
+        lastSlide = now;
+        IsSliding = false;
+
+        foreach (var panel in windows)
+        {
+            if (panel.Edge != UIEdge.Bottom)
+                continue;
+
+            // Where it sits when it's all there, which a window covers or the pointer is over.
+            UIRect full = new(panel.X, screenHeight - panel.Height, panel.Width, panel.Height);
+            if (y >= screenHeight - 2 || (panel.Shown > 0 && full.Contains(x, y)) || captured == panel)
+                panel.HideAt = now + HideDelay;
+            var revealed = now < panel.HideAt;
+
+            var wanted = DockMode switch
+            {
+                DockMode.AutoHide => revealed,
+                DockMode.Dodge => revealed || !Covered(full),
+                _ => true,
+            };
+
+            var target = wanted ? 1f : 0f;
+            if (panel.Shown == target)
+                continue;
+
+            var step = SlideTime <= TimeSpan.Zero ? 1f : (float)(elapsed / SlideTime);
+            panel.Shown = wanted ? MathF.Min(1, panel.Shown + step) : MathF.Max(0, panel.Shown - step);
+            IsSliding = true;
+        }
+    }
+
+    /// <summary>Whether a window, shown and not a panel, overlaps an area.</summary>
+    private bool Covered(UIRect area)
+    {
+        foreach (var window in windows)
+        {
+            if (!window.IsPanel && !window.IsMinimized
+                && window.X < area.X + area.Width && area.X < window.X + window.Width
+                && window.Y < area.Y + area.Height && area.Y < window.Y + window.Height)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -257,6 +329,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var (x, y) = (input.PointerX, input.PointerY);
         pointerAt = (x, y);
         var pressed = input.PointerDown && !wasDown;
+        Slide(x, y, input.Time);
         Arrange();
 
         // Hover text waits for the pointer to rest, and goes as soon as it moves or presses.

@@ -67,6 +67,15 @@ public sealed class DesktopWindow
     /// </summary>
     public bool IsPanel => View.Script.Window.Role == UIWindowRole.Panel;
 
+    /// <summary>
+    /// How much of a bottom panel shows, from 0, slid away below the screen, to 1, all of it, as the dock hides and
+    /// comes back; see <see cref="WindowManager.DockMode"/>.
+    /// </summary>
+    public float Shown { get; internal set; } = 1;
+
+    // When a revealed bottom panel may hide again, once the pointer has left it.
+    internal TimeSpan HideAt { get; set; }
+
     /// <summary>The edge a panel is pinned to, or <see langword="null"/> for an ordinary window.</summary>
     public UIEdge? Edge => IsPanel ? View.Script.Window.Edge : null;
 

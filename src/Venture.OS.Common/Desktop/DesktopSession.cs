@@ -463,6 +463,7 @@ public sealed class DesktopSession
 
         // With an app holding the bar in its top panel, the panel keeps windows below it; otherwise the desktop does.
         Windows.TopInset = MenuBarApp is null ? MenuBar.Height + BarGap : 0;
+        Windows.DockMode = DesktopAppearance.Current.Dock;
 
         // A menu left open when the bar's app stopped goes with the bar.
         if (!BarShows && MenuBar.IsOpen)
@@ -550,7 +551,7 @@ public sealed class DesktopSession
 
         // The clock is brought up to date every frame, even when something else already calls for a redraw.
         var clockChanged = UpdateClock();
-        var changed = !drawn || clockChanged || input.HasEvents || redrawRequested
+        var changed = !drawn || clockChanged || input.HasEvents || redrawRequested || Windows.IsSliding
             || !string.Equals(DesktopAppearance.Current.Wallpaper, backgroundWallpaper, StringComparison.Ordinal) || happened.Count > 0 || restarted || ticked
             || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
             || !ReferenceEquals(Windows.Tooltip, drawnTooltip)

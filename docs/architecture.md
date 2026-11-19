@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,767 tests, and 190 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,779 tests, and 190 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1333,6 +1333,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   at most once a frame; the dock also looks again every 5 seconds, for apps
   installed meanwhile. If it's killed or crashes, the supervisor starts it
   again at once.
+- **The dock's modes** (`DockMode`, `dock` in `appearance.xml`, Settings'
+  Dock pane, `venture.setAppearance{ dock = ... }`): always visible, the
+  default, keeps the work area above it; hide automatically, and hide when
+  a window would cover it ("dodge"), let windows run to the bottom.
+  `WindowManager` slides each bottom panel by `Shown`, over 150 ms against
+  the frame's time, and the desktop draws while it slides. The pointer at
+  the screen's bottom edge, or over the dock, shows it until a second after
+  it leaves; dodge also shows it while no shown window overlaps where it
+  sits. A hidden dock is below the screen, so nothing finds it there. A
+  mode an older VentureOS doesn't know reads as always.
 - **App output.** An app keeps the output it opened with, and the console
   would draw over the desktop, so apps opened from the dock, and every
   window event handler, write to one `HeldOutput` the kernel keeps. What
@@ -1618,6 +1628,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Desktop (§9): the dock's modes, always visible, hide automatically, or hide when covered, sliding; `dock` in `appearance.xml`; Settings' Dock pane. |
 | 2026-11-19 | minor | Desktop (§9): the menu bar is Files' top panel (`MenuBarApp`, `BarShows`); one top panel at a time. |
 | 2026-11-19 | minor | Desktop (§9): the dock is `Dock.app`, a kept process, filled through `venture.desktop`; the C# `Dock` is gone. |
 | 2026-11-19 | minor | Desktop (§9): panels and the work area in `WindowManager`; `Shelf`, drawn by `<Shelf>` and the dock; Roundhouse draws panels as designed. |

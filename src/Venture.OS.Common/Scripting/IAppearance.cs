@@ -16,6 +16,9 @@ public interface IAppearance
     string Accent { get; }
 
     /// <summary>Whether windows have rounded corners.</summary>
+    /// <summary>How the dock behaves: <c>always</c>, <c>autohide</c>, or <c>dodge</c>.</summary>
+    string Dock { get; }
+
     bool RoundedCorners { get; }
 
     /// <summary>The wallpaper's name, such as <c>Earthset</c>, or <c>sky</c>.</summary>
@@ -50,9 +53,10 @@ public sealed record WallpaperChoice(string Name, string Title, string Thumbnail
 /// <param name="Wallpaper">A wallpaper's name, or <c>sky</c>.</param>
 /// <param name="DarkFrom">When <c>auto</c> turns dark, written <c>HH:MM</c>.</param>
 /// <param name="DarkUntil">When it turns light again, written <c>HH:MM</c>.</param>
+/// <param name="Dock"><c>always</c>, <c>autohide</c>, or <c>dodge</c>.</param>
 public sealed record AppearanceRequest(
     string? Mode = null, string? Accent = null, string? Corners = null, string? Wallpaper = null,
-    string? DarkFrom = null, string? DarkUntil = null);
+    string? DarkFrom = null, string? DarkUntil = null, string? Dock = null);
 
 /// <summary>
 /// What <see cref="IAppearance.Set"/> did: <see cref="Refused"/> says why nothing changed, and otherwise the look

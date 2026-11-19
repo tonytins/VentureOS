@@ -84,6 +84,13 @@
   <TextField name="utcOffset" x="48" y="40" width="90" height="26" placeholder="-05:00" tooltip="utcOffsetHint"/>
   <Text name="clockShown" x="148" y="43" width="220" height="20" style="quiet"/>
 
+  <!-- Dock: whether it's always there, hides on its own, or hides when a window would cover it. -->
+  <Text name="dockHeading" x="12" y="10" width="356" height="24" style="heading" text="Dock"/>
+  <Button name="dockAlways" x="12" y="40" width="356" height="26" text="Always visible"/>
+  <Button name="dockAutoHide" x="12" y="72" width="356" height="26" text="Hide automatically"/>
+  <Button name="dockDodge" x="12" y="104" width="356" height="26" text="Hide when a window covers it"/>
+  <FormattedText name="dockAbout" x="12" y="142" width="356" height="60" style="quiet"/>
+
   <!-- Developer: developer mode, for vdb, which sends apps from another computer while the desktop runs. -->
   <Text name="developerHeading" x="12" y="10" width="356" height="24" style="heading" text="Developer mode"/>
   <Button name="developerOn" x="12" y="40" width="84" height="26" text="On"/>

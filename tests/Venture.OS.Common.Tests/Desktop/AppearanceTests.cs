@@ -100,16 +100,16 @@ public sealed class AppearanceTests : IDisposable
     {
         Run("""
             local look = venture.appearance()
-            print(look.mode, look.dark, look.accent, look.corners, look.wallpaper, look.darkFrom, look.darkUntil)
+            print(look.mode, look.dark, look.accent, look.corners, look.wallpaper, look.darkFrom, look.darkUntil, look.dock)
             """);
 
-        Assert.Equal(["light\tfalse\t#3584E4\trounded\tEarthset\t19:00\t07:00"], output.Lines);
+        Assert.Equal(["light\tfalse\t#3584E4\trounded\tEarthset\t19:00\t07:00\talways"], output.Lines);
     }
 
     [Fact]
     public void ATableChangesOnlyWhatItNames()
     {
-        Run("""print(venture.setAppearance{ mode = "auto", corners = "square", wallpaper = "sky", darkFrom = "20:00" })""");
+        Run("""print(venture.setAppearance{ mode = "auto", corners = "square", wallpaper = "sky", darkFrom = "20:00", dock = "dodge" })""");
 
         var look = DesktopAppearance.Current;
         Assert.Equal(["true"], output.Lines);
@@ -119,6 +119,7 @@ public sealed class AppearanceTests : IDisposable
         Assert.Equal(TimeSpan.FromHours(20), look.DarkFrom);
         Assert.Equal(TimeSpan.FromHours(7), look.DarkUntil);
         Assert.Equal(DesktopPalette.StandardAccent, look.Accent);
+        Assert.Equal(DockMode.Dodge, look.Dock);
     }
 
     [Theory]
@@ -127,6 +128,7 @@ public sealed class AppearanceTests : IDisposable
     [InlineData("""print(venture.setAppearance{ darkFrom = "7pm" })""", "HH:MM")]
     [InlineData("""print(venture.setAppearance{ darkFrom = "07:00" })""", "never dark")]
     [InlineData("""print(venture.setAppearance{ corners = true })""", "corners must be a string")]
+    [InlineData("""print(venture.setAppearance{ dock = "magnify" })""", "the dock is always, autohide, or dodge")]
     public void ATableWithAMistakeChangesNothing(string code, string reason)
     {
         Run(code);

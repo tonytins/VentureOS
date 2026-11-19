@@ -240,7 +240,7 @@ adds panel windows and a shelf to UIScript.
 - [x] Panel windows, top and bottom, and the work area between them.
 - [x] The shelf, `venture.desktop`, and `Dock.app`.
 - [x] The menu bar as Files' top panel.
-- [ ] The dock's three modes, in Settings.
+- [x] The dock's three modes, in Settings.
 
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer

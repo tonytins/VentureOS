@@ -189,7 +189,7 @@ public sealed class SettingsAppTests : IDisposable
         Assert.Contains("wallpaper=\"sky\"", File.ReadAllText(DesktopAppearance.SettingsPath!));
 
         // Coming back to Appearance from Clock keeps the unused slots hidden.
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 1));
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
         Send(new UIEvent(UIEventKind.Selected, "panes", Index: 0));
         Assert.True(Window.View.IsHidden("wallpaper3"));
         Assert.False(Window.View.IsHidden("wallpaper2"));
@@ -232,14 +232,14 @@ public sealed class SettingsAppTests : IDisposable
         Send(new UIEvent(UIEventKind.Pressed, "rounded"));
         Assert.True(DesktopAppearance.Current.RoundedCorners);
 
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 1));
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
         Assert.True(Window.View.IsHidden("square"));
     }
 
     [Fact]
     public void OpensOnAppearanceWithClockInTheSidebar()
     {
-        Assert.Equal(["Appearance", "Clock", "Developer"], Window.View.List("panes")!.Items);
+        Assert.Equal(["Appearance", "Dock", "Clock", "Developer"], Window.View.List("panes")!.Items);
         Assert.Equal(0, Window.View.List("panes")!.SelectedIndex);
         Assert.Equal("Appearance", Window.Title);
         Assert.False(Window.View.IsHidden("swatch1"));
@@ -250,7 +250,7 @@ public sealed class SettingsAppTests : IDisposable
     [Fact]
     public void ChoosingClockShowsItsPaneAlone()
     {
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 1));
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
 
         Assert.Equal("Clock", Window.Title);
         Assert.False(Window.View.IsHidden("utcLabel"));
@@ -278,7 +278,7 @@ public sealed class SettingsAppTests : IDisposable
     [Fact]
     public void DeveloperShowsItsPaneAloneAndStartsOff()
     {
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 3));
 
         Assert.Equal("Developer", Window.Title);
         Assert.False(Window.View.IsHidden("developerOn"));
@@ -312,9 +312,26 @@ public sealed class SettingsAppTests : IDisposable
         system.Developer.Problem = "there's no network device to listen on";
         system.Developer.Trust.Trust("0123456789abcdef0123456789abcdef");
 
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 3));
 
         Assert.Equal("Not listening: there's no network device to listen on. 1 computer is trusted.", Window.View.Text("developerStatus"));
+    }
+
+    [Fact]
+    public void DockShowsItsModesAndSavesTheOneChosen()
+    {
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 1));
+        Assert.Equal("Dock", Window.Title);
+        Assert.True(Window.View.IsSelected("dockAlways"));
+        Assert.True(Window.View.IsHidden("utcOffset"));
+
+        Send(new UIEvent(UIEventKind.Pressed, "dockDodge"));
+
+        Assert.Equal(DockMode.Dodge, DesktopAppearance.Current.Dock);
+        Assert.True(Window.View.IsSelected("dockDodge"));
+        Assert.False(Window.View.IsSelected("dockAlways"));
+        Assert.StartsWith("The dock slides away while a window", Window.View.Text("dockAbout"));
+        Assert.Contains("dock=\"dodge\"", File.ReadAllText(DesktopAppearance.SettingsPath!));
     }
 
     private void Send(UIEvent uiEvent) => Window.EventHandler!(Window, uiEvent);

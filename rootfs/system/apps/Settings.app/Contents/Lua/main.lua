@@ -1,8 +1,9 @@
 -- Settings: panes in a sidebar, as GNOME Settings has them. Appearance holds
--- the desktop's look, light or dark, and its accent color; Clock holds the
--- clock's offset from UTC; Developer turns on developer mode, for vdb. Each
--- look and clock choice applies at once and is saved in /mnt/user/settings,
--- as the appearance and clock commands' are; developer mode isn't saved.
+-- the desktop's look, light or dark, and its accent color; Dock, how the dock
+-- behaves; Clock holds the clock's offset from UTC; Developer turns on
+-- developer mode, for vdb. Each look, dock, and clock choice applies at once
+-- and is saved in /mnt/user/settings, as the appearance and clock commands'
+-- are; developer mode isn't saved.
 
 local window = venture.ui.open("main.uix")
 
@@ -135,6 +136,32 @@ end)
 -- The time shown keeps up, as the menu bar's does.
 window:every(30, function() showClock() end)
 
+-- The dock: always there, keeping windows above it; hiding until the pointer
+-- reaches the bottom of the screen; or hiding while a window would cover it.
+local DOCK_MODES = {
+  { button = "dockAlways", mode = "always",
+    about = "Zoomed and new windows stop above the dock." },
+  { button = "dockAutoHide", mode = "autohide",
+    about = "The dock slides away, and comes back when the pointer reaches the bottom of the screen." },
+  { button = "dockDodge", mode = "dodge",
+    about = "The dock slides away while a window would cover it, and comes back at the bottom of the screen too." },
+}
+
+local function showDock()
+  local current = venture.appearance().dock
+  for _, choice in ipairs(DOCK_MODES) do
+    window:setChecked(choice.button, choice.mode == current)
+    if choice.mode == current then window:setText("dockAbout", choice.about) end
+  end
+end
+
+for _, choice in ipairs(DOCK_MODES) do
+  window:on(choice.button, function()
+    local ok, problem = venture.setAppearance{ dock = choice.mode }
+    if ok then showDock() else window:setText("dockAbout", problem) end
+  end)
+end
+
 -- Developer mode, for vdb: on or off, and what it's doing. It lasts until
 -- VentureOS restarts, like everything else in memory; init.lua can turn it on
 -- at every boot.
@@ -182,6 +209,7 @@ local PANES = {
       "wallpaperName",
     },
   },
+  { name = "Dock", controls = { "dockHeading", "dockAlways", "dockAutoHide", "dockDodge", "dockAbout" } },
   { name = "Clock", controls = { "offsetHeading", "utcLabel", "utcOffset", "clockShown" } },
   {
     name = "Developer",
@@ -212,6 +240,7 @@ window:on("panes", function(event)
 end)
 
 show()
+showDock()
 showClock()
 showDeveloper()
 showPane(1)

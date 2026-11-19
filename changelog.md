@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.304
+
+- The dock can hide: Settings ▸ Dock offers Always visible, as before; Hide automatically, which slides it away until the pointer reaches the bottom of the screen; and Hide when a window covers it. A hidden dock lets windows zoom to the bottom of the screen. The choice is saved with the look.
+- Scripts can read and set it as `dock` in `venture.appearance()` and `venture.setAppearance{ dock = "always" }`, `"autohide"`, or `"dodge"`.
+
 ## 0.7.303
 
 - The menu bar is Files' top panel: it's there while Files runs, which VentureOS sees to, and it looks and works as before, menus, shortcuts, and Alt with a letter included. If Files stops, the bar is back as soon as Files is.
