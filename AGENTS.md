@@ -3,7 +3,7 @@
 ## Project Structure
 
 VentureOS is a hobby operating system written in C# on the  
-[Cosmos](https://github.com/CosmosOS/Cosmos) gen3 framework (`Cosmos.Sdk` 3.0.97, .NET 10). Cosmos compiles the kernel ahead of time to an ELF, which Limine boots from an ISO. It targets x64 and ARM64 and runs in QEMU. Write the name as **VentureOS** in prose; the project is `Venture.OS`, the assembly is  
+[Cosmos](https://github.com/CosmosOS/Cosmos) gen3 framework (`Cosmos.Sdk` 3.0.99, .NET 10). Cosmos compiles the kernel ahead of time to an ELF, which Limine boots from an ISO. It targets x64 and ARM64 and runs in QEMU. Write the name as **VentureOS** in prose; the project is `Venture.OS`, the assembly is  
 `Venture`, and namespaces start with `Venture.OS`.
 
 Every .NET project lives in its own folder, under `src/`, or `tests/` for tests, and is listed in `src/Venture.slnx`:

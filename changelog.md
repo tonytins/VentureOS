@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.402
+
+- Updated to Cosmos 3.0.99.
+
 ## 0.7.304
 
 - The dock can hide: Settings ▸ Dock offers Always visible, as before; Hide automatically, which slides it away until the pointer reaches the bottom of the screen; and Hide when a window covers it. A hidden dock lets windows zoom to the bottom of the screen. The choice is saved with the look.

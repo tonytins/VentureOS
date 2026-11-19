@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-17 · **Change:** minor (pictures) · **Target:** Cosmos gen3 3.0.97, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (platform) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-18)
 
@@ -19,7 +19,7 @@ the code wins and this page is out of date.
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
-- **Platform:** Cosmos gen3 3.0.97 on .NET 10, compiled ahead of time to an
+- **Platform:** Cosmos gen3 3.0.99 on .NET 10, compiled ahead of time to an
   ELF kernel that Limine boots from an ISO. x64 is the primary target; ARM64
   builds but hasn't been booted.
 - **Boot:** nine steps, three critical (RAM filesystem, timer, shell) and six
@@ -1628,6 +1628,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Platform: Cosmos 3.0.99, from 3.0.97, with no code changes. |
 | 2026-11-19 | minor | Desktop (§9): the dock's modes, always visible, hide automatically, or hide when covered, sliding; `dock` in `appearance.xml`; Settings' Dock pane. |
 | 2026-11-19 | minor | Desktop (§9): the menu bar is Files' top panel (`MenuBarApp`, `BarShows`); one top panel at a time. |
 | 2026-11-19 | minor | Desktop (§9): the dock is `Dock.app`, a kept process, filled through `venture.desktop`; the C# `Dock` is gone. |
