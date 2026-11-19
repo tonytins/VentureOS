@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.410
+
+- Apps' string tables (`_<id>_<name>.cst`) are read to the full CST specification, by CST.NET: a key on the line above its value, and numbered keys such as `3.label`, now find their text, where before they were reported and skipped.
+
 ## 0.7.409
 
 - Roundhouse can run the app you're editing on VentureOS itself: Run ▸ Run on VentureOS (Ctrl+Alt+R) sends it, unsaved edits included, to a VentureOS running under `./run.sh --vdb`, opens it, and shows what it prints in a window until you stop. VentureOS trusts it as the same computer as the vdb tool.

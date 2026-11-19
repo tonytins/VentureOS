@@ -1,4 +1,5 @@
 using System.Globalization;
+using CSTNet;
 
 namespace Venture.OS.Interface.Strings;
 
@@ -10,13 +11,14 @@ namespace Venture.OS.Interface.Strings;
 /// <para>A table is a file named <c>_&lt;id&gt;_&lt;name&gt;.cst</c>; only the number counts. A
 /// <c>&lt;String table="1" index="3"/&gt;</c> (or <c>table="UIText:1"</c>, the number at the end) finds the value
 /// with the key <c>3</c> in table 1. Each table is read once, the first time it's asked for.</para>
-/// <para>Text that isn't there is missing, so the view can show and list it. A table's problems, and a table name
-/// without a number, are kept in <see cref="Problems"/> for the app to be told.</para>
+/// <para>CSTNet reads each table to the CST specification, so a key above its value, or a numbered key such as
+/// <c>3.label</c>, finds its value too. Text that isn't there is missing, so the view can show and list it. A table's
+/// problems, and a table name without a number, are kept in <see cref="Problems"/> for the app to be told.</para>
 /// </remarks>
 public sealed class StringTables(string folder)
 {
     private readonly string folder = folder ?? throw new ArgumentNullException(nameof(folder));
-    private readonly Dictionary<int, CstTable?> tables = [];
+    private readonly Dictionary<int, CSTTable?> tables = [];
     private readonly List<string> problems = [];
     private Dictionary<int, string>? files;
 
@@ -35,10 +37,11 @@ public sealed class StringTables(string folder)
             return null;
         }
 
-        return Table(id)?.Values.GetValueOrDefault(resource.Index.ToString(CultureInfo.InvariantCulture));
+        var key = resource.Index.ToString(CultureInfo.InvariantCulture);
+        return Table(id) is { } table && table.TryGetValue(key, out var value) ? value : null;
     }
 
-    private CstTable? Table(int id)
+    private CSTTable? Table(int id)
     {
         if (tables.TryGetValue(id, out var table))
             return table;
@@ -48,9 +51,9 @@ public sealed class StringTables(string folder)
         {
             try
             {
-                table = CstTable.Read(File.ReadAllText(path));
+                table = CSTTable.Parse(File.ReadAllText(path));
                 foreach (var problem in table.Problems)
-                    problems.Add($"{Path.GetFileName(path)}, {char.ToLowerInvariant(problem[0])}{problem[1..]}");
+                    problems.Add($"{Path.GetFileName(path)}, {Describe(problem)}");
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -61,6 +64,15 @@ public sealed class StringTables(string folder)
         tables[id] = table;
         return table;
     }
+
+    // CSTNet reports a problem's kind, line, and key; these say what the reader did about it.
+    private static string Describe(CSTProblem problem) => problem.Kind switch
+    {
+        CSTProblemKind.UnclosedValue => $"line {problem.Line}: a value is never closed, so it's skipped.",
+        CSTProblemKind.RepeatedKey =>
+            $"line {problem.Line}: the key \"{problem.Key}\" is used again, so this value is skipped and the first kept.",
+        _ => $"line {problem.Line}: {problem.Kind}.",
+    };
 
     // The tables in the folder by number, worked out once. A second file with a number already taken is reported.
     private Dictionary<int, string> Files()

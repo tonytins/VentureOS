@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (Run on VentureOS) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
-## Current state (2026-11-18)
+## Current state (2026-11-19)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
@@ -12,8 +12,8 @@ the code wins and this page is out of date.
   scripts and apps in `rootfs/`); a kernel-free library, `Venture.OS.Common`
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
-  tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,779 tests, and 190 for Roundhouse, including runs of
+  tables, needing only the BCL and CSTNet); and an xUnit v3 test project
+  for the library, `Venture.OS.Common.Tests` (1,872 tests, and 208 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -151,13 +151,13 @@ VentureOS/
 │  │  ├─ Processes/                Venture.OS.Processes: AppProcess and the Supervisor, which AppManager opens apps through
 │  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
 │  │                               and UiLibrary (venture.ui), all drawn through IPainter
-│  ├─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
+│  ├─ Venture.OS.Interface/        the interface formats: the BCL and CSTNet, AOT-compatible, warnings as errors
 │  │  ├─ UIScript.cs               Venture.OS.Interface: .uix (UIScript) documents, with menus, sidebars, and style roles
 │  │  ├─ UIDocument.cs             a .uix as an editor holds it: its exact text, where everything sits, and its UIScript
 │  │  ├─ Xml/FlatXmlEditor.cs      edits any flat XML's text in place, for UIDocument and InfoDocument
 │  │  ├─ UIScriptSchema.cs         the attributes each element takes, as UIScript reads them, for editors
 │  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
-│  │  └─ Strings/                  Venture.OS.Interface.Strings: CstTable (a transitional CST reader) and StringTables
+│  │  └─ Strings/                  Venture.OS.Interface.Strings: StringTables, over CSTNet's CSTTable
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
 │     ├─ Bundles/                  Venture.Roundhouse.Bundles: OpenBundle, a bundle's files and their unsaved edits
 │     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
@@ -234,7 +234,7 @@ flowchart TD
         Scripting --> Lua
     end
 
-    subgraph Formats["Venture.OS.Interface (only the BCL)"]
+    subgraph Formats["Venture.OS.Interface (the BCL and CSTNet)"]
         UIScript["UIScript · FlatXml · CST tables"]
     end
     Common -- reads --> UIScript
@@ -285,12 +285,14 @@ flowchart TD
    with the AOT analyzers and warnings as errors, so code the kernel
    couldn't compile ahead of time fails there first. Its root namespace is
    `Venture.OS`, so a type keeps its namespace when it moves into it.
-7. **`Venture.OS.Interface` references nothing but the BCL.** The formats
-   interfaces are written in (UIScript, flat XML, and CST tables) read and
-   test on their own, and VentureOS's drafts of them stay free of its
-   desktop and scripting. It builds like `Venture.OS.Common`, and its root
-   namespace is `Venture.OS.Interface`: UIScript at its root, the CST reader
-   in `Venture.OS.Interface.Strings`, and FlatXml in `Venture.OS.Interface.Xml`.
+7. **`Venture.OS.Interface` references nothing but the BCL and CSTNet.** The
+   formats interfaces are written in (UIScript, flat XML, and CST tables) read
+   and test on their own, and VentureOS's drafts of them stay free of its
+   desktop and scripting. CSTNet, CST.NET's package, is the format's own
+   reader and has no dependencies. It builds like `Venture.OS.Common`, and its
+   root namespace is `Venture.OS.Interface`: UIScript at its root, the CST
+   tables in `Venture.OS.Interface.Strings`, and FlatXml in
+   `Venture.OS.Interface.Xml`.
 
 ---
 
@@ -1259,12 +1261,11 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   from the CST tables beside the document, named `_<id>_<name>.cst`
   (`StringTables`); for an app, its `Contents/Resources`. The table is the
   number at the end of the `<String>`'s `table` and the key is its `index`,
-  as Hudini's hosts read The Sims Online's. `CstTable` reads the settled part
-  of the new CST specification (keys on the value's line, values across
-  lines, comments, empty values, a repeated key, an unclosed value) and
-  reports and skips the rest, such as keys above values, so a table it
-  reads means the same to a full reader; CST.NET replaces it once it
-  follows the specification. Table problems and missing strings go to the
+  as Hudini's hosts read The Sims Online's. CST.NET (`CSTNet`) reads each
+  table to the CST specification, including keys above their values and
+  numbered keys such as `3.label`; `StringTables` reads the file itself as
+  UTF-8 and looks values up by key, not by position. A repeated key keeps
+  the first value, and a value never closed is skipped. Table problems and missing strings go to the
   app's messages. After the pointer rests half a second on a control with
   hover text, `WindowManager` shows it in a box below the pointer, drawn
   over everything but the pointer, until the pointer moves or presses.
@@ -1722,6 +1723,7 @@ in the clear (2026-11-11).
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
+| 2026-11-19 | minor | Layout (§2, §3), hover text (§9): CST.NET 2.1 (`CSTNet` 2.1.200) reads CST tables to the specification, in place of the transitional `CstTable`; rule 7 allows it in `Venture.OS.Interface`. |
 | 2026-11-17 | minor | Menu bar (§9): VentureOS's icon in place of the VentureOS menu's name, a silhouette while open, and in About VentureOS; icons' smoothed edges unmixed from the key. |
 | 2026-11-17 | minor | Pictures (§9): `DesktopImage`, `IPainter.DrawImage`, and the kernel's `PngLoader`; apps' icons in the dock and About (`DesktopIcon`: full backgrounds rounded to a tile, `#00FF01` clear for shaped icons), a `<Visual>`'s supplied image, and the Earthset wallpaper over the sky. |
 | 2026-11-17 | minor | Platform: Cosmos 3.0.97, from 3.0.94. |

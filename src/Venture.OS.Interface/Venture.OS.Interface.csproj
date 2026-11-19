@@ -2,9 +2,9 @@
 
   <!--
     The formats VentureOS's interfaces are written in: UIScript (.uix), which must keep matching Hudini's reader,
-    the flat XML it and Info.xml use, and CST string tables. It needs nothing but the BCL: no Cosmos, no Lua, and
-    nothing else of VentureOS's, so the formats can be read and tested on their own. The kernel compiles it ahead
-    of time, like Venture.OS.Common.
+    the flat XML it and Info.xml use, and CST string tables, which CSTNet reads. It needs nothing but the BCL and
+    CSTNet: no Cosmos, no Lua, and nothing else of VentureOS's, so the formats can be read and tested on their own.
+    The kernel compiles it ahead of time, like Venture.OS.Common.
   -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -15,5 +15,10 @@
     <IsAotCompatible>true</IsAotCompatible>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The CST specification's reader, from the format's own project; it has no dependencies of its own. -->
+    <PackageReference Include="CSTNet" Version="2.1.200" />
+  </ItemGroup>
 
 </Project>

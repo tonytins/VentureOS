@@ -31,9 +31,9 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   in [docs/uiscript](docs/uiscript/README.md), where each addition is drafted  
   for Hudini; what editors build on (`UIDocument`, which edits a `.uix` in  
   place, and `UIScriptSchema`, each element's attributes, which must match  
-  the reader); the flat XML reader (`Xml/`); and a transitional reader for  
-  CST string tables (`Strings/`), until CST.NET follows the new CST  
-  specification. It references nothing but the BCL.
+  the reader); the flat XML reader (`Xml/`); and CST string tables  
+  (`Strings/`), read by [CST.NET](https://github.com/tonytins/cstdotnet)  
+  (the `CSTNet` package). It references nothing but the BCL and CSTNet.
 - `src/Venture.Roundhouse` is Roundhouse, VentureOS's IDE: an Avalonia app  
   for Linux, macOS, and Windows that draws with `Venture.OS.Common`. Avalonia,  
   AvaloniaEdit, its TextMate add-on, and NLog are approved for it alone; the  

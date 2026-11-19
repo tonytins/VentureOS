@@ -40,11 +40,54 @@ public sealed class StringTablesTests : IDisposable
     [Fact]
     public void ReportsATablesProblemsWithItsFileName()
     {
-        File.WriteAllText(Path.Combine(root, "_1_settings.CST"), "1 ^one^\n^keyless^\n");
+        File.WriteAllText(Path.Combine(root, "_1_settings.CST"), "1 ^one^\n1 ^again^\n");
         StringTables tables = new(root);
 
         Assert.Equal("one", tables.Find(new UIStringResource("one", "1", 1)));
-        Assert.StartsWith("_1_settings.CST, line 2:", Assert.Single(tables.Problems), StringComparison.Ordinal);
+        var problem = Assert.Single(tables.Problems);
+        Assert.StartsWith("_1_settings.CST, line 2:", problem, StringComparison.Ordinal);
+        Assert.Contains("\"1\"", problem, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReadsKeysTheTransitionalReaderSkipped()
+    {
+        // A key above its value, and a numbered key with a name, as The Sims Online's and SSC's tables have them.
+        File.WriteAllText(Path.Combine(root, "_1_settings.cst"), "3\n^A key above its value^\n4.label ^A numbered key^\n");
+        StringTables tables = new(root);
+
+        Assert.Equal("A key above its value", tables.Find(new UIStringResource("three", "1", 3)));
+        Assert.Equal("A numbered key", tables.Find(new UIStringResource("four", "1", 4)));
+        Assert.Empty(tables.Problems);
+    }
+
+    [Fact]
+    public void ReadsValuesAcrossLinesAndSkipsComments()
+    {
+        File.WriteAllText(Path.Combine(root, "_1_settings.cst"), """
+            // A comment, as is a line starting with # and a /* */ block.
+            /* 1 ^not a value^ */
+            2 ^A value that runs
+              across lines^
+            3 ^Sell %s for $%d^
+            """);
+        StringTables tables = new(root);
+
+        Assert.Null(tables.Find(new UIStringResource("one", "1", 1)));
+        Assert.Equal("A value that runs\n  across lines", tables.Find(new UIStringResource("two", "1", 2)));
+        Assert.Equal("Sell %s for $%d", tables.Find(new UIStringResource("three", "1", 3)));
+        Assert.Empty(tables.Problems);
+    }
+
+    [Fact]
+    public void ReportsAndSkipsAValueNeverClosed()
+    {
+        File.WriteAllText(Path.Combine(root, "_1_settings.cst"), "1 ^unfinished\n2 ^two^\n");
+        StringTables tables = new(root);
+
+        Assert.Null(tables.Find(new UIStringResource("one", "1", 1)));
+        Assert.Equal("two", tables.Find(new UIStringResource("two", "1", 2)));
+        Assert.Equal("_1_settings.cst, line 1: a value is never closed, so it's skipped.", Assert.Single(tables.Problems));
     }
 
     [Fact]

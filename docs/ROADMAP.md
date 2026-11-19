@@ -261,6 +261,8 @@ approved for the `vdb` tool alone.
   encrypted with them, the identity no longer sent.
 - [x] Roundhouse sends the app it has open to a running VentureOS over vdb,
   and shows what it prints.
+- [x] CST.NET 2.1 for CST tables, in place of the transitional reader, so
+  they're read to the full specification.
 
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer
@@ -281,8 +283,6 @@ Worth doing someday, in no order, and not yet given a release.
 - **Published ISOs** from tagged releases.
 - **Apps declaring the VentureOS they need,** with a rule for deprecating
   what they use.
-- **The full CST specification,** through CST.NET once it follows it, in
-  place of the transitional reader.
 - **Text:** selecting from read-only text, such as Terminal's output;
   dragging to select in the title field; double-clicking a word.
 - **Windows:** resizing Terminal; collapsing a sidebar in a narrow window.
@@ -309,6 +309,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | patch | 0.7.4xx: CST.NET 2.1 (`CSTNet` 2.1.200) replaces the transitional CST reader, by my decision, and leaves Ideas. `Venture.OS.Interface` may reference it. |
 | 2026-11-19 | minor | 0.7.4xx is complete: Roundhouse runs the app it has open on VentureOS over vdb, with Common's client. The next band is the owner's to plan. |
 | 2026-11-19 | patch | 0.7.4xx: vdb/1 is sealed, with VentureOS's own SHA-256, HKDF, and ChaCha20-Poly1305, and the identity sent only at pairing. |
 | 2026-11-19 | patch | 0.7.4xx: panes are elements, and Roundhouse's designer shows a sidebar's rows and one pane at a time. |
