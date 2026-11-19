@@ -62,6 +62,7 @@ public sealed record ProcessEnding(EndingKind Kind, string Reason);
 public sealed class AppProcess
 {
     private IDisposable? resources;
+    private int depth;
 
     internal AppProcess(int id, Bundle bundle, RestartPolicy policy, TimeSpan started)
     {
@@ -92,8 +93,22 @@ public sealed class AppProcess
     /// <summary>How it ended, or <see langword="null"/> while it hasn't.</summary>
     public ProcessEnding? Ending { get; internal set; }
 
-    /// <summary>Whether it's starting or running, so its code may be called.</summary>
-    public bool IsAlive => State is ProcessState.Starting or ProcessState.Running;
+    /// <summary>Whether it's starting or running, and hasn't crashed, so its code may be called.</summary>
+    public bool IsAlive => State is (ProcessState.Starting or ProcessState.Running) && CrashReason is null;
+
+    /// <summary>Whether its code is running right now; it can't end then.</summary>
+    public bool IsBusy => depth > 0;
+
+    /// <summary>What it owns, such as its interpreter, given by <see cref="Attach"/>, or <see langword="null"/>.</summary>
+    public IDisposable? Owned => resources;
+
+    /// <summary>
+    /// Why it crashed, once its code has failed too often, before the supervisor ends it; it takes no work meanwhile.
+    /// </summary>
+    public string? CrashReason { get; internal set; }
+
+    /// <summary>When its code last failed, within the supervisor's window.</summary>
+    internal List<TimeSpan> Faults { get; } = [];
 
     /// <summary>
     /// Gives the process what its code set up, such as its interpreter, to be disposed when it ends. One thing at a
@@ -113,7 +128,16 @@ public sealed class AppProcess
         if (!IsAlive)
             return false;
 
-        work();
+        depth++;
+        try
+        {
+            work();
+        }
+        finally
+        {
+            depth--;
+        }
+
         return true;
     }
 

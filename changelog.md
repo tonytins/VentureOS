@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.203
+
+- An app whose code keeps failing, three times within a minute, is closed, and the desktop says it crashed, in front of the errors that led to it. An app that fails now and then carries on, as before.
+- Files comes back at once when it's closed or crashes, and if it can't start, VentureOS keeps trying, waiting longer each time, as before.
+
 ## 0.7.105
 
 - `vdb`, in `tools/vdb`, sends an app from your computer to a running VentureOS: `vdb install Dice.app --launch` installs and opens it, and `--for 5` or `--follow` prints what it prints. It never asks anything, exits with 1 and VentureOS's reason when something's refused, and `vdb identity --lua` prints the lines that make your own builds trust your computer. See [its README](tools/vdb/README.md).

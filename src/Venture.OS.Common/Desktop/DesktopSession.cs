@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Venture.OS.Bundles;
 using Venture.OS.Interface;
+using Venture.OS.Processes;
 using Venture.OS.Time;
 
 namespace Venture.OS.Desktop;
@@ -38,10 +39,6 @@ public sealed class DesktopSession
 
     /// <summary>The app menu's item that asks the app for a new window, for apps that said how.</summary>
     public const string NewWindowItem = "newWindow";
-
-    // How long to wait before starting the fallback app again after each failure in a row; the last one repeats.
-    private static readonly TimeSpan[] RestartDelays =
-        [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30)];
 
     private static readonly long Started = Stopwatch.GetTimestamp();
 
@@ -133,10 +130,15 @@ public sealed class DesktopSession
     // desktop opens, still makes its app the active one.
     private DesktopWindow? lastFocused;
 
-    // The fallback app's failures to start in a row, when to try next, and the last reason shown.
-    private int fallbackFailures;
-    private TimeSpan nextFallbackStart;
-    private string? lastFallbackProblem;
+    // Whether the fallback app has been handed to the supervisor to keep, which then starts it again whenever it ends.
+    private bool fallbackKept;
+
+    // Apps that crashed, and kept apps that failed to start, since the last frame, to report after its messages; and
+    // the last reason a kept app couldn't start, so a reason is shown once.
+    private readonly List<AppProcess> crashed = [];
+    private readonly List<AppProcess> failedToStart = [];
+    private readonly Dictionary<string, string> startProblems = new(StringComparer.Ordinal);
+    private bool watching;
 
     // How many apps were open, and which windows were minimized, when the dock was last filled, so it's filled again
     // only when one of those changes.
@@ -413,6 +415,20 @@ public sealed class DesktopSession
     public void StartFallbackApp() => KeepFallbackRunning();
 
     /// <summary>
+    /// Stops listening to the apps' processes, as the desktop closes. The apps keep running, and the supervisor keeps
+    /// the fallback app, so the next desktop picks them up.
+    /// </summary>
+    public void Leave()
+    {
+        if (!watching || apps is null)
+            return;
+
+        apps.Supervisor.Started -= OnProcessStarted;
+        apps.Supervisor.Ended -= OnProcessEnded;
+        watching = false;
+    }
+
+    /// <summary>
     /// Asks for the next frame to be drawn, for a change made from outside a frame, such as vdb opening an alert or
     /// an app between frames.
     /// </summary>
@@ -489,9 +505,16 @@ public sealed class DesktopSession
 
         QuitAppsWithoutWindows(happened);
         var restarted = KeepFallbackRunning();
+        restarted |= apps?.Supervisor.Tick() ?? false;
+
+        // Before the apps' messages, since it shows what the app said while it failed.
+        ReportStartFailures();
         if ((apps is not null && apps.Running.Count != dockedRunning) || MinimizedChanged())
             RefreshDock();
         ShowMessages(ActiveApp ?? "VentureOS", ActiveApp);
+
+        // After the apps' own messages, so the crash that explains them is in front of them.
+        ReportCrashes();
 
         if (Windows.Focused != lastFocused)
         {
@@ -755,7 +778,7 @@ public sealed class DesktopSession
         if (app == FallbackApp)
             return;
 
-        apps?.CloseApp(app, appOutput, Processes.EndingKind.Quit);
+        apps?.CloseApp(app, appOutput, EndingKind.Quit);
 
         // Its windows go with it.
         foreach (var window in (DesktopWindow[])[.. Windows.Windows])
@@ -781,38 +804,94 @@ public sealed class DesktopSession
     /// can't keep the desktop busy. A failure is shown once, and again only when the reason changes.
     /// </summary>
     /// <returns>Whether it started.</returns>
+    /// <summary>
+    /// Hands the fallback app to the supervisor to keep, the first time: from then on the supervisor starts it again
+    /// whenever it ends, at once after it's closed, with growing waits while it fails.
+    /// </summary>
+    /// <returns>Whether it started now.</returns>
     private bool KeepFallbackRunning()
     {
-        if (FallbackApp is not { } fallback || apps is null || IsAppOpen(fallback))
+        if (FallbackApp is not { } fallback || apps is null || fallbackKept)
             return false;
 
-        var now = Clock();
-        if (fallbackFailures > 0 && now < nextFallbackStart)
+        Watch();
+        fallbackKept = true;
+        if (IsAppOpen(fallback))
             return false;
 
-        if (apps.OpenApp(fallback, workingDirectory, appOutput))
+        if (!apps.OpenApp(fallback, workingDirectory, appOutput, explainNeeds: true, RestartPolicy.Always))
+            return false;
+
+        ShowMessages(fallback, fallback);
+        RefreshDock();
+        return true;
+    }
+
+    private void Watch()
+    {
+        if (watching || apps is null)
+            return;
+
+        apps.Supervisor.Started += OnProcessStarted;
+        apps.Supervisor.Ended += OnProcessEnded;
+        watching = true;
+    }
+
+    private void OnProcessStarted(AppProcess process) => startProblems.Remove(process.Bundle.Identifier);
+
+    private void OnProcessEnded(AppProcess process)
+    {
+        switch (process.Ending)
         {
-            fallbackFailures = 0;
-            lastFallbackProblem = null;
-            ShowMessages(fallback, fallback);
-            RefreshDock();
-            return true;
+            case { Kind: EndingKind.Crashed }:
+                crashed.Add(process);
+                break;
+
+            // Reported after the frame, with what the app said while it failed.
+            case { Kind: EndingKind.FailedToStart } when process.Policy == RestartPolicy.Always:
+                failedToStart.Add(process);
+                break;
+        }
+    }
+
+    /// <summary>Says which apps crashed, and that a kept one is starting again.</summary>
+    private void ReportCrashes()
+    {
+        if (crashed.Count == 0)
+            return;
+
+        foreach (var process in crashed)
+        {
+            var reason = process.Ending!.Reason;
+            Windows.Open(DesktopAlert.Create(
+                process.Name,
+                process.Policy == RestartPolicy.Always ? $"{reason} It's starting again." : reason));
         }
 
-        var delay = RestartDelays[Math.Min(fallbackFailures, RestartDelays.Length - 1)];
-        fallbackFailures++;
-        nextFallbackStart = now + delay;
+        crashed.Clear();
+    }
+
+    /// <summary>Says why a kept app couldn't start, and when it'll be tried again, once for each new reason.</summary>
+    private void ReportStartFailures()
+    {
+        if (failedToStart.Count == 0 || apps is null)
+            return;
 
         var problem = string.Join('\n', appOutput.Take());
-        if (problem != lastFallbackProblem)
+        foreach (var process in failedToStart)
         {
-            lastFallbackProblem = problem;
+            var identifier = process.Bundle.Identifier;
+            if (startProblems.TryGetValue(identifier, out var shown) && shown == problem)
+                continue;
+
+            startProblems[identifier] = problem;
+            var wait = (apps.Supervisor.NextStart(identifier) ?? apps.Supervisor.Now) - apps.Supervisor.Now;
             Windows.Open(DesktopAlert.Create(
-                fallback,
-                $"{fallback} didn't start. VentureOS will keep trying, next in {delay.TotalSeconds:0} seconds.\n{problem}".TrimEnd()));
+                process.Name,
+                $"{process.Name} didn't start. VentureOS will keep trying, next in {wait.TotalSeconds:0} seconds.\n{problem}".TrimEnd()));
         }
 
-        return false;
+        failedToStart.Clear();
     }
 
     /// <summary>Whether the minimized windows differ from those the dock shows.</summary>

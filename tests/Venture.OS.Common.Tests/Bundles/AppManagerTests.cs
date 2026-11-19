@@ -201,6 +201,53 @@ public sealed class AppManagerTests : IDisposable
     }
 
     [Fact]
+    public void AnAppWhoseCodeKeepsFailingCrashes()
+    {
+        App("Notes", "shell", """venture.command { name = "fail", run = function() error("nope", 0) end }""");
+        manager.OpenApp("Notes", root, output);
+        var process = manager.Running[0].Process;
+
+        shell.Execute("fail");
+        shell.Execute("fail");
+        manager.Supervisor.Tick();
+        Assert.True(manager.IsOpen("dev.example.notes"));
+
+        shell.Execute("fail");
+        manager.Supervisor.Tick();
+
+        Assert.False(manager.IsOpen("dev.example.notes"));
+        Assert.Equal(EndingKind.Crashed, process.Ending!.Kind);
+        Assert.False(registry.TryGet("fail", out _));
+    }
+
+    [Fact]
+    public void AFailingStartupIsNotAFault()
+    {
+        App("Broken", "", """error("not today", 0)""");
+        List<AppProcess> ended = [];
+        manager.Supervisor.Ended += ended.Add;
+
+        manager.OpenApp("Broken", root, output);
+
+        Assert.Equal(EndingKind.FailedToStart, Assert.Single(ended).Ending!.Kind);
+    }
+
+    [Fact]
+    public void AKeptAppReappearsAfterItsRestart()
+    {
+        App("Notes", "", "");
+        manager.OpenApp("Notes", root, output, policy: RestartPolicy.Always);
+        var first = manager.Running[0].Process;
+
+        manager.CloseApp("Notes", output);
+        manager.Supervisor.Tick();
+
+        var again = Assert.Single(manager.Running);
+        Assert.NotSame(first, again.Process);
+        Assert.True(manager.IsOpen("dev.example.notes"));
+    }
+
+    [Fact]
     public void UsesTheSupervisorItIsGiven()
     {
         App("Notes", "", "");

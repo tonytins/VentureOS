@@ -224,7 +224,7 @@ desktop keeps running, restarts at once. It's what the next band stands on,
 and leaves room for apps to run independently later. Its
 [design](./design/2026-11-18-processes-design.md) has the rules.
 
-- [ ] Processes and a supervisor: crashes noticed, with the reason, and
+- [x] Processes and a supervisor: crashes noticed, with the reason, and
   restart policies, `never` and `always`.
 - [ ] `ps` and `kill`, and `venture.processes()` and `venture.kill(id)`.
 

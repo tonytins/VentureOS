@@ -191,6 +191,7 @@ public sealed class SimulatedRun : IDisposable, IShellHost
     public void Dispose()
     {
         stopped = true;
+        Session.Leave();
         InLook(() =>
         {
             foreach (var app in Apps.Running.ToList())

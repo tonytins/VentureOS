@@ -135,7 +135,12 @@ public sealed class AppManager(
     /// read about them.
     /// </param>
     /// <returns><see langword="true"/> if it opened.</returns>
-    public bool OpenApp(string target, string currentDirectory, IShellOutput output, bool explainNeeds = true)
+    /// <param name="policy">
+    /// <see cref="RestartPolicy.Always"/> for an app the desktop keeps running, which the supervisor starts again
+    /// whenever it ends.
+    /// </param>
+    public bool OpenApp(
+        string target, string currentDirectory, IShellOutput output, bool explainNeeds = true, RestartPolicy policy = RestartPolicy.Never)
     {
         ArgumentException.ThrowIfNullOrEmpty(target);
         ArgumentNullException.ThrowIfNull(currentDirectory);
@@ -170,13 +175,12 @@ public sealed class AppManager(
             && (userAppsDirectory is null || !ShellPaths.IsWithin(bundle.Path, userAppsDirectory)))
             output.WriteLine($"{bundle.Name} needs {DescribeNeeds(bundle.Needs)}.");
 
-        LuaOwner? owner = null;
-        var process = Supervisor.Start(bundle, RestartPolicy.Never, starting =>
+        var process = Supervisor.Start(bundle, policy, starting =>
         {
             var library = libraryDirectory is null
                 ? $"{bundle.Path}/Contents/Lua"
                 : $"{bundle.Path}/Contents/Lua;{libraryDirectory}";
-            owner = new(
+            LuaOwner owner = new(
                 bundle.Name,
                 $"{bundle.Name} closes",
                 mayReplaceScripts: false,
@@ -189,11 +193,16 @@ public sealed class AppManager(
                 runShell,
                 openShell);
 
-            // Every run of the app's code, from now on, goes through its process.
+            // Every run of the app's code, from now on, goes through its process, and a run that fails once the app is
+            // running counts toward a crash. A failing startup is the startup's to report.
             owner.Gate = run =>
             {
                 var finished = false;
-                return starting.Run(() => finished = run()) && finished;
+                if (!starting.Run(() => finished = run()))
+                    return false;
+                if (!finished && starting.State == ProcessState.Running)
+                    Supervisor.ReportFault(starting);
+                return finished;
             };
             starting.Attach(owner);
             AppLibrary.Open(owner.Interpreter.State, bundle, system?.Root);
@@ -207,11 +216,12 @@ public sealed class AppManager(
 
         if (process.Ending is { } ending)
         {
-            output.WriteLine($"open: {ending.Reason}");
+            // A kept app's failures are reported by whoever keeps it, the same way each time it's tried.
+            if (policy == RestartPolicy.Never)
+                output.WriteLine($"open: {ending.Reason}");
             return false;
         }
 
-        running.Add(new RunningApp(bundle, owner!, process));
         return true;
     }
 
@@ -245,9 +255,17 @@ public sealed class AppManager(
         return true;
     }
 
-    // An app leaves the list when its process ends, however it ends.
-    private void Watch(Supervisor watched) =>
+    // An app joins the list when its process starts, the supervisor's restarts included, and leaves it when its
+    // process ends, however it ends.
+    private void Watch(Supervisor watched)
+    {
+        watched.Started += started =>
+        {
+            if (started.Owned is LuaOwner owner)
+                running.Add(new RunningApp(started.Bundle, owner, started));
+        };
         watched.Ended += ended => running.RemoveAll(app => app.Process == ended);
+    }
 
     /// <summary>Whether an app with this identifier is open.</summary>
     public bool IsOpen(string identifier) => FindOpen(identifier) is not null;

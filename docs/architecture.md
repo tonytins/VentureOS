@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,653 tests, and 188 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,669 tests, and 188 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1317,10 +1317,10 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   its dock icon; it's
   first in the dock and always marked open; its menu shows whenever no
   other app is in front; it has New Window and no Quit; and closing its
-  last window leaves it running. If it isn't running, such as after
-  `close files`, or fails to start, the desktop keeps going and starts it
-  again, waiting 2, 5, 10, then every 30 seconds between failures, with one
-  message per new reason.
+  last window leaves it running. It's a kept process: after `close files`
+  it's back on the next frame, and if it fails to start, the desktop keeps
+  going while the supervisor tries again, waiting 2, 5, 10, then every 30
+  seconds, with one message per new reason.
 - **Quick Look** (`QuickLook`). A preview window for a path: a `.uix` file
   as its live interface, or why it can't show; text as its lines from the
   top, up to 64 KB; an app's name, identifier, version, and needs; a
@@ -1386,6 +1386,16 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   `AppProcess.Run`, which drops work for a process that has ended; that's the
   one place to change for apps to run on threads of their own. An app whose
   process ends, however, leaves `AppManager.Running`.
+- **Crashes:** a run of an app's code that fails once it's running (an error,
+  or its time limit) is a fault; the third within a minute marks it crashed.
+  It takes no more work, and `Supervisor.Tick` ends it, never in the middle of
+  its code or of a frame's events; the desktop then says so, in front of the
+  failures it explains. A failing startup ends it as failed to start.
+- **Kept apps:** the desktop opens its fallback app, Files, with the `Always`
+  policy, and the supervisor starts it again whenever it ends: at once when
+  it's closed or killed, or on its first crash; after 2, 5, 10, then every 30
+  seconds while it keeps failing; a minute of running settles it. The
+  desktop ticks the supervisor every frame, and the shell after each command.
 
 - **Finding an app:** by folder or `Info.xml` name in `/mnt/system/apps`,
   then `/mnt/user/apps`, ignoring case, or by path. A bundle opened by path
@@ -1565,6 +1575,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Apps (§9): crashes (three failures in a minute) and kept apps, restarted by the supervisor; Files is one. |
 | 2026-11-18 | minor | Apps (§9): every app runs as a process, through `AppManager.Supervisor` and its owner's `Gate`. |
 | 2026-11-18 | minor | vdb (§8.1): the `vdb` tool. Files (§9) starts without a window. |
 | 2026-11-18 | minor | vdb (§8.1): developer mode, the protocol in Common, the desktop's listener, the Trust alert, `developer.local.lua`, and `run.sh --vdb`. |

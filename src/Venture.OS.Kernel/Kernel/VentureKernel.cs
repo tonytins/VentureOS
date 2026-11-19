@@ -89,6 +89,10 @@ public class VentureKernel : Sys.Kernel, IShellHost
             // The shell step is critical, so boot panics before reaching here without a shell.
             var current = shell ?? throw new InvalidOperationException("The shell wasn't set up during boot.");
             current.Execute(input);
+
+            // Outside the desktop, the shell is what drives the system: apps that crashed during the command end, and
+            // kept apps that ended start again.
+            appManager?.Supervisor.Tick();
         }
         catch (Exception exception)
         {

@@ -143,6 +143,7 @@ internal sealed class DesktopCommand(
     {
         // vdb listens only while the desktop runs, since the shell's prompt can't check it while it waits.
         vdb()?.Stop();
+        session?.Leave();
         windows.IsShowing = false;
         session?.CloseDesktopWindows();
         foreach (var line in appOutput.Take())

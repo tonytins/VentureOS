@@ -49,7 +49,8 @@ public sealed class IdleFrameTests : IDisposable
         WindowManager windows = new(1024, 768);
         HeldOutput held = new();
         apps = new AppManager(
-            Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held));
+            Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held),
+            supervisor: new Venture.OS.Processes.Supervisor(() => now));
         session = new DesktopSession(1024, 768, apps, root, held, windows)
         {
             FallbackApp = "Shelf",

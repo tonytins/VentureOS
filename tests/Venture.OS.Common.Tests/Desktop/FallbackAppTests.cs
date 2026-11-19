@@ -42,7 +42,8 @@ public sealed class FallbackAppTests : IDisposable
 
         CommandRegistry registry = new();
         apps = new AppManager(
-            Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held));
+            Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held),
+            supervisor: new Venture.OS.Processes.Supervisor(() => now));
         session = new DesktopSession(800, 600, apps, root, held, windows)
         {
             FallbackApp = "Shelf",
@@ -181,6 +182,65 @@ public sealed class FallbackAppTests : IDisposable
 
         Assert.False(window.IsMinimized);
         Assert.Single(windows.Windows);
+    }
+
+    [Fact]
+    public void SaysWhenItCrashedAndStartsItAgain()
+    {
+        session.StartFallbackApp();
+        foreach (var window in (DesktopWindow[])[.. windows.Windows])
+            windows.Close(window);
+        var process = Assert.Single(apps.Running).Process;
+        for (var fault = 0; fault < Venture.OS.Processes.Supervisor.FaultsToCrash; fault++)
+            apps.Supervisor.ReportFault(process);
+
+        Frame();
+
+        var alert = windows.Windows.Single(window => window.View.Text("message")?.Contains("crashed", StringComparison.Ordinal) == true);
+        Assert.Equal("Shelf crashed: its code failed 3 times within a minute, so VentureOS closed it. It's starting again.",
+            alert.View.Text("message"));
+        Assert.True(apps.IsOpen("dev.example.shelf"));
+        Assert.NotSame(process, apps.Running[0].Process);
+    }
+
+    [Fact]
+    public void AnAppWhoseTimerKeepsFailingCrashesAndSaysSo()
+    {
+        var contents = Path.Combine(root, "apps", "Crasher.app", "Contents");
+        Directory.CreateDirectory(Path.Combine(contents, "Lua"));
+        Directory.CreateDirectory(Path.Combine(contents, "Resources"));
+        File.WriteAllText(Path.Combine(contents, "Info.xml"), """<App version="1"><Info identifier="dev.example.crasher" name="Crasher"/></App>""");
+        File.WriteAllText(Path.Combine(contents, "Resources", "main.uix"), """<UIScript><Window width="200" height="100"/></UIScript>""");
+        File.WriteAllText(Path.Combine(contents, "Lua", "main.lua"), """
+            local window = venture.ui.open("main.uix")
+            window:every(1, function() error("boom", 0) end)
+            """);
+        session.StartFallbackApp();
+        Assert.True(apps.OpenApp("Crasher", root, held));
+
+        for (var second = 0; second <= 4; second++)
+        {
+            now = TimeSpan.FromSeconds(second);
+            Frame();
+        }
+
+        // In front of the failures it explains.
+        Assert.False(apps.IsOpen("dev.example.crasher"));
+        Assert.Equal("Crasher crashed: its code failed 3 times within a minute, so VentureOS closed it.",
+            windows.Windows[^1].View.Text("message"));
+        Assert.Equal("Crasher", windows.Windows[^1].Title);
+    }
+
+    [Fact]
+    public void AnotherDesktopKeepsTheSameApp()
+    {
+        session.StartFallbackApp();
+        session.Leave();
+        DesktopSession next = new(800, 600, apps, root, held, windows) { FallbackApp = "Shelf", Clock = () => now };
+
+        next.StartFallbackApp();
+
+        Assert.Single(apps.Running);
     }
 
     [Fact]
