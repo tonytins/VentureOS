@@ -11,8 +11,9 @@ public protocol LineTransport: AnyObject {
 
 /// vdb's side of vdb/1: says hello, sends an app, opens it, and passes on what apps print.
 ///
-/// Lines starting `out ` can arrive at any time once VentureOS trusts the computer; they're handed to `output`
-/// wherever they come, and never taken for an answer.
+/// Hello, and pairing when the person at VentureOS has just chosen Trust, are plain text; every line after
+/// VentureOS's `hello` is sealed by a `VdbChannel`. Lines starting `out ` can arrive at any time once VentureOS trusts
+/// the computer; they're handed to `output` wherever they come, and never taken for an answer.
 public final class VdbClient {
     /// How long to wait for an answer, in seconds. VentureOS answers at once, except while it's checking an app.
     public var answerTimeout: Double = 30
@@ -27,38 +28,61 @@ public final class VdbClient {
     private let transport: LineTransport
     private let output: (String) -> Void
     private let status: (String) -> Void
+    private let makeNonce: () -> [UInt8]
     private var features: Set<String> = []
+    private var channel: VdbChannel?
 
     /// - Parameters:
     ///   - output: Given each line an app prints.
     ///   - status: Given what vdb is waiting for, such as to be trusted, for the person to read.
-    public init(transport: LineTransport, output: @escaping (String) -> Void, status: @escaping (String) -> Void = { _ in }) {
+    ///   - nonce: This computer's nonce for the connection; the system's generator unless a test fixes it.
+    public init(
+        transport: LineTransport, output: @escaping (String) -> Void, status: @escaping (String) -> Void = { _ in },
+        nonce: @escaping () -> [UInt8] = VdbChannel.randomNonce
+    ) {
         self.transport = transport
         self.output = output
         self.status = status
+        self.makeNonce = nonce
     }
 
-    /// Says hello, waiting while VentureOS asks whether to trust this computer.
+    /// Says hello by this computer's key ID, waiting while VentureOS asks whether to trust it and sending the identity
+    /// if VentureOS then asks for it, and seals the connection from VentureOS's `hello` on.
     public func hello(identity: String) throws {
         guard VdbIdentity.isIdentity(identity) else {
             throw VdbError.identity("\"\(identity)\" isn't an identity.")
         }
-        try transport.send("hello \(VdbProtocol.version) \(identity)")
+        let nonce = makeNonce()
+        try transport.send("hello \(VdbProtocol.version) \(VdbIdentity.keyID(for: identity)) \(Hex.encode(nonce))")
 
-        var answer = try answer(waiting: "hello")
+        var answer = try plainAnswer(waiting: "hello")
         if answer == "wait trust" {
             status("Waiting to be trusted: choose Trust on VentureOS.")
-            answer = try self.answer(waiting: "whether to trust this computer", timeout: trustTimeout)
+            answer = try plainAnswer(waiting: "whether to trust this computer", timeout: trustTimeout)
+        }
+        if answer == "pair" {
+            // The one time the identity crosses the network: VentureOS can't key the connection without it.
+            try transport.send("pair \(identity)")
+            answer = try plainAnswer(waiting: "pairing")
         }
 
         let words = answer.split(separator: " ").map(String.init)
-        guard words.first == "ok", words.count >= 2 else {
+        guard words.count == 3, words[0] == "hello" else {
             throw VdbError.unexpected(answer)
         }
         guard words[1] == VdbProtocol.version else {
             throw VdbError.unexpected("VentureOS speaks \(words[1]), and this vdb speaks \(VdbProtocol.version).")
         }
-        features = Set(words.dropFirst(2))
+        guard let serverNonce = Hex.decode(words[2]), serverNonce.count == VdbChannel.nonceSize else {
+            throw VdbError.unexpected(answer)
+        }
+        channel = try VdbChannel.forComputer(identity: identity, clientNonce: nonce, serverNonce: serverNonce)
+
+        let welcome = try self.answer(waiting: "hello").split(separator: " ").map(String.init)
+        guard welcome.first == "ok", welcome.count >= 2, welcome[1] == VdbProtocol.version else {
+            throw VdbError.unexpected(welcome.joined(separator: " "))
+        }
+        features = Set(welcome.dropFirst(2))
     }
 
     /// Sends an app and installs it, returning where VentureOS put it.
@@ -67,12 +91,12 @@ public final class VdbClient {
         try command("install \(bundle.name)")
 
         for file in bundle.files {
-            try transport.send("file \(file.path) \(file.contents.count)")
+            try sendLine("file \(file.path) \(file.contents.count)")
             var start = file.contents.startIndex
             while start < file.contents.endIndex {
                 let end = file.contents.index(start, offsetBy: VdbProtocol.maximumDataBytes, limitedBy: file.contents.endIndex)
                     ?? file.contents.endIndex
-                try transport.send("data " + file.contents[start..<end].base64EncodedString())
+                try sendLine("data " + file.contents[start..<end].base64EncodedString())
                 start = end
             }
             try command("end", waiting: "\(file.path)'s end")
@@ -102,12 +126,12 @@ public final class VdbClient {
                 if wait <= 0 { return }
             }
 
-            if let line = try transport.receive(timeout: wait) {
+            if let line = try receiveLine(timeout: wait) {
                 guard try isOutput(line) else {
                     throw VdbError.unexpected(line)
                 }
             } else if deadline.map({ $0.timeIntervalSinceNow > 0 }) ?? true {
-                try transport.send("")
+                try sendLine("")
             }
         }
     }
@@ -139,7 +163,7 @@ public final class VdbClient {
     /// Sends a command and takes its answer: `ok …`, or a refusal.
     @discardableResult
     private func command(_ line: String, waiting: String? = nil) throws -> String {
-        try transport.send(line)
+        try sendLine(line)
         let answer = try answer(waiting: waiting ?? line.split(separator: " ").first.map(String.init) ?? line)
         guard answer == "ok" || answer.hasPrefix("ok ") else {
             throw VdbError.unexpected(answer)
@@ -147,10 +171,35 @@ public final class VdbClient {
         return answer
     }
 
+    /// Sends a line, sealed once the connection is.
+    private func sendLine(_ line: String) throws {
+        try transport.send(channel?.seal(line) ?? line)
+    }
+
+    /// The next line, opened once the connection is sealed. One that doesn't open ends everything: it was cut off or
+    /// changed on the way, and nothing after it can be trusted.
+    private func receiveLine(timeout: Double) throws -> String? {
+        guard let line = try transport.receive(timeout: timeout) else { return nil }
+        guard let channel else { return line }
+        guard let opened = channel.open(line) else {
+            throw VdbError.connection("A line from VentureOS didn't open as this connection's; it was changed or cut off on the way.")
+        }
+        return opened
+    }
+
+    /// The next plain line before the connection is sealed, with refusals and closings thrown.
+    private func plainAnswer(waiting: String, timeout: Double? = nil) throws -> String {
+        guard let line = try transport.receive(timeout: timeout ?? answerTimeout) else {
+            throw VdbError.timedOut(waiting)
+        }
+        _ = try isOutput(line)
+        return line
+    }
+
     /// The next line that isn't an app's output, with refusals and closings thrown.
     private func answer(waiting: String, timeout: Double? = nil) throws -> String {
         while true {
-            guard let line = try transport.receive(timeout: timeout ?? answerTimeout) else {
+            guard let line = try receiveLine(timeout: timeout ?? answerTimeout) else {
                 throw VdbError.timedOut(waiting)
             }
             if try isOutput(line) {

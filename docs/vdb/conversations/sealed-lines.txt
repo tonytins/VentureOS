@@ -1,0 +1,17 @@
+# The bytes on the network, sealed by Python's cryptography package, so VentureOS and the vdb tool are each
+# checked against lines neither of them sealed. The lines inside are: ok vdb/1 install launch; launch Dice.app;
+# ok; out Rolled a 4; an empty line, which keeps the connection open; bye; ok.
+! identity 0123456789abcdef0123456789abcdef
+! trusted 0123456789abcdef0123456789abcdef
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
+< hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+! raw
+< sealed P5JJNdlZDVn2doje2r2vNk+Zb8JwSmkqCNEcCWp6XZt9st/gYyM+
+> sealed VBUQKEp0xjLYgWfXxjfYD6Z4Y8omUdYm8ziIvuYq0A==
+< sealed YqsriPODwIV77oyIHycPUAnE
+! print Rolled a 4
+< sealed F88yRZP1oIJF82H/EOVDq+ybVyBDEJWBY1kXyRnI
+> sealed IZWbDD67YbzzHicqdE7Gfw==
+> sealed t56Rd8jj0/MQhNKM7Jt0c8P0Vw==
+< sealed B9QBpMD+OdXUAR7Xo9TenS7o
+! closed

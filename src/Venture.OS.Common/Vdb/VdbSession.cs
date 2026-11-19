@@ -1,4 +1,5 @@
 using System.Text;
+using Venture.OS.Cryptography;
 
 namespace Venture.OS.Vdb;
 
@@ -8,6 +9,9 @@ namespace Venture.OS.Vdb;
 /// from the desktop's frame loop and tests can drive it directly.
 /// </summary>
 /// <remarks>
+/// <para>Only <c>hello</c>, and pairing a computer the person has just approved, are plain text. From VentureOS's
+/// <c>hello</c> on, every line is sealed with a <see cref="VdbChannel"/>; a line that doesn't open ends the connection
+/// at once, with nothing sent back, since a reason couldn't be trusted to reach the right party.</para>
 /// Every command is answered with <c>ok</c> or <c>error</c>, except <c>file</c> and <c>data</c>, whose answer comes
 /// at the file's <c>end</c>. An error ends the command, and a failed file or <c>commit</c> ends the install, but the
 /// connection stays, unless the error starts <c>error closing</c>. After that, or <c>bye</c>,
@@ -21,9 +25,13 @@ public sealed class VdbSession
     private readonly IVdbHost host;
     private readonly VdbTrust trust;
     private readonly Action<string> send;
-    private readonly VdbLineReader reader = new();
+    private readonly Action<Span<byte>> random;
+    private readonly VdbLineReader reader = new(VdbChannel.MaximumLineLength);
 
-    private string? identity;
+    private string? keyId;
+    private readonly byte[] clientNonce = new byte[VdbChannel.NonceSize];
+    private bool askedForIdentity;
+    private VdbChannel? channel;
     private bool ready;
     private TimeSpan lastHeard;
     private TimeSpan askedAt;
@@ -34,24 +42,27 @@ public sealed class VdbSession
 
     /// <param name="host">Where apps go, and the apps that are there.</param>
     /// <param name="trust">The computers VentureOS trusts.</param>
-    /// <param name="send">Sends a line to the computer.</param>
+    /// <param name="send">Sends a line to the computer, as it goes on the network: sealed, once the channel is.</param>
+    /// <param name="random">Fills VentureOS's nonce for the connection.</param>
     /// <param name="now">The time the connection opened, on any clock that only goes forward.</param>
-    public VdbSession(IVdbHost host, VdbTrust trust, Action<string> send, TimeSpan now)
+    public VdbSession(IVdbHost host, VdbTrust trust, Action<string> send, Action<Span<byte>> random, TimeSpan now)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(trust);
         ArgumentNullException.ThrowIfNull(send);
+        ArgumentNullException.ThrowIfNull(random);
         this.host = host;
         this.trust = trust;
         this.send = send;
+        this.random = random;
         lastHeard = now;
     }
 
     /// <summary>Whether the connection is over and should be closed.</summary>
     public bool IsClosed { get; private set; }
 
-    /// <summary>The computer's identity, once it has said hello.</summary>
-    public string? Identity => identity;
+    /// <summary>The computer's key ID, once it has said hello, which names it without giving its identity away.</summary>
+    public string? KeyId => keyId;
 
     /// <summary>Whether the computer is trusted and may send commands.</summary>
     public bool IsReady => ready && !IsClosed;
@@ -77,7 +88,7 @@ public sealed class VdbSession
         if (IsClosed)
             return;
 
-        if (identity is not null && !ready)
+        if (keyId is not null && !ready)
         {
             CheckTrust(now);
             return;
@@ -109,7 +120,7 @@ public sealed class VdbSession
             var clean = new string(characters, 0, Math.Min(characters.Length, Room));
             for (var excess = Encoding.UTF8.GetByteCount(clean) - Room; excess > 0; excess = Encoding.UTF8.GetByteCount(clean) - Room)
                 clean = clean[..^Math.Max(1, excess / 3)];
-            send($"out {clean}");
+            Send($"out {clean}");
         }
     }
 
@@ -121,20 +132,32 @@ public sealed class VdbSession
     {
         IsClosed = true;
         EndInstall();
-        if (identity is not null && !ready)
-            trust.Withdraw(identity);
+        if (keyId is not null && !ready)
+            trust.Withdraw(keyId);
     }
 
     private void Handle(string line)
     {
+        if (channel is not null)
+        {
+            // Nothing that doesn't open is acted on or answered: the connection just ends.
+            if (channel.Open(line) is { } opened)
+                HandleSealed(opened);
+            else
+                Close();
+            return;
+        }
+
         if (line.Length == 0)
             return;
+        if (Encoding.UTF8.GetByteCount(line) > VdbProtocol.MaximumLineLength)
+        {
+            Close($"error closing a line is longer than {VdbProtocol.MaximumLineLength} bytes");
+            return;
+        }
 
-        var space = line.IndexOf(' ');
-        var command = space < 0 ? line : line[..space];
-        var rest = space < 0 ? "" : line[(space + 1)..];
-
-        if (identity is null)
+        var (command, rest) = Split(line);
+        if (keyId is null)
         {
             if (command == "hello")
                 Hello(rest);
@@ -143,11 +166,28 @@ public sealed class VdbSession
             return;
         }
 
-        if (!ready)
+        if (askedForIdentity && command == "pair")
         {
-            Close("error closing wait to be trusted before sending commands");
+            Pair(rest);
             return;
         }
+
+        Close("error closing wait to be trusted before sending commands");
+    }
+
+    private static (string Command, string Argument) Split(string line)
+    {
+        var space = line.IndexOf(' ');
+        return space < 0 ? (line, "") : (line[..space], line[(space + 1)..]);
+    }
+
+    private void HandleSealed(string line)
+    {
+        // An empty line keeps the connection open, and asks nothing.
+        if (line.Length == 0)
+            return;
+
+        var (command, rest) = Split(line);
 
         if (skippingFile)
         {
@@ -183,17 +223,17 @@ public sealed class VdbSession
                 break;
             case "abort":
                 EndInstall();
-                send("ok");
+                Send("ok");
                 break;
             case "launch":
                 Launch(rest);
                 break;
             case "bye":
-                send("ok");
+                Send("ok");
                 Close();
                 break;
             default:
-                send($"error \"{Shorten(command)}\" isn't a vdb command");
+                Send($"error \"{Shorten(command)}\" isn't a vdb command");
                 break;
         }
     }
@@ -201,9 +241,9 @@ public sealed class VdbSession
     private void Hello(string rest)
     {
         var words = rest.Split(' ');
-        if (words.Length < 2 || !words[0].StartsWith("vdb/", StringComparison.Ordinal))
+        if (words.Length < 1 || !words[0].StartsWith("vdb/", StringComparison.Ordinal))
         {
-            Close($"error closing hello names the protocol and the computer, such as hello {VdbProtocol.Version} <identity>");
+            Close($"error closing hello names the protocol, the computer, and a nonce, such as hello {VdbProtocol.Version} <key-id> <nonce>");
             return;
         }
 
@@ -213,36 +253,69 @@ public sealed class VdbSession
             return;
         }
 
-        if (!VdbTrust.IsIdentity(words[1]))
+        if (words.Length < 3 || !VdbTrust.IsKeyId(words[1]))
         {
-            Close("error closing an identity is 32 lowercase hexadecimal characters");
+            Close($"error closing hello names the computer by its key ID, {VdbTrust.KeyIdLength} lowercase hexadecimal characters, then a nonce");
+            return;
+        }
+
+        if (!Hex.IsLowercase(words[2], VdbChannel.NonceSize * 2))
+        {
+            Close($"error closing a nonce is {VdbChannel.NonceSize * 2} lowercase hexadecimal characters");
             return;
         }
 
         // Features the computer offers are for later versions to use; this one asks nothing of them.
-        identity = words[1];
-        if (trust.State(identity) == VdbTrustState.Trusted)
+        keyId = words[1];
+        Hex.Decode(words[2], clientNonce);
+        if (trust.Find(keyId) is { } identity)
         {
-            Welcome();
+            Welcome(identity);
             return;
         }
 
-        trust.Withdraw(identity);
-        trust.Ask(identity);
+        trust.Withdraw(keyId);
+        trust.Ask(keyId);
         askedAt = lastHeard;
         send("wait trust");
     }
 
+    /// <summary>
+    /// A computer the person approved sends its identity, once, in the clear, so VentureOS can key the connection;
+    /// it's trusted only if the identity gives the key ID it said hello with.
+    /// </summary>
+    private void Pair(string identity)
+    {
+        if (!VdbTrust.IsIdentity(identity) || VdbTrust.KeyId(identity) != keyId)
+        {
+            trust.Withdraw(keyId!);
+            Close("error closing that identity isn't the one this computer said hello with");
+            return;
+        }
+
+        trust.Trust(identity);
+        Welcome(identity);
+    }
+
     private void CheckTrust(TimeSpan now)
     {
-        switch (trust.State(identity!))
+        switch (trust.State(keyId!))
         {
-            case VdbTrustState.Trusted:
+            case VdbTrustState.Trusted when !askedForIdentity:
                 lastHeard = now;
-                Welcome();
+                Welcome(trust.Find(keyId!)!);
+                break;
+            case VdbTrustState.Approved when !askedForIdentity:
+                lastHeard = now;
+                askedForIdentity = true;
+                send("pair");
+                break;
+            case VdbTrustState.Approved or VdbTrustState.Trusted:
+                if (now - lastHeard >= VdbProtocol.IdleLimit)
+                    Close($"error closing nothing was sent for {VdbProtocol.IdleLimit.TotalSeconds:0} seconds");
                 break;
             case VdbTrustState.Asking when now - askedAt >= VdbProtocol.TrustLimit:
-                trust.Answer(identity!, trust: false);
+                trust.Answer(keyId!, trust: false);
                 Close($"error closing nobody answered within {VdbProtocol.TrustLimit.TotalSeconds:0} seconds whether to trust this computer");
                 break;
             case VdbTrustState.Asking:
@@ -253,10 +326,35 @@ public sealed class VdbSession
         }
     }
 
-    private void Welcome()
+    /// <summary>Answers hello with VentureOS's nonce, then seals everything after it.</summary>
+    private void Welcome(string identity)
     {
+        Span<byte> serverNonce = stackalloc byte[VdbChannel.NonceSize];
+        random(serverNonce);
+        send($"hello {VdbProtocol.Version} {Hex.Encode(serverNonce)}");
+        channel = VdbChannel.ForVentureOS(identity, clientNonce, serverNonce);
         ready = true;
-        send($"ok {VdbProtocol.Version} {Features}");
+        Send($"ok {VdbProtocol.Version} {Features}");
+    }
+
+    /// <summary>Sends a line, sealed once the channel is.</summary>
+    private void Send(string line)
+    {
+        if (channel is null)
+        {
+            send(line);
+            return;
+        }
+
+        try
+        {
+            send(channel.Seal(line));
+        }
+        catch (InvalidOperationException)
+        {
+            // The key has sealed all it may; the computer can start a new connection.
+            Close();
+        }
     }
 
     private void Install(string app)
@@ -269,18 +367,18 @@ public sealed class VdbSession
 
         if (VdbNames.ProblemWithApp(app) is { } problem)
         {
-            send($"error {problem}");
+            Send($"error {problem}");
             return;
         }
 
         try
         {
             install = VdbInstall.Begin(host, app);
-            send("ok");
+            Send("ok");
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            send($"error {app} couldn't be staged: {exception.Message}");
+            Send($"error {app} couldn't be staged: {exception.Message}");
         }
     }
 
@@ -288,7 +386,7 @@ public sealed class VdbSession
     {
         if (install is null)
         {
-            send("error no app is being sent; start one with install");
+            Send("error no app is being sent; start one with install");
             skippingFile = true;
             return;
         }
@@ -310,14 +408,14 @@ public sealed class VdbSession
         if (problem is not null)
             Fail(problem, inFile);
         else if (ok)
-            send("ok");
+            Send("ok");
     }
 
     private void Commit()
     {
         if (install is null)
         {
-            send("error no app is being sent; start one with install");
+            Send("error no app is being sent; start one with install");
             return;
         }
 
@@ -328,18 +426,18 @@ public sealed class VdbSession
         }
 
         install = null;
-        send($"ok installed {installed}");
+        Send($"ok installed {installed}");
     }
 
     private void Launch(string app)
     {
         if (VdbNames.ProblemWithApp(app) is { } problem)
         {
-            send($"error {problem}");
+            Send($"error {problem}");
             return;
         }
 
-        send(host.Launch(app) is { } refused ? $"error {refused}" : "ok");
+        Send(host.Launch(app) is { } refused ? $"error {refused}" : "ok");
     }
 
     /// <summary>Ends the install with an error; inside a file, the rest of the file is passed over.</summary>
@@ -350,7 +448,7 @@ public sealed class VdbSession
         skippingFile = inFile;
         // Reasons from elsewhere, such as Bundle's, end in a full stop, which the clause after it doesn't want.
         problem = problem.TrimEnd('.');
-        send(app is null ? $"error {problem}" : $"error {problem}; {app} was thrown away");
+        Send(app is null ? $"error {problem}" : $"error {problem}; {app} was thrown away");
     }
 
     private void EndInstall()
@@ -361,7 +459,7 @@ public sealed class VdbSession
 
     private void Close(string message)
     {
-        send(message);
+        Send(message);
         Close();
     }
 

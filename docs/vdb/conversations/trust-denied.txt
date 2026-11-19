@@ -1,7 +1,8 @@
 # The person refuses the computer, and the connection closes.
-> hello vdb/1 0123456789abcdef0123456789abcdef
+! identity 0123456789abcdef0123456789abcdef
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
 < wait trust
-! answer deny 0123456789abcdef0123456789abcdef
+! answer deny 0a30b19247f0d8d7
 ! wait 1
 < error closing this computer wasn't trusted
 ! closed

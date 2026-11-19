@@ -1,7 +1,9 @@
+import Crypto
 import Foundation
 
 /// This computer's identity: 32 random lowercase hexadecimal characters, made once and kept in a file, which
-/// VentureOS is asked to trust. It's sent as plain text, so it tells computers apart; it doesn't prove anything.
+/// VentureOS is asked to trust. It's a secret the connection is keyed from: the network sees only its key ID, and the
+/// identity itself only once, when the person at VentureOS chooses Trust. Keep the file private.
 public enum VdbIdentity {
     /// Where the identity is kept: `vdb/identity` in the configuration folder, which is `%APPDATA%` on Windows,
     /// and `$XDG_CONFIG_HOME`, or `~/.config`, elsewhere.
@@ -19,6 +21,12 @@ public enum VdbIdentity {
     /// Whether a text is an identity.
     public static func isIdentity(_ text: String) -> Bool {
         text.utf8.count == 32 && text.utf8.allSatisfy { (0x30...0x39).contains($0) || (0x61...0x66).contains($0) }
+    }
+
+    /// An identity's key ID: the first 16 hexadecimal characters of SHA-256 of `vdb key-id ` and the identity, which
+    /// names this computer to VentureOS without giving the identity away.
+    public static func keyID(for identity: String) -> String {
+        String(Hex.encode(SHA256.hash(data: Data(("vdb key-id " + identity).utf8))).prefix(16))
     }
 
     /// Makes a new identity.

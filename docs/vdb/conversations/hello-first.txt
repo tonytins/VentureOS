@@ -1,4 +1,5 @@
 # Anything before hello closes the connection.
+! identity 0123456789abcdef0123456789abcdef
 > install Dice.app
 < error closing say hello first
 ! closed

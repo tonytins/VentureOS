@@ -7,6 +7,12 @@ namespace Venture.OS.Tests.Vdb;
 /// two sides can't drift apart. In each, <c>&gt;</c> is a line the computer sends, <c>&lt;</c> one VentureOS sends
 /// back, in order, and <c>!</c> sets up or checks VentureOS's side; <c>#</c> starts a comment.
 /// </summary>
+/// <remarks>
+/// <c>! identity</c> names the computer's identity, which the replay keys the connection from; VentureOS's nonce is
+/// always <c>f0f1…ff</c>. Lines after VentureOS's <c>hello</c> are written as they read inside the seal, and the
+/// replay seals and opens them, unless <c>! raw</c> says the lines from there on are written as they go on the
+/// network.
+/// </remarks>
 public sealed class VdbConversationTests
 {
     private static readonly string Folder = Path.Combine(AppContext.BaseDirectory, "vdb", "conversations");
@@ -28,9 +34,13 @@ public sealed class VdbConversationTests
     {
         using FakeVdbHost host = new();
         VdbTrust trust = new();
-        Queue<string> sent = new();
         var now = TimeSpan.Zero;
-        VdbSession session = new(host, trust, line => sent.Enqueue(host.AsVentureSees(line)), now);
+        var identity = TestComputer.DefaultIdentity;
+        var computer = new TestComputer();
+        var isRaw = false;
+        List<string> network = [];
+        VdbSession session = new(host, trust, line => { network.Add(line); computer.Hear(line); }, ServerNonce, now);
+        var heard = 0;
 
         var number = 0;
         foreach (var line in File.ReadLines(Path.Combine(Folder, name)))
@@ -44,11 +54,23 @@ public sealed class VdbConversationTests
             switch (line[0])
             {
                 case '>':
-                    session.Receive(System.Text.Encoding.UTF8.GetBytes(text + "\n"), now);
+                    if (text.StartsWith("hello ", StringComparison.Ordinal) && text.Split(' ') is { Length: >= 4 } hello
+                        && Venture.OS.Cryptography.Hex.IsLowercase(hello[3], 32))
+                        computer = new TestComputer(identity, hello[3]);
+                    var bytes = isRaw ? System.Text.Encoding.UTF8.GetBytes(text + "\n") : computer.Bytes(text);
+                    session.Receive(bytes, now);
                     break;
                 case '<':
-                    Assert.True(sent.Count > 0, $"{at}: VentureOS sent nothing, not \"{text}\".");
-                    Assert.Equal(text, sent.Dequeue());
+                    Assert.True(heard < network.Count, $"{at}: VentureOS sent nothing, not \"{text}\".");
+                    Assert.Equal(text, host.AsVentureSees(isRaw ? network[heard] : computer.Heard[heard]));
+                    heard++;
+                    break;
+                case '!' when text.StartsWith("identity ", StringComparison.Ordinal):
+                    identity = text["identity ".Length..];
+                    computer = new TestComputer(identity);
+                    break;
+                case '!' when text == "raw":
+                    isRaw = true;
                     break;
                 case '!':
                     now = Act(text, at, host, trust, session, now);
@@ -59,7 +81,15 @@ public sealed class VdbConversationTests
             }
         }
 
-        Assert.True(sent.Count == 0, $"{name}: VentureOS also sent \"{string.Join("\", \"", sent)}\".");
+        Assert.True(heard == network.Count, $"{name}: VentureOS also sent \"{string.Join("\", \"", computer.Heard.Skip(heard))}\".");
+        Assert.Empty(computer.Unopened);
+    }
+
+    // VentureOS's nonce in every conversation.
+    private static void ServerNonce(Span<byte> nonce)
+    {
+        for (var index = 0; index < nonce.Length; index++)
+            nonce[index] = (byte)(0xf0 + index);
     }
 
     private static TimeSpan Act(string text, string at, FakeVdbHost host, VdbTrust trust, VdbSession session, TimeSpan now)

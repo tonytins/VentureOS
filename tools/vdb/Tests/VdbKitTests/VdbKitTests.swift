@@ -127,13 +127,47 @@ struct IdentityTests {
 
 struct ClientTests {
     static let identity = "0123456789abcdef0123456789abcdef"
+    static let keyID = "0a30b19247f0d8d7"
+    static let nonce: [UInt8] = Array(0..<16)
+    static let hello = Conversation.Step.sent("hello vdb/1 \(keyID) 000102030405060708090a0b0c0d0e0f")
+    static let welcome = Conversation.Step.answered("hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
 
     private func client(_ steps: [Conversation.Step], printed: @escaping (String) -> Void = { _ in }) -> (VdbClient, ScriptedTransport) {
-        let transport = ScriptedTransport([.sent("hello vdb/1 \(Self.identity)"), .answered("ok vdb/1 install launch")] + steps)
-        let client = VdbClient(transport: transport, output: printed)
+        let transport = ScriptedTransport([Self.hello, Self.welcome, .answered("ok vdb/1 install launch")] + steps)
+        let client = VdbClient(transport: transport, output: printed, nonce: { Self.nonce })
         client.answerTimeout = 0
         client.trustTimeout = 0
         return (client, transport)
+    }
+
+    @Test func aKeyIDIsTheHashOfTheIdentity() {
+        // As VentureOS and docs/vdb/sealed-lines.py work it out.
+        #expect(VdbIdentity.keyID(for: Self.identity) == Self.keyID)
+    }
+
+    @Test func sendsTheIdentityOnlyWhenVentureOSAsksToPair() throws {
+        let transport = ScriptedTransport([
+            Self.hello, .answered("wait trust"), .answered("pair"), .sent("pair \(Self.identity)"), Self.welcome,
+            .answered("ok vdb/1 install launch"), .sent("bye"), .answered("ok"),
+        ])
+        let client = VdbClient(transport: transport, output: { _ in }, nonce: { Self.nonce })
+        client.answerTimeout = 0
+        client.trustTimeout = 0
+
+        try client.session(identity: Self.identity) {}
+
+        #expect(transport.mismatches.isEmpty, "\(transport.mismatches)")
+        #expect(transport.heard.filter { $0.contains(Self.identity) } == ["pair \(Self.identity)"])
+    }
+
+    @Test func endsOnALineThatDoesNotOpen() throws {
+        let transport = ScriptedTransport([Self.hello, Self.welcome, .answered("ok vdb/1 install launch"), .sent("launch Dice.app"), .raw,
+                                           .answered("sealed AAAAAAAAAAAAAAAAAAAAAA==")])
+        let client = VdbClient(transport: transport, output: { _ in }, nonce: { Self.nonce })
+        client.answerTimeout = 0
+        try client.hello(identity: Self.identity)
+
+        #expect(throws: VdbError.self) { try client.launch("Dice.app") }
     }
 
     @Test func splitsAFileIntoDataLinesThatFit() throws {
@@ -170,8 +204,8 @@ struct ClientTests {
     }
 
     @Test func refusesAFeatureVentureOSDoesNotOffer() throws {
-        let transport = ScriptedTransport([.sent("hello vdb/1 \(Self.identity)"), .answered("ok vdb/1 install")])
-        let client = VdbClient(transport: transport, output: { _ in })
+        let transport = ScriptedTransport([Self.hello, Self.welcome, .answered("ok vdb/1 install")])
+        let client = VdbClient(transport: transport, output: { _ in }, nonce: { Self.nonce })
         client.answerTimeout = 0
         try client.hello(identity: Self.identity)
 
@@ -179,16 +213,16 @@ struct ClientTests {
     }
 
     @Test func refusesAVersionItDoesNotSpeak() throws {
-        let transport = ScriptedTransport([.sent("hello vdb/1 \(Self.identity)"), .answered("ok vdb/2 install launch")])
-        let client = VdbClient(transport: transport, output: { _ in })
+        let transport = ScriptedTransport([Self.hello, .answered("hello vdb/2 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")])
+        let client = VdbClient(transport: transport, output: { _ in }, nonce: { Self.nonce })
         client.answerTimeout = 0
 
         #expect(throws: VdbError.self) { try client.hello(identity: Self.identity) }
     }
 
     @Test func timesOutWhenNothingAnswers() throws {
-        let transport = ScriptedTransport([.sent("hello vdb/1 \(Self.identity)")])
-        let client = VdbClient(transport: transport, output: { _ in })
+        let transport = ScriptedTransport([Self.hello])
+        let client = VdbClient(transport: transport, output: { _ in }, nonce: { Self.nonce })
         client.answerTimeout = 0
 
         #expect(throws: VdbError.timedOut("hello")) { try client.hello(identity: Self.identity) }
@@ -205,9 +239,11 @@ struct ClientTests {
     }
 }
 
-/// Answers with the given lines in turn, whatever is sent, and records what is.
+/// Answers with the given lines in turn, whatever is sent, sealed as VentureOS would once welcomed, and records
+/// what is sent, as VentureOS reads it.
 final class RecordingTransport: LineTransport {
     private var answers: [String]
+    private let ventureOS = SealingVentureOS(identity: ClientTests.identity)
     private(set) var sent: [String] = []
 
     init(answers: [String]) {
@@ -216,13 +252,13 @@ final class RecordingTransport: LineTransport {
 
     /// Says hello for `client`, answered as VentureOS would, then forgets it.
     func welcome(_ client: VdbClient) throws {
-        answers.insert("ok vdb/1 install launch", at: 0)
+        answers.insert(contentsOf: ["hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff", "ok vdb/1 install launch"], at: 0)
         try client.hello(identity: ClientTests.identity)
         sent.removeAll()
     }
 
     func send(_ line: String) throws {
-        sent.append(line)
+        sent.append(ventureOS.read(line))
     }
 
     func receive(timeout: Double) throws -> String? {
@@ -230,6 +266,6 @@ final class RecordingTransport: LineTransport {
             if timeout > 0 { Thread.sleep(forTimeInterval: timeout) }
             return nil
         }
-        return answers.removeFirst()
+        return ventureOS.write(answers.removeFirst())
     }
 }

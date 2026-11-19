@@ -1,6 +1,8 @@
 # Sending an app again closes the open copy and replaces it.
+! identity 0123456789abcdef0123456789abcdef
 ! trusted 0123456789abcdef0123456789abcdef
-> hello vdb/1 0123456789abcdef0123456789abcdef
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
+< hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
 < ok vdb/1 install launch
 > install Dice.app
 < ok

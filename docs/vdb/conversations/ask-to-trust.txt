@@ -1,9 +1,14 @@
-# A computer VentureOS hasn't seen waits while the person is asked, then goes on once they trust it.
-> hello vdb/1 0123456789abcdef0123456789abcdef
+# A computer VentureOS hasn't seen waits while the person is asked; once they trust it, VentureOS asks for its
+# identity, the one time it's sent in the clear, checks it gives the key ID, and seals the rest.
+! identity 0123456789abcdef0123456789abcdef
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
 < wait trust
 ! wait 5
-! answer trust 0123456789abcdef0123456789abcdef
+! answer trust 0a30b19247f0d8d7
 ! wait 1
+< pair
+> pair 0123456789abcdef0123456789abcdef
+< hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
 < ok vdb/1 install launch
 > bye
 < ok

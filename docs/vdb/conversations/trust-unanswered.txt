@@ -1,5 +1,6 @@
 # Nobody answers within 60 seconds, which counts as a refusal.
-> hello vdb/1 0123456789abcdef0123456789abcdef
+! identity 0123456789abcdef0123456789abcdef
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
 < wait trust
 ! wait 59
 ! wait 1

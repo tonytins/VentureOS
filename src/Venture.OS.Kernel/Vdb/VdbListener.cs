@@ -21,6 +21,7 @@ internal sealed class VdbListener
     private readonly WindowManager windows;
     private readonly KernelVdbHost host;
     private readonly byte[] buffer = new byte[4096];
+    private readonly VdbRandom random;
 
     private TcpListener? listener;
     private TcpClient? client;
@@ -40,6 +41,13 @@ internal sealed class VdbListener
         this.developer = developer;
         this.windows = windows;
         host = new KernelVdbHost(appWindows, apps, appOutput);
+
+        // Cosmos has no random generator, so nonces come from the CPU's timestamp counter, read at every use, and the
+        // time of day and that counter at the start, which differ from boot to boot.
+        Span<byte> seed = stackalloc byte[16];
+        BitConverter.TryWriteBytes(seed, DateTime.UtcNow.Ticks);
+        BitConverter.TryWriteBytes(seed[8..], Stopwatch.GetTimestamp());
+        random = new VdbRandom(Stopwatch.GetTimestamp, seed);
         appOutput.Echo = text => session?.Print(text);
     }
 
@@ -158,7 +166,7 @@ internal sealed class VdbListener
     {
         client = listener!.AcceptTcpClient();
         stream = client.GetStream();
-        session = new VdbSession(host, developer.Trust, Send, now);
+        session = new VdbSession(host, developer.Trust, Send, random.Fill, now);
         developer.IsConnected = true;
         KernelLog.WriteSerialLine("vdb: a computer connected.");
     }
@@ -204,18 +212,18 @@ internal sealed class VdbListener
     /// <summary>Shows the Trust alert while a computer is being asked about, and takes it away once it isn't.</summary>
     private void AskAboutTrust()
     {
-        var identity = session is { IsClosed: false } ? session.Identity : null;
-        var asking = identity is not null && developer.Trust.State(identity) == VdbTrustState.Asking;
+        var keyId = session is { IsClosed: false } ? session.KeyId : null;
+        var asking = keyId is not null && developer.Trust.State(keyId) == VdbTrustState.Asking;
 
         if (asking && trustAlert is null)
         {
             trustAlert = DesktopAlert.Ask(
                 "Trust This Computer?",
-                $"A computer, {identity![..8]}, wants to install and open apps over vdb until VentureOS restarts. "
+                $"A computer, {keyId![..8]}, wants to install and open apps over vdb until VentureOS restarts. "
                 + "Trust it only if it's yours.",
                 "Trust",
                 "Deny",
-                trust => developer.Trust.Answer(identity!, trust));
+                trust => developer.Trust.Answer(keyId!, trust));
             windows.Open(trustAlert);
             changed = true;
         }

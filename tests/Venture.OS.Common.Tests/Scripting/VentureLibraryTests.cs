@@ -273,7 +273,7 @@ public sealed class VentureLibraryTests
             """);
 
         Assert.Equal(["false	28455	0	false	nil", "true", "true", "true	1", "true	false"], output.Lines);
-        Assert.Equal(Venture.OS.Vdb.VdbTrustState.Trusted, developer.Trust.State("0123456789abcdef0123456789abcdef"));
+        Assert.Equal("0123456789abcdef0123456789abcdef", developer.Trust.Find(Venture.OS.Vdb.VdbTrust.KeyId("0123456789abcdef0123456789abcdef")));
     }
 
     [Fact]

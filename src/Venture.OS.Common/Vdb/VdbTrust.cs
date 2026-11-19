@@ -1,6 +1,9 @@
+using System.Text;
+using Venture.OS.Cryptography;
+
 namespace Venture.OS.Vdb;
 
-/// <summary>Where VentureOS stands with a computer that says hello over vdb.</summary>
+/// <summary>Where VentureOS stands with a computer that says hello over vdb, by its key ID.</summary>
 public enum VdbTrustState
 {
     /// <summary>It hasn't been asked about, or the last question was withdrawn.</summary>
@@ -8,6 +11,9 @@ public enum VdbTrustState
 
     /// <summary>The person at VentureOS is being asked whether to trust it.</summary>
     Asking,
+
+    /// <summary>The person chose Trust; it's trusted once it sends the identity that gives its key ID.</summary>
+    Approved,
 
     /// <summary>It may install and open apps until VentureOS restarts.</summary>
     Trusted,
@@ -17,67 +23,91 @@ public enum VdbTrustState
 }
 
 /// <summary>
-/// The computers VentureOS trusts over vdb, by the identity each one's vdb tool made for itself, kept in memory
-/// until VentureOS restarts. It guards against accidents, such as the wrong machine connecting, not against
-/// someone watching the network: the identity is sent as plain text.
+/// The computers VentureOS trusts over vdb, kept in memory until VentureOS restarts. Each is known by the identity its
+/// vdb tool made, a 128-bit secret its connections are keyed from, and named on the network only by its key ID, a
+/// hash of it, so the identity crosses the network once at most: when the person at VentureOS chooses Trust.
 /// </summary>
 public sealed class VdbTrust
 {
-    private readonly Dictionary<string, VdbTrustState> states = new(StringComparer.Ordinal);
+    /// <summary>A key ID's length, in hexadecimal characters.</summary>
+    public const int KeyIdLength = 16;
+
+    private readonly Dictionary<string, string> trusted = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, VdbTrustState> questions = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// Raised when a computer needs asking about, with its identity, so the desktop can ask the person; they answer
+    /// Raised when a computer needs asking about, with its key ID, so the desktop can ask the person; they answer
     /// through <see cref="Answer"/>. Poll <see cref="State"/> to know when the question no longer stands.
     /// </summary>
     public event Action<string>? Asked;
 
     /// <summary>How many computers are trusted.</summary>
-    public int TrustedCount => states.Values.Count(state => state == VdbTrustState.Trusted);
+    public int TrustedCount => trusted.Count;
 
     /// <summary>Whether a text is an identity: 32 lowercase hexadecimal characters, as vdb makes them.</summary>
-    public static bool IsIdentity(string? text) =>
-        text is { Length: 32 } && text.All(character => character is (>= '0' and <= '9') or (>= 'a' and <= 'f'));
+    public static bool IsIdentity(string? text) => Hex.IsLowercase(text, 32);
 
-    /// <summary>Where VentureOS stands with a computer.</summary>
-    public VdbTrustState State(string identity) =>
-        states.TryGetValue(identity, out var state) ? state : VdbTrustState.Unknown;
+    /// <summary>Whether a text is a key ID: 16 lowercase hexadecimal characters.</summary>
+    public static bool IsKeyId(string? text) => Hex.IsLowercase(text, KeyIdLength);
 
-    /// <summary>Trusts a computer without asking, as a developer's own build does from its init script.</summary>
+    /// <summary>
+    /// An identity's key ID: the first 16 hexadecimal characters of SHA-256 of <c>vdb key-id </c> and the identity,
+    /// which names the computer without giving the identity away.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="identity"/> isn't one.</exception>
+    public static string KeyId(string identity)
+    {
+        Check(identity);
+        var digest = Sha256.Hash(Encoding.ASCII.GetBytes("vdb key-id " + identity));
+        return Hex.Encode(digest.AsSpan(0, KeyIdLength / 2));
+    }
+
+    /// <summary>The identity of the trusted computer with this key ID, or <see langword="null"/>.</summary>
+    public string? Find(string keyId) => trusted.TryGetValue(keyId, out var identity) ? identity : null;
+
+    /// <summary>Where VentureOS stands with a computer, by its key ID.</summary>
+    public VdbTrustState State(string keyId) =>
+        trusted.ContainsKey(keyId) ? VdbTrustState.Trusted
+        : questions.TryGetValue(keyId, out var state) ? state
+        : VdbTrustState.Unknown;
+
+    /// <summary>
+    /// Trusts a computer by its identity, without asking, as a developer's own build does from its init script, or
+    /// once a computer the person approved sends it.
+    /// </summary>
     /// <exception cref="ArgumentException"><paramref name="identity"/> isn't one.</exception>
     public void Trust(string identity)
     {
-        Check(identity);
-        states[identity] = VdbTrustState.Trusted;
+        var keyId = KeyId(identity);
+        trusted[keyId] = identity;
+        questions.Remove(keyId);
     }
 
-    /// <summary>Starts asking about a computer, unless it's already trusted or being asked about.</summary>
-    /// <exception cref="ArgumentException"><paramref name="identity"/> isn't one.</exception>
-    public void Ask(string identity)
+    /// <summary>Starts asking about a computer, unless it's trusted or already being asked about.</summary>
+    /// <exception cref="ArgumentException"><paramref name="keyId"/> isn't one.</exception>
+    public void Ask(string keyId)
     {
-        Check(identity);
-        if (State(identity) is VdbTrustState.Trusted or VdbTrustState.Asking)
+        if (!IsKeyId(keyId))
+            throw new ArgumentException($"\"{keyId}\" isn't a vdb key ID, which is {KeyIdLength} lowercase hexadecimal characters.", nameof(keyId));
+        if (State(keyId) is VdbTrustState.Trusted or VdbTrustState.Asking or VdbTrustState.Approved)
             return;
 
-        states[identity] = VdbTrustState.Asking;
-        Asked?.Invoke(identity);
+        questions[keyId] = VdbTrustState.Asking;
+        Asked?.Invoke(keyId);
     }
 
     /// <summary>The person's answer about a computer being asked about; an answer to no question changes nothing.</summary>
-    public void Answer(string identity, bool trust)
+    public void Answer(string keyId, bool trust)
     {
-        if (State(identity) == VdbTrustState.Asking)
-            states[identity] = trust ? VdbTrustState.Trusted : VdbTrustState.Denied;
+        if (State(keyId) == VdbTrustState.Asking)
+            questions[keyId] = trust ? VdbTrustState.Approved : VdbTrustState.Denied;
     }
 
     /// <summary>
-    /// Drops the question about a computer, or its refusal, such as when it disconnects, so it's asked about afresh
-    /// next time. A trusted computer stays trusted.
+    /// Drops the question about a computer, its approval, or its refusal, such as when it disconnects, so it's asked
+    /// about afresh next time. A trusted computer stays trusted.
     /// </summary>
-    public void Withdraw(string identity)
-    {
-        if (State(identity) is VdbTrustState.Asking or VdbTrustState.Denied)
-            states.Remove(identity);
-    }
+    public void Withdraw(string keyId) => questions.Remove(keyId);
 
     private static void Check(string identity)
     {

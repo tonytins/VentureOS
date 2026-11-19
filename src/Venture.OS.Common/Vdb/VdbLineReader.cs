@@ -4,18 +4,29 @@ namespace Venture.OS.Vdb;
 
 /// <summary>
 /// Splits what arrives on a vdb connection into lines, however the bytes are cut up on the way. A line ends at
-/// <c>\n</c>, with a <c>\r</c> before it dropped, and must be UTF-8 text no longer than
-/// <see cref="VdbProtocol.MaximumLineLength"/> bytes; anything else is a <see cref="Problem"/>, after which the reader
-/// takes nothing more, since there's no telling where the next line starts.
+/// <c>\n</c>, with a <c>\r</c> before it dropped, and must be UTF-8 text no longer than the reader's limit,
+/// <see cref="VdbProtocol.MaximumLineLength"/> bytes unless it's given another, such as a sealed line's; anything
+/// else is a <see cref="Problem"/>, after which the reader takes nothing more, since there's no telling where the next
+/// line starts.
 /// </summary>
 public sealed class VdbLineReader
 {
     private static readonly UTF8Encoding Strict = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     // One more than a line may hold, for the \r a line may end with.
-    private readonly byte[] line = new byte[VdbProtocol.MaximumLineLength + 1];
+    private readonly byte[] line;
     private readonly Queue<string> lines = new();
+    private readonly int maximum;
     private int length;
+
+    /// <param name="maximumLength">The longest line, in bytes, not counting its break.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maximumLength"/> isn't positive.</exception>
+    public VdbLineReader(int maximumLength = VdbProtocol.MaximumLineLength)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumLength);
+        maximum = maximumLength;
+        line = new byte[maximumLength + 1];
+    }
 
     /// <summary>Why the reader stopped, or <see langword="null"/> while it reads.</summary>
     public string? Problem { get; private set; }
@@ -39,7 +50,7 @@ public sealed class VdbLineReader
 
             if (length == line.Length)
             {
-                Problem = $"a line is longer than {VdbProtocol.MaximumLineLength} bytes";
+                Problem = $"a line is longer than {maximum} bytes";
                 return;
             }
 
@@ -54,9 +65,9 @@ public sealed class VdbLineReader
     {
         var end = length > 0 && line[length - 1] == (byte)'\r' ? length - 1 : length;
         length = 0;
-        if (end > VdbProtocol.MaximumLineLength)
+        if (end > maximum)
         {
-            Problem = $"a line is longer than {VdbProtocol.MaximumLineLength} bytes";
+            Problem = $"a line is longer than {maximum} bytes";
             return;
         }
 
