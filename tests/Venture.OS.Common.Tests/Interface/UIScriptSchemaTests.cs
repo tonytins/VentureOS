@@ -9,7 +9,9 @@ namespace Venture.OS.Tests.Interface;
 /// </summary>
 public sealed class UIScriptSchemaTests
 {
-    // Something for every kind of reference to name, and a menu for menu items to join.
+    // Something for every kind of reference to name, a menu for menu items to join, and a sidebar for a pane.
+    private const string DeclaredSidebar = """<Sidebar name="side" width="80"/>""";
+
     private const string Declarations = """
           <Image name="img" path="img.png"/>
           <String name="str" table="t" index="0"/>
@@ -17,6 +19,8 @@ public sealed class UIScriptSchemaTests
           <Menu name="m" title="M"/>
           <MenuItem menu="m" name="mi" title="Item"/>
           <List name="l" x="0" y="0" width="10" height="10"/>
+          <Sidebar name="side" width="80"/>
+          <Pane name="pn" title="P"/>
         """;
 
     // Attributes that only read with another, or need a value the usual sample isn't.
@@ -57,10 +61,11 @@ public sealed class UIScriptSchemaTests
 
         var text = element switch
         {
-            "UIScript" => $"""<UIScript {(attribute == "requires" ? "" : """requires="menus sidebar shelf" """)}{probe}><Window width="300" height="200"/>{Declarations}</UIScript>""",
-            "Window" => $"""<UIScript requires="menus sidebar shelf"><Window width="300" height="200" {(attribute is "width" or "height" ? "" : probe)}/>{Declarations}</UIScript>""",
+            "UIScript" => $"""<UIScript {(attribute == "requires" ? "" : """requires="menus sidebar shelf panes" """)}{probe}><Window width="300" height="200"/>{Declarations}</UIScript>""",
+            "Window" => $"""<UIScript requires="menus sidebar shelf panes"><Window width="300" height="200" {(attribute is "width" or "height" ? "" : probe)}/>{Declarations}</UIScript>""",
             "Panel" => $"""<UIScript requires="menus shelf"><Panel {(attribute is "width" ? "" : "width=\"300\" ")}{(attribute is "height" ? "" : "height=\"72\" ")}{(attribute is "edge" ? "" : "edge=\"top\" ")}{probe}/></UIScript>""",
-            _ => $"""<UIScript requires="menus sidebar shelf"><Window width="300" height="200"/>{Declarations}<{element} {Required(element, attribute)}{probe}/></UIScript>""",
+            // A probed sidebar stands in for the declared one, which panes still need.
+            _ => $"""<UIScript requires="menus sidebar shelf panes"><Window width="300" height="200"/>{(element == "Sidebar" ? Declarations.Replace(DeclaredSidebar, "", StringComparison.Ordinal) : Declarations)}<{element} {Required(element, attribute)}{probe}/></UIScript>""",
         };
 
         var script = UIScript.Parse(text);
@@ -89,7 +94,7 @@ public sealed class UIScriptSchemaTests
     public void EveryElementTheReaderKnowsIsListed()
     {
         Assert.Equal(
-            ["Button", "FormattedText", "Image", "List", "Menu", "MenuItem", "MenuSeparator", "Panel", "ProgressBar", "Region", "Shelf",
+            ["Button", "FormattedText", "Image", "List", "Menu", "MenuItem", "MenuSeparator", "Pane", "Panel", "ProgressBar", "Region", "Shelf",
                 "Sidebar", "Slider", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript",
                 "Visual", "Window"],
             UIScriptSchema.Elements.Order(StringComparer.Ordinal));
@@ -119,7 +124,7 @@ public sealed class UIScriptSchemaTests
     {
         var text = $"""<UIScript><Window width="300" height="200"/>{Declarations}<{element} {Required(element, attribute)}{attribute}="{(attribute == "minValue" ? "0" : attribute is "selectable" or "follows" ? "true" : attribute == "image" ? "img" : attribute == "orientation" ? "vertical" : "x")}"/></UIScript>""";
 
-        Assert.Throws<UIScriptException>(() => UIScript.Parse(text.Replace("<UIScript>", """<UIScript requires="menus sidebar shelf">""", StringComparison.Ordinal)));
+        Assert.Throws<UIScriptException>(() => UIScript.Parse(text.Replace("<UIScript>", """<UIScript requires="menus sidebar shelf panes">""", StringComparison.Ordinal)));
     }
 
     private static string Required(string element, string except)
@@ -155,11 +160,12 @@ public sealed class UIScriptSchemaTests
             "String" => "str",
             "Image" => "img",
             "Menu" => "m",
+            "Pane" => "pn",
             _ => "l",
         },
         UIAttributeKind.Hotkey => "q",
         UIAttributeKind.Shortcut => "Ctrl+K",
-        UIAttributeKind.Features => "menus sidebar shelf",
+        UIAttributeKind.Features => "menus sidebar shelf panes",
         UIAttributeKind.Path => "p.png",
         _ => throw new ArgumentOutOfRangeException(nameof(info)),
     };

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.404
+
+- Apps can declare a sidebar's panes in their `.uix`: `requires="sidebar panes"`, a `<Pane name="…" title="…"/>` for each row, and `pane="…"` on each control. The sidebar shows the panes and only the chosen pane's controls, with no Lua.
+- Settings is written this way, and looks and works as before.
+- Roundhouse's designer draws a sidebar's rows and one pane at a time, where it drew every pane's controls on top of each other. Clicking a pane's row on the canvas, or choosing anything in a pane, shows that pane, and a control added from the library goes into it.
+
 ## 0.7.403
 
 - Breaking, for apps that write their own panels: a panel is now `<Panel width="…" height="…" edge="top|bottom">` in place of `<Window role="panel" edge="…">`, which is read as an ordinary window now. The dock and the menu bar use it, and look and work as before.

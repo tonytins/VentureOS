@@ -110,16 +110,33 @@ public sealed class SidebarItemsTests : IDisposable
         Assert.Equal(["notes.txt"], View.List("files")!.Items);
     }
 
+    [Fact]
+    public void ASidebarOfPanesKeepsItsRows()
+    {
+        Open("""
+            print(pcall(function() window:setItems("places", { "Home" }) end))
+            """, """
+            <UIScript version="1" requires="sidebar panes">
+              <Window width="300" height="200"/>
+              <Sidebar name="places" width="120"/>
+              <Pane name="general" title="General"/>
+            </UIScript>
+            """);
+
+        Assert.Contains(output.Lines, line => line.StartsWith("false") && line.Contains("its rows are the document's panes"));
+        Assert.Equal(["General"], View.List("places")!.Items);
+    }
+
     private UIView View => Assert.Single(windows.Windows).View;
 
-    private void Open(string code)
+    private void Open(string code, string document = Document)
     {
         var contents = Path.Combine(root, "apps", "Pad.app", "Contents");
         Directory.CreateDirectory(Path.Combine(contents, "Lua"));
         Directory.CreateDirectory(Path.Combine(contents, "Resources"));
         File.WriteAllText(Path.Combine(contents, "Info.xml"),
             """<App version="1"><Info identifier="dev.example.pad" name="Pad" needs="ui"/></App>""");
-        File.WriteAllText(Path.Combine(contents, "Resources", "main.uix"), Document);
+        File.WriteAllText(Path.Combine(contents, "Resources", "main.uix"), document);
         File.WriteAllText(Path.Combine(contents, "Lua", "main.lua"), $"window = venture.ui.open(\"main.uix\")\n{code}\n");
         Assert.True(manager.OpenApp("Pad", root, output), string.Join('\n', output.Lines));
     }

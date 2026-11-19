@@ -112,6 +112,7 @@ public static class UIScriptSchema
         new("alignment", UIAttributeGroup.Text, UIAttributeKind.Choice, Choices: Alignments),
         new("style", UIAttributeGroup.Appearance, UIAttributeKind.Reference, RefersTo: "Style"),
         new("tooltip", UIAttributeGroup.Behaviour, UIAttributeKind.Reference, RefersTo: "String"),
+        new("pane", UIAttributeGroup.Behaviour, UIAttributeKind.Reference, RefersTo: "Pane"),
     ];
 
     private static readonly UIAttributeInfo[] TextEntry =
@@ -216,6 +217,11 @@ public static class UIScriptSchema
         [
             new("name", UIAttributeGroup.Identity, UIAttributeKind.Name, IsRequired: true),
             new("width", UIAttributeGroup.Frame, UIAttributeKind.Number, IsRequired: true),
+        ],
+        ["Pane"] =
+        [
+            new("name", UIAttributeGroup.Identity, UIAttributeKind.Name, IsRequired: true),
+            new("title", UIAttributeGroup.Text, UIAttributeKind.Text, IsRequired: true),
         ],
         ["Text"] = Control,
         ["FormattedText"] = Control,

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (panels) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (panes) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-18)
 
@@ -978,15 +978,19 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   behind controls). Delete is `RemoveElement`. Each goes through one
   `Apply`, and the shortcuts act only while the canvas or outline has focus.
 - **The window's other parts:** `DesignMap` also finds the title bar's
-  items (`ToolbarItemBounds`), the title field, and the sidebar, and the
-  rest of the window, its bar included, selects the `<Window>`. Each kind
+  items (`ToolbarItemBounds`), the title field, the sidebar, and each
+  pane's row (`UIView.SidebarRowBounds`), and only the shown pane's
+  controls; the rest of the window, its bar included, selects the `<Window>`. Each kind
   has its own handles (`FrameEdit.HandlesFor`): every one for a control or
   visual; the right and bottom edges and their corner for the window, which
   set its size; the right edge for the sidebar, which sets its width. The
   library (`DesignEdits.Parts`) adds toolbar items, the title field, menus,
   menu items and separators (joining the selected menu after its last
-  entry), and the sidebar; a menu or sidebar first adds its feature to
-  `requires` (`DesignEdits.Require`). Toolbar items restack among
+  entry), the sidebar, and panes, after the last; a menu, sidebar, or pane
+  first adds its feature to `requires` (`DesignEdits.Require`). The canvas
+  shows one pane (`MainWindow.ShownPane`), kept across edits: selecting a
+  pane's row, or anything in a pane, shows it, and a control from the
+  library joins it. Toolbar items restack among
   themselves, left to right.
 - **Menus on the canvas:** a document's menus show above its window in
   VentureOS's own `MenuBar`, as Xcode shows an app's: the app's menu, named
@@ -1245,11 +1249,15 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   the text color (`UIListState.Icons`), and faint lines between groups
   (`GroupStarts`, which `window:setItems` fills from `{ separator = true }`;
   separators aren't rows). Clicks, hover, and scrolling count the lines'
-  room. Files sets System apart from its places with one. Settings has a
-  sidebar of panes, as GNOME Settings does: Appearance and Clock. There's
-  no pane container in UIScript, so each pane's controls sit in the same
-  place in one `.uix` and Settings' Lua shows one pane's at a time,
-  titling the window after it; it always opens on Appearance.
+  room. Files sets System apart from its places with one.
+- **Panes** (0.7.4xx, [draft](./uiscript/panes.md)): with the `panes`
+  feature, a document's `<Pane>`s are its sidebar's rows, and a control's
+  `pane` puts it in one. `UIView` fills the rows from the panes, selects the
+  first, and shows a control in a pane only while that pane's row is
+  selected (`IsShowing`), apart from what the app hides (`IsHidden`); a
+  field whose pane goes away loses the keyboard. `window:setItems` refuses
+  a sidebar of panes. Settings declares Appearance, Dock, Clock, and
+  Developer in its `.uix`; its Lua only titles the window after the pane.
 - **Rounded corners.** With `corners="rounded"` in the look, the
   standard, a window's four corners are rounded to a 10-pixel radius, its
   shadow too. Before a window draws, it reads back (`IPainter.ReadPixels`)
@@ -1628,6 +1636,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Panes (§9): the `panes` feature, `<Pane>` and `pane` on controls; `UIView` shows one pane at a time; Settings declares its panes; Roundhouse's designer draws the rows and the shown pane, and switches it from the canvas. |
 | 2026-11-19 | minor | UIScript: `<Panel>` in place of `<Window role="panel">`, which is no longer read; Dock.app and Files' menu bar use it, and Roundhouse's designer resizes it as a window. |
 | 2026-11-19 | minor | Platform: Cosmos 3.0.99, from 3.0.97, with no code changes. |
 | 2026-11-19 | minor | Desktop (§9): the dock's modes, always visible, hide automatically, or hide when covered, sliding; `dock` in `appearance.xml`; Settings' Dock pane. |

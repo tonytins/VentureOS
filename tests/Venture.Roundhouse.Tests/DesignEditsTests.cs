@@ -127,4 +127,49 @@ public sealed class DesignEditsTests
     {
         Assert.Equal(expected, DesignEdits.UniqueName(Document, stem));
     }
+
+    [Fact]
+    public void APaneGoesAfterTheLastPaneAndAddsTheFeature()
+    {
+        var withSidebar = UIDocument.Read("""
+            <UIScript requires="sidebar">
+              <Window width="300" height="200"/>
+              <Sidebar name="side" width="100"/>
+              <Text name="t" x="0" y="0" width="10" height="10"/>
+            </UIScript>
+            """);
+
+        var (first, one) = DesignEdits.Add(withSidebar, "Pane", null);
+        var (second, two) = DesignEdits.Add(first, "Pane", null);
+
+        Assert.Equal(2, one);
+        Assert.Equal(3, two);
+        Assert.Contains(UIScript.PanesFeature, second.Script!.RequiredFeatures);
+        Assert.Equal(["pane", "pane2"], second.Script.Panes.Select(pane => pane.Name));
+    }
+
+    [Fact]
+    public void APaneNeedsASidebar()
+    {
+        var plain = UIDocument.Read("""<UIScript><Window width="300" height="200"/></UIScript>""");
+
+        Assert.Contains("add a sidebar first", Assert.Throws<UIScriptException>(() => DesignEdits.Add(plain, "Pane", null)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AControlJoinsThePaneItIsGiven()
+    {
+        var withPanes = UIDocument.Read("""
+            <UIScript requires="sidebar panes">
+              <Window width="300" height="200"/>
+              <Sidebar name="side" width="100"/>
+              <Pane name="general" title="General"/>
+            </UIScript>
+            """);
+
+        var (edited, element) = DesignEdits.Add(withPanes, "Button", null, "general");
+
+        Assert.Equal("general", edited.Xml!.Children[element]["pane"]);
+        Assert.Equal("general", edited.Script!.Controls.Single().Pane);
+    }
 }

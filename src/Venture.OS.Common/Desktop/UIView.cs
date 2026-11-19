@@ -78,6 +78,9 @@ public sealed class UIListState
 /// <para>A document's <c>&lt;Sidebar&gt;</c> is a selectable list the view keeps and draws to the left of its corner,
 /// <see cref="SidebarWidth"/> wide, so it reads, fills, and reports like a <c>&lt;List&gt;</c> of its name; the
 /// window frame draws the shade behind it.</para>
+/// <para>With panes, the sidebar's rows are the panes' titles, and a control in a pane shows only while that pane's row
+/// is selected, as well as when it isn't hidden; the first pane starts selected. Selecting a row, by a click or by
+/// its owner, switches panes, so the owner needn't hide anything to do it.</para>
 /// <para>A view doesn't read image files: its owner supplies each image with <see cref="SetImage"/>, and a
 /// <c>&lt;Visual&gt;</c> draws it, scaled to the visual's frame. Like Hudini when a host can't supply one, a visual
 /// whose image is missing shows a red outline, at 24 pixels when it leaves out its size, and the image is listed
@@ -169,6 +172,7 @@ public sealed class UIView
                 Value = control.ValueRange?.Minimum ?? 0,
                 List = control.Type == UIControlType.List ? new UIListState() : null,
                 Shelf = control.Type == UIControlType.Shelf ? new Shelf() : null,
+                Pane = control.Pane,
             };
 
             // A list's text is its first item.
@@ -191,7 +195,12 @@ public sealed class UIView
                 side.Name, UIControlType.List,
                 new UIFrame(-SidebarWidth, 0, SidebarWidth, null, new UIEdgeOffsets(null, null, SidebarInset, SidebarInset)),
                 side.Line, IsSelectable: true);
-            states[side.Name] = new State { List = new UIListState() };
+            var rows = new UIListState();
+            foreach (var pane in script.Panes)
+                rows.Items.Add(pane.Title);
+            if (rows.Items.Count > 0)
+                rows.SelectedIndex = 0;
+            states[side.Name] = new State { List = rows };
         }
 
         // The title bar's parts share the namespace too: toolbar items are disabled and selected by name, and the
@@ -536,14 +545,62 @@ public sealed class UIView
     /// <summary>Whether a button or menu item is marked as chosen.</summary>
     public bool IsSelected(string name) => Find(name)?.Selected ?? false;
 
-    /// <summary>Whether a control or visual is hidden.</summary>
+    /// <summary>Whether a control or visual is hidden by its owner, whatever pane is showing.</summary>
     public bool IsHidden(string name) => Find(name)?.Hidden ?? false;
+
+    /// <summary>
+    /// Whether a control or visual is drawn now: not hidden, and in no pane or in the one showing. A name the view
+    /// doesn't know isn't.
+    /// </summary>
+    public bool IsShowing(string name) => Find(name) is { } state && Showing(state);
+
+    /// <summary>
+    /// The pane whose row is selected, or <see langword="null"/> without panes or with no row selected, when only
+    /// controls in no pane show.
+    /// </summary>
+    public UIPane? SelectedPane =>
+        sidebar is not null && states[sidebar.Name].List!.SelectedIndex is var index && index >= 0 && index < script.Panes.Count
+            ? script.Panes[index]
+            : null;
+
+    /// <summary>
+    /// Where a sidebar row is drawn, relative to the view's corner, by the arithmetic a click uses, or
+    /// <see langword="null"/> for one scrolled out of sight or past the last, or without a sidebar. A designer
+    /// outlines a pane's row with it.
+    /// </summary>
+    public UIRect? SidebarRowBounds(int row)
+    {
+        if (sidebar is null)
+            return null;
+
+        var list = states[sidebar.Name].List!;
+        var place = Place(sidebar.Frame, false);
+        var rowHeight = RowHeight(sidebar);
+        var top = 1;
+        for (var index = list.FirstVisible; index < list.Items.Count; index++)
+        {
+            if (index > list.FirstVisible && list.GroupStarts.Contains(index))
+                top += SidebarSeparatorRoom;
+            if (top + rowHeight > place.Height)
+                return null;
+            if (index == row)
+                return new UIRect(place.X + SidebarSelectionInset, place.Y + top, place.Width - (2 * SidebarSelectionInset), rowHeight);
+            top += rowHeight;
+        }
+
+        return null;
+    }
+
+    /// <summary>Whether the sidebar's rows come from the document's panes, so its owner can't set them.</summary>
+    public bool HasPanes => script.Panes.Count > 0;
+
+    private bool Showing(State state) => !state.Hidden && (state.Pane is null || state.Pane == SelectedPane?.Name);
 
     /// <summary>Gives a text field keyboard focus, with the caret at the end.</summary>
     public void Focus(string name)
     {
         if (script.Control(name) is { Type: UIControlType.TextField or UIControlType.TextArea, IsReadOnly: false }
-            && Find(name) is { Hidden: false, Disabled: false } state)
+            && Find(name) is { Disabled: false } state && Showing(state))
         {
             focused = name;
             state.Caret = state.Text.Length;
@@ -583,7 +640,7 @@ public sealed class UIView
         {
             var control = script.Controls[index];
             var state = states[control.Name];
-            if (!state.Hidden && Place(control.Frame, control.Image is not null).Contains(x, y))
+            if (Showing(state) && Place(control.Frame, control.Image is not null).Contains(x, y))
                 return state.Tooltip;
         }
 
@@ -613,6 +670,10 @@ public sealed class UIView
         pointer = (x, y);
 
         FollowLists();
+
+        // A field in a pane that's no longer showing, since its owner or a click switched panes, loses the keyboard.
+        if (focused is { } field && !Showing(states[field]))
+            focused = null;
 
         if (input.PointerPressed)
             Press(x, y, input.Time, events, originX, originY);
@@ -688,7 +749,7 @@ public sealed class UIView
 
         foreach (var visual in script.Visuals)
         {
-            if (states[visual.Name].Hidden)
+            if (!Showing(states[visual.Name]))
                 continue;
 
             var bounds = Offset(Place(visual.Frame, hasImage: true), originX, originY);
@@ -702,7 +763,7 @@ public sealed class UIView
         foreach (var control in script.Controls)
         {
             var state = states[control.Name];
-            if (state.Hidden)
+            if (!Showing(state))
                 continue;
 
             var bounds = Offset(Place(control.Frame, control.Image is not null), originX, originY);
@@ -1217,7 +1278,7 @@ public sealed class UIView
         {
             var control = script.Controls[index];
             var state = states[control.Name];
-            if (!state.Hidden && !state.Disabled && control.Type != UIControlType.Text
+            if (Showing(state) && !state.Disabled && control.Type != UIControlType.Text
                 && control.Type != UIControlType.Region && Place(control.Frame, control.Image is not null).Contains(x, y))
                 return control;
         }
@@ -1776,6 +1837,9 @@ public sealed class UIView
 
         // A shelf control's icons, which its owner fills.
         public Shelf? Shelf { get; init; }
+
+        // The pane a control is in, which shows it only while that pane's row is selected.
+        public string? Pane { get; init; }
 
         // A text area's wrapped lines as last drawn, as (start, length) into Text, and what they were made from.
         public List<(int Start, int Length)>? Lines { get; set; }

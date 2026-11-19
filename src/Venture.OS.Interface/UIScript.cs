@@ -247,7 +247,8 @@ public sealed record UIControl(
     UITextAlignment Alignment = UITextAlignment.Left,
     (float Minimum, float Maximum)? ValueRange = null,
     UIOrientation? Orientation = null,
-    bool Follows = false);
+    bool Follows = false,
+    string? Pane = null);
 
 /// <summary>
 /// Which of the desktop's standard menus a document's menu adds to, so a host can merge it rather than show two
@@ -325,6 +326,13 @@ public sealed record UITitleField(string Name, string? Placeholder, int Line);
 /// </summary>
 public sealed record UISidebar(string Name, float Width, int Line);
 
+/// <summary>
+/// One of a sidebar's panes, with the <c>panes</c> feature: a row in the sidebar, by <see cref="Title"/>, and the
+/// controls whose <c>pane</c> names it, which show only while its row is selected. The document says what each pane
+/// holds, so a host, or a designer that runs no code, shows one pane at a time without the app's help.
+/// </summary>
+public sealed record UIPane(string Name, string Title, int Line);
+
 /// <summary>An attribute the reader didn't know and skipped, which may be a typo.</summary>
 public sealed record UIIgnoredAttribute(string Element, string Attribute, int Line);
 
@@ -357,7 +365,7 @@ public sealed class UIScript
     public const int SupportedVersion = 1;
 
     /// <summary>The <c>requires</c> features this reader understands.</summary>
-    public static readonly IReadOnlyList<string> SupportedFeatures = [MenusFeature, SidebarFeature, ShelfFeature];
+    public static readonly IReadOnlyList<string> SupportedFeatures = [MenusFeature, SidebarFeature, ShelfFeature, PanesFeature];
 
     /// <summary>The feature that adds <c>&lt;Menu&gt;</c>, <c>&lt;MenuItem&gt;</c>, and <c>&lt;MenuSeparator&gt;</c>.</summary>
     public const string MenusFeature = "menus";
@@ -373,6 +381,12 @@ public sealed class UIScript
     /// a feature it can name in its refusal, rather than an element it would trip over.
     /// </summary>
     public const string ShelfFeature = "shelf";
+
+    /// <summary>
+    /// The feature that adds <c>&lt;Pane&gt;</c> and the <c>pane</c> attribute on controls. A reader that skipped
+    /// <c>pane</c> would draw every pane's controls over each other, so it's a feature older readers refuse.
+    /// </summary>
+    public const string PanesFeature = "panes";
 
     private UIScript()
     {
@@ -409,6 +423,9 @@ public sealed class UIScript
 
     /// <summary>The sidebar, with the <c>sidebar</c> feature, or <see langword="null"/>.</summary>
     public UISidebar? Sidebar { get; private init; }
+
+    /// <summary>The sidebar's panes, in document order, which is the sidebar's, with the <c>panes</c> feature.</summary>
+    public IReadOnlyList<UIPane> Panes { get; private init; } = [];
 
     /// <summary>Attributes the reader didn't know and skipped. Log them while developing, to catch typos.</summary>
     public IReadOnlyList<UIIgnoredAttribute> IgnoredAttributes { get; private init; } = [];
@@ -473,6 +490,7 @@ public sealed class UIScript
         var hasMenus = false;
         var hasSidebar = false;
         var hasShelf = false;
+        var hasPanes = false;
         foreach (var feature in features)
         {
             if (feature == MenusFeature)
@@ -481,6 +499,8 @@ public sealed class UIScript
                 hasSidebar = true;
             else if (feature == ShelfFeature)
                 hasShelf = true;
+            else if (feature == PanesFeature)
+                hasPanes = true;
             else
                 throw new UIScriptException(
                     $"This document requires \"{feature}\", which this reader doesn't support; it needs a newer VentureOS.");
@@ -499,6 +519,7 @@ public sealed class UIScript
         List<UIToolbarItem> toolbar = [];
         UITitleField? titleField = null;
         UISidebar? sidebar = null;
+        List<UIPane> panes = [];
 
         foreach (var element in document.Children)
         {
@@ -595,6 +616,10 @@ public sealed class UIScript
                     sidebar = new UISidebar(reader.RequiredString("name"), reader.RequiredNumber("width"), element.Line);
                     break;
 
+                case "Pane" when hasPanes:
+                    panes.Add(new UIPane(reader.RequiredString("name"), reader.RequiredString("title"), element.Line));
+                    break;
+
                 case "MenuSeparator" when hasMenus:
                     entries.Add((reader.RequiredString("menu"), new UIMenuEntry(null, null, null, null, element.Line)));
                     break;
@@ -607,12 +632,13 @@ public sealed class UIScript
                             "Menu" or "MenuItem" or "MenuSeparator" => $" Add requires=\"{MenusFeature}\" to <UIScript> to use menus.",
                             "Sidebar" => $" Add requires=\"{SidebarFeature}\" to <UIScript> to use a sidebar.",
                             "Shelf" => $" Add requires=\"{ShelfFeature}\" to <UIScript> to use a shelf.",
+                            "Pane" => $" Add requires=\"{PanesFeature}\" to <UIScript> to use panes.",
                             _ => "",
                         };
                         throw new UIScriptException($"<{element.Name}> isn't a UIScript element.{hint}", element.Line);
                     }
 
-                    controls.Add(ReadControl(type, reader, element.Line));
+                    controls.Add(ReadControl(type, reader, element.Line, hasPanes));
                     break;
             }
 
@@ -636,6 +662,7 @@ public sealed class UIScript
             ToolbarItems = toolbar,
             TitleField = titleField,
             Sidebar = sidebar,
+            Panes = panes,
             IgnoredAttributes = ignored,
         };
         script.Validate();
@@ -721,7 +748,7 @@ public sealed class UIScript
             offsets);
     }
 
-    private static UIControl ReadControl(UIControlType type, Attributes reader, int line)
+    private static UIControl ReadControl(UIControlType type, Attributes reader, int line, bool hasPanes)
     {
         var name = reader.RequiredString("name");
 
@@ -760,7 +787,8 @@ public sealed class UIScript
             Alignment: reader.Enum("alignment", ParseAlignment) ?? UITextAlignment.Left,
             ValueRange: range,
             Orientation: reader.Enum("orientation", ParseOrientation),
-            Follows: reader.Boolean("follows") ?? false);
+            Follows: reader.Boolean("follows") ?? false,
+            Pane: hasPanes ? reader.String("pane") : null);
     }
 
     private static IReadOnlyList<UIMenu> BuildMenus(
@@ -844,6 +872,8 @@ public sealed class UIScript
             Unique(names, visual.Name, visual.Line);
         foreach (var control in Controls)
             Unique(names, control.Name, control.Line);
+        foreach (var pane in Panes)
+            Unique(names, pane.Name, pane.Line);
         foreach (var menu in Menus)
         {
             Unique(names, menu.Name, menu.Line);
@@ -877,6 +907,9 @@ public sealed class UIScript
             ValidateFrame(visual.Frame, visual.Name, visual.Line);
         }
 
+        if (Panes.Count > 0 && Sidebar is null)
+            throw new UIScriptException("Panes are a sidebar's rows, so a document with panes needs a <Sidebar>.", Panes[0].Line);
+
         foreach (var control in Controls)
             ValidateControl(control);
     }
@@ -884,6 +917,10 @@ public sealed class UIScript
     private void ValidateControl(UIControl control)
     {
         var (name, type, line) = (control.Name, control.Type, control.Line);
+
+        // Without the feature, pane is an unknown attribute and was skipped, so only a known one is checked.
+        if (control.Pane is { } pane && !Panes.Any(each => each.Name == pane))
+            throw Unknown(name, "pane", pane, line);
 
         var takesText = type is UIControlType.TextField or UIControlType.TextArea;
         if (control.Placeholder is not null && !takesText)

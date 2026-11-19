@@ -314,6 +314,14 @@ new number. `roll` still works in the shell, since both live in the same app.
   takes tables; a plain list takes strings. The sidebar sits beside the
   content, so the window's size and your controls' positions don't change.
   See [UIScript sidebar](./uiscript/sidebar.md).
+- **Panes:** for a sidebar that switches between sets of controls, as
+  Settings has, add `panes` to `requires`, a `<Pane name="general"
+  title="General"/>` for each row, in order, and `pane="general"` on each
+  control in it. The sidebar shows the panes' titles and only the chosen
+  pane's controls, with no code of yours; a control without `pane` shows on
+  every pane. The rows are the document's, so `setItems` on that sidebar is
+  an error, but `select` and the `selected` event work as usual. See
+  [UIScript panes](./uiscript/panes.md).
 - **Resizing:** `resizable="true"` on `<Window>` puts a grip in the window's
   bottom-right corner. The window starts at its `width` and `height` and
   shrinks no further than `minWidth` and `minHeight` (or its starting size,

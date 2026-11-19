@@ -173,10 +173,10 @@ public sealed class SettingsAppTests : IDisposable
     {
         // The sky, then Earthset, the only wallpaper the system ships; the other slots are hidden.
         Assert.Empty(Window.View.MissingImages);
-        Assert.False(Window.View.IsHidden("wallpaper1"));
-        Assert.False(Window.View.IsHidden("wallpaper2"));
-        Assert.True(Window.View.IsHidden("wallpaper3"));
-        Assert.True(Window.View.IsHidden("wallpaper5"));
+        Assert.True(Window.View.IsShowing("wallpaper1"));
+        Assert.True(Window.View.IsShowing("wallpaper2"));
+        Assert.False(Window.View.IsShowing("wallpaper3"));
+        Assert.False(Window.View.IsShowing("wallpaper5"));
         Assert.True(Window.View.IsSelected("wallpaper2"));
         Assert.Equal("Earthset", Window.View.Text("wallpaperName"));
         Assert.Equal("", Window.View.Text("status"));
@@ -189,10 +189,10 @@ public sealed class SettingsAppTests : IDisposable
         Assert.Contains("wallpaper=\"sky\"", File.ReadAllText(DesktopAppearance.SettingsPath!));
 
         // Coming back to Appearance from Clock keeps the unused slots hidden.
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 0));
-        Assert.True(Window.View.IsHidden("wallpaper3"));
-        Assert.False(Window.View.IsHidden("wallpaper2"));
+        Choose(2);
+        Choose(0);
+        Assert.False(Window.View.IsShowing("wallpaper3"));
+        Assert.True(Window.View.IsShowing("wallpaper2"));
     }
 
     [Fact]
@@ -232,8 +232,8 @@ public sealed class SettingsAppTests : IDisposable
         Send(new UIEvent(UIEventKind.Pressed, "rounded"));
         Assert.True(DesktopAppearance.Current.RoundedCorners);
 
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
-        Assert.True(Window.View.IsHidden("square"));
+        Choose(2);
+        Assert.False(Window.View.IsShowing("square"));
     }
 
     [Fact]
@@ -242,25 +242,25 @@ public sealed class SettingsAppTests : IDisposable
         Assert.Equal(["Appearance", "Dock", "Clock", "Developer"], Window.View.List("panes")!.Items);
         Assert.Equal(0, Window.View.List("panes")!.SelectedIndex);
         Assert.Equal("Appearance", Window.Title);
-        Assert.False(Window.View.IsHidden("swatch1"));
-        Assert.True(Window.View.IsHidden("utcOffset"));
-        Assert.True(Window.View.IsHidden("clockShown"));
+        Assert.True(Window.View.IsShowing("swatch1"));
+        Assert.False(Window.View.IsShowing("utcOffset"));
+        Assert.False(Window.View.IsShowing("clockShown"));
     }
 
     [Fact]
     public void ChoosingClockShowsItsPaneAlone()
     {
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 2));
+        Choose(2);
 
         Assert.Equal("Clock", Window.Title);
-        Assert.False(Window.View.IsHidden("utcLabel"));
-        Assert.False(Window.View.IsHidden("utcOffset"));
-        Assert.True(Window.View.IsHidden("swatch1"));
-        Assert.True(Window.View.IsHidden("custom"));
+        Assert.True(Window.View.IsShowing("utcLabel"));
+        Assert.True(Window.View.IsShowing("utcOffset"));
+        Assert.False(Window.View.IsShowing("swatch1"));
+        Assert.False(Window.View.IsShowing("custom"));
 
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 0));
+        Choose(0);
         Assert.Equal("Appearance", Window.Title);
-        Assert.True(Window.View.IsHidden("utcOffset"));
+        Assert.False(Window.View.IsShowing("utcOffset"));
     }
 
     [Fact]
@@ -278,12 +278,12 @@ public sealed class SettingsAppTests : IDisposable
     [Fact]
     public void DeveloperShowsItsPaneAloneAndStartsOff()
     {
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 3));
+        Choose(3);
 
         Assert.Equal("Developer", Window.Title);
-        Assert.False(Window.View.IsHidden("developerOn"));
-        Assert.True(Window.View.IsHidden("utcOffset"));
-        Assert.True(Window.View.IsHidden("swatch1"));
+        Assert.True(Window.View.IsShowing("developerOn"));
+        Assert.False(Window.View.IsShowing("utcOffset"));
+        Assert.False(Window.View.IsShowing("swatch1"));
         Assert.True(Window.View.IsSelected("developerOff"));
         Assert.Equal("Off. 0 computers are trusted.", Window.View.Text("developerStatus"));
     }
@@ -312,7 +312,7 @@ public sealed class SettingsAppTests : IDisposable
         system.Developer.Problem = "there's no network device to listen on";
         system.Developer.Trust.Trust("0123456789abcdef0123456789abcdef");
 
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 3));
+        Choose(3);
 
         Assert.Equal("Not listening: there's no network device to listen on. 1 computer is trusted.", Window.View.Text("developerStatus"));
     }
@@ -320,10 +320,10 @@ public sealed class SettingsAppTests : IDisposable
     [Fact]
     public void DockShowsItsModesAndSavesTheOneChosen()
     {
-        Send(new UIEvent(UIEventKind.Selected, "panes", Index: 1));
+        Choose(1);
         Assert.Equal("Dock", Window.Title);
         Assert.True(Window.View.IsSelected("dockAlways"));
-        Assert.True(Window.View.IsHidden("utcOffset"));
+        Assert.False(Window.View.IsShowing("utcOffset"));
 
         Send(new UIEvent(UIEventKind.Pressed, "dockDodge"));
 
@@ -335,4 +335,11 @@ public sealed class SettingsAppTests : IDisposable
     }
 
     private void Send(UIEvent uiEvent) => Window.EventHandler!(Window, uiEvent);
+
+    // As a click on a row does: the sidebar selects it, then reports it.
+    private void Choose(int pane)
+    {
+        Window.View.List("panes")!.SelectedIndex = pane;
+        Send(new UIEvent(UIEventKind.Selected, "panes", Index: pane));
+    }
 }

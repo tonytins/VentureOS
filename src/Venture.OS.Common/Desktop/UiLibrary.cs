@@ -816,7 +816,8 @@ public static class UiLibrary
     /// <summary>
     /// <c>window:setItems(name, items)</c>: a list's items, each a string, or, for the sidebar, a table with
     /// <c>text</c> and an optional <c>icon</c> naming an <c>&lt;Image&gt;</c>, or <c>{ separator = true }</c> between
-    /// groups. Separators aren't items, so indexes count items only. Nothing changes when an entry is wrong.
+    /// groups. Separators aren't items, so indexes count items only. Nothing changes when an entry is wrong. A
+    /// sidebar of panes takes its rows from the document, so setting them is an error.
     /// </summary>
     private static int SetItems(ILuaState lua, Handle handle)
     {
@@ -829,6 +830,9 @@ public static class UiLibrary
             return Fail(lua, "window:setItems needs a list of items, such as { \"Milk\", \"Eggs\" }");
 
         var isSidebar = name == handle.View.SidebarName;
+        if (isSidebar && handle.View.HasPanes)
+            return Fail(lua, $"window:setItems can't change \"{name}\" in {handle.Document}: its rows are the document's panes");
+
         List<string> items = [];
         List<string?> icons = [];
         List<int> groupStarts = [];

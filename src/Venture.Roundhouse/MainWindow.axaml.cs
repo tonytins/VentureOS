@@ -268,6 +268,12 @@ public sealed partial class MainWindow : Window
     /// <summary>The selected element, by its index among the root's children, or <see langword="null"/>.</summary>
     public int? Selection { get; private set; }
 
+    /// <summary>
+    /// The pane the canvas shows, by name, kept across redraws and edits; the document's first pane when it's
+    /// <see langword="null"/> or names none. Selecting a pane, or anything in one, shows it.
+    /// </summary>
+    public string? ShownPane { get; private set; }
+
     /// <summary>Whether the text is showing below the canvas.</summary>
     public bool IsTextShowing => TextToggle.IsChecked == true;
 
@@ -281,8 +287,34 @@ public sealed partial class MainWindow : Window
         if (element is { } index && (Document?.Xml is not { } xml || index < 0 || index >= xml.Children.Count))
             throw new ArgumentOutOfRangeException(nameof(element), element, "The document has no such element.");
         Selection = element;
+        if (element is { } selected && PaneOf(Document!.Xml!.Children[selected]) is { } pane && pane != ShownPane)
+        {
+            ShownPane = pane;
+            RedrawCanvas();
+        }
+
         ShowSelection();
         ShowPanels();
+    }
+
+    /// <summary>The pane an element shows on: a pane's own, or the one a control is in; <see langword="null"/> for the rest.</summary>
+    private static string? PaneOf(OS.Interface.Xml.FlatXmlElement element) =>
+        element.Name == "Pane" ? element["name"] : element["pane"];
+
+    /// <summary>Selects the pane the canvas shows in a view about to be drawn, as a click on its row would.</summary>
+    private void ShowPane(UIView view, UIScript script)
+    {
+        if (view.SidebarName is not { } sidebar || script.Panes.Count == 0)
+            return;
+
+        var index = 0;
+        for (var each = 0; each < script.Panes.Count; each++)
+        {
+            if (script.Panes[each].Name == ShownPane)
+                index = each;
+        }
+
+        view.List(sidebar)!.SelectedIndex = index;
     }
 
     /// <summary>How much the canvas is magnified: 1 or 2, so each of VentureOS's pixels stays a whole number of the screen's.</summary>
@@ -427,6 +459,7 @@ public sealed partial class MainWindow : Window
         path = full;
         Document = document;
         Selection = null;
+        ShownPane = null;
         Map = null;
         byteOrderMark = document.Text.StartsWith('\uFEFF') ? "\uFEFF" : "";
         loading = true;
@@ -632,6 +665,7 @@ public sealed partial class MainWindow : Window
     {
         path = null;
         infoPath = null;
+        ShownPane = null;
         Document = null;
         Map = null;
         MenusShown = null;
@@ -918,6 +952,7 @@ public sealed partial class MainWindow : Window
         var file = path ?? throw new InvalidOperationException("Only an open document is drawn.");
         List<string> problems = [];
         var view = DocumentView.Open(script, Path.GetDirectoryName(file) ?? "/", image => SkiaImages.Load(image), problems.Add);
+        ShowPane(view, script);
         var menus = MenusFor(document, script, file);
         using var painter = RenderCommand.Draw(view, Path.GetFileName(file), fonts, out var drawn, menus);
         PreviewImage.Source = ToBitmap(painter);
@@ -1007,11 +1042,26 @@ public sealed partial class MainWindow : Window
 
     /// <summary>
     /// Adds a control or another part of the window from the library, and selects it. A control goes in front of
-    /// everything; a menu item joins the selected menu; a menu or sidebar adds the feature it needs.
+    /// everything, in the pane on show; a menu item joins the selected menu; a menu, sidebar, or pane adds the feature
+    /// it needs.
     /// </summary>
     /// <returns>Whether it was added; when it wasn't, the status line says why.</returns>
     public bool AddControl(string element) =>
-        Edit(document => DesignEdits.Add(document, element, Selection));
+        Edit(document => DesignEdits.Add(document, element, Selection, PaneOnShow(document)));
+
+    /// <summary>The pane the canvas shows of <paramref name="document"/>'s panes, or <see langword="null"/> without any.</summary>
+    private string? PaneOnShow(UIDocument document)
+    {
+        if (document.Script is not { Panes.Count: > 0 } script)
+            return null;
+        foreach (var pane in script.Panes)
+        {
+            if (pane.Name == ShownPane)
+                return pane.Name;
+        }
+
+        return script.Panes[0].Name;
+    }
 
     /// <summary>Copies the selection just in front of it, set off a little, and selects the copy.</summary>
     /// <returns>Whether it was copied; when it wasn't, the status line says why.</returns>

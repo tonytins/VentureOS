@@ -197,47 +197,20 @@ window:on("developerOn", function() venture.developer.enable(); showDeveloper() 
 window:on("developerOff", function() venture.developer.disable(); showDeveloper() end)
 window:every(2, function() showDeveloper() end)
 
--- The panes, in the sidebar's order, and the controls each one shows; every
--- pane's controls sit in the same place, and only the chosen pane's show.
-local PANES = {
-  {
-    name = "Appearance",
-    controls = {
-      "styleHeading", "light", "dark", "auto", "darkFromLabel", "darkFrom", "darkUntilLabel", "darkUntil", "accentHeading", "swatch1", "swatch2", "swatch3", "swatch4", "swatch5",
-      "swatch6", "swatch7", "swatch8", "swatch9", "accentName", "custom", "status", "cornersHeading", "rounded",
-      "square", "wallpaperHeading", "wallpaper1", "wallpaper2", "wallpaper3", "wallpaper4", "wallpaper5",
-      "wallpaperName",
-    },
-  },
-  { name = "Dock", controls = { "dockHeading", "dockAlways", "dockAutoHide", "dockDodge", "dockAbout" } },
-  { name = "Clock", controls = { "offsetHeading", "utcLabel", "utcOffset", "clockShown" } },
-  {
-    name = "Developer",
-    controls = { "developerHeading", "developerOn", "developerOff", "developerAbout", "developerStatus" },
-  },
-}
-
--- Wallpaper slots past the last wallpaper stay hidden on every pane.
-local function unused(control)
-  local slot = tonumber(control:match("^wallpaper(%d)$"))
-  return slot ~= nil and wallpapers[slot] == nil
-end
-
+-- The panes are main.uix's: the sidebar shows them, and only the chosen
+-- pane's controls. The window's title follows the pane.
 local function showPane(number)
-  for index, pane in ipairs(PANES) do
-    for _, control in ipairs(pane.controls) do window:setHidden(control, index ~= number or unused(control)) end
-  end
-  window:setTitle(PANES[number].name)
-  window:select("panes", number)
-  if PANES[number].name == "Developer" then showDeveloper() end
+  local title = window:items("panes")[number]
+  window:setTitle(title)
+  if title == "Developer" then showDeveloper() end
 end
 
-local names = {}
-for number, pane in ipairs(PANES) do names[number] = pane.name end
-window:setItems("panes", names)
 window:on("panes", function(event)
   if event.kind == "selected" then showPane(event.index) end
 end)
+
+-- Wallpaper slots past the last wallpaper stay hidden.
+for slot = #wallpapers + 1, WALLPAPER_SLOTS do window:setHidden("wallpaper" .. slot, true) end
 
 show()
 showDock()

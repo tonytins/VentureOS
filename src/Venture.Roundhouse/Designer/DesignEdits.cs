@@ -46,7 +46,7 @@ public static class DesignEdits
 
     /// <summary>
     /// The parts of a window that aren't controls, which the library adds too: the title bar's items and title field,
-    /// the menus, and the sidebar.
+    /// the menus, the sidebar, and its panes.
     /// </summary>
     public static IReadOnlyList<(string Element, string Title)> Parts { get; } =
     [
@@ -56,16 +56,19 @@ public static class DesignEdits
         ("MenuItem", "Menu Item"),
         ("MenuSeparator", "Menu Separator"),
         ("Sidebar", "Sidebar"),
+        ("Pane", "Pane"),
     ];
 
     /// <summary>
     /// Adds a control (see <see cref="Add(UIDocument, string)"/>) or one of the window's other <see cref="Parts"/>. A
     /// menu or sidebar first adds the feature it needs to <c>requires</c>. A menu item or separator joins the
     /// <paramref name="selected"/> menu, or the menu of the selected item, or else the last menu, after its last entry.
+    /// A pane needs a sidebar, adds the <c>panes</c> feature, and goes after the last pane, so it's the sidebar's last
+    /// row. A control goes in <paramref name="pane"/>, the pane on show, when there is one.
     /// </summary>
     /// <exception cref="ArgumentException">The library has no such element, or a menu item has no menu to join.</exception>
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a second title field.</exception>
-    public static (UIDocument Document, int Element) Add(UIDocument document, string element, int? selected)
+    public static (UIDocument Document, int Element) Add(UIDocument document, string element, int? selected, string? pane = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(element);
@@ -96,6 +99,22 @@ public static class DesignEdits
                 var withSidebar = Require(document, UIScript.SidebarFeature);
                 return Insert(withSidebar, end, element, [new("name", UniqueName(withSidebar, "sidebar")), new("width", "160")]);
             }
+
+            case "Pane":
+            {
+                if (document.Script?.Sidebar is null)
+                    throw new UIScriptException("A pane is a row of a sidebar; add a sidebar first.");
+                var withPanes = Require(document, UIScript.PanesFeature);
+                var children = withPanes.Xml!.Children;
+                var after = -1;
+                for (var child = 0; child < children.Count; child++)
+                {
+                    if (children[child].Name is "Pane" || (after < 0 && children[child].Name == "Sidebar"))
+                        after = child;
+                }
+
+                return Insert(withPanes, after + 1, element, [new("name", UniqueName(withPanes, "pane")), new("title", "Pane")]);
+            }
         }
 
         var control = Library.FirstOrDefault(item => item.Element == element)
@@ -118,6 +137,8 @@ public static class DesignEdits
         ];
         if (control.Text is { } text)
             attributes.Add(new("text", text));
+        if (pane is not null)
+            attributes.Add(new("pane", pane));
 
         var index = document.Xml!.Children.Count;
         return (document.InsertElement(index, element, attributes), index);

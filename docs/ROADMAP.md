@@ -253,9 +253,9 @@ approved for the `vdb` tool alone.
 
 - [x] Cosmos 3.0.99.
 - [x] `<Panel>` in place of `<Window role="panel">`, which goes.
-- [ ] `<Pane>` in a `<Sidebar>`: its rows, and one pane shown at a time, with
+- [x] `<Pane>` in a `<Sidebar>`: its rows, and one pane shown at a time, with
   no Lua; Settings moves to it.
-- [ ] Roundhouse's designer draws a sidebar's rows and its selected pane, and
+- [x] Roundhouse's designer draws a sidebar's rows and its selected pane, and
   switches panes from the canvas.
 - [ ] SHA-256, HMAC, HKDF, and ChaCha20-Poly1305 for VentureOS, and vdb/1
   encrypted with them, the identity no longer sent.
@@ -309,6 +309,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | patch | 0.7.4xx: panes are elements, and Roundhouse's designer shows a sidebar's rows and one pane at a time. |
 | 2026-11-19 | patch | 0.7.4xx: Cosmos 3.0.99, and `<Panel>` in place of `<Window role="panel">`, are done. |
 | 2026-11-19 | minor | 0.7.4xx, refinements, begins: Cosmos 3.0.99, `<Panel>` and `<Pane>` as elements, Roundhouse's sidebar fix and vdb, and vdb/1 encrypted, by my decision, from its design. swift-crypto is approved for the `vdb` tool. |
 | 2026-11-19 | minor | 0.7.3xx is complete: panels and shelves, Dock.app, the menu bar as Files' top panel, and the dock's three modes. The next band is the owner's to plan. |

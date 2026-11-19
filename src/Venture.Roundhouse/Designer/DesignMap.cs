@@ -40,13 +40,15 @@ public sealed class DesignMap
                 var isVisual = element.Name == "Visual";
                 if (isVisual != visuals || (!isVisual && !UIScriptSchema.Controls.Contains(element.Name)))
                     continue;
-                if (element["name"] is { } name && window.View.Bounds(name) is { } bounds)
+                // A control in a pane that isn't showing isn't drawn, so it can't be found or selected on the canvas.
+                if (element["name"] is { } name && window.View.IsShowing(name) && window.View.Bounds(name) is { } bounds)
                     drawn.Add((index, bounds with { X = bounds.X + left, Y = bounds.Y + top }));
             }
         }
 
         // The title bar's items and title field, and the sidebar down the window's left, around the content.
         var toolbarItem = 0;
+        var pane = 0;
         for (var index = 0; index < children.Count; index++)
         {
             switch (children[index].Name)
@@ -64,6 +66,14 @@ public sealed class DesignMap
                     break;
             }
         }
+
+        // Each pane is its row, in front of the sidebar, so clicking a row picks its pane. Panes are rows in
+        // document order, as the reader reads them.
+        for (var index = 0; index < children.Count; index++)
+        {
+            if (children[index].Name == "Pane" && window.View.HasPanes && window.View.SidebarRowBounds(pane++) is { } row)
+                drawn.Add((index, row with { X = row.X + left, Y = row.Y + top }));
+        }
     }
 
     /// <summary>The <c>&lt;Window&gt;</c> element's index, which is selected by clicking the window's own background.</summary>
@@ -80,7 +90,7 @@ public sealed class DesignMap
     }
 
     /// <summary>
-    /// The element at a point on the canvas: a title bar item, the title field, or the sidebar; the frontmost control
+    /// The element at a point on the canvas: a title bar item, the title field, a pane's row, or the sidebar; the frontmost control
     /// or visual there; or the window, anywhere else on it, its bar included. <see langword="null"/> off the window.
     /// </summary>
     public int? ElementAt(float x, float y)
