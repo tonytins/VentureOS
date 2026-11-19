@@ -1,6 +1,6 @@
 # vdb: encrypting the conversation
 
-**Status:** proposed for 0.7.4xx, Seto, with one question open (see [Pairing](#pairing)). **Date:** 2026-11-19.
+**Status:** approved for 0.7.4xx, Seto. **Date:** 2026-11-19.
 
 vdb/1, as built in 0.7.1xx, sends everything in plain text, the computer's identity included: anyone who sees one
 conversation can copy the identity and act as that computer. This design keeps the protocol vdb/1 and its commands as
@@ -113,15 +113,14 @@ apps up to 16 MiB, that's accepted rather than adding a binary frame.
 Today, the first time an untrusted identity connects, VentureOS shows the Trust alert. Without the identity,
 VentureOS can't derive the keys, and with it sent in the clear, pairing is exactly as safe as today's vdb, once.
 
-**Open, for the owner:**
+**Chosen, by the owner: send the identity once, at pairing.** An unknown key-id is answered `wait trust`; on
+**Trust**, VentureOS asks for it with a plain `pair`, the tool sends `pair <identity>`, and VentureOS checks that it
+gives the key-id before trusting it, then both sides derive the keys and go on sealed. **Deny**, no answer, or an
+identity that doesn't match closes the connection as today. Trust ahead of time, through `developer.local.lua` or
+`venture.developer.trust`, never sends it. The docs say pairing is the one moment it's exposed.
 
-1. **Send the identity once, at pairing** (proposed). An unknown key-id is answered `wait trust`; on **Trust**,
-   VentureOS asks for it with a plain `pair`, the tool sends `pair <identity>`, and VentureOS checks it against the
-   key-id before trusting it. Trust ahead of time, through `developer.local.lua` or `venture.developer.trust`, never
-   sends it. The docs say pairing is the one moment it's exposed.
-2. **Trust ahead of time only.** The alert goes; a computer is trusted by `venture.developer.trust`, or by pasting
-   its identity in Settings' Developer pane. Nothing secret ever crosses, but trust is lost at every reboot until
-   VentureOS can keep files, so it's pasted again each time on any machine without a `developer.local.lua`.
+Rejected: trust ahead of time only, with no alert. Nothing secret would ever cross, but until VentureOS can keep
+files, the identity would be pasted again after every reboot on any machine without a `developer.local.lua`.
 
 ### Randomness
 
@@ -158,5 +157,5 @@ the host's own generator, so the keys are fresh even if VentureOS's nonce is wea
 
 ## Left to whoever builds it
 
-- The exact text of `pair` and its answers, once the owner chooses.
+- The exact text of `pair` and its answers.
 - How the reference shows sealed conversations, and which recordings keep the sealed bytes.
