@@ -44,7 +44,7 @@ stage to the next, and add a line to the revision history.
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
-| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; the dock as an app; then Roundhouse on VentureOS itself |
+| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; then Roundhouse on VentureOS itself |
 
 ## 0.4, Pere Marquette
 
@@ -216,16 +216,31 @@ and swift-log are approved for it alone.
   opening it, with what it prints sent back.
 - [x] The `vdb` tool, for Linux, macOS, and Windows (built and tested on Linux).
 
-**0.7.2xx, the dock as an app**
+**0.7.2xx, supervised processes**
 
-The dock becomes a system app, `Dock.app`, as macOS's is, rather than part of
-the desktop's own code: one less thing that can take the desktop down, and
-easier to change later. It gains a choice of always visible, hiding on its
-own, or hiding when a window would cover it. The platform needs for it what
-Lua doesn't have yet: a window pinned to an edge of the screen, the list of
-apps and their changes, and minimized windows.
+Every app, the system's included, becomes a process with an ID and a
+lifecycle, which a supervisor starts, watches, ends, and, for the apps the
+desktop keeps running, restarts at once. It's what the next band stands on,
+and leaves room for apps to run independently later. Its
+[design](./design/2026-11-18-processes-design.md) has the rules.
 
-- [ ] Not yet planned in detail.
+- [ ] Processes and a supervisor: crashes noticed, with the reason, and
+  restart policies, `never` and `always`.
+- [ ] `ps` and `kill`, and `venture.processes()` and `venture.kill(id)`.
+
+**0.7.3xx, the dock and the menu bar as apps**
+
+The dock becomes `Dock.app`, and the menu bar a panel Files hosts, rather than
+parts of the desktop's own code: one less thing that can take the desktop
+down, easier to change later, and windows that stop covering or being covered.
+The dock gains a choice of always visible, hiding on its own, or hiding when
+a window would cover it. Its [design](./design/2026-11-18-dock-app-design.md)
+adds panel windows and a shelf to UIScript.
+
+- [ ] Panel windows, top and bottom, and the work area between them.
+- [ ] The shelf, `venture.desktop`, and `Dock.app`.
+- [ ] The menu bar as Files' top panel.
+- [ ] The dock's three modes, in Settings.
 
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer
@@ -274,6 +289,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | 0.7.2xx begins: apps as supervised processes, from its approved design. The dock moves to 0.7.3xx, with the menu bar as a panel Files hosts, built on processes. Designs get an index, `docs/design/README.md`. |
 | 2026-11-18 | minor | 0.7.1xx is complete, closed out with a boot that follows the README's vdb steps. 0.7 is a Snow Leopard, refining as much as adding, and may run longer than earlier releases. 0.7.2xx, the dock as an app, is next, being planned. |
 | 2026-11-18 | minor | 0.7.1xx's vdb is done, with the `vdb` tool in Swift. The desktop no longer opens a Files window. The dock becomes an app in a band of its own, 0.7.2xx, by my decision. |
 | 2026-11-18 | patch | VentureOS's side of vdb is done: developer mode, the Trust alert, the protocol, and listening from the desktop, checked by sending an app into QEMU. The `vdb` tool is next. GitVersion gains a tag switch, so vdb reports VentureOS's version. |
