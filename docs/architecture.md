@@ -147,6 +147,7 @@ VentureOS/
 │  │  │                            (VentureLibrary, ShellLibrary, FilesLibrary), backed by ISystemInfo and IAppearance
 │  │  ├─ Bundles/                  Venture.OS.Bundles: Bundle (Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │  ├─ Vdb/                      Venture.OS.Vdb: vdb/1 without sockets (VdbSession), trust, and developer mode
+│  │  ├─ Processes/                Venture.OS.Processes: AppProcess and the Supervisor (0.7.2xx; not wired in yet)
 │  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
 │  │                               and UiLibrary (venture.ui), all drawn through IPainter
 │  ├─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
