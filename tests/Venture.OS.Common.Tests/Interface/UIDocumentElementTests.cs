@@ -243,7 +243,8 @@ public sealed class UIDocumentElementTests
             Assert.Equal(Comments(document), Comments(back));
         }
 
-        Assert.True(moves > 0);
+        // A document of one element, such as the menu bar's panel, has nothing to move.
+        Assert.True(moves > 0 || last < 1);
     }
 
     [Theory]

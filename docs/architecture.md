@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,753 tests, and 190 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,767 tests, and 190 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1273,6 +1273,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   A double-click (two presses on one item within 500 ms, timed by
   `DesktopInput.Time`) in a selectable list reports `submitted` with the
   item, a VentureOS addition proposed for Hudini's spec.
+- **The bar's place** (0.7.3xx): the bar is Files' top panel. Files opens
+  `menubar.uix`, a top panel 26 pixels tall (the bar's 22 and 4 that windows
+  keep clear of), when it starts, and the desktop
+  (`DesktopSession.MenuBarApp`) draws the bar, and takes presses on it, only
+  while that panel is open (`BarShows`); the panel, not `TopInset`, keeps
+  windows below it. Shortcuts work either way. If Files ends, the bar goes
+  with it, closing any open menu, and returns when the supervisor starts
+  Files again, at once. There's one top panel: another app's is refused,
+  with the reason. A desktop without a `MenuBarApp`, as in most tests, draws
+  the bar itself and keeps room for it.
 - **Menu bar.** `MenuBar` shows the VentureOS menu (About VentureOS, Return
   to Shell), then the active app's menu (Quit, Ctrl+Q), then the standard
   menus every app gets without asking: File, with Close Window (Ctrl+W) for
@@ -1608,6 +1618,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Desktop (§9): the menu bar is Files' top panel (`MenuBarApp`, `BarShows`); one top panel at a time. |
 | 2026-11-19 | minor | Desktop (§9): the dock is `Dock.app`, a kept process, filled through `venture.desktop`; the C# `Dock` is gone. |
 | 2026-11-19 | minor | Desktop (§9): panels and the work area in `WindowManager`; `Shelf`, drawn by `<Shelf>` and the dock; Roundhouse draws panels as designed. |
 | 2026-11-19 | minor | UIScript: `role` and `edge` on `<Window>`, and the `shelf` module, read but not yet drawn (0.7.3xx). |

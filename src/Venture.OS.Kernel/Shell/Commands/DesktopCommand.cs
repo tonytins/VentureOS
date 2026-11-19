@@ -93,6 +93,7 @@ internal sealed class DesktopCommand(
                 SystemVersion = $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})",
                 FallbackApp = FilesApp,
                 DockApp = DockApp,
+                MenuBarApp = FilesApp,
             };
             CanvasPainter painter = new(canvas, interfaceFont, monospaceFont);
             session.StartFallbackApp();

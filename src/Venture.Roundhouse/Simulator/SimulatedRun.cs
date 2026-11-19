@@ -102,6 +102,7 @@ public sealed class SimulatedRun : IDisposable, IShellHost
                 SystemVersion = $"Version {System.Version} (Build {System.BuildNumber})",
                 FallbackApp = FallbackApp,
                 DockApp = DockApp,
+                MenuBarApp = FallbackApp,
             };
         });
     }

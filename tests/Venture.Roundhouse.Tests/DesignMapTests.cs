@@ -83,7 +83,8 @@ public sealed class DesignMapTests : IDisposable
                 Assert.True(found >= index, $"{Path.GetFileName(file)}: {children[index]["name"]} found {found}.");
             }
 
-            Assert.NotEmpty(script.Controls);
+            // A panel the desktop draws into, as the menu bar's, needs none.
+            Assert.True(script.Controls.Count > 0 || script.Window.Role == UIWindowRole.Panel, $"{Path.GetFileName(file)} has no controls.");
         }
     }
 

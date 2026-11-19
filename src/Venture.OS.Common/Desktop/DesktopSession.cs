@@ -182,7 +182,7 @@ public sealed class DesktopSession
         last = new DesktopInput(width / 2, height / 2, false);
         Windows = windows ?? new WindowManager(width, height);
         Windows.SetScreenSize(width, height);
-        Windows.TopInset = MenuBar.Height + 4;
+        Windows.TopInset = MenuBar.Height + BarGap;
         ActiveApp = Windows.Focused?.App;
         lastFocused = Windows.Focused;
         apps?.Windows?.MarkDesktopChanged();
@@ -248,6 +248,19 @@ public sealed class DesktopSession
     /// the dock. <see langword="null"/> for none.
     /// </summary>
     public string? FallbackApp { get; init; }
+
+    /// <summary>
+    /// The app whose top panel is the menu bar, by name, such as <c>Files</c>: the bar shows, and takes the pointer,
+    /// only while that panel is open, where it is, and the panel keeps windows below it. With <see langword="null"/>,
+    /// the desktop shows the bar itself, always, and keeps room for it.
+    /// </summary>
+    public string? MenuBarApp { get; init; }
+
+    /// <summary>Whether the menu bar shows: always without a <see cref="MenuBarApp"/>, else while its top panel is open.</summary>
+    public bool BarShows => MenuBarApp is null || Windows.TopPanel is not null;
+
+    /// <summary>The room below the bar that windows keep clear of, so a window's title bar doesn't touch it.</summary>
+    public const int BarGap = 4;
 
     /// <summary>
     /// The app that's the dock, by name, such as <c>Dock</c>, which the desktop starts and keeps running as it keeps
@@ -448,6 +461,13 @@ public sealed class DesktopSession
         // Apps and windows may have changed since the last frame, such as the fallback app starting.
         RefreshMenus();
 
+        // With an app holding the bar in its top panel, the panel keeps windows below it; otherwise the desktop does.
+        Windows.TopInset = MenuBarApp is null ? MenuBar.Height + BarGap : 0;
+
+        // A menu left open when the bar's app stopped goes with the bar.
+        if (!BarShows && MenuBar.IsOpen)
+            MenuBar.Close();
+
         // Keys: the open menu takes them all; otherwise shortcuts and menu hotkeys come before the windows.
         foreach (var key in input.KeysPressed)
         {
@@ -460,7 +480,7 @@ public sealed class DesktopSession
             {
                 Choose(shortcut, happened);
             }
-            else if (!(key is { Key: DesktopKey.Character, Alt: true, Control: false } && MenuBar.OpenByHotkey(key.Character)))
+            else if (!(key is { Key: DesktopKey.Character, Alt: true, Control: false } && BarShows && MenuBar.OpenByHotkey(key.Character)))
             {
                 forWindows.Add(key);
             }
@@ -472,7 +492,7 @@ public sealed class DesktopSession
         // The pointer: a press belongs to what it lands on until it's released.
         if (pressed)
         {
-            owner = MenuBar.IsOpen || MenuBar.Contains(x, y) ? PointerOwner.Bar : PointerOwner.Windows;
+            owner = MenuBar.IsOpen || (BarShows && MenuBar.Contains(x, y)) ? PointerOwner.Bar : PointerOwner.Windows;
         }
 
         if (owner == PointerOwner.Bar || MenuBar.IsOpen)
@@ -482,7 +502,7 @@ public sealed class DesktopSession
                 Choose(chosen, happened);
         }
 
-        var overWindows = !MenuBar.IsOpen && !MenuBar.Contains(x, y);
+        var overWindows = !MenuBar.IsOpen && !(BarShows && MenuBar.Contains(x, y));
         Windows.ShowsHover = overWindows;
         DesktopInput windowInput = new(
             x,
@@ -580,7 +600,8 @@ public sealed class DesktopSession
 
         painter.DrawPixels(background, 0, 0, Width, Height);
         Windows.Draw(painter);
-        MenuBar.Draw(painter);
+        if (BarShows)
+            MenuBar.Draw(painter);
         Windows.DrawTooltip(painter);
         drawnTooltip = Windows.Tooltip;
         Pointer.Draw(painter, last.PointerX, last.PointerY);

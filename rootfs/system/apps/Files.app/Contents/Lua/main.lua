@@ -2,9 +2,9 @@
 -- opens folders and apps, and shows anything else with Quick Look.
 --
 -- The desktop starts Files, starts it again if it stops, and never quits it,
--- so closing its last window leaves it running. It starts with no window,
--- since its job at the start is the menu bar; New Window (Ctrl+N), or
--- clicking Files in the dock with no window open, opens one.
+-- so closing its last window leaves it running. It starts with no window
+-- but the menu bar, its top panel; New Window (Ctrl+N), or clicking Files in
+-- the dock with no window open, opens one.
 
 local files = venture.files
 
@@ -155,5 +155,9 @@ local function openWindow(start)
 
   show(start)
 end
+
+-- The menu bar is Files' top panel: the desktop draws the bar into it while
+-- Files runs.
+venture.ui.open("menubar.uix")
 
 venture.ui.onNewWindow(function() openWindow(START) end)

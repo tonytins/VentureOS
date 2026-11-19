@@ -46,6 +46,21 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     // A window being resized by its grip: where the press started, and the frame's size then.
     private (DesktopWindow Window, int StartX, int StartY, int Width, int Height)? resizing;
 
+    /// <summary>The panel on the top edge, which is the menu bar, or <see langword="null"/>; there's one at most.</summary>
+    public DesktopWindow? TopPanel
+    {
+        get
+        {
+            foreach (var window in windows)
+            {
+                if (window.Edge == UIEdge.Top)
+                    return window;
+            }
+
+            return null;
+        }
+    }
+
     /// <summary>A window by its <see cref="DesktopWindow.Id"/>, or <see langword="null"/>.</summary>
     public DesktopWindow? Find(int id)
     {

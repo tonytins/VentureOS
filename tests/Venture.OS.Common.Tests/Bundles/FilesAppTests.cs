@@ -1,5 +1,6 @@
 using Venture.OS.Bundles;
 using Venture.OS.Desktop;
+using Venture.OS.Interface;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Tests.Scripting;
@@ -43,8 +44,8 @@ public sealed class FilesAppTests : IDisposable
             userAppsDirectory: Path.Combine(AppContext.BaseDirectory, "user", "apps"));
         Assert.True(manager.OpenApp("Files", root, output), string.Join('\n', output.Lines));
 
-        // Files starts with no window, as the desktop starts it for the menu bar; New Window opens one.
-        Assert.Empty(windows.Windows);
+        // Files starts with no window but the menu bar, its top panel; New Window opens one.
+        Assert.Equal(UIEdge.Top, Assert.Single(windows.Windows).Edge);
         Assert.True(host.NewWindow("Files"));
     }
 
@@ -193,7 +194,7 @@ public sealed class FilesAppTests : IDisposable
     {
         Assert.True(host.HasNewWindow("Files"));
         Assert.True(host.NewWindow("Files"));
-        Assert.Equal(2, windows.Windows.Count);
+        Assert.Equal(2, windows.Windows.Count(window => !window.IsPanel));
 
         // Close Window (Ctrl+W) is the desktop's standard File item, so Files declares none of its own.
         var shortcuts = Window.View.Script.Menus.SelectMany(menu => menu.Entries).Select(entry => entry.Shortcut?.ToString());

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The menu bar: a panel across the top of the screen, which the desktop draws the bar into. Files holds it, so the
+     bar is there while Files runs, and the desktop keeps Files running. The bar's 22 pixels and 4 below, which windows
+     keep clear of. -->
+<UIScript version="1">
+  <Window width="1024" height="26" role="panel" edge="top"/>
+</UIScript>

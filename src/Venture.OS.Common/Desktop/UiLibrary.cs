@@ -117,11 +117,13 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     }
 
     /// <summary>Whether an app has a window open, shown or minimized.</summary>
+    /// <remarks>A panel, such as the menu bar Files holds, isn't one of the windows an app is opened for.</remarks>
     public bool HasWindow(string app)
     {
         for (var index = 0; index < Windows.Windows.Count; index++)
         {
-            if (Windows.Windows[index].OpenedByApp && Windows.Windows[index].App == app)
+            var window = Windows.Windows[index];
+            if (window.OpenedByApp && window.App == app && !window.IsPanel)
                 return true;
         }
 
@@ -140,7 +142,7 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
             for (var index = Windows.Windows.Count - 1; index >= 0; index--)
             {
                 var window = Windows.Windows[index];
-                if (window.OpenedByApp && window.App == app && window.IsMinimized == minimized)
+                if (window.OpenedByApp && window.App == app && window.IsMinimized == minimized && !window.IsPanel)
                 {
                     Windows.Open(window);
                     return;
@@ -645,6 +647,10 @@ public static class UiLibrary
         {
             return Fail(lua, $"venture.ui.open: {given}: {exception.Message}");
         }
+
+        // The top edge holds the menu bar, and there's one.
+        if (script.Window.Edge == UIEdge.Top && host.Windows.TopPanel is { } top)
+            return Fail(lua, $"venture.ui.open: {given} is a top panel, and the top edge holds the menu bar, which {top.App ?? top.Title} shows");
 
         // A document's <String>s and <Image>s come from beside it, such as an app's Contents/Resources.
         var view = DocumentView.Open(

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.303
+
+- The menu bar is Files' top panel: it's there while Files runs, which VentureOS sees to, and it looks and works as before, menus, shortcuts, and Alt with a letter included. If Files stops, the bar is back as soon as Files is.
+- Only one top panel can be open, the menu bar's; an app opening another is told why.
+
 ## 0.7.302
 
 - The dock is an app, Dock, which VentureOS keeps running: it shows the same apps and windows, but as a panel, so zoomed and new windows now stop above it instead of running underneath. If it stops, it's back at once, and `ps` lists it.
