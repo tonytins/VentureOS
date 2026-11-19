@@ -1407,6 +1407,8 @@ public sealed partial class MainWindow : Window
                 new MenuCommand("Run", Run, Ctrl(Key.R)),
                 new MenuCommand("Restart", RestartRun, Ctrl(Key.R, KeyModifiers.Shift), () => Simulator is not null),
                 new MenuCommand("Stop", StopRun, Ctrl(Key.OemPeriod), () => Simulator is not null),
+                new MenuSeparator(),
+                new MenuCommand("Run on VentureOS", () => RunOnVentureOS(), Ctrl(Key.R, KeyModifiers.Alt), () => AppBeingEdited() is not null),
             ]),
         ];
     }
@@ -1535,6 +1537,57 @@ public sealed partial class MainWindow : Window
         };
         simulator.Show();
         log.Info("Run started{Edits}", edits.Count == 0 ? "" : $", with {edits.Count} unsaved {(edits.Count == 1 ? "edit" : "edits")}");
+    }
+
+    /// <summary>The window of the run on VentureOS, while one is open.</summary>
+    public Vdb.VentureOSRunWindow? VentureOSRun { get; private set; }
+
+    /// <summary>How a run on VentureOS connects; tests give it their own.</summary>
+    public Func<Vdb.VentureOSRun> VentureOSRunner { get; set; } = () => Vdb.VentureOSRun.OverTcp();
+
+    /// <summary>The folder of the app the open file is in, or <see langword="null"/> when it isn't in one.</summary>
+    private string? AppBeingEdited() => CurrentFile is { } file ? SimulatedRun.BundleOf(file) : null;
+
+    /// <summary>
+    /// Sends the app being edited, with every unsaved edit, to a running VentureOS over vdb and opens it, in a window
+    /// that shows what it prints. Running it again ends the last run first.
+    /// </summary>
+    /// <returns>Whether a run started; it doesn't when the open file isn't in an app.</returns>
+    public bool RunOnVentureOS()
+    {
+        if (AppBeingEdited() is not { } app)
+        {
+            Say("Run on VentureOS sends an app, and the open file isn't in one.", NLog.LogLevel.Warn);
+            return false;
+        }
+
+        KeepEdit();
+        Dictionary<string, string> edits = [];
+        if (Bundle is { } bundle)
+        {
+            foreach (var file in bundle.Unsaved)
+                edits[file] = bundle.Text(file);
+        }
+        else if (path is not null)
+        {
+            edits[Path.GetFullPath(path)] = byteOrderMark + Editor.Text;
+        }
+
+        VentureOSRun?.Close();
+        var runner = VentureOSRunner();
+        var name = Path.GetFileName(app);
+        var window = new Vdb.VentureOSRunWindow(name,
+            (report, stop) => Task.Run(() => runner.Run(app, edits, report, stop), CancellationToken.None));
+        VentureOSRun = window;
+        window.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(VentureOSRun, window))
+                VentureOSRun = null;
+        };
+        window.Show(this);
+        log.Info("Run on VentureOS started for {App}{Edits}", name,
+            edits.Count == 0 ? "" : $", with {edits.Count} unsaved {(edits.Count == 1 ? "edit" : "edits")}");
+        return true;
     }
 
     /// <summary>Ends the run, deleting its copy of VentureOS's files.</summary>

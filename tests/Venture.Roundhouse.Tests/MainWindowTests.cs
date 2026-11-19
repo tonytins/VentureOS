@@ -864,6 +864,38 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void RunOnVentureOSOpensAWindowThatSaysWhyItStopped() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculatorBundle();
+        window.VentureOSRunner = () => new Vdb.VentureOSRun(
+            _ => throw new Venture.OS.Vdb.VdbClientException(Venture.OS.Vdb.VdbClientProblem.Connection, "Nothing answered here."),
+            () => "0123456789abcdef0123456789abcdef");
+
+        Assert.True(Command(window, "Run", "Run on VentureOS").IsEnabled!());
+        Command(window, "Run", "Run on VentureOS").Run();
+        var run = window.VentureOSRun!;
+        Assert.True(run.Running.Wait(TimeSpan.FromSeconds(10)));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("Calculator.app on VentureOS", run.Title);
+        Assert.Equal("Nothing answered here.", run.Status);
+        run.Close();
+        Assert.Null(window.VentureOSRun);
+        window.Close();
+    });
+
+    [Fact]
+    public void RunOnVentureOSNeedsAnApp() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCalculator();
+
+        Assert.False(Command(window, "Run", "Run on VentureOS").IsEnabled!());
+        Assert.False(window.RunOnVentureOS());
+        Assert.Null(window.VentureOSRun);
+        window.Close();
+    });
+
     private static Menus.MenuCommand Command(MainWindow window, string menu, string title) =>
         Menus.AppMenu.Find(window.Menus, menu, title) ?? throw new InvalidOperationException($"No {menu} ▸ {title}.");
 
