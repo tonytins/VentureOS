@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (panes) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (vdb sealed) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-18)
 
@@ -15,7 +15,7 @@ the code wins and this page is out of date.
   tables, needing only the BCL); and an xUnit v3 test project
   for the library, `Venture.OS.Common.Tests` (1,779 tests, and 190 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
-  command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
+  command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -146,7 +146,8 @@ VentureOS/
 │  │  ├─ Scripting/                Venture.OS.Scripting: running Lua, script commands, owners, and the venture table
 │  │  │                            (VentureLibrary, ShellLibrary, FilesLibrary), backed by ISystemInfo and IAppearance
 │  │  ├─ Bundles/                  Venture.OS.Bundles: Bundle (Contents/Info.xml), AppManager, AppLibrary (venture.app)
-│  │  ├─ Vdb/                      Venture.OS.Vdb: vdb/1 without sockets (VdbSession), trust, and developer mode
+│  │  ├─ Cryptography/             Venture.OS.Cryptography: SHA-256, HMAC, HKDF, and ChaCha20-Poly1305, for vdb
+│  │  ├─ Vdb/                      Venture.OS.Vdb: vdb/1 without sockets (VdbSession), the seal, trust, and developer mode
 │  │  ├─ Processes/                Venture.OS.Processes: AppProcess and the Supervisor, which AppManager opens apps through
 │  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
 │  │                               and UiLibrary (venture.ui), all drawn through IPainter
@@ -467,7 +468,8 @@ BootRamDisk (IBlockDevice, 512-byte blocks × 65,536 = 32 MiB)
 
 vdb sends an app from another computer and opens it, while VentureOS can't
 yet keep files or install from a disk. Its [design](./design/2026-11-18-vdb-design.md)
-has the why, and [docs/vdb](./vdb/README.md) the protocol.
+has the why, the [encryption design](./design/2026-11-19-vdb-encryption-design.md)
+how it's sealed, and [docs/vdb](./vdb/README.md) the protocol.
 
 - **Developer mode** (`VdbDeveloperMode`, on `ISystemInfo.Developer`) is off
   at every boot. Settings' Developer pane or `venture.developer.enable()`
@@ -485,10 +487,22 @@ has the why, and [docs/vdb](./vdb/README.md) the protocol.
   handed bytes and the time and answers in lines, so it's tested without a
   kernel. Apps are staged in `/mnt/user/.vdb`, checked with `Bundle.Read`,
   and copied into `/mnt/user/apps`; a system app's identifier is refused.
-- **Trust.** An unknown computer gets an alert with Trust and Deny and no
-  close button; 60 seconds without an answer is Deny. Identities are plain
-  text, so this guards against accidents, not against someone on the
-  network. Trust lasts until restart.
+- **Trust.** A computer is known by its identity, a 128-bit secret, and
+  named on the network by its key ID, a hash of it (`VdbTrust`). An unknown
+  key ID gets an alert with Trust and Deny, showing the key ID, and no close
+  button; 60 seconds without an answer is Deny. On Trust, VentureOS asks for
+  the identity (`pair`), the one time it's sent, and checks it gives the key
+  ID. Trust lasts until restart.
+- **Sealing.** After VentureOS's `hello`, every line is sealed by a
+  `VdbChannel`: ChaCha20-Poly1305 with a key per direction from HKDF-SHA-256
+  over the identity and both sides' nonces, and a counter for the nonce. A
+  line that doesn't open closes the connection with nothing sent back. The
+  cryptography is Common's own (`Cryptography/`: SHA-256, HMAC, HKDF,
+  ChaCha20, Poly1305), since Cosmos has none, tested against the standards'
+  vectors and .NET's implementations. VentureOS's nonces come from
+  `VdbRandom`, the timestamp counter hashed with a count and a boot seed,
+  which is not a cryptographic generator; the computer's nonce keeps the
+  keys fresh regardless.
 - **Output.** `HeldOutput.Echo` copies what apps print to a trusted
   computer, as `out` lines.
 - **Failures** end the connection, or turn listening off with the reason in
@@ -497,9 +511,10 @@ has the why, and [docs/vdb](./vdb/README.md) the protocol.
 - Under QEMU, `./run.sh --vdb` forwards port 28455 from the host.
 - **The tool** is `vdb`, in Swift, in `tools/vdb/` (its [README](../tools/vdb/README.md)):
   `VdbKit` holds the client, over any line transport, the bundle reader, and
-  the identity, kept in the configuration folder; `TCPConnection` is POSIX
-  or Winsock sockets with `poll`. Its tests replay the same recorded
-  conversations VentureOS's do. While following output, it sends an empty
+  the identity, kept in the configuration folder; its `VdbChannel` seals with
+  swift-crypto; `TCPConnection` is POSIX or Winsock sockets with `poll`. Its
+  tests replay the same recorded conversations VentureOS's do, and both
+  sides reproduce `sealed-lines.txt`, sealed by Python's `cryptography`. While following output, it sends an empty
   line every 10 seconds to stay under the idle limit.
 
 ---
@@ -1636,6 +1651,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | vdb sealed (§8.1): Common's own SHA-256, HMAC, HKDF, and ChaCha20-Poly1305; key IDs, pairing, and sealed lines in vdb/1 on both ends; `VdbRandom` for VentureOS's nonces. |
 | 2026-11-19 | minor | Panes (§9): the `panes` feature, `<Pane>` and `pane` on controls; `UIView` shows one pane at a time; Settings declares its panes; Roundhouse's designer draws the rows and the shown pane, and switches it from the canvas. |
 | 2026-11-19 | minor | UIScript: `<Panel>` in place of `<Window role="panel">`, which is no longer read; Dock.app and Files' menu bar use it, and Roundhouse's designer resizes it as a window. |
 | 2026-11-19 | minor | Platform: Cosmos 3.0.99, from 3.0.97, with no code changes. |

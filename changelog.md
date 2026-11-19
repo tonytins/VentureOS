@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.406
+
+- vdb's connections are encrypted: everything after hello is sealed with ChaCha20-Poly1305, with keys made from your computer's identity, so what's sent can't be read or changed on the way. VentureOS knows your computer by its key ID, a hash of the identity, which the Trust alert now shows.
+- Your identity crosses the network once, when you choose Trust; trusting it ahead of time in `developer.local.lua` means it never does.
+- Breaking: vdb tools and VentureOS builds from before this can't talk to these. Rebuild the tool with `swift build` in `tools/vdb`.
+
 ## 0.7.404
 
 - Apps can declare a sidebar's panes in their `.uix`: `requires="sidebar panes"`, a `<Pane name="…" title="…"/>` for each row, and `pane="…"` on each control. The sidebar shows the panes and only the chosen pane's controls, with no Lua.

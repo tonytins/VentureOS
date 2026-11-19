@@ -1,6 +1,6 @@
 # vdb: encrypting the conversation
 
-**Status:** approved for 0.7.4xx, Seto. **Date:** 2026-11-19.
+**Status:** built in 0.7.4xx, Seto; [docs/vdb](../vdb/README.md) says how it works now. **Date:** 2026-11-19.
 
 vdb/1, as built in 0.7.1xx, sends everything in plain text, the computer's identity included: anyone who sees one
 conversation can copy the identity and act as that computer. This design keeps the protocol vdb/1 and its commands as

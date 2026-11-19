@@ -19,8 +19,8 @@ swift test
 ```
 
 It uses [Swift Argument Parser](https://github.com/apple/swift-argument-parser),
-[swift-log](https://github.com/apple/swift-log), and [GitVersion](https://github.com/tonytins/GitVersion), which
-gives it VentureOS's version. `GitVersion.env` here tells GitVersion to count from `GitInfo.txt` rather than the
+[swift-log](https://github.com/apple/swift-log), [swift-crypto](https://github.com/apple/swift-crypto) for the
+encryption, and [GitVersion](https://github.com/tonytins/GitVersion), which gives it VentureOS's version. `GitVersion.env` here tells GitVersion to count from `GitInfo.txt` rather than the
 last release's tag, as the kernel does.
 
 ## Get VentureOS listening
@@ -48,14 +48,19 @@ vdb --host 10.0.0.5 --port 28455 …    # another VentureOS; 127.0.0.1:28455 by 
 
 What apps print goes to standard output, and everything vdb says itself to standard error, so an app's output can
 be piped. vdb exits with 0 when everything worked, and 1 with VentureOS's reason when something didn't. It never
-asks anything, so scripts can use it. `--verbose` logs every line both ways.
+asks anything, so scripts can use it. `--verbose` logs every line both ways as it goes on the network, so after
+hello they're sealed.
 
 Your identity is kept in `~/.config/vdb/identity` (`$XDG_CONFIG_HOME` if it's set), or `%APPDATA%\vdb\identity` on
-Windows. Delete it, and vdb makes a new one, which VentureOS asks about again.
+Windows, readable only by you. It's a secret: every connection is encrypted with keys made from it, and VentureOS
+knows your computer by a hash of it, its key ID, which the Trust alert shows. Delete it, and vdb makes a new one,
+which VentureOS asks about again.
 
 ## Limits
 
-- Trust guards against accidents, such as the wrong machine connecting, not against someone watching the network:
-  nothing is encrypted, and the identity is sent as plain text. Use it on your own machine or network.
+- Everything after hello is encrypted and checked (ChaCha20-Poly1305), so what's sent can't be read or changed on
+  the way. Your identity crosses the network once: when you choose Trust on VentureOS, vdb sends it so VentureOS
+  can make the keys. Putting it in `developer.local.lua` instead means it never does.
+- There's no forward secrecy: whoever later gets your identity file could read conversations they recorded.
 - An app is at most 256 files and 16 MiB, and a file at most 4 MiB. Symbolic links aren't sent.
 - vdb sends `.app` bundles only, not themes, libraries, or wallpapers.
