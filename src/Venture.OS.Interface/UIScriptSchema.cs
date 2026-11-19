@@ -148,8 +148,12 @@ public static class UIScriptSchema
             new("minHeight", UIAttributeGroup.Frame, UIAttributeKind.Number),
             new("resizable", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean),
             new("subtitle", UIAttributeGroup.Text, UIAttributeKind.Text),
-            new("role", UIAttributeGroup.Behaviour, UIAttributeKind.Choice, Choices: ["window", "panel"]),
-            new("edge", UIAttributeGroup.Frame, UIAttributeKind.Choice, Choices: ["top", "bottom"]),
+        ],
+        ["Panel"] =
+        [
+            new("width", UIAttributeGroup.Frame, UIAttributeKind.Number, IsRequired: true),
+            new("height", UIAttributeGroup.Frame, UIAttributeKind.Number, IsRequired: true),
+            new("edge", UIAttributeGroup.Frame, UIAttributeKind.Choice, IsRequired: true, Choices: ["top", "bottom"]),
         ],
         ["Image"] =
         [

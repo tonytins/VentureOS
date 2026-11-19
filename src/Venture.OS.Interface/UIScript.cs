@@ -94,9 +94,10 @@ public sealed record UIFrame(float X, float Y, float? Width, float? Height, UIEd
 /// <summary>
 /// The interface's size, the smallest size it lays out at, whether the desktop lets people resize it, and a line
 /// shown under the title, which VentureOS adds. A reader that skips <c>resizable</c> or <c>subtitle</c> shows a fixed
-/// window, or one without the line, that still lays out correctly, so neither is a required feature. Nor are
-/// <c>role</c> and <c>edge</c>, which VentureOS adds too: a reader without panels shows the panel as an ordinary
-/// window, plainer, but working.
+/// window, or one without the line, that still lays out correctly, so neither is a required feature.
+/// <para>A document written with <c>&lt;Panel&gt;</c> in place of <c>&lt;Window&gt;</c> reads as one of these with
+/// <see cref="Role"/> <see cref="UIWindowRole.Panel"/> and an <see cref="Edge"/>, so the desktop treats both alike.
+/// A reader without panels refuses the unknown element rather than showing a dock as an ordinary window.</para>
 /// </summary>
 public sealed record UIWindow(
     UISize Size,
@@ -505,9 +506,10 @@ public sealed class UIScript
             switch (element.Name)
             {
                 case "Window":
+                case "Panel":
                     if (window is not null)
-                        throw new UIScriptException("There's more than one <Window>.", element.Line);
-                    window = ReadWindow(reader, element.Line, ignored);
+                        throw new UIScriptException("There's more than one <Window> or <Panel>.", element.Line);
+                    window = element.Name == "Panel" ? ReadPanel(reader, element.Line) : ReadWindow(reader);
                     break;
 
                 case "Image":
@@ -618,7 +620,7 @@ public sealed class UIScript
         }
 
         if (window is null)
-            throw new UIScriptException("A UIScript document needs a <Window>.");
+            throw new UIScriptException("A UIScript document needs a <Window> or a <Panel>.");
 
         UIScript script = new()
         {
@@ -641,16 +643,11 @@ public sealed class UIScript
     }
 
     /// <summary>
-    /// A panel has no title bar, so nothing that lives in one, and isn't resized by hand; it needs an edge to sit on.
+    /// A panel has no title bar, so nothing that lives in one. Its own element can't say <c>resizable</c> or
+    /// <c>subtitle</c>, but the parts of a title bar are separate elements, so they're checked here.
     /// </summary>
     private void ValidatePanel()
     {
-        if (Window.Edge is null)
-            throw new UIScriptException("A panel needs an edge to sit on: edge=\"top\" or edge=\"bottom\".");
-        if (Window.IsResizable)
-            throw new UIScriptException("A panel can't be resizable; it's as large as its document says.");
-        if (Window.Subtitle is not null)
-            throw new UIScriptException("A panel has no title bar, so no subtitle.");
         if (ToolbarItems.Count > 0)
             throw new UIScriptException("A panel has no title bar, so no toolbar items.", ToolbarItems[0].Line);
         if (TitleField is { } field)
@@ -674,32 +671,13 @@ public sealed class UIScript
         _ => null,
     };
 
-    private static UIWindow ReadWindow(Attributes reader, int line, List<UIIgnoredAttribute> ignored)
+    private static UIWindow ReadWindow(Attributes reader)
     {
         UISize size = new(reader.RequiredNumber("width"), reader.RequiredNumber("height"));
         var minimumWidth = reader.Number("minWidth");
         var minimumHeight = reader.Number("minHeight");
         var resizable = reader.Boolean("resizable") ?? false;
         var subtitle = reader.String("subtitle");
-
-        // A role this reader doesn't know is a newer document's; the window still works as an ordinary one.
-        var role = reader.String("role") switch
-        {
-            null or "window" => UIWindowRole.Window,
-            "panel" => UIWindowRole.Panel,
-            _ => (UIWindowRole?)null,
-        };
-        if (role is null)
-            ignored.Add(new UIIgnoredAttribute("Window", "role", line));
-
-        // An edge this reader doesn't know is refused rather than guessed, so a panel never lands where it wasn't meant to.
-        var edge = reader.String("edge") switch
-        {
-            null => (UIEdge?)null,
-            "top" => UIEdge.Top,
-            "bottom" => UIEdge.Bottom,
-            var other => throw new UIScriptException($"A panel's edge is top or bottom, not \"{other}\".", line),
-        };
 
         UISize? minimum = (minimumWidth, minimumHeight) switch
         {
@@ -708,7 +686,24 @@ public sealed class UIScript
             (null, _) => throw reader.Missing("minWidth"),
             _ => throw reader.Missing("minHeight"),
         };
-        return new UIWindow(size, minimum, resizable, subtitle, role ?? UIWindowRole.Window, edge);
+        return new UIWindow(size, minimum, resizable, subtitle);
+    }
+
+    /// <summary>
+    /// A panel: a size and the edge it's pinned to, and nothing a title bar or resizing would need, so a panel can't
+    /// say them. An edge this reader doesn't know is refused rather than guessed, so a panel never lands where it
+    /// wasn't meant to.
+    /// </summary>
+    private static UIWindow ReadPanel(Attributes reader, int line)
+    {
+        UISize size = new(reader.RequiredNumber("width"), reader.RequiredNumber("height"));
+        var edge = reader.RequiredString("edge") switch
+        {
+            "top" => UIEdge.Top,
+            "bottom" => UIEdge.Bottom,
+            var other => throw new UIScriptException($"A panel's edge is top or bottom, not \"{other}\".", line),
+        };
+        return new UIWindow(size, null, Role: UIWindowRole.Panel, Edge: edge);
     }
 
     private static UIFrame ReadFrame(Attributes reader)

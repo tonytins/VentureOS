@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (platform) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (panels) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-18)
 
@@ -1129,7 +1129,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   kept on screen far enough to grab again; its close button closes it on
   release.
 - **Panels** (0.7.3xx, [draft](./uiscript/panel.md)): a window whose
-  document says `role="panel"` and an `edge`. `WindowManager.Arrange` pins
+  document is a `<Panel>` with an `edge` (`UIWindow.Role` is `Panel`). `WindowManager.Arrange` pins
   it each frame, a top one across the screen and a bottom one as wide as its
   shelf, centred. It has no title bar or frame, draws only its content,
   is drawn and found above every ordinary window, and is never focused,
@@ -1628,6 +1628,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | UIScript: `<Panel>` in place of `<Window role="panel">`, which is no longer read; Dock.app and Files' menu bar use it, and Roundhouse's designer resizes it as a window. |
 | 2026-11-19 | minor | Platform: Cosmos 3.0.99, from 3.0.97, with no code changes. |
 | 2026-11-19 | minor | Desktop (§9): the dock's modes, always visible, hide automatically, or hide when covered, sliding; `dock` in `appearance.xml`; Settings' Dock pane. |
 | 2026-11-19 | minor | Desktop (§9): the menu bar is Files' top panel (`MenuBarApp`, `BarShows`); one top panel at a time. |

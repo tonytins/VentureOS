@@ -89,6 +89,19 @@ public sealed class DesignMapTests : IDisposable
     }
 
     [Fact]
+    public void APanelIsTheWindowItsDocumentDescribes()
+    {
+        var (map, _) = Map("""
+            <UIScript version="1" requires="shelf">
+              <Panel width="400" height="72" edge="bottom"/>
+              <Shelf name="apps" x="0" y="0" width="400" height="72"/>
+            </UIScript>
+            """);
+
+        Assert.Equal(0, map.Window);
+    }
+
+    [Fact]
     public void ADocumentVentureOSRefusesCantBeMapped()
     {
         var (_, window) = Map(Overlapping);

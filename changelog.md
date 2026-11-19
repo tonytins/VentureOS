@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.403
+
+- Breaking, for apps that write their own panels: a panel is now `<Panel width="…" height="…" edge="top|bottom">` in place of `<Window role="panel" edge="…">`, which is read as an ordinary window now. The dock and the menu bar use it, and look and work as before.
+- Roundhouse's designer resizes a panel by its handles, as it does a window.
+
 ## 0.7.402
 
 - Updated to Cosmos 3.0.99.

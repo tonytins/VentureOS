@@ -345,12 +345,13 @@ new number. `roll` still works in the shell, since both live in the same app.
 
 ## Panels and shelves
 
-A window can be a **panel**, pinned to an edge of the screen with no title
-bar, as the dock is. Give its `<Window>` a `role` and an `edge`:
+An app's interface can be a **panel**, pinned to an edge of the screen with
+no title bar, as the dock is. Write `<Panel>`, with an `edge`, in place of
+`<Window>`:
 
 ```xml
 <UIScript version="1" requires="shelf">
-  <Window width="400" height="72" role="panel" edge="bottom"/>
+  <Panel width="400" height="72" edge="bottom"/>
   <Shelf name="apps" x="0" y="0" width="400" height="72"/>
 </UIScript>
 ```

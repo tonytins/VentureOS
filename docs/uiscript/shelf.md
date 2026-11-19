@@ -9,7 +9,7 @@ that are open, in groups with a divider between.
 
 ```xml
 <UIScript version="1" requires="shelf">
-  <Window width="400" height="72" role="panel" edge="bottom"/>
+  <Panel width="400" height="72" edge="bottom"/>
   <Shelf name="apps" x="0" y="0" width="400" height="72"/>
 </UIScript>
 ```

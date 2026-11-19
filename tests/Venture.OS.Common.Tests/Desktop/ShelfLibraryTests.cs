@@ -133,7 +133,7 @@ public sealed class ShelfLibraryTests : IDisposable
         File.WriteAllText($"{contents}/Lua/main.lua", main + "\n");
         File.WriteAllText($"{contents}/Resources/main.uix", """
             <UIScript requires="shelf">
-              <Window width="400" height="72" role="panel" edge="bottom"/>
+              <Panel width="400" height="72" edge="bottom"/>
               <Shelf name="apps" x="0" y="0" width="400" height="72"/>
             </UIScript>
             """);

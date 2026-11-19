@@ -17,7 +17,7 @@ public static class FrameEdit
     /// </summary>
     public static IReadOnlyList<Handle> HandlesFor(string element) => element switch
     {
-        "Window" => [Handle.Right, Handle.BottomRight, Handle.Bottom],
+        "Window" or "Panel" => [Handle.Right, Handle.BottomRight, Handle.Bottom],
         "Sidebar" => [Handle.Right],
         _ when IsFramed(element) => FrameDrag.Handles,
         _ => [],

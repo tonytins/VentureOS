@@ -1,6 +1,6 @@
 # The dock and the menu bar as apps
 
-**Status:** built in 0.7.3xx, Seto; the [architecture](../architecture.md) and [writing apps](../writing-apps.md) say how it works now. The bar's panel is its own `menubar.uix` in Files, beside `main.uix`, and a desktop without a bar app, as in tests, still draws the bar itself.
+**Status:** built in 0.7.3xx, Seto; the [architecture](../architecture.md) and [writing apps](../writing-apps.md) say how it works now. The bar's panel is its own `menubar.uix` in Files, beside `main.uix`, and a desktop without a bar app, as in tests, still draws the bar itself. Since 0.7.4xx, a panel is written `<Panel edge="…">` rather than `<Window role="panel">`; see [the draft](../uiscript/panel.md).
 **Date:** 2026-11-18.
 
 The dock becomes `Dock.app`, a system app written in Lua like Files, instead of code inside the desktop, and the

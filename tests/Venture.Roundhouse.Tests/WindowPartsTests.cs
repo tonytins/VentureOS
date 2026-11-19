@@ -53,7 +53,7 @@ public sealed class WindowPartsTests : IDisposable
     {
         UIView view = new(UIScript.Parse("""
             <UIScript version="1" requires="shelf">
-              <Window width="400" height="72" role="panel" edge="bottom"/>
+              <Panel width="400" height="72" edge="bottom"/>
               <Shelf name="apps" x="0" y="0" width="400" height="72"/>
             </UIScript>
             """));
@@ -154,6 +154,7 @@ public sealed class WindowPartsTests : IDisposable
     public void TheWindowAndSidebarOnlyGrowAndShrinkByTheirOwnHandles()
     {
         Assert.Equal([Handle.Right, Handle.BottomRight, Handle.Bottom], FrameEdit.HandlesFor("Window"));
+        Assert.Equal([Handle.Right, Handle.BottomRight, Handle.Bottom], FrameEdit.HandlesFor("Panel"));
         Assert.Equal([Handle.Right], FrameEdit.HandlesFor("Sidebar"));
         Assert.Empty(FrameEdit.HandlesFor("Style"));
 

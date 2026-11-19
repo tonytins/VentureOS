@@ -113,7 +113,7 @@ public sealed class DesignMap
     {
         for (var index = 0; index < children.Count; index++)
         {
-            if (children[index].Name == "Window")
+            if (children[index].Name is "Window" or "Panel")
                 return index;
         }
 

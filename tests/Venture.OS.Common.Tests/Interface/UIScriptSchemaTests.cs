@@ -59,6 +59,7 @@ public sealed class UIScriptSchemaTests
         {
             "UIScript" => $"""<UIScript {(attribute == "requires" ? "" : """requires="menus sidebar shelf" """)}{probe}><Window width="300" height="200"/>{Declarations}</UIScript>""",
             "Window" => $"""<UIScript requires="menus sidebar shelf"><Window width="300" height="200" {(attribute is "width" or "height" ? "" : probe)}/>{Declarations}</UIScript>""",
+            "Panel" => $"""<UIScript requires="menus shelf"><Panel {(attribute is "width" ? "" : "width=\"300\" ")}{(attribute is "height" ? "" : "height=\"72\" ")}{(attribute is "edge" ? "" : "edge=\"top\" ")}{probe}/></UIScript>""",
             _ => $"""<UIScript requires="menus sidebar shelf"><Window width="300" height="200"/>{Declarations}<{element} {Required(element, attribute)}{probe}/></UIScript>""",
         };
 
@@ -88,7 +89,7 @@ public sealed class UIScriptSchemaTests
     public void EveryElementTheReaderKnowsIsListed()
     {
         Assert.Equal(
-            ["Button", "FormattedText", "Image", "List", "Menu", "MenuItem", "MenuSeparator", "ProgressBar", "Region", "Shelf",
+            ["Button", "FormattedText", "Image", "List", "Menu", "MenuItem", "MenuSeparator", "Panel", "ProgressBar", "Region", "Shelf",
                 "Sidebar", "Slider", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript",
                 "Visual", "Window"],
             UIScriptSchema.Elements.Order(StringComparer.Ordinal));

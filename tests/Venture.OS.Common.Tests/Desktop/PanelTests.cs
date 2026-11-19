@@ -154,13 +154,13 @@ public sealed class PanelTests
 
     private static DesktopWindow Dock() => new("Dock", new UIView(UIScript.Parse("""
         <UIScript requires="shelf">
-          <Window width="400" height="72" role="panel" edge="bottom"/>
+          <Panel width="400" height="72" edge="bottom"/>
           <Shelf name="apps" x="0" y="0" width="400" height="72"/>
         </UIScript>
         """)));
 
     private static DesktopWindow Bar() =>
-        new("Bar", new UIView(UIScript.Parse("""<UIScript><Window width="300" height="24" role="panel" edge="top"/></UIScript>""")));
+        new("Bar", new UIView(UIScript.Parse("""<UIScript><Panel width="300" height="24" edge="top"/></UIScript>""")));
 
     private static DesktopWindow Window(string title, bool resizable = false, int height = 200) =>
         new(title, new UIView(UIScript.Parse($"""<UIScript><Window width="300" height="{height}" minWidth="100" minHeight="100" resizable="{(resizable ? "true" : "false")}"/></UIScript>""")));

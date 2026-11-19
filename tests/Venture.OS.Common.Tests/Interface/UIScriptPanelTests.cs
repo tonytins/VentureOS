@@ -2,7 +2,7 @@ using Venture.OS.Interface;
 
 namespace Venture.OS.Tests.Interface;
 
-/// <summary>Panels (<c>role</c> and <c>edge</c> on <c>&lt;Window&gt;</c>) and the <c>shelf</c> feature.</summary>
+/// <summary>Panels (<c>&lt;Panel&gt;</c> in place of <c>&lt;Window&gt;</c>) and the <c>shelf</c> feature.</summary>
 public sealed class UIScriptPanelTests
 {
     [Fact]
@@ -19,7 +19,7 @@ public sealed class UIScriptPanelTests
     [InlineData("bottom", UIEdge.Bottom)]
     public void ReadsAPanelAndItsEdge(string written, UIEdge edge)
     {
-        var script = UIScript.Parse($"""<UIScript><Window width="400" height="72" role="panel" edge="{written}"/></UIScript>""");
+        var script = UIScript.Parse($"""<UIScript><Panel width="400" height="72" edge="{written}"/></UIScript>""");
 
         Assert.Equal(UIWindowRole.Panel, script.Window.Role);
         Assert.Equal(edge, script.Window.Edge);
@@ -27,29 +27,61 @@ public sealed class UIScriptPanelTests
     }
 
     [Fact]
-    public void ARoleItDoesNotKnowIsAnOrdinaryWindowAndSaysSo()
+    public void AWindowsRoleAndEdgeAreNoLongerReadAndSaySo()
     {
-        var script = UIScript.Parse("""<UIScript><Window width="300" height="200" role="sheet"/></UIScript>""");
+        var script = UIScript.Parse("""<UIScript><Window width="300" height="72" role="panel" edge="bottom"/></UIScript>""");
 
         Assert.Equal(UIWindowRole.Window, script.Window.Role);
-        Assert.Equal(new UIIgnoredAttribute("Window", "role", 1), Assert.Single(script.IgnoredAttributes));
+        Assert.Null(script.Window.Edge);
+        Assert.Equivalent(
+            new[] { new UIIgnoredAttribute("Window", "role", 1), new UIIgnoredAttribute("Window", "edge", 1) },
+            script.IgnoredAttributes, strict: true);
+    }
+
+    [Fact]
+    public void APanelNeedsAnEdge()
+    {
+        var problem = Assert.Throws<UIScriptException>(() =>
+            UIScript.Parse("""<UIScript><Panel width="300" height="72"/></UIScript>"""));
+
+        Assert.Contains("edge", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("""<Window width="300" height="200"/><Panel width="300" height="72" edge="top"/>""")]
+    [InlineData("""<Panel width="300" height="72" edge="top"/><Panel width="300" height="72" edge="bottom"/>""")]
+    public void RefusesMoreThanOneWindowOrPanel(string elements)
+    {
+        var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse($"<UIScript>{elements}</UIScript>"));
+
+        Assert.Contains("more than one <Window> or <Panel>", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void APanelSkipsWhatOnlyAWindowHasAndSaysSo()
+    {
+        var script = UIScript.Parse("""
+            <UIScript><Panel width="300" height="72" edge="bottom" resizable="true" subtitle="Hi" minWidth="10" minHeight="10"/></UIScript>
+            """);
+
+        Assert.False(script.Window.IsResizable);
+        Assert.Null(script.Window.Subtitle);
+        Assert.Null(script.Window.MinimumSize);
+        Assert.Equal(["minHeight", "minWidth", "resizable", "subtitle"], script.IgnoredAttributes.Select(ignored => ignored.Attribute).Order(StringComparer.Ordinal));
     }
 
     [Fact]
     public void RefusesAnEdgeItDoesNotKnow()
     {
         var problem = Assert.Throws<UIScriptException>(() =>
-            UIScript.Parse("""<UIScript><Window width="300" height="72" role="panel" edge="left"/></UIScript>"""));
+            UIScript.Parse("""<UIScript><Panel width="300" height="72" edge="left"/></UIScript>"""));
 
         Assert.Contains("A panel's edge is top or bottom, not \"left\"", problem.Message, StringComparison.Ordinal);
     }
 
     [Theory]
-    [InlineData("""<Window width="300" height="72" role="panel"/>""", "A panel needs an edge")]
-    [InlineData("""<Window width="300" height="72" role="panel" edge="bottom" resizable="true"/>""", "can't be resizable")]
-    [InlineData("""<Window width="300" height="72" role="panel" edge="bottom" subtitle="Hi"/>""", "no subtitle")]
-    [InlineData("""<Window width="300" height="72" role="panel" edge="bottom"/><ToolbarItem name="go" title="Go"/>""", "no toolbar items")]
-    [InlineData("""<Window width="300" height="72" role="panel" edge="bottom"/><TitleField name="address"/>""", "no title field")]
+    [InlineData("""<Panel width="300" height="72" edge="bottom"/><ToolbarItem name="go" title="Go"/>""", "no toolbar items")]
+    [InlineData("""<Panel width="300" height="72" edge="bottom"/><TitleField name="address"/>""", "no title field")]
     public void RefusesWhatAPanelCannotHave(string elements, string reason)
     {
         var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse($"<UIScript>{elements}</UIScript>"));
@@ -61,7 +93,7 @@ public sealed class UIScriptPanelTests
     public void RefusesAPanelWithASidebar()
     {
         Assert.Throws<UIScriptException>(() => UIScript.Parse("""
-            <UIScript requires="sidebar"><Window width="300" height="72" role="panel" edge="bottom"/><Sidebar name="s" width="80"/></UIScript>
+            <UIScript requires="sidebar"><Panel width="300" height="72" edge="bottom"/><Sidebar name="s" width="80"/></UIScript>
             """));
     }
 
@@ -69,7 +101,7 @@ public sealed class UIScriptPanelTests
     public void ATopPanelMayHaveMenus()
     {
         var script = UIScript.Parse("""
-            <UIScript requires="menus"><Window width="1024" height="24" role="panel" edge="top"/><Menu name="file" title="File"/></UIScript>
+            <UIScript requires="menus"><Panel width="1024" height="24" edge="top"/><Menu name="file" title="File"/></UIScript>
             """);
 
         Assert.Equal(UIEdge.Top, script.Window.Edge);
@@ -81,7 +113,7 @@ public sealed class UIScriptPanelTests
     {
         var script = UIScript.Parse("""
             <UIScript requires="shelf">
-              <Window width="400" height="72" role="panel" edge="bottom"/>
+              <Panel width="400" height="72" edge="bottom"/>
               <Shelf name="apps" x="0" y="0" width="400" height="72"/>
             </UIScript>
             """);
