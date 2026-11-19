@@ -755,7 +755,7 @@ public sealed class DesktopSession
         if (app == FallbackApp)
             return;
 
-        apps?.CloseApp(app, appOutput);
+        apps?.CloseApp(app, appOutput, Processes.EndingKind.Quit);
 
         // Its windows go with it.
         foreach (var window in (DesktopWindow[])[.. Windows.Windows])

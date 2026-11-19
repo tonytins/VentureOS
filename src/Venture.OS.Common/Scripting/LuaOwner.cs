@@ -227,7 +227,17 @@ public sealed class LuaOwner : IDisposable
         }
     }
 
-    private bool WithStop(Func<string?>? stop, Func<bool> run)
+    /// <summary>
+    /// What every run of the code goes through, its startup, an event, a timer, or a command, such as an app's process,
+    /// which may decline to run it; or <see langword="null"/> to run it straight away. It's given the run, and gives
+    /// back whether it finished, as <see cref="Run"/> does.
+    /// </summary>
+    public Func<Func<bool>, bool>? Gate { get; set; }
+
+    private bool WithStop(Func<string?>? stop, Func<bool> run) =>
+        Gate is { } gate ? gate(() => WithStopNow(stop, run)) : WithStopNow(stop, run);
+
+    private bool WithStopNow(Func<string?>? stop, Func<bool> run)
     {
         var previousStop = currentStop;
         currentStop = stop;

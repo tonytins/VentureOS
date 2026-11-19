@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,632 tests, and 188 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,653 tests, and 188 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -147,7 +147,7 @@ VentureOS/
 │  │  │                            (VentureLibrary, ShellLibrary, FilesLibrary), backed by ISystemInfo and IAppearance
 │  │  ├─ Bundles/                  Venture.OS.Bundles: Bundle (Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │  ├─ Vdb/                      Venture.OS.Vdb: vdb/1 without sockets (VdbSession), trust, and developer mode
-│  │  ├─ Processes/                Venture.OS.Processes: AppProcess and the Supervisor (0.7.2xx; not wired in yet)
+│  │  ├─ Processes/                Venture.OS.Processes: AppProcess and the Supervisor, which AppManager opens apps through
 │  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
 │  │                               and UiLibrary (venture.ui), all drawn through IPainter
 │  ├─ Venture.OS.Interface/        the interface formats: only the BCL, AOT-compatible, warnings as errors
@@ -1378,6 +1378,15 @@ or a 10-second limit. If that fails, its undos run at once. Closing ends the
 owner, so its commands vanish; an app can't be closed while its own code is
 running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
 
+- **Processes** (0.7.2xx, [design](./design/2026-11-18-processes-design.md)):
+  every open app is an `AppProcess`, kept by `AppManager.Supervisor`, with an
+  ID counting up from 1 and a record of how it ended (quit, closed, killed,
+  or failed to start) and why. Its owner's `Gate` sends every run of its code
+  (startup, events, timers, callbacks, and commands it registered) through
+  `AppProcess.Run`, which drops work for a process that has ended; that's the
+  one place to change for apps to run on threads of their own. An app whose
+  process ends, however, leaves `AppManager.Running`.
+
 - **Finding an app:** by folder or `Info.xml` name in `/mnt/system/apps`,
   then `/mnt/user/apps`, ignoring case, or by path. A bundle opened by path
   from outside both folders says what it needs first, such as
@@ -1556,6 +1565,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-18 | minor | Apps (§9): every app runs as a process, through `AppManager.Supervisor` and its owner's `Gate`. |
 | 2026-11-18 | minor | vdb (§8.1): the `vdb` tool. Files (§9) starts without a window. |
 | 2026-11-18 | minor | vdb (§8.1): developer mode, the protocol in Common, the desktop's listener, the Trust alert, `developer.local.lua`, and `run.sh --vdb`. |
 | 2026-11-18 | minor | Roundhouse (§9): NLog and the Log tab; `Info.xml` in the Text tab under its form; a prompt before leaving unsaved edits; opening another bundle from the designer no longer crashes. |

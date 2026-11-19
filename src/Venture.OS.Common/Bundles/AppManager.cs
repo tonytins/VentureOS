@@ -1,4 +1,5 @@
 using Venture.OS.Desktop;
+using Venture.OS.Processes;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 
@@ -28,6 +29,10 @@ namespace Venture.OS.Bundles;
 /// Where the user's apps are, such as <c>/mnt/user/apps</c>, or <see langword="null"/> for none. They open by name like
 /// the system's, after them.
 /// </param>
+/// <param name="supervisor">
+/// Keeps each open app as a process, through which every call into its code goes; one of its own when
+/// <see langword="null"/>.
+/// </param>
 public sealed class AppManager(
     string appsDirectory,
     RuntimeCommands commands,
@@ -37,19 +42,37 @@ public sealed class AppManager(
     Func<Func<string?>>? startupStop = null,
     AppWindows? windows = null,
     string? userAppsDirectory = null,
-    Func<IShellOutput, string, ShellContext>? openShell = null)
+    Func<IShellOutput, string, ShellContext>? openShell = null,
+    Supervisor? supervisor = null)
 {
     private readonly string? userAppsDirectory = userAppsDirectory?.TrimEnd('/');
     private readonly string appsDirectory = appsDirectory?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(appsDirectory));
     private readonly RuntimeCommands commands = commands ?? throw new ArgumentNullException(nameof(commands));
     private readonly List<RunningApp> running = [];
+    private Supervisor? processes = supervisor;
+    private bool watching;
 
-    // Apps whose main script is running, by identifier. An app only counts as open once main finishes, so without
-    // this, main opening its own app, such as through venture.ui.launch, would start it again, and again.
-    private readonly HashSet<string> opening = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>An app that's open: its bundle, the owner running it, and its process.</summary>
+    public sealed record RunningApp(Bundle Bundle, LuaOwner Owner, AppProcess Process);
 
-    /// <summary>An app that's open: its bundle and the owner running it.</summary>
-    public sealed record RunningApp(Bundle Bundle, LuaOwner Owner);
+    /// <summary>Keeps the open apps as processes, and says when one ends.</summary>
+    public Supervisor Supervisor
+    {
+        get
+        {
+            processes ??= new Supervisor(() => System.Diagnostics.Stopwatch.GetElapsedTime(Created));
+            if (!watching)
+            {
+                watching = true;
+                Watch(processes);
+            }
+
+            return processes;
+        }
+    }
+
+    // When the manager was made, for its own supervisor's clock.
+    private static readonly long Created = System.Diagnostics.Stopwatch.GetTimestamp();
 
     /// <summary>An entry in an apps folder: a bundle that read, or the reason it didn't.</summary>
     /// <param name="Path">The bundle folder's full path.</param>
@@ -135,15 +158,11 @@ public sealed class AppManager(
             return false;
         }
 
-        if (FindOpen(bundle.Identifier) is not null)
+        // An app only counts as open once main finishes, so main opening its own app, such as through
+        // venture.ui.launch, finds it still starting rather than starting it again, and again.
+        if (Supervisor.FindApp(bundle.Identifier) is { } already)
         {
-            output.WriteLine($"{bundle.Name} is already open.");
-            return false;
-        }
-
-        if (opening.Contains(bundle.Identifier))
-        {
-            output.WriteLine($"{bundle.Name} is still opening.");
+            output.WriteLine(already.State == ProcessState.Starting ? $"{bundle.Name} is still opening." : $"{bundle.Name} is already open.");
             return false;
         }
 
@@ -151,50 +170,55 @@ public sealed class AppManager(
             && (userAppsDirectory is null || !ShellPaths.IsWithin(bundle.Path, userAppsDirectory)))
             output.WriteLine($"{bundle.Name} needs {DescribeNeeds(bundle.Needs)}.");
 
-        var library = libraryDirectory is null
-            ? $"{bundle.Path}/Contents/Lua"
-            : $"{bundle.Path}/Contents/Lua;{libraryDirectory}";
-        LuaOwner owner = new(
-            bundle.Name,
-            $"{bundle.Name} closes",
-            mayReplaceScripts: false,
-            output,
-            currentDirectory,
-            system,
-            bundle.Needs,
-            library,
-            commands,
-            runShell,
-            openShell);
-        AppLibrary.Open(owner.Interpreter.State, bundle, system?.Root);
-        UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
+        LuaOwner? owner = null;
+        var process = Supervisor.Start(bundle, RestartPolicy.Never, starting =>
+        {
+            var library = libraryDirectory is null
+                ? $"{bundle.Path}/Contents/Lua"
+                : $"{bundle.Path}/Contents/Lua;{libraryDirectory}";
+            owner = new(
+                bundle.Name,
+                $"{bundle.Name} closes",
+                mayReplaceScripts: false,
+                output,
+                currentDirectory,
+                system,
+                bundle.Needs,
+                library,
+                commands,
+                runShell,
+                openShell);
 
-        bool started;
-        opening.Add(bundle.Identifier);
-        try
-        {
-            started = owner.Run(lua => lua.DoFile(bundle.Main!), startupStop?.Invoke());
-        }
-        finally
-        {
-            opening.Remove(bundle.Identifier);
-        }
+            // Every run of the app's code, from now on, goes through its process.
+            owner.Gate = run =>
+            {
+                var finished = false;
+                return starting.Run(() => finished = run()) && finished;
+            };
+            starting.Attach(owner);
+            AppLibrary.Open(owner.Interpreter.State, bundle, system?.Root);
+            UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
 
-        if (!started)
+            // A main script that failed partway is undone when the process ends, so nothing half-open is left.
+            return owner.Run(lua => lua.DoFile(bundle.Main!), startupStop?.Invoke())
+                ? null
+                : $"{bundle.Name} didn't open; see the error above.";
+        });
+
+        if (process.Ending is { } ending)
         {
-            // A main script that failed partway undoes what it set up, so nothing half-open is left.
-            owner.Dispose();
-            output.WriteLine($"open: {bundle.Name} didn't open; see the error above.");
+            output.WriteLine($"open: {ending.Reason}");
             return false;
         }
 
-        running.Add(new RunningApp(bundle, owner));
+        running.Add(new RunningApp(bundle, owner!, process));
         return true;
     }
 
     /// <summary>Closes an open app, named by its name, folder name, or identifier, ignoring case.</summary>
+    /// <param name="how">How the app's process ends: closed, unless the app quit, or something killed it.</param>
     /// <returns><see langword="true"/> if it closed.</returns>
-    public bool CloseApp(string target, IShellOutput output)
+    public bool CloseApp(string target, IShellOutput output, EndingKind how = EndingKind.Closed)
     {
         ArgumentException.ThrowIfNullOrEmpty(target);
         ArgumentNullException.ThrowIfNull(output);
@@ -212,10 +236,18 @@ public sealed class AppManager(
             return false;
         }
 
-        app.Owner.Dispose();
-        running.Remove(app);
+        Supervisor.End(app.Process, how, how switch
+        {
+            EndingKind.Quit => $"{app.Bundle.Name} quit.",
+            EndingKind.Killed => $"{app.Bundle.Name} was killed.",
+            _ => $"{app.Bundle.Name} was closed.",
+        });
         return true;
     }
+
+    // An app leaves the list when its process ends, however it ends.
+    private void Watch(Supervisor watched) =>
+        watched.Ended += ended => running.RemoveAll(app => app.Process == ended);
 
     /// <summary>Whether an app with this identifier is open.</summary>
     public bool IsOpen(string identifier) => FindOpen(identifier) is not null;

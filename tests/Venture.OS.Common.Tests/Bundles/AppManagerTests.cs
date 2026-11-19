@@ -1,4 +1,5 @@
 using Venture.OS.Bundles;
+using Venture.OS.Processes;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Tests.Scripting;
@@ -118,6 +119,101 @@ public sealed class AppManagerTests : IDisposable
         Assert.Equal("open: Broken didn't open; see the error above.", output.Lines[^1]);
         Assert.False(registry.TryGet("half", out _));
         Assert.Empty(manager.Running);
+    }
+
+    [Fact]
+    public void OpensEachAppAsAProcess()
+    {
+        App("Notes", "", "");
+        App("Dice", "", "");
+
+        manager.OpenApp("Notes", root, output);
+        manager.OpenApp("Dice", root, output);
+
+        Assert.Equal([(1, "Notes"), (2, "Dice")], manager.Running.Select(app => (app.Process.Id, app.Process.Name)));
+        Assert.All(manager.Running, app => Assert.Equal(ProcessState.Running, app.Process.State));
+        Assert.Equal(manager.Running.Select(app => app.Process), manager.Supervisor.Processes);
+    }
+
+    [Theory]
+    [InlineData(EndingKind.Closed, "Notes was closed.")]
+    [InlineData(EndingKind.Quit, "Notes quit.")]
+    [InlineData(EndingKind.Killed, "Notes was killed.")]
+    public void ClosingEndsTheProcessAndSaysHow(EndingKind how, string reason)
+    {
+        App("Notes", "", "");
+        manager.OpenApp("Notes", root, output);
+        var process = manager.Running[0].Process;
+
+        Assert.True(manager.CloseApp("Notes", output, how));
+
+        Assert.Equal(new ProcessEnding(how, reason), process.Ending);
+        Assert.Empty(manager.Supervisor.Processes);
+    }
+
+    [Fact]
+    public void AnAppThatFailsToOpenEndsAsFailedToStart()
+    {
+        List<AppProcess> ended = [];
+        manager.Supervisor.Ended += ended.Add;
+        App("Broken", "", """error("not today", 0)""");
+
+        manager.OpenApp("Broken", root, output);
+
+        var process = Assert.Single(ended);
+        Assert.Equal(new ProcessEnding(EndingKind.FailedToStart, "Broken didn't open; see the error above."), process.Ending);
+        Assert.Empty(manager.Supervisor.Processes);
+    }
+
+    [Fact]
+    public void EveryRunOfAnAppsCodeGoesThroughItsProcess()
+    {
+        App("Notes", "shell", """venture.command { name = "note", run = function() print("noted") end }""");
+        manager.OpenApp("Notes", root, output);
+        var owner = manager.Running[0].Owner;
+        var throughProcess = owner.Gate!;
+        var runs = 0;
+        owner.Gate = run =>
+        {
+            runs++;
+            return throughProcess(run);
+        };
+
+        shell.Execute("note");
+        owner.Gate = _ => false;
+        shell.Execute("note");
+
+        Assert.Equal(1, runs);
+        Assert.Equal(["noted"], output.Lines);
+    }
+
+    [Fact]
+    public void AnAppWhoseProcessEndsElsewhereIsClosed()
+    {
+        App("Notes", "shell", """venture.command { name = "note", run = function() end }""");
+        manager.OpenApp("Notes", root, output);
+
+        manager.Supervisor.End(manager.Running[0].Process, EndingKind.Killed, "Killed.");
+
+        Assert.Empty(manager.Running);
+        Assert.False(manager.IsOpen("dev.example.notes"));
+        Assert.False(registry.TryGet("note", out _));
+    }
+
+    [Fact]
+    public void UsesTheSupervisorItIsGiven()
+    {
+        App("Notes", "", "");
+        Supervisor shared = new(() => TimeSpan.FromSeconds(42));
+        AppManager sharing = new(apps, new RuntimeCommands(registry.IsBuiltIn), supervisor: shared);
+
+        sharing.OpenApp("Notes", root, output);
+        var process = Assert.Single(shared.Processes);
+        shared.End(process, EndingKind.Killed, "Killed.");
+
+        Assert.Same(shared, sharing.Supervisor);
+        Assert.Equal(TimeSpan.FromSeconds(42), process.Started);
+        Assert.Empty(sharing.Running);
     }
 
     [Fact]
