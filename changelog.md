@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.410
+## 0.7.411
 
 - Apps' string tables (`_<id>_<name>.cst`) are read to the full CST specification, by CST.NET: a key on the line above its value, and numbered keys such as `3.label`, now find their text, where before they were reported and skipped.
 

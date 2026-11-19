@@ -25,15 +25,19 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   drawing logic (`Desktop/`, drawn through `IPainter`). It must never  
   reference the Cosmos kernel; `Cosmos.Executable.Lua` is allowed, since it  
   runs on ordinary .NET.
-- `src/Venture.OS.Interface` holds the formats interfaces are written in:  
-  the UIScript reader (`UIScript.cs`), which must keep matching Hudini's (its  
+- `src/Venture.OS.Interface` holds the formats interfaces are written in.  
+  The UIScript reader (`UIScript.cs`) must keep matching Hudini's (its  
   examples are copied into the tests) and reads a superset of it, described  
   in [docs/uiscript](docs/uiscript/README.md), where each addition is drafted  
-  for Hudini; what editors build on (`UIDocument`, which edits a `.uix` in  
-  place, and `UIScriptSchema`, each element's attributes, which must match  
-  the reader); the flat XML reader (`Xml/`); and CST string tables  
-  (`Strings/`), read by [CST.NET](https://github.com/tonytins/cstdotnet)  
-  (the `CSTNet` package). It references nothing but the BCL and CSTNet.
+  for Hudini. The superset is deliberate: an operating system needs more  
+  from its interfaces (panels, panes, menus a global bar merges) than a  
+  game's, so VentureOS adds what it needs first and drafts it for Hudini,  
+  rather than waiting on Hudini's spec. The project also holds what editors  
+  build on (`UIDocument`, which edits a `.uix` in place, and  
+  `UIScriptSchema`, each element's attributes, which must match the reader);  
+  the flat XML reader (`Xml/`); and CST string tables (`Strings/`), read by  
+  [CST.NET](https://github.com/tonytins/cstdotnet) (the `CSTNet` package).  
+  It references nothing but the BCL and CSTNet.
 - `src/Venture.Roundhouse` is Roundhouse, VentureOS's IDE: an Avalonia app  
   for Linux, macOS, and Windows that draws with `Venture.OS.Common`. Avalonia,  
   AvaloniaEdit, its TextMate add-on, and NLog are approved for it alone; the  
@@ -101,7 +105,7 @@ Follow the [.NET guidelines skill](.agents/skills/dotnet-guidelines/SKILL.md) an
 
 ### Never Crash (Outranks Feature Work)
 
-There is no host process underneath: an unhandled exception stops the machine with no explanation. Stability outranks features.
+There is no host process underneath, because VentureOS is the host: an unhandled exception stops the machine with no explanation. Stability outranks features.
 
 - **During boot**, `VentureKernel.BeforeRun` runs each step through  
   `RunCriticalStep` or `RunOptionalStep`. A step is critical if the system  
@@ -134,7 +138,10 @@ There is no host process underneath: an unhandled exception stops the machine wi
   kernel couldn't compile fail there first.
 - Keep both architectures building. Guard and note any x64-only code.
 - Bump the `Cosmos.*` package versions only in a change of their own. New NuGet  
-  dependencies need the owner's approval and must work under Cosmos's compiler.
+  dependencies need the owner's approval, except the owner's own packages  
+  (published by `tonytins`, such as CSTNet), which are approved. Every  
+  package must still work under Cosmos's compiler, and the kernel must boot  
+  with it.
 
 ### Code
 
@@ -196,6 +203,11 @@ Describe only what works today, and keep the tree building at every step.
   notes in `docs/releases/`.
 - [README.md](README.md) when setup or build steps change, and this file when  
   the layout or rules change.
+
+VentureOS is a personal operating system, not a platform with outside users,  
+so breaking changes are allowed: update every shipped app and document in the  
+same change. Hudini's users are another matter; a change to the formats it  
+shares (UIScript) crosses a version boundary rather than breaking its documents.
 
 State breaking changes, package bumps, new dependencies, and boot-order changes  
 in the summary or commit message, along with anything you couldn't verify. If  
