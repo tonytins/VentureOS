@@ -30,6 +30,9 @@ namespace Venture.OS.Scripting;
 /// <c>venture.developer.trust(identity)</c> trusts a computer without asking; and <c>venture.developer.status()</c>
 /// is <c>{ enabled, port, trusted, connected, problem }</c>, or <c>nil</c> without developer mode. All last until
 /// VentureOS restarts.</description></item>
+/// <item><description><c>venture.processes()</c>: the running apps, <c>{ id, name, identifier, state, seconds, kept }</c>
+/// each, or <c>nil</c>; and <c>venture.kill(target)</c>, which ends one by ID, name, or identifier, returning
+/// <c>true</c> and whether it's kept, so starts again, or <c>nil</c> and why.</description></item>
 /// </list>
 /// <para>The functions other than <c>setAppearance</c> and <c>setUtcOffset</c> take no arguments and ignore any they're given. An exception from
 /// <see cref="ISystemInfo"/> becomes a Lua error, which <c>pcall</c> can catch, so a failing device can't stop the
@@ -70,6 +73,8 @@ public static class VentureLibrary
             Gated("wallpapers", ScriptScopes.System, scopes, lua => PushWallpapers(lua, system.Appearance)),
             Gated("time", ScriptScopes.System, scopes, lua => PushTime(lua, system.WallClock)),
             Gated("setUtcOffset", ScriptScopes.System, scopes, lua => SetUtcOffset(lua, system.WallClock)),
+            Gated("processes", ScriptScopes.System, scopes, lua => PushProcesses(lua, system.Processes)),
+            Gated("kill", ScriptScopes.System, scopes, lua => Kill(lua, system.Processes)),
 
             // Replaced by ShellLibrary where the code has a lasting owner; elsewhere they explain why they can't work.
             Gated("command", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "command")),
@@ -116,6 +121,78 @@ public static class VentureLibrary
     }
 
     private const string NoDeveloperMode = "this system has no developer mode";
+
+    /// <summary>
+    /// <c>venture.processes()</c>: the running apps, oldest first, each <c>{ id, name, identifier, state, seconds,
+    /// kept }</c>, where <c>state</c> is <c>"starting"</c> or <c>"running"</c>, <c>seconds</c> is how long it has run,
+    /// and <c>kept</c> whether VentureOS starts it again when it ends; or <c>nil</c> on a system without apps.
+    /// </summary>
+    private static int PushProcesses(ILuaState lua, Processes.Supervisor? supervisor)
+    {
+        if (supervisor is null)
+        {
+            lua.PushNil();
+            return 1;
+        }
+
+        var now = supervisor.Now;
+        lua.NewTable();
+        var index = 0;
+        foreach (var process in supervisor.Processes)
+        {
+            lua.NewTable();
+            SetInteger(lua, "id", (ulong)process.Id);
+            SetString(lua, "name", process.Name);
+            SetString(lua, "identifier", process.Bundle.Identifier);
+            SetString(lua, "state", process.State == Processes.ProcessState.Starting ? "starting" : "running");
+            SetInteger(lua, "seconds", (ulong)Math.Max(0, (now - process.Started).TotalSeconds));
+            SetBoolean(lua, "kept", process.Policy == Processes.RestartPolicy.Always);
+            lua.RawSetI(-2, ++index);
+        }
+
+        return 1;
+    }
+
+    /// <summary>
+    /// <c>venture.kill(target)</c>: ends a running app's process, named by its ID, its name, or its identifier,
+    /// ignoring case. Returns <see langword="true"/>, and whether it'll start again, being kept; or <c>nil</c> and
+    /// why, such as when it's the code calling: a process can't end from inside itself.
+    /// </summary>
+    private static int Kill(ILuaState lua, Processes.Supervisor? supervisor)
+    {
+        var target = lua.Type(1) == LuaType.LUA_TNUMBER ? lua.ToNumber(1).ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : LuaText.Decode(lua.L_CheckString(1));
+        if (supervisor is null)
+            return Refuse(lua, "this system has no apps to end");
+
+        Processes.AppProcess? found = null;
+        if (int.TryParse(target, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var id))
+        {
+            found = supervisor.Find(id);
+        }
+        else
+        {
+            foreach (var process in supervisor.Processes)
+            {
+                if (process.Name.Equals(target, StringComparison.OrdinalIgnoreCase)
+                    || process.Bundle.Identifier.Equals(target, StringComparison.OrdinalIgnoreCase))
+                {
+                    found = process;
+                    break;
+                }
+            }
+        }
+
+        if (found is null)
+            return Refuse(lua, $"there's no running app {target}; ps lists them");
+        if (found.IsBusy)
+            return Refuse(lua, $"{found.Name} is running the code asking, and can't end from inside itself");
+
+        supervisor.End(found, Processes.EndingKind.Killed, $"{found.Name} was killed.");
+        lua.PushBoolean(true);
+        lua.PushBoolean(found.Policy == Processes.RestartPolicy.Always);
+        return 2;
+    }
 
     /// <summary>
     /// <c>venture.developer.enable()</c> and <c>disable()</c>: turn developer mode on or off, so VentureOS listens for

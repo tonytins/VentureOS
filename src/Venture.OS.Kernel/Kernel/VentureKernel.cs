@@ -149,7 +149,8 @@ public class VentureKernel : Sys.Kernel, IShellHost
             () => ScriptStop.Any(KeyboardStop.Check, ScriptStop.After(Bootstrap.AppStartupLimit)),
             appWindows,
             Bootstrap.UserAppsDirectoryPath,
-            (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false });
+            (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false },
+            system.Processes);
 
         // Every script, app or not, can show an alert, Quick Look, or open an app through the same desktop.
         system.Desktop = new ScriptDesktop(appWindows, () => appManager);

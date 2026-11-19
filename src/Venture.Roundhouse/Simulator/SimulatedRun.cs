@@ -82,7 +82,8 @@ public sealed class SimulatedRun : IDisposable, IShellHost
             () => ScriptStop.Any(FrameStop, ScriptStop.After(AppStartupLimit)),
             appWindows,
             disk.HostPath("/mnt/user/apps"),
-            (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false });
+            (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false },
+            System.Processes);
         System.Desktop = new ScriptDesktop(appWindows, () => Apps);
 
         Session = InLook(() =>

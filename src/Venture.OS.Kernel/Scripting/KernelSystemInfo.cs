@@ -27,6 +27,11 @@ internal sealed class KernelSystemInfo : ISystemInfo
     /// <summary>None: the kernel's disk is VentureOS's whole world.</summary>
     public FileRoot? Root => null;
 
+    /// <summary>The apps' processes, which the kernel's app manager runs them through.</summary>
+    public Processes.Supervisor? Processes { get; } = new(() => Stopwatch.GetElapsedTime(StartedAt));
+
+    private static readonly long StartedAt = Stopwatch.GetTimestamp();
+
     /// <summary>Developer mode, which the desktop's vdb listener follows.</summary>
     public Venture.OS.Vdb.VdbDeveloperMode? Developer { get; } = new();
 

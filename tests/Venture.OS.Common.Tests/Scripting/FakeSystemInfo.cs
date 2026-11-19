@@ -43,6 +43,8 @@ internal sealed class FakeSystemInfo : ISystemInfo
 
     public Venture.OS.Vdb.VdbDeveloperMode? Developer { get; init; }
 
+    public Venture.OS.Processes.Supervisor? Processes { get; init; }
+
     /// <summary>When set, reading <see cref="Uptime"/> throws it, as a failing device might.</summary>
     public Exception? UptimeFailure { get; init; }
 

@@ -226,7 +226,7 @@ and leaves room for apps to run independently later. Its
 
 - [x] Processes and a supervisor: crashes noticed, with the reason, and
   restart policies, `never` and `always`.
-- [ ] `ps` and `kill`, and `venture.processes()` and `venture.kill(id)`.
+- [x] `ps` and `kill`, and `venture.processes()` and `venture.kill(id)`.
 
 **0.7.3xx, the dock and the menu bar as apps**
 

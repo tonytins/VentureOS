@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,669 tests, and 188 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,681 tests, and 188 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (25 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -30,8 +30,8 @@ the code wins and this page is out of date.
 - **Shell:** a command registry with eleven built-in commands (`help`, `desktop`,
   `clear`, `cd`, `lua`, `open`, `close`, `apps`, `halt`, `reboot`,
   `shutdown`), a current folder the prompt shows, `.app` bundles that open
-  and close as owners, plus Lua script commands
-  from `/mnt/system/commands` (`echo`, `info`, `net`, `clock`, and the file commands
+  and close as processes, plus Lua script commands
+  from `/mnt/system/commands` (`echo`, `info`, `net`, `clock`, `ps`, `kill`, and the file commands
   `ls`, `cat`, `write`, `mkdir`, `rm`, `df`, `pwd`) that reach the kernel
   through the `venture` table, and input split into a command and arguments
   with quoting. A failing command reports its error and
@@ -172,7 +172,7 @@ VentureOS/
 │  ├─ system/                      installed to /mnt/system, which nothing may change
 │  │  ├─ init.lua                  runs once after boot; prints the help hint, and runs developer.local.lua if a build has one
 │  │  ├─ apps/                     Files, Settings, System Monitor, and Terminal
-│  │  ├─ commands/                 Lua commands: echo, info, net, appearance, ls, cat, write, mkdir, rm, df, pwd
+│  │  ├─ commands/                 Lua commands: echo, info, net, appearance, ps, kill, ls, cat, write, mkdir, rm, df, pwd
 │  │  ├─ lib/venture/args.lua      the system library: the venture.args argument parser
 │  │  ├─ interfaces/about.uix      the About VentureOS window
 │  │  └─ fonts/                    Open Sans and Fira Code, with their licenses
@@ -1396,6 +1396,12 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   it's closed or killed, or on its first crash; after 2, 5, 10, then every 30
   seconds while it keeps failing; a minute of running settles it. The
   desktop ticks the supervisor every frame, and the shell after each command.
+- **`ps` and `kill`:** `venture.processes()` lists the running apps (ID, name,
+  identifier, state, seconds running, and whether they're kept), and
+  `venture.kill(target)` ends one by ID, name, or identifier, refusing the
+  app whose code is asking; both need the `system` scope. The supervisor
+  reaches scripts through `ISystemInfo.Processes`, the same one the system's
+  `AppManager` runs its apps through.
 
 - **Finding an app:** by folder or `Info.xml` name in `/mnt/system/apps`,
   then `/mnt/user/apps`, ignoring case, or by path. A bundle opened by path
@@ -1575,6 +1581,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Apps (§9): `ps`, `kill`, `venture.processes()`, and `venture.kill()`; `ISystemInfo.Processes`. |
 | 2026-11-18 | minor | Apps (§9): crashes (three failures in a minute) and kept apps, restarted by the supervisor; Files is one. |
 | 2026-11-18 | minor | Apps (§9): every app runs as a process, through `AppManager.Supervisor` and its owner's `Gate`. |
 | 2026-11-18 | minor | vdb (§8.1): the `vdb` tool. Files (§9) starts without a window. |

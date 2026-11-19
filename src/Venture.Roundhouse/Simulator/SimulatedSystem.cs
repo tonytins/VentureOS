@@ -71,4 +71,12 @@ public sealed class SimulatedSystem(SimulatedDisk disk) : ISystemInfo
 
     /// <summary>None: a run has no network to listen on, so Settings' Developer pane says developer mode isn't here.</summary>
     public Venture.OS.Vdb.VdbDeveloperMode? Developer => null;
+
+    /// <summary>The run's apps' processes, which its app manager runs them through.</summary>
+    public Venture.OS.Processes.Supervisor Processes { get; } = new(() => global::System.Diagnostics.Stopwatch.GetElapsedTime(Started));
+
+    Venture.OS.Processes.Supervisor? ISystemInfo.Processes => Processes;
+
+    // When the first run's system was made, for processes' clocks, which only need to go forward.
+    private static readonly long Started = global::System.Diagnostics.Stopwatch.GetTimestamp();
 }

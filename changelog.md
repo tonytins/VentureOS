@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.204
+
+- `ps` lists the running apps: each one's ID, how long it has run, and whether VentureOS keeps it running. `kill` ends one by its ID, name, or identifier, such as `kill 3` or `kill calculator`; an app VentureOS keeps, such as Files, starts again, and it says so.
+- Scripts can do the same with `venture.processes()` and `venture.kill(target)`, under the `system` scope.
+
 ## 0.7.203
 
 - An app whose code keeps failing, three times within a minute, is closed, and the desktop says it crashed, in front of the errors that led to it. An app that fails now and then carries on, as before.

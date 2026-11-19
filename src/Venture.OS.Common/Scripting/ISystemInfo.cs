@@ -81,6 +81,12 @@ public interface ISystemInfo
     /// that can't listen for it, such as Roundhouse's Run.
     /// </summary>
     Vdb.VdbDeveloperMode? Developer { get; }
+
+    /// <summary>
+    /// The apps' processes, which <c>venture.processes</c> lists and <c>venture.kill</c> ends, or
+    /// <see langword="null"/> on a system without apps. The system's app manager runs its apps through it.
+    /// </summary>
+    Processes.Supervisor? Processes { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>
