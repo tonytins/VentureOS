@@ -259,7 +259,7 @@ approved for the `vdb` tool alone.
   switches panes from the canvas.
 - [x] SHA-256, HMAC, HKDF, and ChaCha20-Poly1305 for VentureOS, and vdb/1
   encrypted with them, the identity no longer sent.
-- [ ] Roundhouse sends the app it has open to a running VentureOS over vdb,
+- [x] Roundhouse sends the app it has open to a running VentureOS over vdb,
   and shows what it prints.
 
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
@@ -309,6 +309,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | 0.7.4xx is complete: Roundhouse runs the app it has open on VentureOS over vdb, with Common's client. The next band is the owner's to plan. |
 | 2026-11-19 | patch | 0.7.4xx: vdb/1 is sealed, with VentureOS's own SHA-256, HKDF, and ChaCha20-Poly1305, and the identity sent only at pairing. |
 | 2026-11-19 | patch | 0.7.4xx: panes are elements, and Roundhouse's designer shows a sidebar's rows and one pane at a time. |
 | 2026-11-19 | patch | 0.7.4xx: Cosmos 3.0.99, and `<Panel>` in place of `<Window role="panel">`, are done. |

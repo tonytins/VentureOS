@@ -79,7 +79,10 @@ public sealed class VentureOSRunWindow : Window
         }
 
         status.Text = line.Text;
-        status.Foreground = line.IsProblem ? Brushes.IndianRed : null;
+        if (line.IsProblem)
+            status.Foreground = Brushes.IndianRed;
+        else
+            status.ClearValue(TextBlock.ForegroundProperty);
         if (line.IsProblem)
             Log.Warn(line.Text);
         else

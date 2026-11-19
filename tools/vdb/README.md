@@ -52,7 +52,8 @@ asks anything, so scripts can use it. `--verbose` logs every line both ways as i
 hello they're sealed.
 
 Your identity is kept in `~/.config/vdb/identity` (`$XDG_CONFIG_HOME` if it's set), or `%APPDATA%\vdb\identity` on
-Windows, readable only by you. It's a secret: every connection is encrypted with keys made from it, and VentureOS
+Windows, readable only by you, and Roundhouse's Run on VentureOS uses the same one, so VentureOS trusts both as one
+computer. It's a secret: every connection is encrypted with keys made from it, and VentureOS
 knows your computer by a hash of it, its key ID, which the Trust alert shows. Delete it, and vdb makes a new one,
 which VentureOS asks about again.
 

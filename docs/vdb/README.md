@@ -1,7 +1,8 @@
 # vdb/1
 
 vdb sends an app to a running VentureOS and opens it, from another computer. This is the protocol both sides
-follow: VentureOS's side is `Venture.OS.Common/Vdb`, and the computer's is the `vdb` tool in `tools/vdb`. Why it's
+follow: VentureOS's side is `Venture.OS.Common/Vdb`, and the computer's is the `vdb` tool in `tools/vdb`, or
+Roundhouse's Run on VentureOS, through Common's `VdbClient`. Why it's
 built this way is in [its design](../design/2026-11-18-vdb-design.md), and why and how it's encrypted in
 [that design](../design/2026-11-19-vdb-encryption-design.md).
 

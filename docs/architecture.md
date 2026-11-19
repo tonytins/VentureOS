@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (vdb sealed) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (Run on VentureOS) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-18)
 
@@ -164,6 +164,7 @@ VentureOS/
 │     │                            InspectorPanel, and DesignEdits (the library and selection edits)
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
 │     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedRun, SimulatedDisk, SimulatedSystem
+│     ├─ Vdb/                      Venture.Roundhouse.Vdb: Run on VentureOS (VentureOSRun, its window, TCP, and the identity file)
 │     ├─ Logging/                  Venture.Roundhouse.Logging: RoundhouseLog (NLog), LogBuffer, LoggedOutput
 │     ├─ Menus/                    Venture.Roundhouse.Menus: AppMenu, one list for the global menu bar and the ☰ button
 │     ├─ TitleBars.cs              where the coloured bar can be the window's title bar
@@ -483,6 +484,9 @@ how it's sealed, and [docs/vdb](./vdb/README.md) the protocol.
   checks `Pending()` and `DataAvailable`, neither of which blocks, and reads
   at most 16 × 4 KiB a frame. Leaving the desktop stops listening. One
   computer at a time; a second is told it's busy.
+- **The computer's side** is in Common too: `VdbClient`, blocking, over any
+  line transport, and `VdbApp`, an app read and checked before it's sent.
+  Roundhouse speaks vdb with them; the `vdb` tool has its own, in Swift.
 - **The protocol** is in Common (`Vdb/`), with no sockets: `VdbSession` is
   handed bytes and the time and answers in lines, so it's tested without a
   kernel. Apps are staged in `/mnt/user/.vdb`, checked with `Bundle.Read`,
@@ -1110,6 +1114,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   puts them in place only while it works (`SimulatedRun.Within`). Run
   folders carry Roundhouse's process ID, and a new run deletes those whose
   process has ended.
+- **Run on VentureOS** (0.7.4xx, Ctrl+Alt+R) sends the app the open file
+  is in to a running VentureOS over vdb, as `vdb install --launch` does, with
+  the editor's unsaved text in place of what's saved, and shows what it
+  prints in a window of its own (`VentureOSRunWindow`) until Stop or the
+  window closes. `VentureOSRun` does the work on a thread of its own, apart
+  from the window: `VdbApp.Read`, then Common's `VdbClient` over
+  `TcpLineTransport`, to `127.0.0.1:28455`, where `./run.sh --vdb` forwards
+  VentureOS's port. It says hello with the `vdb` tool's own identity file
+  (`VdbIdentityFile`), so VentureOS trusts the two as one computer. Its
+  tests run it against VentureOS's own `VdbSession` on a loopback socket.
 - **Packaging** (`packaging/`, after CityLimits') builds Roundhouse into
   self-contained packages from Linux or macOS: an AppImage and `.tar.gz`, a
   Windows zip, and `Roundhouse.app` zips for both Mac architectures, named
@@ -1651,6 +1665,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Roundhouse's Run on VentureOS (§8.1, §9): Common's `VdbClient` and `VdbApp`; `VentureOSRun`, its window, `TcpLineTransport`, and the vdb tool's identity file in Roundhouse. |
 | 2026-11-19 | minor | vdb sealed (§8.1): Common's own SHA-256, HMAC, HKDF, and ChaCha20-Poly1305; key IDs, pairing, and sealed lines in vdb/1 on both ends; `VdbRandom` for VentureOS's nonces. |
 | 2026-11-19 | minor | Panes (§9): the `panes` feature, `<Pane>` and `pane` on controls; `UIView` shows one pane at a time; Settings declares its panes; Roundhouse's designer draws the rows and the shown pane, and switches it from the canvas. |
 | 2026-11-19 | minor | UIScript: `<Panel>` in place of `<Window role="panel">`, which is no longer read; Dock.app and Files' menu bar use it, and Roundhouse's designer resizes it as a window. |

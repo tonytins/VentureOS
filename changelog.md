@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.409
+
+- Roundhouse can run the app you're editing on VentureOS itself: Run ▸ Run on VentureOS (Ctrl+Alt+R) sends it, unsaved edits included, to a VentureOS running under `./run.sh --vdb`, opens it, and shows what it prints in a window until you stop. VentureOS trusts it as the same computer as the vdb tool.
+
 ## 0.7.406
 
 - vdb's connections are encrypted: everything after hello is sealed with ChaCha20-Poly1305, with keys made from your computer's identity, so what's sent can't be read or changed on the way. VentureOS knows your computer by its key ID, a hash of the identity, which the Trust alert now shows.

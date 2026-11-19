@@ -72,6 +72,8 @@ dotnet run --project src/Venture.Roundhouse -- rootfs/user/apps/Calculator.app/C
 dotnet test --project tests/Venture.Roundhouse.Tests
 ```
 
+Run ▸ Run on VentureOS (Ctrl+Alt+R) sends the app you're editing, unsaved edits included, to a VentureOS running under `./run.sh --vdb`, opens it, and shows what it prints, as the [vdb tool](tools/vdb/README.md) does; it's trusted as the same computer.
+
 Roundhouse keeps a log, shown in its Log tab and written to a file a day, kept for a week, in its own folder of your local application data (`~/.local/share/Roundhouse/logs` on Linux): what it opened, saved, and ran, what VentureOS's apps printed in Run, and any error.
 
 Run ▸ Run (Ctrl+R) runs VentureOS's desktop in a window beside the designer, with the app you're designing open as you've edited it, saved or not. Each run starts from a fresh copy of VentureOS's files, and an app's files stay inside that copy.
