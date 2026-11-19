@@ -14,7 +14,7 @@ design's status says so. What's planned and when is in [the roadmap](../ROADMAP.
 |---|---|---|
 | [Roundhouse](./2026-11-18-roundhouse-design.md) | VentureOS's IDE: the desktop version on Avalonia, and the native one later | Built in 0.6, Izumo |
 | [vdb](./2026-11-18-vdb-design.md) | Sending apps to a running VentureOS from another computer | Built in 0.7.1xx, Seto |
-| [Supervised processes](./2026-11-18-processes-design.md) | Every app as a process the desktop watches, ends, and restarts | Proposed, for 0.7.2xx |
+| [Supervised processes](./2026-11-18-processes-design.md) | Every app as a process the desktop watches, ends, and restarts | Built in 0.7.2xx, Seto |
 | [The dock and the menu bar as apps](./2026-11-18-dock-app-design.md) | Panel windows and shelves, with the dock and the menu bar as apps | Proposed, for 0.7.3xx |
 
 [`interface.figcraft`](./interface.figcraft) is a mock-up of the desktop's windows, made in

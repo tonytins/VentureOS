@@ -387,5 +387,30 @@ And when it opens but something's off:
 | `"echo" is a system command, and Dice can't replace it.` | Pick another name. Apps can't take over the system's commands. |
 | `"roll" is already registered by Games.` | Another open app uses the name. Close it, or pick another name. |
 | `close: Dice can't close while its own code is running.` | An app's command tried to close the app. Close it from the prompt. |
+| `Dice crashed: its code failed 3 times within a minute, so VentureOS closed it.` | See [When an app crashes](#when-an-app-crashes). |
 
 Ctrl+C or Esc stops a command or a `main.lua` that's running too long.
+
+## When an app crashes
+
+Every open app runs as a process, with an ID. `ps` lists them, and `kill`
+ends one, by its ID or name, such as `kill dice`:
+
+```
+/> ps
+  ID  NAME   STATE           UP  KEPT
+   1  Files  running     2m 05s  yes
+   2  Dice   running        12s
+```
+
+An error in one of your app's handlers, timers, or commands is shown, and
+the app carries on. But when its code fails three times within a minute,
+whether by an error or by running past its time, VentureOS treats the app as
+crashed: it closes it, with its windows and commands, and says so. Fix the
+error the messages before it point to, and open it again.
+
+A failing `main.lua` isn't a crash: the app just doesn't open, as above.
+
+Files is kept running: if it's closed, killed, or crashes, VentureOS starts
+it again, at once, and waits longer between tries if it keeps failing. Your
+apps aren't kept; once they end, they stay ended until they're opened again.

@@ -1,6 +1,6 @@
 # Apps as supervised processes
 
-**Status:** proposed, for 0.7.2xx, Seto. **Date:** 2026-11-18.
+**Status:** built in 0.7.2xx, Seto; the [architecture](../architecture.md) and [writing apps](../writing-apps.md) say how it works now. **Date:** 2026-11-18.
 
 Every app, the system's included, becomes a **process**: something with an ID and a lifecycle, which a
 **supervisor** starts, watches, ends, and, for the apps the desktop can't do without, restarts. It's the ground the
