@@ -43,8 +43,8 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
 - `tools/vdb/` is vdb, a Swift package (`swift build`, `swift test`) that  
   sends apps to a running VentureOS over [vdb/1](docs/vdb/README.md), whose  
   recorded conversations both its tests and Common's replay. Swift Argument  
-  Parser, swift-log, and GitVersion are approved for it alone. It moves to a  
-  repository of its own later.
+  Parser, swift-log, swift-crypto, and GitVersion are approved for it alone.  
+  It moves to a repository of its own later.
 - `packaging/` holds the scripts that build Roundhouse into packages for  
   Linux, Windows, and macOS, after CityLimits', writing to `dist/`; see  
   [its README](packaging/README.md). Its icon is a placeholder, made from  

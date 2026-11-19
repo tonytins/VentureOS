@@ -2,6 +2,8 @@
 
 **Status:** built in 0.7.1xx, Seto; where this differs from what was built, [docs/vdb](../vdb/README.md) and the [tool's README](../../tools/vdb/README.md) say how it works. **Date:** 2026-11-18.
 
+> 0.7.4xx encrypts the conversation and stops sending the identity; see [its design](./2026-11-19-vdb-encryption-design.md). Where they differ, that one wins.
+
 vdb is a way to put an app on a running VentureOS from another computer, and open it, while VentureOS can't yet
 keep files across reboots or install from a disk. It's named after Android's adb, which it borrows from in spirit:
 a developer mode, a computer that has to be trusted first, and a command-line tool on the computer. It's the first

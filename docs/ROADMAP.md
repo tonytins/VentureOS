@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-18 · **Latest release:** 0.6, Izumo · **Next:** 0.7, Seto, in development
+> **Last updated:** 2026-11-19 · **Latest release:** 0.6, Izumo · **Next:** 0.7, Seto, in development
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -44,7 +44,7 @@ stage to the next, and add a line to the revision history.
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
-| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; then Roundhouse on VentureOS itself |
+| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; then Roundhouse on VentureOS itself |
 
 ## 0.4, Pere Marquette
 
@@ -242,6 +242,26 @@ adds panel windows and a shelf to UIScript.
 - [x] The menu bar as Files' top panel.
 - [x] The dock's three modes, in Settings.
 
+**0.7.4xx, refinements**
+
+No theme of its own: what using 0.7 so far has shown needs fixing or finishing.
+Panels and sidebar panes become elements, so what an interface holds is in its
+`.uix` rather than its Lua, and Roundhouse can show it. vdb's conversation is
+encrypted, which [its design](./design/2026-11-19-vdb-encryption-design.md)
+lays out; it stays vdb/1, and older tools stop working. swift-crypto is
+approved for the `vdb` tool alone.
+
+- [ ] Cosmos 3.0.99.
+- [ ] `<Panel>` in place of `<Window role="panel">`, which goes.
+- [ ] `<Pane>` in a `<Sidebar>`: its rows, and one pane shown at a time, with
+  no Lua; Settings moves to it.
+- [ ] Roundhouse's designer draws a sidebar's rows and its selected pane, and
+  switches panes from the canvas.
+- [ ] SHA-256, HMAC, HKDF, and ChaCha20-Poly1305 for VentureOS, and vdb/1
+  encrypted with them, the identity no longer sent.
+- [ ] Roundhouse sends the app it has open to a running VentureOS over vdb,
+  and shows what it prints.
+
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer
 like the desktop version's, gaining widgets as it needs them. A designer needs
@@ -289,6 +309,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | 0.7.4xx, refinements, begins: Cosmos 3.0.99, `<Panel>` and `<Pane>` as elements, Roundhouse's sidebar fix and vdb, and vdb/1 encrypted, by my decision, from its proposed design. swift-crypto is approved for the `vdb` tool. |
 | 2026-11-19 | minor | 0.7.3xx is complete: panels and shelves, Dock.app, the menu bar as Files' top panel, and the dock's three modes. The next band is the owner's to plan. |
 | 2026-11-19 | minor | 0.7.2xx is complete: apps run as supervised processes, with crashes, kept apps, `ps`, and `kill`. 0.7.3xx, the dock and the menu bar as apps, is next, being planned. |
 | 2026-11-18 | minor | 0.7.2xx begins: apps as supervised processes, from its approved design. The dock moves to 0.7.3xx, with the menu bar as a panel Files hosts, built on processes. Designs get an index, `docs/design/README.md`. |
