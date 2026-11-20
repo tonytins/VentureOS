@@ -798,17 +798,19 @@ public sealed class MainWindowTests : IDisposable
     public void WindowButtonsAreVentureOSsDotsWhereRoundhouseDrawsTheFrame() => TestApp.Run(() =>
     {
         var (window, _) = OpenCalculator();
-        var buttons = window.FindControl<StackPanel>("WindowButtons")!;
+        var bar = window.FindControl<WindowTitleBar>("TitleBar")!;
+        var buttons = bar.WindowButtons;
 
         Assert.Equal(window.DrawsWindowButtons, buttons.IsVisible);
         var palette = Venture.OS.Desktop.DesktopPalette.Light;
-        var close = (Avalonia.Media.SolidColorBrush)window.FindControl<Avalonia.Controls.Shapes.Ellipse>("CloseDot")!.Fill!;
+        var close = (Avalonia.Media.SolidColorBrush)bar.CloseDot.Fill!;
         Assert.Equal((palette.CloseButton.Red, palette.CloseButton.Green, palette.CloseButton.Blue), (close.Color.R, close.Color.G, close.Color.B));
         Assert.Equal(["CloseButton", "MinimizeButton", "MaximizeButton"], buttons.Children.Select(child => child.Name));
+        Assert.True(bar.MaximizeButton.IsEnabled);
 
         // VentureOS's order: the window's buttons first, at the left end, then the start items.
-        var start = window.FindControl<StackPanel>("StartItems")!;
-        Assert.Same(buttons, start.Children[0]);
+        Assert.Same(buttons, bar.StartItems.Children[0]);
+        Assert.Same(window.FindControl<Button>("MenuButton"), bar.StartItems.Children[1]);
         window.Close();
     });
 

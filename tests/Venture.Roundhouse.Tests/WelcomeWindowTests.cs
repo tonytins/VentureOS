@@ -16,6 +16,40 @@ public sealed class WelcomeWindowTests : IDisposable
     public void Dispose() => Directory.Delete(folder, recursive: true);
 
     [Fact]
+    public void SharesTheMainWindowsTitleBar() => TestApp.Run(() =>
+    {
+        WelcomeWindow welcome = new("0.7.700", [], [], true, _ => { }, _ => Task.CompletedTask, _ => { });
+        welcome.Show();
+        MainWindow main = new();
+        main.Show();
+
+        // The same bar, merged or not as the main window's is, with the window's name centred in it.
+        var bar = welcome.TitleBar;
+        Assert.Equal(main.IsTitleBarMerged, bar.IsMerged);
+        Assert.Equal(main.DrawsWindowButtons, bar.DrawsWindowButtons);
+        Assert.Equal(bar.IsMerged, welcome.ExtendClientAreaToDecorationsHint);
+        Assert.Equal(WindowTitleBar.BarHeight, bar.Height);
+        Assert.Equal("Welcome to Roundhouse", ((Avalonia.Controls.TextBlock)bar.Title!).Text);
+        Assert.Same(bar.WindowButtons, bar.StartItems.Children[0]);
+
+        // It can't be resized, so it can't be zoomed, by its button or by double-clicking its bar.
+        Assert.False(bar.MaximizeButton.IsEnabled);
+        bar.MaximizeButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+        Assert.Equal(Avalonia.Controls.WindowState.Normal, welcome.WindowState);
+
+        main.Close();
+        welcome.Close();
+    });
+
+    [Fact]
+    public void ABarBelongsToOneWindow() => TestApp.Run(() =>
+    {
+        WelcomeWindow welcome = new("0.7.700", [], [], true, _ => { }, _ => Task.CompletedTask, _ => { });
+
+        Assert.Throws<InvalidOperationException>(() => welcome.TitleBar.Attach(welcome, merged: false));
+    });
+
+    [Fact]
     public void ListsTheRecentItemsAndSaysWhatsGone() => TestApp.Run(() =>
     {
         var project = Projects.RoundhouseProject.Create("Dice", folder).Root;

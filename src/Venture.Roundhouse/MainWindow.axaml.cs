@@ -164,7 +164,7 @@ public sealed partial class MainWindow : Window
             KeyBindings.Add(new KeyBinding { Gesture = new KeyGesture(key, modifiers), Command = new Command(run) });
         }
 
-        MergeTitleBar(TitleBars.Merges());
+        TitleBar.Attach(this, TitleBars.Merges());
         Editor.TextArea.Caret.PositionChanged += (_, _) => ShowCaret();
         FileEditor.TextArea.Caret.PositionChanged += (_, _) => ShowCaret();
 
@@ -270,8 +270,6 @@ public sealed partial class MainWindow : Window
     /// </summary>
     public IReadOnlyList<AppMenuGroup> Menus { get; }
 
-    /// <summary>Whether the coloured bar is the window's title bar, with the window buttons at its end.</summary>
-    public bool IsTitleBarMerged { get; private set; }
 
     /// <summary>Whether the canvas shows VentureOS's dark look.</summary>
     public bool IsDark { get; private set; }
@@ -1626,61 +1624,16 @@ public sealed partial class MainWindow : Window
         ];
     }
 
-    /// <summary>
-    /// Makes the coloured bar the window's title bar, with Avalonia drawing the window buttons at its end, or leaves
-    /// the window manager's title bar above it.
-    /// </summary>
-    private void MergeTitleBar(bool merged)
-    {
-        IsTitleBarMerged = merged;
-        ExtendClientAreaToDecorationsHint = merged;
-        ExtendClientAreaTitleBarHeightHint = merged ? TitleBar.Height : -1;
-
-        // The bar drags the window; what's on it takes clicks.
-        WindowDecorationProperties.SetElementRole(TitleBar, merged ? WindowDecorationsElementRole.TitleBar : WindowDecorationsElementRole.None);
-        foreach (var control in TitleBar.GetLogicalDescendants().OfType<Button>())
-            WindowDecorationProperties.SetElementRole(control, merged ? WindowDecorationsElementRole.User : WindowDecorationsElementRole.None);
-
-        // On Linux, Avalonia draws the frame and Roundhouse the buttons, VentureOS's red, orange, and green dots; the
-        // frame draws nothing else (see FrameOnly). Windows and macOS keep their own buttons beside the bar.
-        if (merged && OperatingSystem.IsLinux())
-            WindowDecorationsTheme = (ControlTheme)Resources["FrameOnly"]!;
-        ShowWindowButtons();
-        PlaceTitleBarContent();
-    }
+    /// <summary>Whether the coloured bar is the window's title bar.</summary>
+    public bool IsTitleBarMerged => TitleBar.IsMerged;
 
     /// <summary>Whether Roundhouse draws the window's buttons in the bar: where the bar is the title bar on Linux.</summary>
-    public bool DrawsWindowButtons => IsTitleBarMerged && OperatingSystem.IsLinux() && WindowState != WindowState.FullScreen;
-
-    private void ShowWindowButtons()
-    {
-        var palette = DesktopPalette.Light;
-        CloseDot.Fill = Brush(palette.CloseButton);
-        MinimizeDot.Fill = Brush(palette.MinimizeButton);
-        ZoomDot.Fill = Brush(palette.ZoomButton);
-        WindowButtons.IsVisible = DrawsWindowButtons;
-        ToolTip.SetTip(MaximizeButton, WindowState == WindowState.Maximized ? "Restore" : "Zoom");
-
-        static SolidColorBrush Brush(OS.Interface.UIColor color) => new(Color.FromRgb(color.Red, color.Green, color.Blue));
-    }
-
-    /// <summary>Keeps the bar's items clear of any window buttons the system draws beside it, as macOS's on the left.</summary>
-    private void PlaceTitleBarContent()
-    {
-        var system = IsTitleBarMerged && !DrawsWindowButtons ? WindowDecorationMargin : default;
-        TitleBarContent.Margin = new Thickness(10 + system.Left, 0, 10 + system.Right, 0);
-    }
+    public bool DrawsWindowButtons => TitleBar.DrawsWindowButtons;
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == WindowDecorationMarginProperty && TitleBarContent is not null)
-            PlaceTitleBarContent();
-        else if (change.Property == WindowStateProperty && MaximizeButton is not null)
-        {
-            ShowWindowButtons();
-        }
-        else if (change.Property == NativeMenu.IsNativeMenuExportedProperty && MenuButton is not null)
+        if (change.Property == NativeMenu.IsNativeMenuExportedProperty && MenuButton is not null)
             MenuButton.IsVisible = !NativeMenu.GetIsNativeMenuExported(this);
     }
 
@@ -1689,20 +1642,6 @@ public sealed partial class MainWindow : Window
         var flyout = AppMenu.Flyout(Menus);
         flyout.Placement = PlacementMode.BottomEdgeAlignedLeft;
         flyout.ShowAt(MenuButton);
-    }
-
-    private void OnMinimizeClicked(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-
-    private void OnMaximizeClicked(object? sender, RoutedEventArgs e) =>
-        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-
-    private void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
-
-    private void OnTitleBarDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        // Double-clicking the bar itself, not a button on it, maximizes or restores, as a title bar does.
-        if (IsTitleBarMerged && e.Source is Visual source && source.FindAncestorOfType<Button>(includeSelf: true) is null)
-            OnMaximizeClicked(sender, e);
     }
 
     private void OnUndoClicked(object? sender, RoutedEventArgs e) => Undo();

@@ -7,68 +7,7 @@
         x:Class="Venture.Roundhouse.MainWindow"
         Icon="/Assets/Roundhouse.png"
         Width="1100" Height="720" MinWidth="640" MinHeight="400">
-  <Window.Resources>
-    <!--
-      Where the bar is the title bar on Linux, Avalonia draws the window's frame (as Passenger has it do) so the window
-      manager doesn't add its own title bar above. The frame keeps its edges for resizing and draws nothing else:
-      the bar holds the title and the buttons.
-    -->
-    <ControlTheme x:Key="FrameOnly" TargetType="WindowDrawnDecorations">
-      <Setter Property="DefaultTitleBarHeight" Value="44"/>
-      <Setter Property="DefaultFrameThickness" Value="4"/>
-      <Setter Property="DefaultShadowThickness" Value="0"/>
-      <Setter Property="Template">
-        <WindowDrawnDecorationsTemplate>
-          <WindowDrawnDecorationsContent/>
-        </WindowDrawnDecorationsTemplate>
-      </Setter>
-    </ControlTheme>
-  </Window.Resources>
-
   <Window.Styles>
-    <!-- VentureOS's window buttons: bare dots, as its own title bar draws them. -->
-    <Style Selector="Border#TitleBar Button.light">
-      <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="Padding" Value="0"/>
-      <Setter Property="MinWidth" Value="0"/>
-      <Setter Property="MinHeight" Value="0"/>
-      <Setter Property="VerticalAlignment" Value="Center"/>
-    </Style>
-    <Style Selector="Border#TitleBar Button.light:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="Opacity" Value="0.8"/>
-    </Style>
-    <Style Selector="Border#TitleBar Button.light:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="Opacity" Value="0.6"/>
-    </Style>
-    <!-- The bar's buttons sit on its colour, so they're flat and white, and only show themselves under the pointer. -->
-    <Style Selector="Border#TitleBar :is(Button).bar">
-      <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="Foreground" Value="White"/>
-      <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="Padding" Value="10,4"/>
-      <Setter Property="MinHeight" Value="30"/>
-      <Setter Property="VerticalAlignment" Value="Center"/>
-    </Style>
-    <Style Selector="Border#TitleBar :is(Button).bar:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#33FFFFFF"/>
-      <Setter Property="Foreground" Value="White"/>
-    </Style>
-    <Style Selector="Border#TitleBar :is(Button).bar:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#4DFFFFFF"/>
-      <Setter Property="Foreground" Value="White"/>
-    </Style>
-    <Style Selector="Border#TitleBar ToggleButton.bar:checked /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#40FFFFFF"/>
-      <Setter Property="Foreground" Value="White"/>
-    </Style>
-    <Style Selector="Border#TitleBar :is(Button).bar:disabled /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent"/>
-      <Setter Property="Foreground" Value="#80FFFFFF"/>
-    </Style>
-
     <!-- Tool windows are headed in small capitals, as IDEs head them. -->
     <Style Selector="TextBlock.pane">
       <Setter Property="FontSize" Value="11"/>
@@ -85,57 +24,30 @@
   </Window.Styles>
 
   <DockPanel>
-    <!--
-      The coloured bar, after Passenger's and other .NET IDEs': VentureOS's blue running into its teal, laid out as
-      VentureOS's own title bar is: the window's buttons and the start items at the left, the document's name centred
-      with its bundle under it, and the end items at the right. Where the desktop allows, it's the window's title bar.
-    -->
-    <Border x:Name="TitleBar" DockPanel.Dock="Top" Height="44" DoubleTapped="OnTitleBarDoubleTapped">
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-          <GradientStop Color="#3584E4" Offset="0"/>
-          <GradientStop Color="#2190A4" Offset="1"/>
-        </LinearGradientBrush>
-      </Border.Background>
-      <local:TitleBarPanel x:Name="TitleBarContent" Margin="10,0">
-        <StackPanel x:Name="StartItems" Orientation="Horizontal" Spacing="2">
-          <!-- VentureOS's red close, orange minimize, and green zoom, drawn where Roundhouse draws the frame. -->
-          <StackPanel x:Name="WindowButtons" Orientation="Horizontal" Spacing="8" Margin="0,0,12,0" VerticalAlignment="Center"
-                      IsVisible="False">
-            <Button x:Name="CloseButton" Classes="light" Click="OnCloseClicked" ToolTip.Tip="Close">
-              <Ellipse x:Name="CloseDot" Width="12" Height="12"/>
-            </Button>
-            <Button x:Name="MinimizeButton" Classes="light" Click="OnMinimizeClicked" ToolTip.Tip="Minimize">
-              <Ellipse x:Name="MinimizeDot" Width="12" Height="12"/>
-            </Button>
-            <Button x:Name="MaximizeButton" Classes="light" Click="OnMaximizeClicked" ToolTip.Tip="Zoom">
-              <Ellipse x:Name="ZoomDot" Width="12" Height="12"/>
-            </Button>
-          </StackPanel>
-          <Button x:Name="MenuButton" Classes="bar" Content="☰" FontSize="16" Click="OnMenuClicked" ToolTip.Tip="Menu"/>
-          <Button x:Name="AddButton" Classes="bar" Content="Add ▾" IsEnabled="False" ToolTip.Tip="Add a control"/>
-          <Button x:Name="UndoButton" Classes="bar" Content="↶" FontSize="16" Click="OnUndoClicked" IsEnabled="False"
-                  ToolTip.Tip="Undo (Ctrl+Z)"/>
-          <Button x:Name="RedoButton" Classes="bar" Content="↷" FontSize="16" Click="OnRedoClicked" IsEnabled="False"
-                  ToolTip.Tip="Redo (Ctrl+Shift+Z)"/>
+    <!-- The coloured bar, shared with the welcome window (WindowTitleBar); where the desktop allows, it's the title bar. -->
+    <local:WindowTitleBar x:Name="TitleBar" DockPanel.Dock="Top">
+      <local:WindowTitleBar.Start>
+        <Button x:Name="MenuButton" Classes="bar" Content="☰" FontSize="16" Click="OnMenuClicked" ToolTip.Tip="Menu"/>
+        <Button x:Name="AddButton" Classes="bar" Content="Add ▾" IsEnabled="False" ToolTip.Tip="Add a control"/>
+        <Button x:Name="UndoButton" Classes="bar" Content="↶" FontSize="16" Click="OnUndoClicked" IsEnabled="False"
+                ToolTip.Tip="Undo (Ctrl+Z)"/>
+        <Button x:Name="RedoButton" Classes="bar" Content="↷" FontSize="16" Click="OnRedoClicked" IsEnabled="False"
+                ToolTip.Tip="Redo (Ctrl+Shift+Z)"/>
+      </local:WindowTitleBar.Start>
+      <local:WindowTitleBar.Title>
+        <StackPanel x:Name="TitleStack">
+          <!-- The document and its app on one line, such as "main.uix — Calculator.app". -->
+          <TextBlock x:Name="DocumentTitle" Classes="barTitle" Text="Roundhouse"/>
         </StackPanel>
-        <StackPanel x:Name="TitleStack" VerticalAlignment="Center" IsHitTestVisible="False">
-          <!--
-            The document and its app on one line, such as "main.uix — Calculator.app", in the font's own line height,
-            so no glyph is cut.
-          -->
-          <TextBlock x:Name="DocumentTitle" Text="Roundhouse" Foreground="White" FontWeight="SemiBold" FontSize="13"
-                     HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-        </StackPanel>
-        <StackPanel x:Name="EndItems" Orientation="Horizontal" Spacing="2">
-          <Button x:Name="RunButton" Classes="bar" Content="▶ Run ▾" Click="OnRunClicked" ToolTip.Tip="Run in Simulation (Ctrl+R) or on VentureOS (Ctrl+Alt+R)"/>
-          <ToggleButton x:Name="ZoomToggle" Classes="bar" Content="2×" IsCheckedChanged="OnZoomChanged"
-                        ToolTip.Tip="Twice the size (Ctrl+=)"/>
-          <ToggleButton x:Name="TextToggle" Classes="bar" Content="Text" IsChecked="True" IsCheckedChanged="OnTextToggled"
-                        ToolTip.Tip="Show the text"/>
-        </StackPanel>
-      </local:TitleBarPanel>
-    </Border>
+      </local:WindowTitleBar.Title>
+      <local:WindowTitleBar.End>
+        <Button x:Name="RunButton" Classes="bar" Content="▶ Run ▾" Click="OnRunClicked" ToolTip.Tip="Run in Simulation (Ctrl+R) or on VentureOS (Ctrl+Alt+R)"/>
+        <ToggleButton x:Name="ZoomToggle" Classes="bar" Content="2×" IsCheckedChanged="OnZoomChanged"
+                      ToolTip.Tip="Twice the size (Ctrl+=)"/>
+        <ToggleButton x:Name="TextToggle" Classes="bar" Content="Text" IsChecked="True" IsCheckedChanged="OnTextToggled"
+                      ToolTip.Tip="Show the text"/>
+      </local:WindowTitleBar.End>
+    </local:WindowTitleBar>
 
     <!-- What the reader said, or that the document reads, and where the caret is. -->
     <Border x:Name="StatusBar" DockPanel.Dock="Bottom" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"

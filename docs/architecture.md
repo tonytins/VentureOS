@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (nested reading) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** patch (a shared title bar) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-20)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,009 tests, and 275 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,009 tests, and 277 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -172,6 +172,8 @@ VentureOS/
 │     ├─ Menus/                    Venture.Roundhouse.Menus: AppMenu, one list for the global menu bar and the ☰ button
 │     ├─ TitleBars.cs              where the coloured bar can be the window's title bar
 │     ├─ TitleBarPanel.cs          the bar's layout, as VentureOS's title bar's
+│     ├─ WindowTitleBar.cs         the coloured bar both windows share, and making it the title bar
+│     ├─ TitleBarStyles.axaml      the bar's look, and the FrameOnly decorations theme
 │     └─ RenderCommand.cs          Roundhouse --render: a .uix drawn into a PNG file, with no window
 ├─ rootfs/                        files built into the kernel and installed at boot
 │  ├─ system/                      installed to /mnt/system, which nothing may change
@@ -1206,7 +1208,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   appimagetool and its runtime are downloaded at pinned versions and checked
   against their SHA-256s. The icon is a placeholder, made from one PNG by
   `packaging/icons.sh`.
-- **The coloured bar** is the window's title bar (`ExtendClientAreaToDecorationsHint`)
+- **The coloured bar** (`WindowTitleBar`, shared by the main and welcome
+  windows, with its look in `TitleBarStyles.axaml`) is the window's title
+  bar (`ExtendClientAreaToDecorationsHint`, set by `WindowTitleBar.Attach`)
   where `TitleBars.Merges` allows: Windows, macOS, and a named Linux desktop
   that isn't a tiling window manager or WSL. On X11 that also needs
   Avalonia to draw the frame (`X11PlatformOptions.EnableDrawnDecorations`,
@@ -1217,8 +1221,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   Linux, and the start items at the left; the document's name, with its app
   bundle or folder under it, centred in the bar when it fits clear of both
   ends and otherwise between them; the end items at the right.
-  Double-clicking the bar zooms. Elsewhere the bar sits under the window
-  manager's title bar.
+  Double-clicking the bar zooms, in a window that can be resized; the
+  welcome window can't, so its zoom dot is dimmed. Elsewhere the bar sits
+  under the window manager's title bar.
 - **Roundhouse's window** (`MainWindow`) shows a document's text in
   AvaloniaEdit, with TextMate's XML highlighting, beside the same drawing,
   redrawn 300 ms after typing stops. Text `UIScript` refuses leaves the
@@ -1755,6 +1760,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | patch | Roundhouse (§9): the main and welcome windows share `WindowTitleBar` (`TitleBarStyles.axaml` for its look), so the welcome window's bar is its title bar too, with its zoom dot dimmed. |
 | 2026-11-20 | minor | Interfaces (§9): `FlatXml` reads nested elements when its caller allows (UIScript, `UIDocument`), with parents, depth, and a 32-level limit; `FlatXmlEditor` inserts inside a parent and moves or removes an element with what's inside it; `UIScript` refuses nesting until nested menus. |
 | 2026-11-20 | minor | UIScript (§9): VentureOS keeps the spec, in `docs/uiscript/`, and Hudini reads a subset of it. Menus, sidebars, shelves, and panes are ordinary elements rather than modules, so they need no `requires`; the old names are accepted and mean nothing, and the designer no longer adds them. |
 | 2026-11-19 | minor | Roundhouse's Run on VentureOS (§8.1, §9): Common's `VdbClient` and `VdbApp`; `VentureOSRun`, its window, `TcpLineTransport`, and the vdb tool's identity file in Roundhouse. |

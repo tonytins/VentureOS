@@ -1,0 +1,83 @@
+<!--
+  The look of WindowTitleBar, the coloured bar every Roundhouse window with a bar shares, and the frame Avalonia
+  draws around a window whose bar is its title bar on Linux.
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:Venture.Roundhouse">
+  <Styles.Resources>
+    <!--
+      Where the bar is the title bar on Linux, Avalonia draws the window's frame (as Passenger has it do) so the window
+      manager doesn't add its own title bar above. The frame keeps its edges for resizing and draws nothing else:
+      the bar holds the title and the buttons.
+    -->
+    <ControlTheme x:Key="FrameOnly" TargetType="WindowDrawnDecorations">
+      <Setter Property="DefaultTitleBarHeight" Value="44"/>
+      <Setter Property="DefaultFrameThickness" Value="4"/>
+      <Setter Property="DefaultShadowThickness" Value="0"/>
+      <Setter Property="Template">
+        <WindowDrawnDecorationsTemplate>
+          <WindowDrawnDecorationsContent/>
+        </WindowDrawnDecorationsTemplate>
+      </Setter>
+    </ControlTheme>
+  </Styles.Resources>
+
+  <!-- VentureOS's window buttons: bare dots, as its own title bar draws them. -->
+  <Style Selector="local|WindowTitleBar Button.light">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="MinWidth" Value="0"/>
+    <Setter Property="MinHeight" Value="0"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="local|WindowTitleBar Button.light:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Opacity" Value="0.8"/>
+  </Style>
+  <Style Selector="local|WindowTitleBar Button.light:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Opacity" Value="0.6"/>
+  </Style>
+  <!-- A window that can't be resized shows its zoom button dimmed, as VentureOS does. -->
+  <Style Selector="local|WindowTitleBar Button.light:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Opacity" Value="0.35"/>
+  </Style>
+
+  <!-- The bar's buttons sit on its colour, so they're flat and white, and only show themselves under the pointer. -->
+  <Style Selector="local|WindowTitleBar :is(Button).bar">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="10,4"/>
+    <Setter Property="MinHeight" Value="30"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="local|WindowTitleBar :is(Button).bar:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#33FFFFFF"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="local|WindowTitleBar :is(Button).bar:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#4DFFFFFF"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="local|WindowTitleBar ToggleButton.bar:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#40FFFFFF"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="local|WindowTitleBar :is(Button).bar:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#80FFFFFF"/>
+  </Style>
+
+  <!-- The bar's title: white, and in the font's own line height, so no glyph is cut. -->
+  <Style Selector="local|WindowTitleBar TextBlock.barTitle">
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="HorizontalAlignment" Value="Center"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+  </Style>
+</Styles>

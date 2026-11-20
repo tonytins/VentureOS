@@ -6,5 +6,7 @@
     <!-- Compact, as IDEs are: more of the document fits beside the panes. -->
     <FluentTheme DensityStyle="Compact"/>
     <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"/>
+    <!-- The coloured bar every window with one shares. -->
+    <StyleInclude Source="avares://Roundhouse/TitleBarStyles.axaml"/>
   </Application.Styles>
 </Application>

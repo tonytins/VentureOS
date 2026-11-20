@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.703
+
+- Roundhouse's welcome window has the same blue-to-teal title bar as the main window, with VentureOS's window buttons, in place of the system's title bar over a bar of its own.
+
 ## 0.7.702
 
 - An interface with an element inside another, such as a nested menu, now says which element can't be inside which, and opens in Roundhouse for text editing; VentureOS reads nested menus later in 0.7.7xx.

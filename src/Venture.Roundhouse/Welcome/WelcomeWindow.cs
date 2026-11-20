@@ -56,7 +56,8 @@ public sealed class WelcomeWindow : Window
         Actions = actions;
         Title = "Welcome to Roundhouse";
         Width = 680;
-        Height = 420;
+        // Tall enough for the bar, which is inside the window where it's the title bar, and room around the logo.
+        Height = 470;
         CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Roundhouse/Assets/Roundhouse.png")));
@@ -64,21 +65,11 @@ public sealed class WelcomeWindow : Window
         showAtStartup.IsChecked = showing;
         showAtStartup.IsCheckedChanged += (_, _) => setShowing(showAtStartup.IsChecked == true);
 
-        // The blue running into teal of Roundhouse's own bar, with the window's name in it.
-        Border bar = new()
-        {
-            Height = 36,
-            Background = Gradient(),
-            Child = new TextBlock
-            {
-                Text = Title,
-                Foreground = Brushes.White,
-                FontWeight = FontWeight.SemiBold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-            },
-        };
-        DockPanel.SetDock(bar, Dock.Top);
+        // The main window's bar, with the window's name in it; where the desktop allows, it's the title bar.
+        TextBlock name = new() { Text = Title };
+        name.Classes.Add("barTitle");
+        TitleBar = new WindowTitleBar { Title = name };
+        DockPanel.SetDock(TitleBar, Dock.Top);
 
         Border status = new()
         {
@@ -130,8 +121,12 @@ public sealed class WelcomeWindow : Window
         Grid.SetColumn(recents, 1);
         halves.Children.Add(recents);
 
-        Content = new DockPanel { LastChildFill = true, Children = { bar, status, halves } };
+        Content = new DockPanel { LastChildFill = true, Children = { TitleBar, status, halves } };
+        TitleBar.Attach(this, TitleBars.Merges());
     }
+
+    /// <summary>The coloured bar, the same as the main window's.</summary>
+    public WindowTitleBar TitleBar { get; }
 
     /// <summary>The ways to start, in order.</summary>
     public IReadOnlyList<WelcomeAction> Actions { get; }
@@ -270,13 +265,6 @@ public sealed class WelcomeWindow : Window
         DockPanel.SetDock(control, dock);
         return control;
     }
-
-    private static LinearGradientBrush Gradient() => new()
-    {
-        StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-        EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
-        GradientStops = { new GradientStop(Color.Parse("#3584E4"), 0), new GradientStop(Color.Parse("#2190A4"), 1) },
-    };
 }
 
 /// <summary>A recent item as the welcome window lists it, and whether it's still there.</summary>
