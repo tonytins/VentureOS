@@ -300,17 +300,25 @@ something runs it.
 
 **0.7.7xx, nesting**
 
-UIScript nesting, with `version` staying `1`. VentureOS keeps the UIScript
-spec now, in [uiscript/](./uiscript/README.md), and Hudini reads a subset of
-it, so the menus, sidebars, shelves, and panes that were modules are ordinary
-elements, and each element's section says what it may hold. Menus nest as the
-spec has them, a `<Menu>` holding its items, separators, and submenus; and a
-`<Pane>` may hold its controls. A `<Window>`'s controls stay flat. The shipped
-apps move to the nested forms, and `FlatXml`, `UIDocument`, and Roundhouse's
-designer learn to nest. Not yet planned in detail.
+UIScript nesting, with `version` staying `1`, from
+[its design](./design/2026-11-20-uiscript-nesting-design.md). VentureOS keeps
+the UIScript spec now, in [uiscript/](./uiscript/README.md), and Hudini reads
+a subset of it, so the menus, sidebars, shelves, and panes that were modules
+are ordinary elements, and each element's section says what it may hold.
+Menus nest as the spec has them, a `<Menu>` holding its items, separators,
+and submenus; and a `<Pane>` may hold its controls. A `<Window>`'s controls
+stay flat.
 
 - [x] The spec moves from Hudini to `docs/uiscript/`, modules join the
   format, and `requires` keeps its old names, which mean nothing.
+- [ ] Nested reading: `FlatXml`, `FlatXmlEditor`, and `UIDocument` read and
+  edit nested elements in place; `Info.xml` stays flat.
+- [ ] Nested menus and submenus in the reader.
+- [ ] Submenus in the desktop's menu bar, and Notes ▸ Sort By.
+- [ ] Panes that hold their controls, in the spec and the reader; the shipped
+  apps move to nested menus and panes.
+- [ ] Roundhouse: a tree outline, adding inside menus and panes, and Move
+  Into and Move Out.
 
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer
@@ -357,6 +365,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | 0.7.7xx is planned, from its approved design: nested reading, nested menus and submenus, submenus in the menu bar with Notes ▸ Sort By as the first, panes that hold their controls, and a tree outline in Roundhouse. |
 | 2026-11-20 | minor | 0.7.7xx begins, by my decision, with the UIScript spec moving from Hudini to `docs/uiscript/`: VentureOS keeps the format, and Hudini reads a subset. Modules join the format as ordinary elements, which takes away the rule nesting was planned around; menus and panes still nest in this band. |
 | 2026-11-20 | minor | 0.7.6xx is complete: the welcome window, with File ▸ Close to bring it back. The design is marked built, with its corrections. The next band, 0.7.7xx, nesting, is the owner's to plan. |
 | 2026-11-20 | patch | 0.7.6xx: untitled interfaces. New Interface asks nothing before the canvas, even in a project; the first Save asks where. |
