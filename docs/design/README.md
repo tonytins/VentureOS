@@ -18,7 +18,7 @@ design's status says so. What's planned and when is in [the roadmap](../ROADMAP.
 | [The dock and the menu bar as apps](./2026-11-18-dock-app-design.md)      | Panel windows and shelves, with the dock and the menu bar as apps            | Built in 0.7.3xx, Seto     |
 | [vdb: encrypting the conversation](./2026-11-19-vdb-encryption-design.md) | Sealing vdb/1 with keys from the computer's identity, which stops being sent | Built in 0.7.4xx, Seto |
 | [Roundhouse projects](./2026-11-20-roundhouse-projects-design.md)        | A welcome window, untitled interfaces, `.rproj` projects, and Run's drop-down | Built in 0.7.6xx, Seto     |
-| [UIScript nesting](./2026-11-20-uiscript-nesting-design.md)              | Menus that hold their items and submenus, panes that hold their controls, and a tree in Roundhouse | Approved for 0.7.7xx, Seto |
+| [UIScript nesting](./2026-11-20-uiscript-nesting-design.md)              | Menus that hold their items and submenus, panes that hold their controls, and a tree in Roundhouse | Built in 0.7.7xx, Seto     |
 
 [`interface.figcraft`](./interface.figcraft) is a mock-up of the desktop's windows, made in
 [Figcraft](https://github.com/storytold/figcraft), from when the title bar was designed.

@@ -172,6 +172,55 @@ public sealed class UIDocument
     /// <exception cref="UIScriptException">VentureOS would refuse the result.</exception>
     public UIDocument MoveElement(int from, int to) => Finish(FlatXmlEditor.MoveElement(Text, Editable(), from, to));
 
+    /// <summary>
+    /// Moves the element at <paramref name="element"/>, with everything inside it, into <paramref name="parent"/>,
+    /// after everything already there, such as an item into a menu or a control into a pane. Its lines are indented
+    /// as the parent's children are, and a <c>menu</c> or <c>pane</c> that named the parent from outside goes.
+    /// </summary>
+    /// <returns>The edited document, and the element's index in it; this one is unchanged.</returns>
+    /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element or parent, or the parent is inside the element.</exception>
+    /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a visual in a pane.</exception>
+    public (UIDocument Document, int Element) MoveInto(int element, int parent)
+    {
+        var xml = Editable();
+        var text = Text;
+
+        // Inside its menu or pane, an element doesn't also name one from outside, so that attribute goes first. The
+        // text between the two steps is only read as XML, since it can lack something UIScript needs.
+        if (element >= 0 && element < xml.Children.Count && parent >= 0 && parent < xml.Children.Count)
+        {
+            var naming = xml.Children[parent].Name switch
+            {
+                "Menu" => "menu",
+                "Pane" => "pane",
+                _ => null,
+            };
+            if (naming is not null && xml.Children[element][naming] is not null)
+            {
+                text = FlatXmlEditor.RemoveAttribute(text, xml, element, naming);
+                xml = FlatXml.Parse(text, allowNesting: true);
+            }
+        }
+
+        var (moved, index) = FlatXmlEditor.MoveInto(text, xml, element, parent);
+        return (Finish(moved), index);
+    }
+
+    /// <summary>
+    /// Moves the element at <paramref name="element"/>, with everything inside it, out of its parent to just after
+    /// it, such as a control out of a pane.
+    /// </summary>
+    /// <returns>The edited document, and the element's index in it; this one is unchanged.</returns>
+    /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element, or it's directly inside the root.</exception>
+    /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a menu item outside any menu.</exception>
+    public (UIDocument Document, int Element) MoveOut(int element)
+    {
+        var (text, moved) = FlatXmlEditor.MoveOut(Text, Editable(), element);
+        return (Finish(text), moved);
+    }
+
     public override string ToString() => Text;
 
     private FlatXmlDocument Editable()

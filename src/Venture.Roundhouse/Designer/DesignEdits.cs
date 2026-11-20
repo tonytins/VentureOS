@@ -195,6 +195,48 @@ public static class DesignEdits
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result.</exception>
     public static (UIDocument Document, int Element) SendBackward(UIDocument document, int element) => Restack(document, element, -1);
 
+    /// <summary>
+    /// The menu or pane an element would move into: the one just before it among its siblings, or
+    /// <see langword="null"/> when what's before it isn't a menu or a pane.
+    /// </summary>
+    public static int? MoveIntoTarget(UIDocument document, int element)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        var xml = document.Xml;
+        if (xml is null || element < 0 || element >= xml.Children.Count)
+            return null;
+
+        var siblings = xml.ChildrenOf(xml.Children[element].Parent);
+        var place = Array.IndexOf(siblings, element);
+        return place > 0 && xml.Children[siblings[place - 1]].Name is "Menu" or "Pane" ? siblings[place - 1] : null;
+    }
+
+    /// <summary>
+    /// Moves an element into the menu or pane just before it, after what's there: an item into a menu, a menu into
+    /// another as a submenu, or a control into a pane.
+    /// </summary>
+    /// <exception cref="ArgumentException">There's no menu or pane just before it.</exception>
+    /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a visual in a pane.</exception>
+    public static (UIDocument Document, int Element) MoveInto(UIDocument document, int element)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        Child(document, element);
+        var target = MoveIntoTarget(document, element)
+            ?? throw new ArgumentException("Move Into needs a menu or pane just before the element.", nameof(element));
+        return document.MoveInto(element, target);
+    }
+
+    /// <summary>Moves an element out of its menu or pane, to just after it.</summary>
+    /// <exception cref="ArgumentException">The element isn't inside anything.</exception>
+    /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a menu item outside any menu.</exception>
+    public static (UIDocument Document, int Element) MoveOut(UIDocument document, int element)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        if (Child(document, element).Parent == UIDocument.Root)
+            throw new ArgumentException("The element isn't inside a menu or pane, so it can't move out.", nameof(element));
+        return document.MoveOut(element);
+    }
+
     /// <summary>A name no element in the document has: <paramref name="stem"/>, or it with the lowest number from 2 that's free.</summary>
     public static string UniqueName(UIDocument document, string stem)
     {

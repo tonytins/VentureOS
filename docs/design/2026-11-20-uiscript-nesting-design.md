@@ -1,6 +1,9 @@
 # UIScript nesting: design
 
-> **Status:** approved 2026-11-20 · **Date:** 2026-11-20 · **Release:** VentureOS 0.7, Seto, band 0.7.7xx
+> **Status:** approved 2026-11-20, built in 0.7.7xx, Seto · **Date:** 2026-11-20 · **Release:** VentureOS 0.7, Seto, band 0.7.7xx
+>
+> Built as written, with the corrections marked *Built:* below. How it works now is in
+> [the architecture](../architecture.md) and [the spec](../uiscript/README.md).
 
 UIScript elements learn to hold other elements where the [spec](../uiscript/README.md) says they may: a `<Menu>`
 holds its items, separators, and submenus, and a `<Pane>` holds its controls. VentureOS reads, shows, and edits both,
@@ -96,7 +99,9 @@ pointer can cross from the entry into its submenu without the submenu closing. A
 open menu. `FindShortcut` looks through submenus. A disabled submenu (`setDisabled` with its name) can't be opened,
 and its items' shortcuts don't fire. A chosen item reports `pressed` with its name, however deep.
 
-The desktop's standard menus (File, Edit, View, Help) merge submenus like any entry.
+The desktop's standard menus (File, Edit, View, Help) merge submenus like any entry. *Built:* a submenu opens at
+once when the pointer rests on its entry, with no delay; a pointer resting off the menus no longer clears what the
+keys highlighted, which fixed the same fault in top-level menus.
 
 ### Panes
 
@@ -125,7 +130,7 @@ Notes' Note menu gains a submenu:
 
 The chosen order is checked (`setSelected`) and changes only how the list shows the notes; `notes.txt` keeps the
 order they were added, so the `note` command and the file agree. Selecting and deleting map the shown row back to
-the note it shows. Notes starts in Order Added.
+the note it shows. Notes starts in Order Added. *Built:* selection and Delete follow the note, not the row.
 
 ### Roundhouse
 
@@ -133,7 +138,8 @@ The outline becomes a tree, indented by depth, with menus and panes able to fold
 submenu goes inside the selected menu, or the menu of the selected item, after its last entry; adding a control while
 a pane is shown goes inside that pane, if the pane holds its controls. New menus and new panes are written nested.
 Edit ▸ Move Into (the menu or pane just before the element) and Move Out (to after its parent) move an element and
-its children as one. `FlatXmlEditor` gains moving an element in or out, keeping indentation as the document has it.
+its children as one. *Built:* Tab and Shift+Tab in the outline do the same, Left and Right fold, folds are kept by name and
+cleared when another document opens, and Move Into drops a `menu` or `pane` that named the parent from outside. `FlatXmlEditor` gains moving an element in or out, keeping indentation as the document has it.
 The canvas and Run show submenus as the desktop does, since they use its code.
 
 ## Where the code goes

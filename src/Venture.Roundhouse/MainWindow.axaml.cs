@@ -165,6 +165,14 @@ public sealed partial class MainWindow : Window
         }
 
         TitleBar.Attach(this, TitleBars.Merges());
+
+        // Ahead of the list's own handling, so Tab moves into a menu or pane rather than to the next control.
+        OutlineList.AddHandler(KeyDownEvent, OnOutlineKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        OutlineList.DoubleTapped += (_, _) =>
+        {
+            if (Selection is { } element)
+                SetFolded(element, !IsFolded(element));
+        };
         Editor.TextArea.Caret.PositionChanged += (_, _) => ShowCaret();
         FileEditor.TextArea.Caret.PositionChanged += (_, _) => ShowCaret();
 
@@ -363,6 +371,15 @@ public sealed partial class MainWindow : Window
         if (element is { } index && (Document?.Xml is not { } xml || index < 0 || index >= xml.Children.Count))
             throw new ArgumentOutOfRangeException(nameof(element), element, "The document has no such element.");
         Selection = element;
+
+        // What's selected shows in the outline, so the menus and panes holding it unfold.
+        var children = Document?.Xml?.Children;
+        for (var holder = element is { } inside && children is not null ? children[inside].Parent : -1; holder >= 0; holder = children![holder].Parent)
+        {
+            if (children![holder]["name"] is { } holderName)
+                folded.Remove(holderName);
+        }
+
         if (element is { } selected && PaneOf(Document!.Xml!, selected) is { } pane && pane != ShownPane)
         {
             ShownPane = pane;
@@ -592,6 +609,7 @@ public sealed partial class MainWindow : Window
         Document = document;
         Selection = null;
         ShownPane = null;
+        folded.Clear();
         Map = null;
         byteOrderMark = document.Text.StartsWith('\uFEFF') ? "\uFEFF" : "";
         loading = true;
@@ -1280,6 +1298,16 @@ public sealed partial class MainWindow : Window
     public bool DeleteSelection() =>
         Selection is { } element && Edit(document => (document.RemoveElement(element), null));
 
+    /// <summary>Moves the selection into the menu or pane just before it, as the last thing there, and keeps it selected.</summary>
+    /// <returns>Whether it moved; when it didn't, the status line says why.</returns>
+    public bool MoveIntoSelection() =>
+        Selection is { } element && Edit(document => DesignEdits.MoveInto(document, element));
+
+    /// <summary>Moves the selection out of its menu or pane, to just after it, and keeps it selected.</summary>
+    /// <returns>Whether it moved; when it didn't, the status line says why.</returns>
+    public bool MoveOutSelection() =>
+        Selection is { } element && Edit(document => DesignEdits.MoveOut(document, element));
+
     /// <summary>Moves the selected control or visual in front of the next one.</summary>
     /// <returns>Whether it moved.</returns>
     public bool BringForward() =>
@@ -1305,10 +1333,14 @@ public sealed partial class MainWindow : Window
             if (ReferenceEquals(edited, document))
                 return false;
 
-            // Clear the selection first, so the redraw never shows the old index on a different element.
+            // Clear the selection first, so the redraw never shows the old index on a different element. The outline
+            // keeps the keyboard through an edit made from it, such as Tab, so the next key carries on there.
+            var fromOutline = OutlineList.IsKeyboardFocusWithin;
             Selection = null;
             Apply(edited);
             Select(select);
+            if (fromOutline && !OutlineList.IsKeyboardFocusWithin)
+                FocusOutlineRow();
             return true;
         }
         catch (Exception exception) when (exception is UIScriptException or ArgumentException)
@@ -1326,12 +1358,32 @@ public sealed partial class MainWindow : Window
     {
         var xml = Document?.Xml;
         var editable = Document?.IsEditable == true;
-        string[] labels = xml is null ? [] : [.. xml.Children.Select(OutlineLabel)];
 
+        // A tree: each element indented by its depth, a menu or pane that holds anything marked open or folded, and
+        // what's in a folded one left out.
+        List<int> rows = [];
+        List<string> labels = [];
+        for (var index = 0; xml is not null && index < xml.Children.Count;)
+        {
+            var row = xml.Children[index];
+            var holds = xml.End(index) > index + 1;
+            rows.Add(index);
+            labels.Add(new string(' ', 4 * row.Depth) + (holds ? IsFolded(index) ? "▸ " : "▾ " : "") + OutlineLabel(row));
+            index = holds && IsFolded(index) ? xml.End(index) : index + 1;
+        }
+
+        outlineRows = [.. rows];
         syncing = true;
+
+        // New rows replace the old ones, the focused one too, so the keyboard goes back to the selected row, letting
+        // Left, Right, and Tab carry on in the outline.
+        var keyboard = OutlineList.IsKeyboardFocusWithin;
         if (OutlineList.ItemsSource is not string[] shown || !shown.SequenceEqual(labels))
-            OutlineList.ItemsSource = labels;
-        OutlineList.SelectedIndex = Selection ?? -1;
+            OutlineList.ItemsSource = labels.ToArray();
+        OutlineList.SelectedIndex = Selection is { } chosen ? Array.IndexOf(outlineRows, chosen) : -1;
+        if (keyboard && !OutlineList.IsKeyboardFocusWithin)
+            FocusOutlineRow();
+
         syncing = false;
 
         OutlineHint.IsVisible = xml is null;
@@ -1373,7 +1425,83 @@ public sealed partial class MainWindow : Window
     private void OnOutlineSelected(object? sender, SelectionChangedEventArgs e)
     {
         if (!syncing && OutlineList.SelectedIndex is var index)
-            Select(index >= 0 ? index : null);
+            Select(index >= 0 && index < outlineRows.Length ? outlineRows[index] : null);
+    }
+
+    // The menus and panes folded in the outline, by name, which survives edits that renumber elements.
+    private readonly HashSet<string> folded = new(StringComparer.Ordinal);
+    private int[] outlineRows = [];
+
+    /// <summary>Gives the keyboard to the outline's selected row, when there is one.</summary>
+    private void FocusOutlineRow()
+    {
+        OutlineList.UpdateLayout();
+        if (OutlineList.SelectedIndex >= 0 && OutlineList.ContainerFromIndex(OutlineList.SelectedIndex) is { } row)
+            row.Focus();
+    }
+
+    /// <summary>The element each row of the outline shows, top to bottom; what's in a folded menu or pane isn't there.</summary>
+    public IReadOnlyList<int> OutlineRows => outlineRows;
+
+    /// <summary>Whether a menu or pane is folded in the outline, hiding what it holds.</summary>
+    public bool IsFolded(int element) =>
+        Document?.Xml is { } xml && element >= 0 && element < xml.Children.Count
+        && xml.Children[element]["name"] is { } name && folded.Contains(name);
+
+    /// <summary>
+    /// Folds or unfolds a menu or pane in the outline; anything else, or one holding nothing, stays as it is. A
+    /// selection inside what's folded moves to the menu or pane itself.
+    /// </summary>
+    public void SetFolded(int element, bool fold)
+    {
+        if (Document?.Xml is not { } xml || element < 0 || element >= xml.Children.Count
+            || xml.End(element) == element + 1 || xml.Children[element]["name"] is not { } name)
+            return;
+
+        if (fold)
+            folded.Add(name);
+        else
+            folded.Remove(name);
+
+        if (fold && Selection is { } selected && selected > element && selected < xml.End(element))
+            Select(element);
+        else
+            ShowPanels();
+    }
+
+    /// <summary>
+    /// The outline's own keys: Left folds a menu or pane or goes up to the one holding the selection, Right unfolds,
+    /// and Tab and Shift+Tab move the selection into the menu or pane before it and back out, as an outliner indents.
+    /// </summary>
+    private void OnOutlineKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Selection is not { } element || Document?.Xml is not { } xml)
+            return;
+
+        var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        var holds = xml.End(element) > element + 1;
+        switch (e.Key)
+        {
+            case Key.Left when holds && !IsFolded(element):
+                SetFolded(element, true);
+                break;
+            case Key.Left when xml.Children[element].Parent >= 0:
+                Select(xml.Children[element].Parent);
+                break;
+            case Key.Right when holds && IsFolded(element):
+                SetFolded(element, false);
+                break;
+            case Key.Tab when shift:
+                MoveOutSelection();
+                break;
+            case Key.Tab:
+                MoveIntoSelection();
+                break;
+            default:
+                return;
+        }
+
+        e.Handled = true;
     }
 
     /// <summary>Whether the designer can change an element: one with a frame, in a document VentureOS reads as drawn.</summary>
@@ -1597,6 +1725,12 @@ public sealed partial class MainWindow : Window
                 new MenuSeparator(),
                 new MenuCommand("Duplicate", () => DuplicateSelection(), Ctrl(Key.D), Selected),
                 new MenuCommand("Delete", () => DeleteSelection(), new KeyGesture(Key.Delete), Selected),
+                new MenuSeparator(),
+                new MenuCommand("Move Into", () => MoveIntoSelection(), IsEnabled: () =>
+                    Editable() && Selection is { } element && DesignEdits.MoveIntoTarget(Document!, element) is not null),
+                new MenuCommand("Move Out", () => MoveOutSelection(), IsEnabled: () =>
+                    Editable() && Selection is { } element && element < Document!.Xml!.Children.Count
+                    && Document.Xml.Children[element].Parent >= 0),
             ]),
             new("Insert",
             [

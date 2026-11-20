@@ -168,6 +168,58 @@ public static class FlatXmlEditor
         return Insert(removed, between, parent, index, element);
     }
 
+    /// <summary>
+    /// Moves the element at <paramref name="element"/>, with everything inside it and the comments that describe it,
+    /// into <paramref name="parent"/>, after everything already there. Each of its lines is indented as the parent's
+    /// children are, so a block moved a level deeper stays tidy.
+    /// </summary>
+    /// <returns>The edited text, and the element's index in it.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element or parent, or the parent is the element or inside it.</exception>
+    /// <exception cref="InvalidOperationException">The root is written as <c>&lt;Root/&gt;</c>, so it holds nothing.</exception>
+    public static (string Text, int Element) MoveInto(string text, FlatXmlDocument xml, int element, int parent)
+    {
+        ArgumentNullException.ThrowIfNull(xml);
+        CheckChild(xml, element, nameof(element));
+        if (parent != Root)
+            CheckChild(xml, parent, nameof(parent));
+        var end = xml.End(element);
+        if (parent >= element && parent < end)
+            throw new ArgumentOutOfRangeException(nameof(parent), parent, $"Element {element} can't go inside itself.");
+
+        // Removing the element shifts everything after it back by its size, its parent included when it's later.
+        var block = Block(text, xml, element);
+        var indent = LineIndent(text, block.Start, out _);
+        var removed = Remove(text, xml, element);
+        var between = FlatXml.Parse(removed, allowNesting: true);
+        var holder = parent > element ? parent - (end - element) : parent;
+        var index = between.End(holder);
+        return (Insert(removed, between, holder, index, block.Of(text), indent), index);
+    }
+
+    /// <summary>
+    /// Moves the element at <paramref name="element"/>, with everything inside it and the comments that describe it,
+    /// out of its parent, to just after it, indented as the parent is.
+    /// </summary>
+    /// <returns>The edited text, and the element's index in it.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element, or it's directly inside the root.</exception>
+    public static (string Text, int Element) MoveOut(string text, FlatXmlDocument xml, int element)
+    {
+        ArgumentNullException.ThrowIfNull(xml);
+        CheckChild(xml, element, nameof(element));
+        var parent = xml.Children[element].Parent;
+        if (parent == Root)
+            throw new ArgumentOutOfRangeException(nameof(element), element, $"Element {element} is directly inside the root, so it has nothing to move out of.");
+
+        var block = Block(text, xml, element);
+        var indent = LineIndent(text, block.Start, out _);
+        var removed = Remove(text, xml, element);
+
+        // Its parent comes before it, so it keeps its index.
+        var between = FlatXml.Parse(removed, allowNesting: true);
+        var index = between.End(parent);
+        return (Insert(removed, between, between.Children[parent].Parent, index, block.Of(text), indent), index);
+    }
+
     private static void CheckChild(FlatXmlDocument xml, int index, string parameter)
     {
         if (index < 0 || index >= xml.Children.Count)
@@ -190,8 +242,12 @@ public static class FlatXmlEditor
     private static string Replace(string text, FlatXmlSpan span, string replacement) =>
         string.Concat(text.AsSpan(0, span.Start), replacement, text.AsSpan(span.End));
 
-    /// <summary>Puts <paramref name="element"/>'s text inside <paramref name="parent"/>, before <paramref name="index"/>.</summary>
-    private static string Insert(string text, FlatXmlDocument xml, int parent, int index, string element)
+    /// <summary>
+    /// Puts <paramref name="element"/>'s text inside <paramref name="parent"/>, before <paramref name="index"/>. When
+    /// the text was moved from a line indented by <paramref name="movedFrom"/>, each of its lines is indented afresh
+    /// for where it lands.
+    /// </summary>
+    private static string Insert(string text, FlatXmlDocument xml, int parent, int index, string element, string? movedFrom = null)
     {
         var holder = parent == Root ? xml.Root : xml.Children[parent];
         var source = holder.Source!;
@@ -199,7 +255,7 @@ public static class FlatXmlEditor
         {
             if (parent == Root)
                 throw new InvalidOperationException($"The root is written as <{xml.Root.Name}/>, so it has nowhere to hold an element.");
-            return Open(text, holder, element);
+            return Open(text, holder, element, movedFrom);
         }
 
         // The new element follows the sibling before it, or the parent's start tag, and takes its neighbour's layout.
@@ -210,11 +266,13 @@ public static class FlatXmlEditor
             : siblings.Length > 0 ? xml.Children[siblings[^1]] : null;
 
         string separator;
+        string? landing;
         var closing = "";
         if (neighbour is null)
         {
             var indent = LineIndent(text, source.Span.Start, out _);
-            separator = NewLine(text) + indent + "  ";
+            landing = indent + "  ";
+            separator = NewLine(text) + landing;
 
             // A parent closed on its own line keeps it; one written as <A></A> gets one, so its closing tag lines up.
             if (!text.AsSpan(after, source.CloseStart.Value - after).Contains('\n'))
@@ -223,9 +281,12 @@ public static class FlatXmlEditor
         else
         {
             var indent = LineIndent(text, neighbour.Source!.Span.Start, out var ownLine);
+            landing = ownLine ? indent : null;
             separator = ownLine ? NewLine(text) + indent : "";
         }
 
+        if (movedFrom is not null && landing is not null)
+            element = Reindent(element, movedFrom, landing);
         return string.Concat(text[..after], separator, element, closing, text[after..]);
     }
 
@@ -233,7 +294,7 @@ public static class FlatXmlEditor
     /// Opens up an element written as <c>&lt;Name/&gt;</c> to hold <paramref name="element"/>, which goes on a line
     /// of its own, indented one step further, with the closing tag on the next line.
     /// </summary>
-    private static string Open(string text, FlatXmlElement holder, string element)
+    private static string Open(string text, FlatXmlElement holder, string element, string? movedFrom = null)
     {
         var source = holder.Source!;
         var slash = source.Span.End - 2;
@@ -243,6 +304,8 @@ public static class FlatXmlEditor
         while (tagEnd > source.NameEnd && text[tagEnd - 1] is ' ' or '\t')
             tagEnd--;
         var indent = LineIndent(text, source.Span.Start, out _);
+        if (movedFrom is not null)
+            element = Reindent(element, movedFrom, indent + "  ");
         var newLine = NewLine(text);
         return string.Concat(
             text.AsSpan(0, tagEnd),
@@ -317,6 +380,29 @@ public static class FlatXmlEditor
     /// <summary>Where an element's children begin: just after its start tag.</summary>
     private static int ContentStart(string text, FlatXmlElementSource element) =>
         text.IndexOf('>', element.Attributes.Count > 0 ? element.Attributes[^1].Span.End : element.NameEnd) + 1;
+
+    /// <summary>
+    /// A moved block's lines after its first, which begin with <paramref name="from"/>, begin with
+    /// <paramref name="to"/> instead, keeping any deeper indentation; the first line's comes from where it lands.
+    /// </summary>
+    private static string Reindent(string block, string from, string to)
+    {
+        if (from == to)
+            return block;
+
+        StringBuilder moved = new(block.Length);
+        var lines = block.Split('\n');
+        for (var line = 0; line < lines.Length; line++)
+        {
+            if (line > 0)
+                moved.Append('\n');
+            moved.Append(line > 0 && lines[line].StartsWith(from, StringComparison.Ordinal)
+                ? to + lines[line][from.Length..]
+                : lines[line]);
+        }
+
+        return moved.ToString();
+    }
 
     /// <summary>The spaces and tabs before <paramref name="position"/> on its line, and whether nothing else is.</summary>
     private static string LineIndent(string text, int position, out bool ownLine)

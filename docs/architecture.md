@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (panes that hold their controls) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (Roundhouse's tree outline; 0.7.7xx complete) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-20)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,051 tests, and 287 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,062 tests, and 295 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -863,6 +863,10 @@ nested is refused, naming both elements, and opens in Roundhouse for text
 editing only. Roundhouse's designer adds a menu item or a control inside its
 menu or pane, unless that menu's items or pane's controls name it from
 outside, and moves controls forward and back only among their siblings.
+`FlatXmlEditor.MoveInto` and `MoveOut` move an element with everything in
+it into a parent, last, or out to just after its parent, indenting each
+line afresh; `UIDocument.MoveInto` also drops the `menu` or `pane` that
+named the parent from outside.
 
 `UIDocument` is a `.uix` as Roundhouse holds it: the exact text (a byte
 order mark and line endings included, as strict UTF-8), those positions,
@@ -1004,8 +1008,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   Undo. The arrow keys nudge by 1 px, Shift by 8. At 200% each of VentureOS's
   pixels is two of the screen's, drawn without smoothing. Focusing the
   canvas doesn't scroll it, which would slide it under the pointer.
-- **The outline** lists the root's children in file order and shares the
-  canvas's selection. **The inspector** (`InspectorPanel`) builds its
+- **The outline** lists every element in file order as a tree, each
+  indented by its depth, and shares the canvas's selection. A menu or pane
+  that holds anything shows ▾, or ▸ when folded, which hides what it holds;
+  `OutlineRows` maps rows to elements. Folds are kept by name, so edits keep
+  them, and cleared when another document opens; selecting inside a folded
+  one unfolds it. Left folds or goes up to the holder, Right unfolds,
+  double-click toggles, and Tab and Shift+Tab are Edit ▸ Move Into (the
+  menu or pane just before the selection, as its last child) and Move Out
+  (to just after its holder). The outline keeps the keyboard across those
+  edits and folds, as its rows are rebuilt. **The inspector** (`InspectorPanel`) builds its
   fields from `UIScriptSchema`, by group, with a check box for flags and a
   list for choices, plus an Other group for attributes VentureOS skips. A
   field commits on Enter or when it's left, through `SetAttribute` or, when
@@ -1777,6 +1789,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | Roundhouse (§9): the outline is a tree, indented by depth, with menus and panes folding; Edit ▸ Move Into and Move Out, and Tab and Shift+Tab in the outline, through `FlatXmlEditor.MoveInto` and `MoveOut`, which re-indent what they move. |
 | 2026-11-20 | minor | Interfaces (§9): a `<Pane>` holds its controls, beside the flat form; the shipped apps' menus and Settings' panes nest; Roundhouse adds inside menus and panes by default and restacks among siblings. The Charger wallpaper ships beside Earthset. |
 | 2026-11-20 | minor | Menu bar (§9): submenus open beside their entry from the pointer and the keys, and cross over without closing; a disabled submenu blocks its items and their shortcuts; a pointer resting off the menus no longer clears what the keys highlighted. Notes has Note ▸ Sort By (Order Added, Newest First, A to Z), changing only the list's order. |
 | 2026-11-20 | minor | Interfaces (§9): nested menus and submenus. A `<Menu>` holds its items, separators, and submenus, beside the flat form; `UIMenuEntry.Submenu` and `UIMenu.AllEntries`; the spec's rules (one form per menu, submenus only nest and take no role, hotkeys per menu, names and shortcuts across depths). The menu bar shows a submenu's entry dimmed until it opens them; Roundhouse adds an item inside a nested menu and keeps a copy in its parent. |

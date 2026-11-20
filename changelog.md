@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.707
+
+- Roundhouse's outline is a tree: what's in a menu or pane is indented under it, and a menu or pane can be folded with Left or a double-click, and opened again with Right or another double-click.
+- Edit ▸ Move Into puts the selection in the menu or pane just before it, and Move Out takes it back out; in the outline, Tab and Shift+Tab do the same. A control moved into a pane stops naming it with `pane`.
+
 ## 0.7.706
 
 - A `<Pane>` in an interface can hold its controls, rather than each naming its pane with `pane`; both forms work. Settings and every app's menus are now written the nested way.
