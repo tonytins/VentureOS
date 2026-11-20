@@ -173,6 +173,64 @@ public sealed class StringTablesTests : IDisposable
         Assert.Empty(tables.Problems);
     }
 
+    [Fact]
+    public void FollowsAReferenceToAnotherTable()
+    {
+        // As New & Improved's table 208 does, into table 276.
+        File.WriteAllText(Path.Combine(root, "_8_messages.cst"),
+            "16 ^\u0002<cst><cst_id>9</cst_id><string_id>1</string_id></cst>^\n");
+        File.WriteAllText(Path.Combine(root, "_9_words.cst"), "1 ^Lot closed^\n");
+        StringTables tables = new(root);
+
+        Assert.Equal("Lot closed", tables.Find(new UIStringResource("closed", "8", 16)));
+        Assert.Empty(tables.Problems);
+    }
+
+    [Fact]
+    public void AReferencesArgumentsFillItsTextsPlaceholdersInOrder()
+    {
+        File.WriteAllText(Path.Combine(root, "_8_messages.cst"),
+            "1 ^\u0002<cst><cst_id>9</cst_id><string_id>2</string_id><string arg=\"1\">Bob</string><string arg=\"2\">3</string></cst>^\n"
+            + "2 ^\u0002<cst><cst_id>9</cst_id><string_id>2</string_id><string arg=\"1\">%s</string></cst>^\n");
+        File.WriteAllText(Path.Combine(root, "_9_words.cst"), "2 ^%s has %d lots^\n");
+        StringTables tables = new(root);
+
+        Assert.Equal("Bob has 3 lots", tables.Find(new UIStringResource("one", "8", 1)));
+        // TSO's own: %s passed through, so the text still has a placeholder for the code to fill, and a placeholder
+        // with no argument left stays as written.
+        Assert.Equal("%s has %d lots", tables.Find(new UIStringResource("two", "8", 2)));
+    }
+
+    [Fact]
+    public void AReferenceReachesTheSharedTables()
+    {
+        var shared = Shared();
+        File.WriteAllText(Path.Combine(root, "_1_pad.cst"), "1 ^\u0002<cst><cst_id>100</cst_id><string_id>1</string_id></cst>^\n");
+        File.WriteAllText(Path.Combine(shared, "_100_common.cst"), "1 ^OK^\n");
+
+        Assert.Equal("OK", new StringTables(root, shared).Find(new UIStringResource("ok", "1", 1)));
+    }
+
+    [Theory]
+    [InlineData("1 ^\u0002<cst><cst_id>9</cst_id><string_id>7</string_id></cst>^", "refers to table 9, key 7, which isn't there")]
+    [InlineData("1 ^\u0002<cst><cst_id>9</cst_id><string_id>1</string_id></cst>^", "which is a reference itself")]
+    [InlineData("1 ^\u0002<cst><cst_id>8</cst_id><string_id>1</string_id></cst>^", "which is a reference itself")]
+    [InlineData("1 ^\u0002<cst><cst_id>nine</cst_id><string_id>1</string_id></cst>^", "malformed")]
+    [InlineData("1 ^\u0002<cst><string_id>1</string_id></cst>^", "malformed")]
+    [InlineData("1 ^\u0002<cst><cst_id>9</cst_id><string_id>1</string_id><string arg=\"1\">x</cst>^", "malformed")]
+    public void AReferenceItCantFollowIsMissingAndReported(string entry, string problem)
+    {
+        // Table 9's key 1 is itself a reference, so following one leads to another; table 8's points at itself.
+        File.WriteAllText(Path.Combine(root, "_8_messages.cst"), entry + "\n");
+        File.WriteAllText(Path.Combine(root, "_9_words.cst"), "1 ^\u0002<cst><cst_id>8</cst_id><string_id>1</string_id></cst>^\n");
+        StringTables tables = new(root);
+
+        Assert.Null(tables.Find(new UIStringResource("one", "8", 1)));
+        Assert.Null(tables.Find(new UIStringResource("again", "8", 1)));
+        Assert.Contains(problem, Assert.Single(tables.Problems), StringComparison.Ordinal);
+        Assert.StartsWith("Table 8, key 1", tables.Problems[0], StringComparison.Ordinal);
+    }
+
     private string Shared()
     {
         var shared = Path.Combine(root, "shared");

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.502
+
+- A value in a string table can refer to another table's text, as The Sims Online's do (`U+0002<cst><cst_id>…</cst_id><string_id>…</string_id></cst>`), and VentureOS shows that text, with any arguments the reference gives filling its placeholders. A reference to a missing string, or to another reference, is reported and shows as missing.
+
 ## 0.7.501
 
 - A `<Panel>` can have a smallest size, `minWidth` and `minHeight`, as a window can, now that Hudini's UIScript has panels in its core. Before, VentureOS ignored them.

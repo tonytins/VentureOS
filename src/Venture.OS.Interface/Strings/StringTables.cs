@@ -16,6 +16,8 @@ namespace Venture.OS.Interface.Strings;
 /// them so a key missing from an app's table never turns up text from a shared table it didn't ask for: an app's
 /// tables are numbered below <see cref="FirstSharedTable"/> and the shared ones from it up, and a table in the wrong
 /// range is reported and skipped. An empty value is text, as in The Sims Online, not a reason to look further.</para>
+/// <para>A value can instead refer to another table's text, as some of The Sims Online's do, which this follows one
+/// step, filling the text's placeholders with the reference's arguments. The other table may be in either layer.</para>
 /// <para>CSTNet reads each table to the CST specification, so a key above its value, or a numbered key such as
 /// <c>3.label</c>, finds its value too. Text that isn't there is missing, so the view can show and list it. A table's
 /// problems, and a table name without a number, are kept in <see cref="Problems"/> for the app to be told.</para>
@@ -53,6 +55,15 @@ public sealed class StringTables
         }
 
         var key = resource.Index.ToString(CultureInfo.InvariantCulture);
+        if (Lookup(id, key) is not { } value)
+            return null;
+
+        return CstReference.Is(value) ? Follow(id, key, value) : value;
+    }
+
+    // A value as written, from the first layer that has it.
+    private string? Lookup(int id, string key)
+    {
         foreach (var layer in layers)
         {
             if (layer.Table(id) is { } table && table.TryGetValue(key, out var value))
@@ -60,6 +71,41 @@ public sealed class StringTables
         }
 
         return null;
+    }
+
+    // The text a reference names, with its arguments filling the text's placeholders. As the CST specification says,
+    // it goes one step, so a cycle can't hang it; anything it can't follow is reported and the text is missing.
+    private string? Follow(int id, string key, string value)
+    {
+        var where = $"Table {id}, key {key}";
+        if (CstReference.Read(value) is not { } reference)
+        {
+            Report($"{where}: its reference to another table's text is malformed, so it's missing.");
+            return null;
+        }
+
+        var target = $"table {reference.Table}, key {reference.Key}";
+        if (Lookup(reference.Table, reference.Key) is not { } text)
+        {
+            Report($"{where} refers to {target}, which isn't there, so it's missing.");
+            return null;
+        }
+
+        if (CstReference.Is(text))
+        {
+            Report($"{where} refers to {target}, which is a reference itself; references go one step, so it's missing.");
+            return null;
+        }
+
+        object?[] arguments = [.. reference.Arguments];
+        return arguments.Length == 0 ? text : CST.Format(text, arguments);
+    }
+
+    // Each problem once, however often a string that has it is asked for.
+    private void Report(string problem)
+    {
+        if (!problems.Contains(problem))
+            problems.Add(problem);
     }
 
     // One folder of tables, read as they're asked for. shared says which range of numbers it may hold.

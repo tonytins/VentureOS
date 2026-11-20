@@ -282,7 +282,10 @@ new number. `roll` still works in the shell, since both live in the same app.
   Settings' color swatches do this. Tables follow the
   [CST specification](https://github.com/tonytins/swift-cst/blob/main/doc/CST.md),
   and VentureOS tells you about anything wrong in one. Number your own
-  tables below 100.
+  tables below 100. A value can also borrow another table's text, as
+  The Sims Online's do, with a reference: the control character U+0002,
+  then `<cst><cst_id>100</cst_id><string_id>1</string_id></cst>` for
+  table 100's "OK", all between the value's carets.
 - **Shared text:** tables 100 and up are VentureOS's, in
   `/mnt/system/strings`, for words every app uses alike. Table 100 holds
   OK, Cancel, Save, Don't Save, Open, Close, and Delete, keyed 1 to 7, so
