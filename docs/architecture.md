@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-19 · **Change:** minor (Run on VentureOS) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (Roundhouse projects) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-20)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,983 tests, and 265 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,983 tests, and 275 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -166,7 +166,7 @@ VentureOS/
 │     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedRun, SimulatedDisk, SimulatedSystem
 │     ├─ Vdb/                      Venture.Roundhouse.Vdb: Run on VentureOS (VentureOSRun, its window, TCP, and the identity file)
 │     ├─ Projects/                 Venture.Roundhouse.Projects: RoundhouseProject (.rproj: Project.xml, App/, Interfaces/, assembling the .app)
-│     ├─ Welcome/                  Venture.Roundhouse.Welcome: RoundhouseSettings (recent items, Show at startup, settings.xml)
+│     ├─ Welcome/                  Venture.Roundhouse.Welcome: WelcomeWindow, and RoundhouseSettings (recent items, Show at startup)
 │     ├─ Highlighting/             Venture.Roundhouse.Highlighting: Grammars, TextMateSharp's grammars and CST's (cst.tmLanguage.json)
 │     ├─ Logging/                  Venture.Roundhouse.Logging: RoundhouseLog (NLog), LogBuffer, LoggedOutput
 │     ├─ Menus/                    Venture.Roundhouse.Menus: AppMenu, one list for the global menu bar and the ☰ button
@@ -1145,6 +1145,20 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   puts them in place only while it works (`SimulatedRun.Within`). Run
   folders carry Roundhouse's process ID, and a new run deletes those whose
   process has ended.
+- **The welcome window** (`WelcomeWindow`, 0.7.6xx) shows when Roundhouse
+  starts with nothing named and "Show at startup" is on, in the main
+  window's place: Roundhouse's logo, name, and version with New Interface…,
+  New App…, New Project…, and Open… under them, centred; the recent items
+  beside them (`RoundhouseSettings`), each tagged project, app, or
+  interface, one that's gone dimmed and removable; and a status bar that
+  explains what's under the pointer and holds "Show at startup". It knows
+  nothing of the main window: `MainWindow.ShowWelcome` gives it the
+  actions, which show the main window and run there, and it closes once
+  something's open, or comes back if nothing is, such as a cancelled
+  dialog. File ▸ Close (Ctrl+W) closes what's open and shows it in the main
+  window's place; File ▸ Welcome to Roundhouse shows it any time. Closing
+  it with nothing else showing quits. Open… opens a project or app by its
+  `Project.xml` or `Contents/Info.xml` (`MainWindow.Openable`).
 - **Untitled interfaces** (0.7.6xx): File ▸ New ▸ New Interface (Ctrl+Alt+N)
   opens a blank interface (`MainWindow.BlankInterface`, a `<Window>` and
   nothing else) in the designer at once, with no questions, beside whatever
@@ -1791,6 +1805,7 @@ in the clear (2026-11-11).
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
+| 2026-11-20 | minor | Roundhouse (§9): the welcome window (`WelcomeWindow`) at startup, File ▸ Close and Welcome to Roundhouse, and Open… taking a project or app by its file. |
 | 2026-11-20 | minor | Roundhouse (§9): untitled interfaces: New Interface opens a blank canvas at once, and the first Save asks where it goes (`SaveInterfaceWindow`). |
 | 2026-11-20 | minor | Roundhouse (§9): projects open, run, and export; File ▸ New makes projects; stray `.app`s are offered as projects; Run is a drop-down; recent items are kept. |
 | 2026-11-20 | minor | Layout (§2): Roundhouse's `Projects/` (`RoundhouseProject`: `.rproj` projects and assembling their `.app`) and `Welcome/` (`RoundhouseSettings`), not yet in its windows. |

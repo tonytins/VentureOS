@@ -145,6 +145,7 @@ public sealed partial class MainWindow : Window
                      (Key.N, KeyModifiers.Control | KeyModifiers.Shift, () => _ = NewProjectAsync()),
                      (Key.N, KeyModifiers.Control | KeyModifiers.Alt, () => _ = NewInterfaceAsync()),
                      (Key.O, KeyModifiers.Control, () => _ = PickAndOpenAsync()),
+                     (Key.W, KeyModifiers.Control, () => _ = CloseOpenAsync()),
                      (Key.O, KeyModifiers.Control | KeyModifiers.Shift, () => _ = PickAndOpenBundleAsync()),
                      (Key.S, KeyModifiers.Control, () => Save()),
                      (Key.S, KeyModifiers.Control | KeyModifiers.Shift, () => SaveAll()),
@@ -528,7 +529,14 @@ public sealed partial class MainWindow : Window
     // Puts a project, app, or loose interface at the top of the recent items, and saves them; a failure is logged.
     private void Remember(string path)
     {
-        if (!settings.Remember(path) || !settings.CanSave)
+        if (settings.Remember(path))
+            SaveSettings();
+    }
+
+    // Writes what's remembered; a failure is logged, and a newer Roundhouse's file is left as it is.
+    private void SaveSettings()
+    {
+        if (!settings.CanSave)
             return;
         try
         {
@@ -536,7 +544,7 @@ public sealed partial class MainWindow : Window
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            log.Warn("The recent items couldn't be saved to {File}: {Reason}", RoundhouseSettings.Location, exception.Message);
+            log.Warn("Roundhouse's settings couldn't be saved to {File}: {Reason}", RoundhouseSettings.Location, exception.Message);
         }
     }
 
@@ -1569,6 +1577,9 @@ public sealed partial class MainWindow : Window
                 new MenuCommand("Open as Project…", () => _ = PickAndMakeProjectAsync()),
                 new MenuSeparator(),
                 new MenuCommand("Export…", () => _ = ExportAsync(), IsEnabled: () => Project?.HasApp == true),
+                new MenuSeparator(),
+                new MenuCommand("Close", () => _ = CloseOpenAsync(), Ctrl(Key.W), () => !NothingOpen),
+                new MenuCommand("Welcome to Roundhouse", () => ShowWelcome()),
                 new MenuCommand("Save", () => Save(), Ctrl(Key.S), () => HasDocument() || FileEditor.IsVisible),
                 new MenuCommand("Save All", () => SaveAll(), Ctrl(Key.S, KeyModifiers.Shift), () => Bundle is not null || HasDocument()),
                 new MenuSeparator(),
@@ -1959,13 +1970,146 @@ public sealed partial class MainWindow : Window
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Open a .uix document",
+            Title = "Open a project, an app, or a .uix",
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("UIScript documents") { Patterns = ["*.uix"] }, FilePickerFileTypes.All],
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Projects, apps, and interfaces") { Patterns = ["*.uix", "Project.xml", "Info.xml"] },
+                FilePickerFileTypes.All,
+            ],
         });
 
         if (files is [var file, ..] && file.TryGetLocalPath() is { } local)
-            await OpenAsync(local);
+            await OpenAsync(Openable(local));
+    }
+
+    /// <summary>
+    /// What choosing a file opens: a project's <c>Project.xml</c> opens its project, and an app's
+    /// <c>Contents/Info.xml</c> its app, since a file picker can't choose a folder; anything else, the file.
+    /// </summary>
+    public static string Openable(string file)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        var folder = Path.GetDirectoryName(Path.GetFullPath(file)) ?? "";
+        var name = Path.GetFileName(file);
+        if (name == RoundhouseProject.FileName && RoundhouseProject.IsProject(folder))
+            return folder;
+        if (name == "Info.xml" && Path.GetFileName(folder) == "Contents" && Path.GetDirectoryName(folder) is { } bundle
+            && bundle.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+            return bundle;
+        return file;
+    }
+
+    /// <summary>Whether nothing is open: no project, bundle, or document.</summary>
+    public bool NothingOpen => Bundle is null && path is null && CurrentFile is null;
+
+    /// <summary>The welcome window, while it's showing.</summary>
+    public WelcomeWindow? Welcome { get; private set; }
+
+    /// <summary>Whether Roundhouse shows the welcome window when it starts with nothing named.</summary>
+    public bool ShowsWelcomeAtStartup => settings.ShowAtStartup;
+
+    /// <summary>
+    /// Shows the welcome window, or brings it forward: the ways to start and the recent items. Choosing one shows
+    /// this window and does it here; when nothing ends up open, such as a dialog cancelled, the welcome window comes
+    /// back. Closing it while this window is hidden quits.
+    /// </summary>
+    public WelcomeWindow ShowWelcome()
+    {
+        if (Welcome is { } showing)
+        {
+            showing.Activate();
+            return showing;
+        }
+
+        var version = ProductTitle["Roundhouse ".Length..];
+        WelcomeWindow welcome = new(
+            version,
+            [
+                new("✎", "New Interface…", "Opens an untitled canvas: draw first, and choose where it goes when you save.", () => FromWelcomeAsync(() =>
+                {
+                    NewInterface();
+                    return Task.CompletedTask;
+                })),
+                new("▣", "New App…", "Makes a project with an app in it, ready to run.", () => FromWelcomeAsync(NewAppAsync)),
+                new("◫", "New Project…", "Makes an empty project, for an app, interfaces, or both.", () => FromWelcomeAsync(NewProjectAsync)),
+                new("↥", "Open…", "Opens a project, an app, or a .uix.", () => FromWelcomeAsync(PickAndOpenAsync)),
+            ],
+            settings.Recent,
+            settings.ShowAtStartup,
+            show =>
+            {
+                settings.ShowAtStartup = show;
+                SaveSettings();
+            },
+            file => FromWelcomeAsync(() => OpenAsync(file)),
+            file =>
+            {
+                settings.Forget(file);
+                SaveSettings();
+            });
+        Welcome = welcome;
+        welcome.Closed += (_, _) =>
+        {
+            if (!ReferenceEquals(Welcome, welcome))
+                return;
+            Welcome = null;
+
+            // Closing the welcome window with nothing else showing is quitting.
+            if (!IsVisible)
+                Close();
+        };
+        welcome.Show();
+        return welcome;
+    }
+
+    // Does what the welcome window chose here, in this window; the welcome window goes once something's open.
+    private async Task FromWelcomeAsync(Func<Task> action)
+    {
+        var welcome = Welcome;
+        var wasHidden = !IsVisible;
+        Show();
+        Activate();
+        await action();
+        if (welcome is null || !ReferenceEquals(Welcome, welcome))
+            return;
+
+        if (NothingOpen && wasHidden)
+        {
+            Hide();
+            welcome.Activate();
+            return;
+        }
+
+        if (!NothingOpen)
+        {
+            Welcome = null;
+            welcome.Close();
+        }
+    }
+
+    /// <summary>
+    /// Close: asks about unsaved edits, closes the project, bundle, or document open, and shows the welcome window in
+    /// this one's place.
+    /// </summary>
+    /// <returns>Whether it closed; not when Cancel is chosen.</returns>
+    public async Task<bool> CloseOpenAsync()
+    {
+        if (NothingOpen || !await LeaveAsync())
+            return false;
+
+        LeaveDesigner(null);
+        CurrentFile = null;
+        Bundle = null;
+        Project = null;
+        ShowFiles();
+        ShowCenter(CanvasScroller);
+        DocumentTitle.Text = "Roundhouse";
+        Title = ProductTitle;
+        StatusText.Text = "";
+        Hide();
+        ShowWelcome();
+        return true;
     }
 
     private async Task CloseAfterAskingAsync()

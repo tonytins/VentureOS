@@ -1,6 +1,9 @@
 # Roundhouse projects: design
 
-> **Status:** approved 2026-11-20 · **Date:** 2026-11-20 · **Release:** VentureOS 0.7, Seto, band 0.7.6xx
+> **Status:** approved 2026-11-20, built in 0.7.6xx, Seto · **Date:** 2026-11-20 · **Release:** VentureOS 0.7, Seto, band 0.7.6xx
+>
+> Built as written, with the corrections marked *Built:* below. How it works now is in
+> [the architecture](../architecture.md)'s Roundhouse section.
 
 Roundhouse gets a place for work in progress, a Roundhouse Project (`.rproj`), and a way in that starts with
 drawing: a welcome window, and a New Interface that opens a blank canvas at once. The Run button becomes a drop-down
@@ -121,6 +124,8 @@ Dice.rproj/
   says so ("Dice.rproj already has its app"). With no project open, it asks for a project's name and folder first.
 - **New Interface…** with a project open asks whether it's the app's window (into `App/Resources/`) or a loose one
   (into `Interfaces/`), and opens it untitled there. With nothing open, it opens an untitled canvas at once.
+  *Built:* it asks nothing, even with a project open, since that question came between choosing it and the canvas,
+  which the anti-goals rule out; the first Save asks instead, offering the open project's app and interfaces first.
 
 ### Untitled interfaces
 
@@ -151,7 +156,8 @@ Dice.rproj/
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-- A window of its own, in Roundhouse's blue-to-teal bar. The left half is centred: logo, name, version, then the
+- A window of its own, in Roundhouse's blue-to-teal bar. *Built:* the bar sits under the system's own title bar
+  rather than merged with it, as the main window's is where the desktop allows. The left half is centred: logo, name, version, then the
   four actions as plain link text with their icons. The right half lists recent items, newest first, each with its
   name, a tag (project, app, or interface), and its folder.
 - The status bar explains whatever's under the pointer (an action, or a recent item's full path) and otherwise says
@@ -159,7 +165,12 @@ Dice.rproj/
 - Double-clicking a recent item opens it in the main window; one that's gone is shown dimmed and can be removed.
 - It shows when Roundhouse starts with no file named and "Show at startup" is on; it closes when the main window
   opens something, and comes back when the last thing closes. With it off, Roundhouse starts on its main window as
-  now. File (and the ☰ menu) has Welcome to Roundhouse to show it again.
+  now. File (and the ☰ menu) has Welcome to Roundhouse to show it again. *Built:* "the last thing closes" is
+  File ▸ Close (Ctrl+W), new in this band, which closes what's open and shows the welcome window in the main
+  window's place; closing the main window still quits. Closing the welcome window with nothing else showing quits.
+  When an action leaves nothing open, such as a cancelled dialog, the welcome window comes back.
+- *Built:* Open… opens a project or an app by its `Project.xml` or `Contents/Info.xml`, since a file picker can't
+  choose a folder.
 - Recent items are projects, apps, and loose interfaces, as opened or saved. They and "Show at startup" live in
   `settings.xml` in Roundhouse's per-user folder (`Environment.SpecialFolder.ApplicationData`/`Roundhouse`: on
   Linux `~/.config/Roundhouse`), as flat XML with a `version`. A file that can't be read is reported and replaced
@@ -169,7 +180,8 @@ Dice.rproj/
 
 - The bar's Run button reads "▶ Run ▾" and opens a menu: Run in Simulation (Ctrl+R) and Run on VentureOS
   (Ctrl+Alt+R). The Run menu holds the same two with the same keys.
-- While something runs, the button is Stop for that run, as now.
+- While something runs, the button is Stop for that run, as now. *Built:* the button has never been Stop. While a
+  simulation runs, Run in Simulation brings it forward, and Stop is in the Run menu (Ctrl+.), as before.
 
 ## Where the code goes
 

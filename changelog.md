@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.604
+
+- Roundhouse opens on a welcome window when you start it with nothing named: New Interface…, New App…, New Project…, and Open… on the left, your recent projects, apps, and interfaces on the right, and a status bar that says what each one does. Double-click a recent item to open it; one that's gone is dimmed, and right-clicking or Delete takes it off the list. Uncheck "Show at startup" to start on the main window instead.
+- File ▸ Close (Ctrl+W) closes what's open and brings the welcome window back; File ▸ Welcome to Roundhouse shows it any time.
+- Open… opens a project or an app when you choose its `Project.xml` or `Info.xml`.
+
 ## 0.7.603
 
 - Roundhouse's File ▸ New ▸ New Interface (Ctrl+Alt+N) opens a blank interface in the designer at once, so you can start drawing before deciding anything else. The first time you save it, Roundhouse asks where it goes: into the open project's app or its interfaces, into a new project, or as a file of its own. Its images and strings show once it's saved.

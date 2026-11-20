@@ -294,7 +294,7 @@ something runs it.
 - [x] Untitled interfaces: New Interface opens a blank canvas at once, and
   saving asks where it goes; in a project, it goes in the app or among its
   interfaces.
-- [ ] A welcome window: recent items, the ways to start, and a status bar
+- [x] A welcome window: recent items, the ways to start, and a status bar
   with hints and "Show at startup".
 - [x] Run as a drop-down: Run in Simulation and Run on VentureOS.
 
@@ -354,6 +354,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | 0.7.6xx is complete: the welcome window, with File ▸ Close to bring it back. The design is marked built, with its corrections. The next band, 0.7.7xx, nesting, is the owner's to plan. |
 | 2026-11-20 | patch | 0.7.6xx: untitled interfaces. New Interface asks nothing before the canvas, even in a project; the first Save asks where. |
 | 2026-11-20 | patch | 0.7.6xx: projects open, run, and export, File ▸ New makes them, and Run is a drop-down. New Interface moves to the untitled-interfaces item, where it opens untitled. |
 | 2026-11-20 | minor | 0.7.6xx is Roundhouse projects, from its approved design: `.rproj` projects, untitled interfaces, a welcome window, and Run as a drop-down. Nesting moves to 0.7.7xx, by my decision. |
