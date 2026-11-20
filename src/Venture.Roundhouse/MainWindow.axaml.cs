@@ -29,7 +29,9 @@ using Venture.Roundhouse.Drawing;
 using Venture.Roundhouse.Highlighting;
 using Venture.Roundhouse.Logging;
 using Venture.Roundhouse.Menus;
+using Venture.Roundhouse.Projects;
 using Venture.Roundhouse.Simulator;
+using Venture.Roundhouse.Welcome;
 
 namespace Venture.Roundhouse;
 
@@ -68,6 +70,15 @@ public sealed partial class MainWindow : Window
     private readonly Grammars grammars;
     private readonly TextMate.Installation fileHighlighting;
     private bool loadingFile;
+
+    // What's remembered between launches, such as recent items.
+    private readonly RoundhouseSettings settings;
+
+    // Where a project's app is assembled to run it, one folder for each kind of run, deleted when the window closes.
+    private readonly string runCopies = Path.Combine(Path.GetTempPath(), $"roundhouse-run-{Guid.NewGuid():N}");
+
+    /// <summary>Where a project's app is assembled to run it; it's deleted when the window closes.</summary>
+    public string RunCopies => runCopies;
 
     // A table's check waits for a pause in typing, as the canvas's redraw does; what it last found is logged once.
     private readonly DispatcherTimer tableCheck = new() { Interval = PreviewDelay };
@@ -109,6 +120,7 @@ public sealed partial class MainWindow : Window
         foreach (var (key, modifiers, run) in (ReadOnlySpan<(Key, KeyModifiers, Action)>)
                  [
                      (Key.N, KeyModifiers.Control, () => _ = NewAppAsync()),
+                     (Key.N, KeyModifiers.Control | KeyModifiers.Shift, () => _ = NewProjectAsync()),
                      (Key.O, KeyModifiers.Control, () => _ = PickAndOpenAsync()),
                      (Key.O, KeyModifiers.Control | KeyModifiers.Shift, () => _ = PickAndOpenBundleAsync()),
                      (Key.S, KeyModifiers.Control, () => Save()),
@@ -119,6 +131,7 @@ public sealed partial class MainWindow : Window
                      (Key.Y, KeyModifiers.Control, Redo),
                      (Key.OemPlus, KeyModifiers.Control, () => ZoomToggle.IsChecked = ZoomToggle.IsChecked != true),
                      (Key.R, KeyModifiers.Control, Run),
+                     (Key.R, KeyModifiers.Control | KeyModifiers.Alt, () => RunOnVentureOS()),
                      (Key.R, KeyModifiers.Control | KeyModifiers.Shift, RestartRun),
                      (Key.OemPeriod, KeyModifiers.Control, StopRun),
                  ])
@@ -185,6 +198,19 @@ public sealed partial class MainWindow : Window
                 CheckTable(table);
         };
         AskToLeave = files => new UnsavedDialog(files).ShowDialog<LeaveChoice>(this);
+        AskToReplace = app => ConfirmDialog.AskAsync(this, "Replace App",
+            $"There's already {Path.GetFileName(app)} in {Path.GetDirectoryName(app)}. Replace it?",
+            "The app there is deleted and the project's put in its place.", "Replace");
+        AskToMakeProject = app => ConfirmDialog.AskAsync(this, "Make a Project",
+            $"{Path.GetFileName(app)} isn't among VentureOS's apps. Make it a project?",
+            $"An .app is something that runs. Work in progress belongs in a project: {Path.GetFileNameWithoutExtension(app)}.rproj, made beside it, "
+            + "with the app's files in its App/. The .app is left as it is, for you to delete.",
+            "Make Project", "Edit in Place");
+
+        string? problem;
+        (settings, problem) = RoundhouseSettings.Load(RoundhouseSettings.Location);
+        if (problem is not null)
+            log.Warn(problem);
         Closing += (_, e) =>
         {
             // Unsaved edits are asked about before the window goes; the answer closes it, or doesn't.
@@ -195,9 +221,18 @@ public sealed partial class MainWindow : Window
         };
         Closed += (_, _) =>
         {
-            // The run goes with the designer, so its copy of VentureOS's files is deleted.
+            // The run goes with the designer, so its copy of VentureOS's files is deleted, and so do apps assembled to run.
             StopRun();
             fonts.Dispose();
+            try
+            {
+                if (Directory.Exists(runCopies))
+                    Directory.Delete(runCopies, recursive: true);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                log.Warn("A run's copy of an app, in {Folder}, couldn't be deleted: {Reason}", runCopies, exception.Message);
+            }
         };
     }
 
@@ -410,6 +445,25 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        // A project is read before anything is let go of, so one Roundhouse can't read leaves what's open as it was.
+        var project = Project;
+        if (bundle != Bundle?.Root)
+        {
+            project = null;
+            if (bundle is not null && RoundhouseProject.IsProject(bundle))
+            {
+                try
+                {
+                    project = RoundhouseProject.Open(bundle);
+                }
+                catch (ProjectException exception)
+                {
+                    Say(exception.Message, NLog.LogLevel.Warn);
+                    return;
+                }
+            }
+        }
+
         KeepEdit();
         if (bundle != Bundle?.Root)
         {
@@ -417,7 +471,10 @@ public sealed partial class MainWindow : Window
             LeaveDesigner(null);
             CurrentFile = null;
             Bundle = bundle is null ? null : new OpenBundle(bundle);
+            Project = project;
         }
+
+        Remember(bundle ?? full);
 
         // Read the folder again, even for the bundle already open, so files added since are listed.
         ShowFiles();
@@ -435,8 +492,29 @@ public sealed partial class MainWindow : Window
         ShowFile(full);
     }
 
-    /// <summary>The bundle open, or <see langword="null"/> while a document outside one is.</summary>
+    /// <summary>The bundle or project open, or <see langword="null"/> while a document outside one is.</summary>
     public OpenBundle? Bundle { get; private set; }
+
+    /// <summary>The project open, when what's open is one.</summary>
+    public RoundhouseProject? Project { get; private set; }
+
+    /// <summary>The recent items, newest first, as the welcome window lists them.</summary>
+    public IReadOnlyList<RecentItem> Recent => settings.Recent;
+
+    // Puts a project, app, or loose interface at the top of the recent items, and saves them; a failure is logged.
+    private void Remember(string path)
+    {
+        if (!settings.Remember(path) || !settings.CanSave)
+            return;
+        try
+        {
+            settings.Save(RoundhouseSettings.Location);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            log.Warn("The recent items couldn't be saved to {File}: {Reason}", RoundhouseSettings.Location, exception.Message);
+        }
+    }
 
     /// <summary>The file shown, by its path on this computer, or <see langword="null"/>.</summary>
     public string? CurrentFile { get; private set; }
@@ -600,7 +678,7 @@ public sealed partial class MainWindow : Window
     public InfoDocument? Info { get; private set; }
 
     private static bool IsInfo(OpenBundle bundle, string file) =>
-        Path.GetFullPath(file) == Path.GetFullPath(Path.Combine(bundle.Root, "Contents", "Info.xml"));
+        Path.GetFullPath(file) == Path.GetFullPath(bundle.InfoFile);
 
     /// <summary>
     /// Shows a bundle's <c>Info.xml</c>: its text in the Text tab, as the designer's is, and above it the form, or why
@@ -890,6 +968,13 @@ public sealed partial class MainWindow : Window
         var leaving = Bundle is { } open ? !open.Contains(file) && Path.GetFullPath(file) != open.Root : path is not null && Path.GetFullPath(file) != path;
         if (leaving && !await LeaveAsync())
             return false;
+
+        // An .app outside VentureOS's rootfs is offered as a project, where work in progress belongs.
+        if (leaving || Bundle is null)
+        {
+            if (OpenBundle.Find(file) is { } bundle && IsStrayApp(bundle) && await AskToMakeProject(bundle))
+                return MakeProject(bundle) is not null;
+        }
 
         Open(file);
         return true;
@@ -1429,10 +1514,17 @@ public sealed partial class MainWindow : Window
         [
             new("File",
             [
-                new MenuCommand("New App…", () => _ = NewAppAsync(), Ctrl(Key.N)),
+                new AppMenuGroup("New",
+                [
+                    new MenuCommand("New App…", () => _ = NewAppAsync(), Ctrl(Key.N)),
+                    new MenuCommand("New Project…", () => _ = NewProjectAsync(), Ctrl(Key.N, KeyModifiers.Shift)),
+                ]),
                 new MenuSeparator(),
                 new MenuCommand("Open…", () => _ = PickAndOpenAsync(), Ctrl(Key.O)),
-                new MenuCommand("Open Bundle…", () => _ = PickAndOpenBundleAsync(), Ctrl(Key.O, KeyModifiers.Shift)),
+                new MenuCommand("Open Project or Bundle…", () => _ = PickAndOpenBundleAsync(), Ctrl(Key.O, KeyModifiers.Shift)),
+                new MenuCommand("Open as Project…", () => _ = PickAndMakeProjectAsync()),
+                new MenuSeparator(),
+                new MenuCommand("Export…", () => _ = ExportAsync(), IsEnabled: () => Project?.HasApp == true),
                 new MenuCommand("Save", () => Save(), Ctrl(Key.S), () => HasDocument() || FileEditor.IsVisible),
                 new MenuCommand("Save All", () => SaveAll(), Ctrl(Key.S, KeyModifiers.Shift), () => Bundle is not null || HasDocument()),
                 new MenuSeparator(),
@@ -1470,11 +1562,11 @@ public sealed partial class MainWindow : Window
             ]),
             new("Run",
             [
-                new MenuCommand("Run", Run, Ctrl(Key.R)),
+                new MenuCommand("Run in Simulation", Run, Ctrl(Key.R)),
                 new MenuCommand("Restart", RestartRun, Ctrl(Key.R, KeyModifiers.Shift), () => Simulator is not null),
                 new MenuCommand("Stop", StopRun, Ctrl(Key.OemPeriod), () => Simulator is not null),
                 new MenuSeparator(),
-                new MenuCommand("Run on VentureOS", () => RunOnVentureOS(), Ctrl(Key.R, KeyModifiers.Alt), () => AppBeingEdited() is not null),
+                new MenuCommand("Run on VentureOS", () => RunOnVentureOS(), Ctrl(Key.R, KeyModifiers.Alt), () => AppToSend() is not null),
             ]),
         ];
     }
@@ -1581,20 +1673,10 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        // Every file's edits run, saved or not: the bundle's, or the document's own outside one.
-        KeepEdit();
-        Dictionary<string, string> edits = [];
-        if (Bundle is { } bundle)
-        {
-            foreach (var file in bundle.Unsaved)
-                edits[file] = bundle.Text(file);
-        }
-        else if (path is not null)
-        {
-            edits[path] = byteOrderMark + Editor.Text;
-        }
+        if (RunTarget("simulation", needsApp: false) is not var (document, edits))
+            return;
 
-        var simulator = new SimulatorWindow(CurrentFile, edits);
+        var simulator = new SimulatorWindow(document, edits);
         Simulator = simulator;
         simulator.Closed += (_, _) =>
         {
@@ -1602,7 +1684,7 @@ public sealed partial class MainWindow : Window
                 Simulator = null;
         };
         simulator.Show();
-        log.Info("Run started{Edits}", edits.Count == 0 ? "" : $", with {edits.Count} unsaved {(edits.Count == 1 ? "edit" : "edits")}");
+        log.Info("Run started{Edits}", UnsavedCount() is var count and > 0 ? $", with {count} unsaved {(count == 1 ? "edit" : "edits")}" : "");
     }
 
     /// <summary>The window of the run on VentureOS, while one is open.</summary>
@@ -1611,33 +1693,30 @@ public sealed partial class MainWindow : Window
     /// <summary>How a run on VentureOS connects; tests give it their own.</summary>
     public Func<Vdb.VentureOSRun> VentureOSRunner { get; set; } = () => Vdb.VentureOSRun.OverTcp();
 
-    /// <summary>The folder of the app the open file is in, or <see langword="null"/> when it isn't in one.</summary>
-    private string? AppBeingEdited() => CurrentFile is { } file ? SimulatedRun.BundleOf(file) : null;
+    /// <summary>
+    /// What Run on VentureOS would send: the open project's app, or the <c>.app</c> the open file is in; or
+    /// <see langword="null"/> when there's none.
+    /// </summary>
+    private string? AppToSend() =>
+        Project is { } project ? (project.HasApp ? project.Root : null) : CurrentFile is { } file ? SimulatedRun.BundleOf(file) : null;
 
     /// <summary>
     /// Sends the app being edited, with every unsaved edit, to a running VentureOS over vdb and opens it, in a window
     /// that shows what it prints. Running it again ends the last run first.
     /// </summary>
-    /// <returns>Whether a run started; it doesn't when the open file isn't in an app.</returns>
+    /// <returns>Whether a run started; it doesn't when there's no app to send.</returns>
     public bool RunOnVentureOS()
     {
-        if (AppBeingEdited() is not { } app)
+        if (AppToSend() is null)
         {
-            Say("Run on VentureOS sends an app, and the open file isn't in one.", NLog.LogLevel.Warn);
+            Say(Project is { } project
+                ? $"Run on VentureOS sends an app, and {Path.GetFileName(project.Root)} has none yet; add one with New App."
+                : "Run on VentureOS sends an app, and the open file isn't in one.", NLog.LogLevel.Warn);
             return false;
         }
 
-        KeepEdit();
-        Dictionary<string, string> edits = [];
-        if (Bundle is { } bundle)
-        {
-            foreach (var file in bundle.Unsaved)
-                edits[file] = bundle.Text(file);
-        }
-        else if (path is not null)
-        {
-            edits[Path.GetFullPath(path)] = byteOrderMark + Editor.Text;
-        }
+        if (RunTarget("venture", needsApp: true) is not var (document, edits) || SimulatedRun.BundleOf(document!) is not { } app)
+            return false;
 
         VentureOSRun?.Close();
         var runner = VentureOSRunner();
@@ -1652,9 +1731,68 @@ public sealed partial class MainWindow : Window
         };
         window.Show(this);
         log.Info("Run on VentureOS started for {App}{Edits}", name,
-            edits.Count == 0 ? "" : $", with {edits.Count} unsaved {(edits.Count == 1 ? "edit" : "edits")}");
+            UnsavedCount() is var count and > 0 ? $", with {count} unsaved {(count == 1 ? "edit" : "edits")}" : "");
         return true;
     }
+
+    // How many files run with edits that aren't saved, for the log.
+    private int UnsavedCount() => Bundle?.Unsaved.Count ?? (path is not null && UnsavedFiles().Count > 0 ? 1 : 0);
+
+    /// <summary>
+    /// What a run starts from: the document to open, and the edits to run in place of what's saved. A bundle or a
+    /// document outside one runs as it is, with its edits. A project's app is assembled into an <c>.app</c> in its
+    /// own folder for <paramref name="kind"/> of run, edits written in, and opens at the document being designed,
+    /// or its <c>Info.xml</c>; a loose interface in a project runs as a window of its own, unless
+    /// <paramref name="needsApp"/>.
+    /// </summary>
+    /// <returns>The document and edits, or <see langword="null"/> when there's nothing to run, which is said.</returns>
+    private (string? Document, IReadOnlyDictionary<string, string> Edits)? RunTarget(string kind, bool needsApp)
+    {
+        // Every file's edits run, saved or not: the bundle's, or the document's own outside one.
+        KeepEdit();
+        Dictionary<string, string> edits = [];
+        if (Bundle is { } bundle)
+        {
+            foreach (var file in bundle.Unsaved)
+                edits[file] = bundle.Text(file);
+        }
+        else if (path is not null)
+        {
+            edits[Path.GetFullPath(path)] = byteOrderMark + Editor.Text;
+        }
+
+        if (Project is not { } project)
+            return (CurrentFile, edits);
+
+        var loose = CurrentFile is { } shown && IsInside(shown, project.InterfacesFolder);
+        if (loose && !needsApp)
+            return (CurrentFile, edits);
+        if (!project.HasApp)
+        {
+            Say($"{Path.GetFileName(project.Root)} has no app to run yet; add one with New App, or open one of its interfaces.", NLog.LogLevel.Warn);
+            return null;
+        }
+
+        string app;
+        try
+        {
+            app = project.Assemble(Path.Combine(runCopies, kind), edits, replace: true);
+        }
+        catch (Exception exception) when (exception is ProjectException or IOException or UnauthorizedAccessException)
+        {
+            Say($"{Path.GetFileName(project.Root)}'s app couldn't be made to run: {exception.Message}", NLog.LogLevel.Warn);
+            return null;
+        }
+
+        // The run opens at the window being designed, as an .app's does, in the copy that's running.
+        var document = CurrentFile is { } current && IsInside(current, project.AppFolder)
+            ? Path.Combine(app, "Contents", Path.GetRelativePath(project.AppFolder, current))
+            : Path.Combine(app, "Contents", "Info.xml");
+        return (document, new Dictionary<string, string>());
+    }
+
+    private static bool IsInside(string file, string folder) =>
+        Path.GetFullPath(file).StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder)) + Path.DirectorySeparatorChar, StringComparison.Ordinal);
 
     /// <summary>Ends the run, deleting its copy of VentureOS's files.</summary>
     public void StopRun()
@@ -1672,15 +1810,24 @@ public sealed partial class MainWindow : Window
         Run();
     }
 
-    private void OnRunClicked(object? sender, RoutedEventArgs e) => Run();
+    // The bar's Run opens a menu of where to run, the Run menu's two, so every run picks where.
+    private void OnRunClicked(object? sender, RoutedEventArgs e)
+    {
+        var where = AppMenu.Flyout(Menus.Single(group => group.Title == "Run").Entries
+            .OfType<MenuCommand>()
+            .Where(command => command.Title is "Run in Simulation" or "Run on VentureOS")
+            .ToList<MenuEntry>());
+        where.Placement = PlacementMode.BottomEdgeAlignedRight;
+        where.ShowAt(RunButton);
+    }
 
-    /// <summary>What a document belongs to, shown after its name: the app bundle it's in, such as Calculator.app, or its folder.</summary>
+    /// <summary>What a document belongs to, shown after its name: the app or project it's in, such as Calculator.app or Dice.rproj, or its folder.</summary>
     public static string Subtitle(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
         for (var folder = Path.GetDirectoryName(path); !string.IsNullOrEmpty(folder); folder = Path.GetDirectoryName(folder))
         {
-            if (folder.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+            if (folder.EndsWith(".app", StringComparison.OrdinalIgnoreCase) || RoundhouseProject.IsProject(folder))
                 return Path.GetFileName(folder);
         }
 
@@ -1784,43 +1931,180 @@ public sealed partial class MainWindow : Window
         Close();
     }
 
-    /// <summary>Makes a window app from the template, and opens its window in the designer.</summary>
-    /// <returns>The new app's folder.</returns>
-    /// <exception cref="ArgumentException">It couldn't be made, as <see cref="AppTemplate.Create"/> says.</exception>
+    /// <summary>
+    /// Makes a project with a window app from the template, and opens the app's window in the designer: what New App
+    /// does with no project open.
+    /// </summary>
+    /// <returns>The new project's folder.</returns>
+    /// <exception cref="ArgumentException">The app couldn't be made, as <see cref="AppTemplate.CreateIn"/> says; nothing is left behind.</exception>
+    /// <exception cref="ProjectException">The project couldn't be made, as <see cref="RoundhouseProject.Create"/> says.</exception>
     /// <exception cref="IOException">It couldn't be written.</exception>
     public string CreateApp(string name, string identifier, string folder)
     {
-        var app = AppTemplate.Create(name, identifier, folder);
-        Open(app);
-        Say($"Made {Path.GetFileName(app)} in {folder}.", NLog.LogLevel.Info);
-        return app;
+        var project = RoundhouseProject.Create(name, folder);
+        try
+        {
+            AppTemplate.CreateIn(project, name, identifier);
+        }
+        catch
+        {
+            Directory.Delete(project.Root, recursive: true);
+            throw;
+        }
+
+        Open(project.Root);
+        Say($"Made {Path.GetFileName(project.Root)}, with its app, in {folder}.", NLog.LogLevel.Info);
+        return project.Root;
     }
 
-    /// <summary>Asks for a new app's name and place, makes it, and opens it.</summary>
+    /// <summary>
+    /// New App: the open project's app, or, with none open, a new project with its app. A project holds one app, so
+    /// one that has it says so.
+    /// </summary>
     private async Task NewAppAsync()
     {
+        if (Project is { } project)
+        {
+            if (project.HasApp)
+            {
+                Say($"{Path.GetFileName(project.Root)} already has its app; a project holds one.", NLog.LogLevel.Warn);
+                return;
+            }
+
+            if (await new NewAppWindow(project).ShowDialog<string?>(this) is not null)
+            {
+                Open(project.Root);
+                Say($"Added an app to {Path.GetFileName(project.Root)}.", NLog.LogLevel.Info);
+            }
+
+            return;
+        }
+
         if (!await LeaveAsync())
             return;
-
-        var app = await new NewAppWindow(NewAppWindow.SuggestedFolder()).ShowDialog<string?>(this);
-        if (app is not null)
+        if (await new NewAppWindow(NewAppWindow.SuggestedFolder()).ShowDialog<string?>(this) is { } made)
         {
-            Open(app);
-            Say($"Made {Path.GetFileName(app)}.", NLog.LogLevel.Info);
+            Open(made);
+            Say($"Made {Path.GetFileName(made)}, with its app.", NLog.LogLevel.Info);
         }
     }
 
-    /// <summary>Chooses a bundle's folder, such as an .app, and opens it.</summary>
+    /// <summary>New Project: an empty project, named and placed, opened.</summary>
+    private async Task NewProjectAsync()
+    {
+        if (!await LeaveAsync())
+            return;
+        if (await new NewAppWindow(NewAppWindow.SuggestedFolder(), withApp: false).ShowDialog<string?>(this) is { } made)
+        {
+            Open(made);
+            Say($"Made {Path.GetFileName(made)}.", NLog.LogLevel.Info);
+        }
+    }
+
+    /// <summary>Chooses a project's or bundle's folder, such as a .rproj or an .app, and opens it.</summary>
     private async Task PickAndOpenBundleAsync()
     {
         var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Open a bundle, such as an .app",
+            Title = "Open a project or bundle, such as a .rproj or an .app",
             AllowMultiple = false,
         });
 
         if (folders is [var folder, ..] && folder.TryGetLocalPath() is { } local)
             await OpenAsync(local);
+    }
+
+    /// <summary>Asks before replacing an app that's there, by its folder; tests answer it themselves.</summary>
+    public Func<string, Task<bool>> AskToReplace { get; set; }
+
+    /// <summary>Offers to make a stray app a project, by its folder; tests answer it themselves.</summary>
+    public Func<string, Task<bool>> AskToMakeProject { get; set; }
+
+    /// <summary>
+    /// Makes a project from an <c>.app</c>, beside it, and opens it; the <c>.app</c> is left as it was.
+    /// </summary>
+    /// <returns>The project's folder, or <see langword="null"/> when it couldn't be made, which is said.</returns>
+    public string? MakeProject(string app)
+    {
+        try
+        {
+            var project = RoundhouseProject.FromApp(app);
+            Open(project.Root);
+            Say($"Made {Path.GetFileName(project.Root)} from {Path.GetFileName(app)}, which is left as it was.", NLog.LogLevel.Info);
+            return project.Root;
+        }
+        catch (Exception exception) when (exception is ProjectException or IOException or UnauthorizedAccessException)
+        {
+            Say($"{Path.GetFileName(Path.TrimEndingDirectorySeparator(app))} couldn't be made a project: {exception.Message}", NLog.LogLevel.Warn);
+            return null;
+        }
+    }
+
+    /// <summary>Open as Project: chooses an .app and makes a project from it.</summary>
+    private async Task PickAndMakeProjectAsync()
+    {
+        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Choose an .app to make a project from",
+            AllowMultiple = false,
+        });
+
+        if (folders is [var folder, ..] && folder.TryGetLocalPath() is { } local && await LeaveAsync())
+            MakeProject(local);
+    }
+
+    /// <summary>Whether an .app is a stray: outside any <c>rootfs/</c>, where VentureOS's apps are installed from.</summary>
+    public static bool IsStrayApp(string bundle) =>
+        bundle.EndsWith(".app", StringComparison.OrdinalIgnoreCase)
+        && !Path.GetFullPath(bundle).Split(Path.DirectorySeparatorChar).Contains("rootfs");
+
+    /// <summary>
+    /// Writes the open project's app, as edited, to <paramref name="folder"/> as an <c>.app</c>, asking before
+    /// replacing one that's there.
+    /// </summary>
+    /// <returns>The <c>.app</c>'s folder, or <see langword="null"/> when there's no app, it's not to be replaced, or it couldn't be written, which is said.</returns>
+    public async Task<string?> ExportTo(string folder)
+    {
+        if (Project is not { HasApp: true } project)
+        {
+            Say("Export writes a project's app, and there's none open.", NLog.LogLevel.Warn);
+            return null;
+        }
+
+        KeepEdit();
+        Dictionary<string, string> edits = [];
+        foreach (var file in Bundle!.Unsaved)
+            edits[file] = Bundle.Text(file);
+
+        try
+        {
+            var target = Path.Combine(folder, project.AppFolderName(edits));
+            var replace = Directory.Exists(target) || File.Exists(target);
+            if (replace && !await AskToReplace(target))
+                return null;
+
+            var app = project.Assemble(folder, edits, replace);
+            Say($"Exported {Path.GetFileName(app)} to {folder}.", NLog.LogLevel.Info);
+            return app;
+        }
+        catch (Exception exception) when (exception is ProjectException or IOException or UnauthorizedAccessException)
+        {
+            Say($"{Path.GetFileName(project.Root)}'s app couldn't be exported: {exception.Message}", NLog.LogLevel.Warn);
+            return null;
+        }
+    }
+
+    /// <summary>Export: chooses where, such as VentureOS's rootfs/user/apps, and writes the project's app there.</summary>
+    private async Task ExportAsync()
+    {
+        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Where to put the app, such as VentureOS's rootfs/user/apps",
+            AllowMultiple = false,
+        });
+
+        if (folders is [var folder, ..] && folder.TryGetLocalPath() is { } local)
+            await ExportTo(local);
     }
 
     /// <summary>The painter's frame as an Avalonia bitmap: its pixels are BGRA, and always opaque.</summary>

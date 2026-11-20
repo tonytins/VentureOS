@@ -9,13 +9,14 @@ namespace Venture.Roundhouse.Bundles;
 public sealed record BundleItem(string Name, string Path, bool IsFolder, IReadOnlyList<BundleItem> Children);
 
 /// <summary>
-/// A bundle open in Roundhouse, such as <c>Calculator.app</c>: its files, and the text of each one edited but not
-/// saved, so moving between files keeps every edit until it's saved, and Run can use them all.
+/// A bundle or project open in Roundhouse, such as <c>Calculator.app</c> or <c>Dice.rproj</c>: its files, and the
+/// text of each one edited but not saved, so moving between files keeps every edit until it's saved, and Run can use
+/// them all.
 /// </summary>
 public sealed class OpenBundle
 {
-    /// <summary>The kinds of bundle Roundhouse opens, by their folders' extension.</summary>
-    public static IReadOnlyList<string> Extensions { get; } = [".app", ".wallpaper"];
+    /// <summary>The kinds of folder Roundhouse opens, by their extension: VentureOS's bundles, and its own projects.</summary>
+    public static IReadOnlyList<string> Extensions { get; } = [".app", ".wallpaper", Projects.RoundhouseProject.Extension];
 
     // Strict UTF-8, as UIDocument reads, so a file that isn't text isn't changed by being read and written back.
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -38,6 +39,15 @@ public sealed class OpenBundle
     /// <summary>The bundle's name, such as <c>Calculator.app</c>.</summary>
     public string Name => Path.GetFileName(Root);
 
+    /// <summary>Whether it's a Roundhouse Project rather than one of VentureOS's bundles.</summary>
+    public bool IsProject => Projects.RoundhouseProject.IsProject(Root);
+
+    /// <summary>
+    /// The <c>Info.xml</c> its <c>Info.xml</c> form edits: a bundle's <c>Contents/Info.xml</c>, or a project's
+    /// <c>App/Info.xml</c>, laid out the same.
+    /// </summary>
+    public string InfoFile => Path.Combine(Root, IsProject ? "App" : "Contents", "Info.xml");
+
     /// <summary>The files that have text edited but not saved, by their paths, in no particular order.</summary>
     public IReadOnlyCollection<string> Unsaved => unsaved.Keys;
 
@@ -55,17 +65,22 @@ public sealed class OpenBundle
     }
 
     /// <summary>
-    /// The file to show first when the bundle opens on its own: its first interface in <c>Contents/Resources</c>,
-    /// or else its <c>Info.xml</c>, or <see langword="null"/> when it has neither.
+    /// The file to show first when it opens on its own: its app's first interface (in a bundle's
+    /// <c>Contents/Resources</c>, or a project's <c>App/Resources</c>), then a project's first loose interface, then the
+    /// app's <c>Info.xml</c>; or <see langword="null"/> when there's none.
     /// </summary>
     public string? FirstFile()
     {
-        var resources = Path.Combine(Root, "Contents", "Resources");
-        if (Directory.Exists(resources) && Directory.EnumerateFiles(resources, "*.uix").Order(StringComparer.OrdinalIgnoreCase).FirstOrDefault() is { } document)
+        var resources = Path.Combine(Path.GetDirectoryName(InfoFile)!, "Resources");
+        if (FirstInterface(resources) is { } document)
             return document;
+        if (IsProject && FirstInterface(Path.Combine(Root, "Interfaces")) is { } loose)
+            return loose;
 
-        var info = Path.Combine(Root, "Contents", "Info.xml");
-        return File.Exists(info) ? info : null;
+        return File.Exists(InfoFile) ? InfoFile : null;
+
+        static string? FirstInterface(string folder) =>
+            Directory.Exists(folder) ? Directory.EnumerateFiles(folder, "*.uix").Order(StringComparer.OrdinalIgnoreCase).FirstOrDefault() : null;
     }
 
     /// <summary>The bundle's files and folders, read from the disk now, with the bundle itself at the top.</summary>

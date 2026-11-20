@@ -2,14 +2,27 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
-using Venture.Roundhouse.Simulator;
+using Venture.Roundhouse.Projects;
 
 namespace Venture.Roundhouse.Bundles;
 
+/// <summary>What File ▸ New… is making.</summary>
+public enum NewKind
+{
+    /// <summary>An empty project, for an app, interfaces, or both later.</summary>
+    Project,
+
+    /// <summary>A project with its app, when no project is open.</summary>
+    AppInNewProject,
+
+    /// <summary>The open project's app.</summary>
+    AppInProject,
+}
+
 /// <summary>
-/// File ▸ New App's dialog: the app's name, its identifier, which follows the name until it's changed, and where to
-/// make it. Creating closes the dialog with the new app's folder; a problem, such as a name already taken, shows in
-/// the dialog, which stays open.
+/// File ▸ New…'s dialog for a project or an app: a name; for an app, its identifier, which follows the name until
+/// it's changed; and, for a new project, where to make it. Creating closes the dialog with the project's folder; a
+/// problem, such as a name already taken, shows in the dialog, which stays open.
 /// </summary>
 public sealed class NewAppWindow : Window
 {
@@ -17,13 +30,29 @@ public sealed class NewAppWindow : Window
     private readonly TextBox identifier = new();
     private readonly TextBox location = new();
     private readonly TextBlock problem = new() { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+    private readonly NewKind kind;
+    private readonly RoundhouseProject? project;
     private bool following = true;
     private bool setting;
 
-    public NewAppWindow(string folder)
+    /// <summary>Asks for a new project, with its app when <paramref name="withApp"/>, made in <paramref name="folder"/>.</summary>
+    public NewAppWindow(string folder, bool withApp = true)
+        : this(withApp ? NewKind.AppInNewProject : NewKind.Project, folder, null)
+    {
+    }
+
+    /// <summary>Asks for the app of <paramref name="project"/>, which has none yet.</summary>
+    public NewAppWindow(RoundhouseProject project)
+        : this(NewKind.AppInProject, project?.Root ?? throw new ArgumentNullException(nameof(project)), project)
+    {
+    }
+
+    private NewAppWindow(NewKind kind, string folder, RoundhouseProject? project)
     {
         ArgumentNullException.ThrowIfNull(folder);
-        Title = "New App";
+        this.kind = kind;
+        this.project = project;
+        Title = kind == NewKind.Project ? "New Project" : "New App";
         Width = 460;
         SizeToContent = SizeToContent.Height;
         CanResize = false;
@@ -48,7 +77,7 @@ public sealed class NewAppWindow : Window
         Button browse = new() { Content = "Choose…" };
         browse.Click += async (_, _) =>
         {
-            var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Where to make the app", AllowMultiple = false });
+            var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Where to make the project", AllowMultiple = false });
             if (folders is [var chosen, ..] && chosen.TryGetLocalPath() is { } local)
                 location.Text = local;
         };
@@ -58,13 +87,25 @@ public sealed class NewAppWindow : Window
         Button cancel = new() { Content = "Cancel", IsCancel = true };
         cancel.Click += (_, _) => Close(null);
 
+        // A project has no identifier, and an app in the open project goes in its App/, so neither asks.
         Grid fields = new() { ColumnDefinitions = new("100,*,Auto"), RowDefinitions = new("Auto,Auto,Auto"), RowSpacing = 8, ColumnSpacing = 8 };
         Add(fields, 0, "Name", name);
-        Add(fields, 1, "Identifier", identifier);
-        Add(fields, 2, "Make it in", location);
-        Grid.SetRow(browse, 2);
-        Grid.SetColumn(browse, 2);
-        fields.Children.Add(browse);
+        if (kind != NewKind.Project)
+            Add(fields, 1, "Identifier", identifier);
+        if (kind != NewKind.AppInProject)
+        {
+            Add(fields, 2, "Make it in", location);
+            Grid.SetRow(browse, 2);
+            Grid.SetColumn(browse, 2);
+            fields.Children.Add(browse);
+        }
+
+        var about = kind switch
+        {
+            NewKind.Project => "An empty project, for an app, interfaces, or both. Roundhouse makes its app into an .app to run or export it.",
+            NewKind.AppInNewProject => "A project with a window app in it, with a button that counts its presses, to start from.",
+            _ => $"{Path.GetFileName(project!.Root)}'s app: a window app with a button that counts its presses, to start from.",
+        };
 
         Content = new StackPanel
         {
@@ -72,7 +113,7 @@ public sealed class NewAppWindow : Window
             Spacing = 12,
             Children =
             {
-                new TextBlock { Text = "A window app with a button that counts its presses, to start from.", TextWrapping = TextWrapping.Wrap, Opacity = 0.7 },
+                new TextBlock { Text = about, TextWrapping = TextWrapping.Wrap, Opacity = 0.7 },
                 fields,
                 problem,
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { cancel, create } },
@@ -106,29 +147,29 @@ public sealed class NewAppWindow : Window
     public string? Problem => problem.IsVisible ? problem.Text : null;
 
     /// <summary>
-    /// The folder File ▸ New App suggests: the repository's user apps while Roundhouse runs from it, so a new app is
-    /// part of VentureOS, and the computer's documents otherwise.
+    /// The folder a new project is suggested in: the computer's documents. A project is work in progress, so it
+    /// doesn't go among VentureOS's apps; File ▸ Export… puts its app there when it's ready.
     /// </summary>
-    public static string SuggestedFolder()
-    {
-        if (SimulatedDisk.FindRootfs() is { } rootfs
-            && !Path.GetFullPath(rootfs).StartsWith(Path.GetFullPath(AppContext.BaseDirectory), StringComparison.Ordinal))
-            return Path.Combine(rootfs, "user", "apps");
-        return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-    }
+    public static string SuggestedFolder() => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-    /// <summary>Makes the app, and closes with its folder; a problem is shown, and the dialog stays.</summary>
-    /// <returns>The new app's folder, or <see langword="null"/>.</returns>
+    /// <summary>Makes the project or app, and closes with the project's folder; a problem is shown, and the dialog stays.</summary>
+    /// <returns>The project's folder, or <see langword="null"/>.</returns>
     public string? Create()
     {
+        RoundhouseProject? made = null;
         try
         {
-            var app = AppTemplate.Create(AppName, Identifier, Location);
-            Close(app);
-            return app;
+            var target = project ?? (made = RoundhouseProject.Create(AppName, Location));
+            if (kind != NewKind.Project)
+                AppTemplate.CreateIn(target, AppName, Identifier);
+            Close(target.Root);
+            return target.Root;
         }
-        catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is ArgumentException or ProjectException or IOException or UnauthorizedAccessException)
         {
+            // A new project whose app couldn't be made goes too, so nothing half-made is left.
+            if (made is not null && Directory.Exists(made.Root))
+                Directory.Delete(made.Root, recursive: true);
             problem.Text = exception.Message;
             problem.IsVisible = true;
             return null;

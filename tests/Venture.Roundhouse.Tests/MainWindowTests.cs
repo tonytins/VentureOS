@@ -737,7 +737,7 @@ public sealed class MainWindowTests : IDisposable
         var (window, equals) = OpenCalculator();
         window.Apply(window.Document!.SetAttribute(equals, "text", "Go"));
 
-        Command(window, "Run", "Run").Run();
+        Command(window, "Run", "Run in Simulation").Run();
         var simulator = window.Simulator!;
         window.Run();
 
@@ -1362,11 +1362,15 @@ public sealed class MainWindowTests : IDisposable
         MainWindow window = new();
         window.Show();
 
-        var app = window.CreateApp("Counter", "dev.example.counter", folder);
+        var project = window.CreateApp("Counter", "dev.example.counter", folder);
 
-        Assert.Equal("Counter.app", window.Bundle!.Name);
-        Assert.Equal(Path.Combine(app, "Contents", "Resources", "main.uix"), window.CurrentFile);
+        // A new app is a project with the app in it, so no .app sits in the folder.
+        Assert.Equal("Counter.rproj", window.Bundle!.Name);
+        Assert.Equal("Counter", window.Project!.Name);
+        Assert.Equal(Path.Combine(project, "App", "Resources", "main.uix"), window.CurrentFile);
         Assert.NotNull(window.Document!.Script!.Control("press"));
+        Assert.False(Directory.Exists(Path.Combine(folder, "Counter.app")));
+        Assert.Equal("main.uix — Counter.rproj", window.FindControl<TextBlock>("DocumentTitle")!.Text);
         Assert.True(Command(window, "File", "New App…").IsEnabled?.Invoke() ?? true);
         window.Close();
     });
@@ -1388,8 +1392,173 @@ public sealed class MainWindowTests : IDisposable
         Assert.Contains("can't have", dialog.Problem);
 
         dialog.AppName = "Dice";
-        Assert.Equal(Path.Combine(folder, "Dice.app"), dialog.Create());
-        Assert.Equal("dev.mine.dice", Venture.OS.Bundles.Bundle.Read(Path.Combine(folder, "Dice.app"), Venture.OS.Bundles.BundleKind.App).Identifier);
+        Assert.Equal(Path.Combine(folder, "Dice.rproj"), dialog.Create());
+        var app = Projects.RoundhouseProject.Open(Path.Combine(folder, "Dice.rproj")).Assemble(Path.Combine(folder, "out"));
+        Assert.Equal("dev.mine.dice", Venture.OS.Bundles.Bundle.Read(app.Replace('\\', '/'), Venture.OS.Bundles.BundleKind.App).Identifier);
+    });
+
+    [Fact]
+    public void ANewProjectIsEmptyAndItsAppIsAddedOnce() => TestApp.Run(() =>
+    {
+        Bundles.NewAppWindow empty = new(folder, withApp: false);
+        empty.Show();
+        empty.AppName = "Dialogs";
+        var root = empty.Create()!;
+        Assert.Equal(["Project.xml"], Directory.GetFileSystemEntries(root).Select(Path.GetFileName));
+
+        MainWindow window = new() { AskToLeave = DontSave };
+        window.Show();
+        window.Open(root);
+        Assert.False(window.Project!.HasApp);
+        Assert.False(Command(window, "File", "Export…").IsEnabled!());
+        Assert.False(Command(window, "Run", "Run on VentureOS").IsEnabled!());
+
+        Bundles.NewAppWindow add = new(window.Project);
+        add.Show();
+        add.AppName = "Dialogs";
+        Assert.Equal(root, add.Create());
+        window.Open(root);
+
+        Assert.True(window.Project.HasApp);
+        Assert.Equal(Path.Combine(root, "App", "Resources", "main.uix"), window.CurrentFile);
+        Assert.True(Command(window, "File", "Export…").IsEnabled!());
+
+        // A project holds one app.
+        Bundles.NewAppWindow again = new(window.Project);
+        again.Show();
+        again.AppName = "Second";
+        Assert.Null(again.Create());
+        Assert.Contains("already has its app", again.Problem);
+        window.Close();
+    });
+
+    [Fact]
+    public void AProjectRunsItsAppAssembledWithItsEditsAndOpensAtTheWindowBeingDesigned() => TestApp.Run(() =>
+    {
+        var (window, project) = OpenCounterProject();
+        window.Text = window.Text.Replace("text=\"Press\"", "text=\"Go\"", StringComparison.Ordinal);
+
+        window.Run();
+        var run = window.Simulator!.Run!;
+
+        // It runs as a user app, from an .app made from the project in a folder of Roundhouse's own, never the project's.
+        var running = Assert.Single(run.Apps.Running, app => app.Bundle.Name == "Counter");
+        Assert.Contains("\"Go\"", File.ReadAllText(run.Disk.HostPath("/mnt/user/apps/Counter.app/Contents/Resources/main.uix")));
+        Assert.DoesNotContain(Directory.GetFileSystemEntries(project), entry => entry.EndsWith(".app", StringComparison.Ordinal));
+        Assert.NotNull(running);
+        Assert.True(Directory.Exists(window.RunCopies));
+        window.StopRun();
+        window.Close();
+        Assert.False(Directory.Exists(window.RunCopies));
+    });
+
+    [Fact]
+    public void ALooseInterfaceInAProjectRunsAsAWindowOfItsOwn() => TestApp.Run(() =>
+    {
+        var (window, project) = OpenCounterProject();
+        var loose = Path.Combine(project, "Interfaces", "open.uix");
+        Directory.CreateDirectory(Path.GetDirectoryName(loose)!);
+        File.WriteAllText(loose, "<UIScript version=\"1\"><Window width=\"200\" height=\"100\"/></UIScript>");
+        window.Open(loose);
+
+        window.Run();
+
+        Assert.Contains(window.Simulator!.Run!.Session.Windows.Windows, shown => shown.Title == "open.uix");
+        window.StopRun();
+        window.Close();
+    });
+
+    [Fact]
+    public void RunOnVentureOSSendsTheProjectsAppAssembled() => TestApp.Run(() =>
+    {
+        var (window, project) = OpenCounterProject();
+        window.VentureOSRunner = () => new Vdb.VentureOSRun(
+            _ => throw new Venture.OS.Vdb.VdbClientException(Venture.OS.Vdb.VdbClientProblem.Connection, "Nothing answered here."),
+            () => "0123456789abcdef0123456789abcdef");
+
+        Assert.True(Command(window, "Run", "Run on VentureOS").IsEnabled!());
+        Assert.True(window.RunOnVentureOS());
+        var run = window.VentureOSRun!;
+        Assert.True(run.Running.Wait(TimeSpan.FromSeconds(10)));
+        Dispatcher.UIThread.RunJobs();
+
+        // What's sent is the app assembled from the project, named as its Info.xml names it, and not made in the project.
+        Assert.Equal("Counter.app on VentureOS", run.Title);
+        Assert.DoesNotContain(Directory.GetFileSystemEntries(project), entry => entry.EndsWith(".app", StringComparison.Ordinal));
+        run.Close();
+        window.Close();
+    });
+
+    [Fact]
+    public void ExportWritesTheAppAndAsksBeforeReplacingOne() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCounterProject();
+        var apps = Path.Combine(folder, "apps");
+        Directory.CreateDirectory(apps);
+        window.Text = window.Text.Replace("text=\"Press\"", "text=\"Go\"", StringComparison.Ordinal);
+        var asked = 0;
+        window.AskToReplace = _ =>
+        {
+            asked++;
+            return Task.FromResult(asked > 1);
+        };
+
+        var app = window.ExportTo(apps).GetAwaiter().GetResult();
+        Assert.Equal(Path.Combine(apps, "Counter.app"), app);
+        Assert.Contains("\"Go\"", File.ReadAllText(Path.Combine(app!, "Contents", "Resources", "main.uix")));
+        Assert.Equal(0, asked);
+
+        Assert.Null(window.ExportTo(apps).GetAwaiter().GetResult());
+        Assert.Equal(app, window.ExportTo(apps).GetAwaiter().GetResult());
+        Assert.Equal(2, asked);
+        window.Close();
+    });
+
+    [Fact]
+    public void AStrayAppIsOfferedAsAProjectAndOneInRootfsIsnt() => TestApp.Run(() =>
+    {
+        var stray = Bundles.AppTemplate.Create("Dice", "dev.example.dice", folder);
+        MainWindow window = new() { AskToLeave = DontSave, AskToMakeProject = _ => Task.FromResult(true) };
+        window.Show();
+
+        Assert.True(window.OpenAsync(stray).GetAwaiter().GetResult());
+
+        Assert.Equal("Dice.rproj", window.Bundle!.Name);
+        Assert.True(File.Exists(Path.Combine(folder, "Dice.rproj", "App", "Info.xml")));
+        Assert.True(Directory.Exists(stray));
+        Assert.False(MainWindow.IsStrayApp(Path.Combine(SkiaPainterTests.RepositoryRoot(), "rootfs", "user", "apps", "Calculator.app")));
+        Assert.Contains(window.Recent, item => item.Path == Path.Combine(folder, "Dice.rproj"));
+        window.Close();
+    });
+
+    [Fact]
+    public void AProjectRoundhouseCantReadLeavesWhatsOpen() => TestApp.Run(() =>
+    {
+        var (window, project) = OpenCounterProject();
+        var newer = Path.Combine(folder, "Newer.rproj");
+        Directory.CreateDirectory(newer);
+        File.WriteAllText(Path.Combine(newer, "Project.xml"), "<Project version=\"9\"><Info name=\"Newer\"/></Project>");
+
+        window.Open(newer);
+
+        Assert.Equal(project, window.Bundle!.Root);
+        Assert.Contains("needs a newer Roundhouse", window.Status);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheRunButtonOffersBothPlacesToRun() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCounterProject();
+        var button = window.FindControl<Button>("RunButton")!;
+
+        Assert.Equal("▶ Run ▾", button.Content);
+        Assert.Equal(["Run in Simulation", "Run on VentureOS"],
+            Menus.AppMenu.Find(window.Menus, "Run", "Run in Simulation") is { } simulation && Menus.AppMenu.Find(window.Menus, "Run", "Run on VentureOS") is { } venture
+                ? [simulation.Title, venture.Title] : (string[])[]);
+        Assert.Equal(new Avalonia.Input.KeyGesture(Avalonia.Input.Key.R, Avalonia.Input.KeyModifiers.Control | Avalonia.Input.KeyModifiers.Alt),
+            Menus.AppMenu.Find(window.Menus, "Run", "Run on VentureOS")!.Gesture);
+        window.Close();
     });
 
     [Fact]
@@ -1523,11 +1692,22 @@ public sealed class MainWindowTests : IDisposable
 
         prepare?.Invoke(app);
 
-        MainWindow window = new() { AskToLeave = DontSave };
+        // The copy is outside VentureOS's rootfs, a stray; tests that want the offer of a project answer it themselves.
+        MainWindow window = new() { AskToLeave = DontSave, AskToMakeProject = _ => Task.FromResult(false) };
         window.Show();
         window.Open(app);
         Dispatcher.UIThread.RunJobs();
         return (window, app);
+    }
+
+    /// <summary>Makes a project with Counter's app from the template, and opens it.</summary>
+    private (MainWindow Window, string Project) OpenCounterProject()
+    {
+        MainWindow window = new() { AskToLeave = DontSave };
+        window.Show();
+        var project = window.CreateApp("Counter", "dev.example.counter", folder);
+        Dispatcher.UIThread.RunJobs();
+        return (window, project);
     }
 
     /// <summary>Lets timers that wait for a pause in typing run, as the window's own thread would.</summary>

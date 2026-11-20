@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.602
+
+- Roundhouse has projects: a `.rproj` folder holds an app (in `App/`) and its interfaces (in `Interfaces/`) while you work on them, so a work-in-progress `.app` no longer sits in your Documents. Roundhouse makes the `.app` only to run it, and File ▸ Export… writes it where you choose, such as `rootfs/user/apps/`.
+- File ▸ New has New App, which makes a project with its app (or adds the app to the open project), and New Project, which makes an empty one.
+- Opening an `.app` outside VentureOS's `rootfs/` offers to make a project from it; File ▸ Open as Project… does the same. The `.app` is left as it was.
+- The Run button is a drop-down of Run in Simulation (Ctrl+R) and Run on VentureOS (Ctrl+Alt+R), which also runs a project's app.
+- Roundhouse remembers the projects, apps, and interfaces you open, for the welcome window to come.
+
 ## 0.7.504
 
 - Roundhouse highlights string tables (`.cst`): keys, values, placeholders such as `%d`, references, and comments each in their own color.

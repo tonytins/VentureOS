@@ -49,6 +49,12 @@ public sealed class RoundhouseSettings
     public static string DefaultPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Roundhouse", "settings.xml");
 
+    /// <summary>
+    /// Where this Roundhouse keeps its settings: <see cref="DefaultPath"/>, unless something else, such as the tests,
+    /// gives it another, so it never writes the person's own.
+    /// </summary>
+    public static string Location { get; set; } = DefaultPath;
+
     /// <summary>Whether the welcome window shows when Roundhouse starts with nothing named.</summary>
     public bool ShowAtStartup { get; set; } = true;
 

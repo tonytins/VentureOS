@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,983 tests, and 250 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,983 tests, and 258 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1091,15 +1091,34 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   re-reads it a moment after typing stops, and a form change goes into the
   text as the change alone, so Undo takes it back. An `Info.xml` VentureOS
   refuses shows why in the form's place, over its text.
-- **New App** (`AppTemplate`, `NewAppWindow`) copies the window-app
-  template beside Roundhouse (`Templates/WindowApp`: `Info.xml`, a
-  `main.lua` that opens `main.uix`, and a window with a label and a button
-  that counts presses, the app guide's window example) into `Name.app`,
-  writing the name and identifier into it (as values in XML, and only in a
-  comment in Lua), then reads it with `Bundle.Read`; one VentureOS refuses
-  is removed, with the reason. A name must make a folder on any system. The
-  dialog suggests `dev.example.<name>` and the repository's user apps while
-  Roundhouse runs from source, or the computer's documents otherwise.
+- **Projects** (0.7.6xx, [design](./design/2026-11-20-roundhouse-projects-design.md)):
+  a Roundhouse Project (`RoundhouseProject`, a `.rproj` folder) is where an
+  app and its interfaces live while they're made: `Project.xml` (a version
+  and a name), an optional `App/` laid out as a bundle's `Contents/`, and
+  `Interfaces/` for loose `.uix` files. Only Roundhouse reads one. It opens
+  as a bundle does (`OpenBundle` takes `.rproj` too), at its app's first
+  interface; one Roundhouse can't read, such as a newer version, is refused
+  and what was open stays. Its app becomes an `.app` only to run or export
+  (`RoundhouseProject.Assemble`: `App/` copied to `Name.app/Contents/`,
+  named by `App/Info.xml`, unsaved edits written in, checked by
+  `Bundle.Read`), so an `.app` only appears where something runs it.
+  File ▸ Export… writes it where you choose, asking before replacing one.
+  Opening an `.app` outside any `rootfs/` offers to make it a project
+  beside it (`RoundhouseProject.FromApp`), as File ▸ Open as Project…
+  does; the `.app` is left as it was. Opened projects, apps, and loose
+  interfaces are kept as recent items (`RoundhouseSettings`, in
+  `settings.xml` in Roundhouse's per-user folder).
+- **New** (File ▸ New): New App (`AppTemplate`, `NewAppWindow`) copies the
+  window-app template beside Roundhouse (`Templates/WindowApp`: `Info.xml`,
+  a `main.lua` that opens `main.uix`, and a window with a label and a button
+  that counts presses, the app guide's window example) into a project's
+  `App/`, writing the name and identifier into it (as values in XML, and
+  only in a comment in Lua), then assembles it once to check it as
+  VentureOS reads apps; one VentureOS refuses is removed, with the reason.
+  With a project open, it adds the project's app, which a project holds
+  one of; with none, it makes a project with its app. New Project makes an
+  empty one. A name must make a folder on any system. The dialog suggests
+  `dev.example.<name>` and the computer's documents.
 - **Run** (0.6.4xx) opens VentureOS in its own window
   (`SimulatorWindow`, 1024x768, the kernel's screen) beside the designer.
   Each run starts from a fresh copy of `rootfs/` (`SimulatedDisk`), laid
@@ -1126,8 +1145,14 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   puts them in place only while it works (`SimulatedRun.Within`). Run
   folders carry Roundhouse's process ID, and a new run deletes those whose
   process has ended.
+- **Run's button** is a drop-down, "▶ Run ▾", of Run in Simulation
+  (Ctrl+R) and Run on VentureOS (Ctrl+Alt+R), as the Run menu has them. A
+  project's app runs from an `.app` assembled in a folder of the window's
+  own (`MainWindow.RunCopies`), deleted when the window closes, opening at
+  the window being designed; a loose interface in a project runs as a
+  window of its own.
 - **Run on VentureOS** (0.7.4xx, Ctrl+Alt+R) sends the app the open file
-  is in to a running VentureOS over vdb, as `vdb install --launch` does, with
+  is in, or the open project's, to a running VentureOS over vdb, as `vdb install --launch` does, with
   the editor's unsaved text in place of what's saved, and shows what it
   prints in a window of its own (`VentureOSRunWindow`) until Stop or the
   window closes. `VentureOSRun` does the work on a thread of its own, apart
@@ -1753,6 +1778,7 @@ in the clear (2026-11-11).
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
+| 2026-11-20 | minor | Roundhouse (§9): projects open, run, and export; File ▸ New makes projects; stray `.app`s are offered as projects; Run is a drop-down; recent items are kept. |
 | 2026-11-20 | minor | Layout (§2): Roundhouse's `Projects/` (`RoundhouseProject`: `.rproj` projects and assembling their `.app`) and `Welcome/` (`RoundhouseSettings`), not yet in its windows. |
 | 2026-11-20 | minor | Roundhouse (§9): `.cst` tables highlighted (`Grammars`), checked as VentureOS reads them (`StringTables.Check`), and drawn in the designer from their unsaved text (`StringTables`' reader). |
 | 2026-11-20 | minor | Apps (§9): `venture.cst.get` and `format`, and `window:string`, give apps' text from Lua, placeholders filled (`CstLibrary`); Files' item count comes from its table. |

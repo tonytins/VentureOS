@@ -22,6 +22,9 @@ public static class TestApp
     public static AppBuilder BuildAvaloniaApp()
     {
         Logging.RoundhouseLog.Configure(null);
+
+        // Recent items go to a file of the tests' own, never the person's.
+        Welcome.RoundhouseSettings.Location = Path.Combine(Path.GetTempPath(), $"roundhouse-tests-{Environment.ProcessId}", "settings.xml");
         return AppBuilder.Configure<App>()
             .UseSkia()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });

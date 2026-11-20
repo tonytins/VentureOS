@@ -128,7 +128,7 @@
                      HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
         </StackPanel>
         <StackPanel x:Name="EndItems" Orientation="Horizontal" Spacing="2">
-          <Button x:Name="RunButton" Classes="bar" Content="▶ Run" Click="OnRunClicked" ToolTip.Tip="Run in VentureOS (Ctrl+R)"/>
+          <Button x:Name="RunButton" Classes="bar" Content="▶ Run ▾" Click="OnRunClicked" ToolTip.Tip="Run in Simulation (Ctrl+R) or on VentureOS (Ctrl+Alt+R)"/>
           <ToggleButton x:Name="ZoomToggle" Classes="bar" Content="2×" IsCheckedChanged="OnZoomChanged"
                         ToolTip.Tip="Twice the size (Ctrl+=)"/>
           <ToggleButton x:Name="TextToggle" Classes="bar" Content="Text" IsChecked="True" IsCheckedChanged="OnTextToggled"

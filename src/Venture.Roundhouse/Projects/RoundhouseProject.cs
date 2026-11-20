@@ -102,6 +102,39 @@ public sealed class RoundhouseProject
         return new RoundhouseProject(root, ReadName(document, label));
     }
 
+    /// <summary>
+    /// Makes a project from an <c>.app</c>, beside it and named after it: its <c>Contents/</c> copied to the project's
+    /// <c>App/</c>, so a stray app becomes work in progress. The <c>.app</c> is left as it was.
+    /// </summary>
+    /// <exception cref="ProjectException">It isn't an app with <c>Contents/</c>, or there's already a project of its name there.</exception>
+    /// <exception cref="IOException">It couldn't be written; what was written is removed.</exception>
+    public static RoundhouseProject FromApp(string app)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(app);
+        app = Path.TrimEndingDirectorySeparator(Path.GetFullPath(app));
+        var contents = Path.Combine(app, "Contents");
+        if (!app.EndsWith(Bundle.Extension(BundleKind.App), StringComparison.OrdinalIgnoreCase) || !Directory.Exists(contents))
+            throw new ProjectException($"{Path.GetFileName(app)} isn't an app with Contents/, so there's nothing to make a project from.");
+
+        var project = Create(Path.GetFileNameWithoutExtension(app), Path.GetDirectoryName(app)!);
+        try
+        {
+            foreach (var source in Directory.EnumerateFiles(contents, "*", SearchOption.AllDirectories))
+            {
+                var target = Path.Combine(project.AppFolder, Path.GetRelativePath(contents, source));
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.Copy(source, target);
+            }
+
+            return project;
+        }
+        catch
+        {
+            Directory.Delete(project.Root, recursive: true);
+            throw;
+        }
+    }
+
     /// <summary>Makes an empty project, <c>Name.rproj</c> with only its <c>Project.xml</c>, in <paramref name="folder"/>.</summary>
     /// <exception cref="ProjectException">The name can't be a project's, or there's already something of that name there.</exception>
     /// <exception cref="IOException">It couldn't be written; what was written is removed.</exception>
@@ -217,6 +250,14 @@ public sealed class RoundhouseProject
             throw;
         }
     }
+
+    /// <summary>
+    /// The name of the <c>.app</c> <see cref="Assemble"/> makes, such as <c>Dice.app</c>, from <c>App/Info.xml</c> with
+    /// <paramref name="edits"/>, so a caller can ask before replacing one.
+    /// </summary>
+    /// <exception cref="ProjectException">The app's <c>Info.xml</c> has no usable name.</exception>
+    public string AppFolderName(IReadOnlyDictionary<string, string>? edits = null) =>
+        AppName(edits ?? new Dictionary<string, string>()) + Bundle.Extension(BundleKind.App);
 
     // The app's name, from its Info.xml as edited, which names the .app it's assembled into.
     private string AppName(IReadOnlyDictionary<string, string> edits)
