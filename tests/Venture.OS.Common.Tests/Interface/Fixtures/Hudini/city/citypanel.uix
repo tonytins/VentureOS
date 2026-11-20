@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The city panel. Its title is the city's name, edited in place, and its toolbar items are tabs
+     that show the stats or the notes. -->
+<UIScript version="1">
+  <Window width="300" height="180"/>
+
+  <TitleField name="cityName" placeholder="Name your city"/>
+  <ToolbarItem name="statsTab" title="Stats"/>
+  <ToolbarItem name="notesTab" title="Notes"/>
+
+  <Style name="label" textColor="accent"/>
+  <Style name="figure" textColor="text"/>
+
+  <Text name="foundedLabel" x="12" y="14" width="120" height="14" style="label" text="Founded"/>
+  <Text name="founded" x="140" y="14" width="148" height="14" style="figure"/>
+  <Text name="populationLabel" x="12" y="38" width="120" height="14" style="label" text="Population"/>
+  <Text name="population" x="140" y="38" width="148" height="14" style="figure"/>
+  <Text name="zonesLabel" x="12" y="62" width="120" height="14" style="label" text="Zoned tiles"/>
+  <Text name="zones" x="140" y="62" width="148" height="14" style="figure"/>
+  <Text name="roadsLabel" x="12" y="86" width="120" height="14" style="label" text="Road tiles"/>
+  <Text name="roads" x="140" y="86" width="148" height="14" style="figure"/>
+
+  <TextArea name="notes" x="8" y="8" width="284" height="164" placeholder="Notes about this city"/>
+</UIScript>

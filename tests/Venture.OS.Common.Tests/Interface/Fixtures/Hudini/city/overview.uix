@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The overview, a HUD panel along the map's top right: a minimap the host draws into, and buttons
+     that open the city's windows. -->
+<UIScript version="1">
+  <Window width="208" height="182"/>
+
+  <Region name="minimap" x="8" y="8" width="192" height="135"/>
+  <Button name="openCity" x="8" y="152" width="60" height="22" text="City"/>
+  <Button name="openDemand" x="72" y="152" width="64" height="22" text="Demand"/>
+  <Button name="openHelp" x="140" y="152" width="60" height="22" text="Help"/>
+</UIScript>

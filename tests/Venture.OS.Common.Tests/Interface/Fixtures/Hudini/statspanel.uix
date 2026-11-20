@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- An original property statistics panel. The demo host supplies each score. -->
 <UIScript version="1">
-  <Window width="1024" height="160"/>
+  <Panel width="1024" height="160" edge="bottom"/>
 
   <String name="title" table="DemoText:2" index="1"/>
   <String name="gardenText" table="DemoText:2" index="2"/>

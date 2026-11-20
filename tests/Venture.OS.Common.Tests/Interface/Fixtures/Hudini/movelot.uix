@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- An original window for moving to another lot, drawn in a WindowFrame with no close button.
-     The demo host owns the lots and what the key means. -->
+     Its title finds lots by name, and All shows every lot again. The demo host owns the lots and
+     what the key means. -->
 <UIScript version="1">
   <Window width="300" height="190"/>
+
+  <TitleField name="lotSearch" placeholder="Find a lot"/>
+  <ToolbarItem name="showAll" title="All"/>
 
   <String name="pickText" table="DemoText:6" index="2"/>
   <String name="keyText" table="DemoText:6" index="3"/>

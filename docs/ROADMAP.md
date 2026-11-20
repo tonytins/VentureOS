@@ -280,14 +280,16 @@ CST.NET's `CSTLayers` takes them, upstream.
 - [ ] Roundhouse: highlighting `.cst` files, their problems in the Log, and
   the designer redrawing when a table changes.
 
-**0.7.6xx, UIScript 2**
+**0.7.6xx, nesting**
 
-UIScript `version="2"`, which nests: a `<Window>` holds its controls, a
-`<Sidebar>` its `<Pane>`s and each pane its controls, and a `<Menu>` its
-items and submenus. VentureOS reads version 1, Hudini's flat form, and
-version 2, nested only; Hudini refuses version 2 until it takes the draft.
-The shipped apps move to version 2, and `FlatXml`, `UIDocument`, and
-Roundhouse's designer learn to nest. Not yet planned in detail.
+UIScript nesting, as Hudini's spec settled it on 2026-11-20: a module's
+elements may nest, core elements stay flat, and `version` stays `1`. Menus
+nest as Hudini's `menus` module has them, a `<Menu>` holding its items,
+separators, and submenus, so VentureOS reads every document Hudini does
+again; and the `panes` draft lets a `<Pane>` hold its controls. A
+`<Window>`'s controls stay flat. The shipped apps move to the nested forms,
+and `FlatXml`, `UIDocument`, and Roundhouse's designer learn to nest. Not yet
+planned in detail.
 
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer
@@ -313,8 +315,8 @@ Worth doing someday, in no order, and not yet given a release.
 - **Windows:** resizing Terminal; collapsing a sidebar in a narrow window.
 - **Lua:** the clipboard for apps.
 - **ARM64:** booting it under QEMU, not only building it.
-- **Hudini:** adopting VentureOS's UIScript drafts (menus, sidebars, and
-  styles) in its own spec.
+- **Hudini:** adopting VentureOS's remaining UIScript drafts (the title
+  bar's additions, panes, and the shelf) in its own spec.
 
 ## Risks
 
@@ -334,6 +336,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | 0.7.6xx is nesting, Hudini's way, not UIScript 2, by my decision: Hudini's spec now nests modules' elements with no new `version`, and keeps core elements, such as a window's controls, flat. 0.7.5xx catches up with the spec first: Hudini's current examples, and panels' `minWidth` and `minHeight`. |
 | 2026-11-19 | minor | 0.7.5xx, the CST specification, begins, by my decision, with layers: apps' tables below 100 over the system's shared ones from 100. 0.7.6xx, UIScript 2, nested and refused by Hudini until it follows, comes after. |
 | 2026-11-19 | patch | 0.7.4xx: CST.NET 2.1 (`CSTNet` 2.1.200) replaces the transitional CST reader, by my decision, and leaves Ideas. `Venture.OS.Interface` may reference it. |
 | 2026-11-19 | minor | 0.7.4xx is complete: Roundhouse runs the app it has open on VentureOS over vdb, with Common's client. The next band is the owner's to plan. |

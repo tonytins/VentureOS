@@ -1,5 +1,10 @@
 # UIScript panels (draft)
 
+> **Adopted.** Hudini took this draft into its spec's core on 2026-11-20, and added `minWidth` and `minHeight`, for a
+> panel stretched across the screen, which VentureOS reads as a window's. Hudini's
+> [spec](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md#panel) is now the reference; this draft is kept
+> as a record of how VentureOS first built it. See [UIScript in VentureOS](./README.md).
+
 This is a draft addition to [Hudini's UIScript spec](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md),
 beside the **Window** section. VentureOS reads it first, since 0.7.3xx, and as its own element since 0.7.4xx; it's
 written as a section of the spec so it can move there once it settles.

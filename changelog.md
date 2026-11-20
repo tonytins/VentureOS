@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.501
+
+- A `<Panel>` can have a smallest size, `minWidth` and `minHeight`, as a window can, now that Hudini's UIScript has panels in its core. Before, VentureOS ignored them.
+
 ## 0.7.500
 
 - Apps can use VentureOS's shared words: tables numbered 100 and up come from `/mnt/system/strings`, beside an app's own tables, which are numbered below 100. Table 100 holds OK, Cancel, Save, Don't Save, Open, Close, and Delete, so `<String table="100" index="1"/>` reads "OK".

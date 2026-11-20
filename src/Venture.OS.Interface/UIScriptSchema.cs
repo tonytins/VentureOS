@@ -154,6 +154,8 @@ public static class UIScriptSchema
         [
             new("width", UIAttributeGroup.Frame, UIAttributeKind.Number, IsRequired: true),
             new("height", UIAttributeGroup.Frame, UIAttributeKind.Number, IsRequired: true),
+            new("minWidth", UIAttributeGroup.Frame, UIAttributeKind.Number),
+            new("minHeight", UIAttributeGroup.Frame, UIAttributeKind.Number),
             new("edge", UIAttributeGroup.Frame, UIAttributeKind.Choice, IsRequired: true, Choices: ["top", "bottom"]),
         ],
         ["Image"] =

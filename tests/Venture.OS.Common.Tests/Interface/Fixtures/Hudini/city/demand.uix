@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Demand for each zone, a window that stays open beside the map and can be minimized. The host
+     draws the chart into its region, in the bar colors the styles give, rising above the middle
+     line when the city wants more of a zone and falling below it when it has too much. -->
+<UIScript version="1">
+  <Window width="200" height="128"/>
+
+  <Style name="label" textColor="accent"/>
+  <Style name="residential" fillColor="#5FC46A"/>
+  <Style name="commercial" fillColor="#5B9BE0"/>
+  <Style name="industrial" fillColor="#E0C25B"/>
+  <Style name="chart" backgroundColor="#17212A" borderColor="border"/>
+
+  <Region name="chart" x="12" y="10" width="176" height="86"/>
+  <Text name="residentialLabel" x="31" y="104" width="20" height="14" style="label" text="R" alignment="center"/>
+  <Text name="commercialLabel" x="90" y="104" width="20" height="14" style="label" text="C" alignment="center"/>
+  <Text name="industrialLabel" x="149" y="104" width="20" height="14" style="label" text="I" alignment="center"/>
+</UIScript>

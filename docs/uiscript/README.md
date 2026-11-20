@@ -15,8 +15,8 @@ in Hudini, in a plainer form, since each is safe to ignore (see [What VentureOS 
   document, an unknown element refuses it, and an unknown attribute is skipped and listed.
 - **A module of VentureOS's own**, [`shelf`](./shelf.md), drafted for Hudini.
 - **Both of Hudini's modules**, [`menus`](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md#menus) and
-  [`sidebar`](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md#sidebar). Hudini's own reader
-  implements neither yet.
+  [`sidebar`](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md#sidebar), except that menus can't nest
+  yet (see [Not yet](#not-yet)). Hudini's own reader implements neither yet.
 - **VentureOS's additions**, below.
 
 VentureOS's reader is `src/Venture.OS.Interface/UIScript.cs`. Its tests read Hudini's own example documents, so the
@@ -32,7 +32,6 @@ Each of these is an attribute a reader without it skips, giving a plainer but co
 | `subtitle` on `<Window>` | A line under the window's title, in a taller bar | [Title bar](./title-bar.md) |
 | `image` on `<ToolbarItem>` | Shows the item as a symbol in the text's color, its title as hover text | [Title bar](./title-bar.md) |
 | `placement` on `<ToolbarItem>` | Puts the item at the bar's start, after the window's buttons | [Title bar](./title-bar.md) |
-| `<Panel>`, in place of `<Window>` | A panel, pinned to the top or bottom of the screen | [Panels](./panel.md) |
 | `panes`: `<Pane>`, and `pane` on controls | A sidebar's rows as panes, each showing its own controls | [Panes](./panes.md) |
 
 VentureOS also does things as a host that Hudini's spec leaves to each host, such as drawing a button's `image`,
@@ -42,14 +41,20 @@ rows icons and groups, which apps set through `window:setItems` (see [Writing ap
 ## Drafts
 
 - [Title bar](./title-bar.md): `subtitle`, and toolbar items' `image` and `placement`. Not yet in Hudini's spec.
-- [Panels](./panel.md): the `<Panel>` element. Not yet in Hudini's spec.
 - [Panes](./panes.md): the `panes` module, `<Pane>`, and `pane` on controls. Not yet in Hudini's spec.
 - [Shelf](./shelf.md): the `shelf` module and its `<Shelf>` control. Not yet in Hudini's spec.
 - [Menus](./menus.md), [Sidebar](./sidebar.md), and [Styles](./styles.md): VentureOS's drafts of the `menus` and
   `sidebar` modules and of style roles. Hudini took all three into its spec on 2026-11-12, so these are kept as a
   record; Hudini's spec is the reference.
+- [Panels](./panel.md): the `<Panel>` element. Hudini took it into its core on 2026-11-20, adding `minWidth` and
+  `minHeight`, which VentureOS now reads too; kept as a record.
 
 ## Not yet
+
+- **Nested menus.** Since 2026-11-20, Hudini's `menus` module lets a `<Menu>` hold its items, separators, and
+  submenus. VentureOS reads only the flat form, with `menu` on each item, and refuses a nested one, so for now it
+  doesn't read every document Hudini does. Nesting comes in 0.7.6xx, as do panes that hold their controls, following
+  Hudini's rule that only a module's elements nest and core elements, such as a `<Window>`'s controls, stay flat.
 
 - A four-state button image holds normal, pressed, hovered, and disabled pictures, left to right, as Hudini's spec
   says. VentureOS shows the first and shades it for the other states.

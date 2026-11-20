@@ -701,36 +701,38 @@ public sealed class UIScript
     private static UIWindow ReadWindow(Attributes reader)
     {
         UISize size = new(reader.RequiredNumber("width"), reader.RequiredNumber("height"));
-        var minimumWidth = reader.Number("minWidth");
-        var minimumHeight = reader.Number("minHeight");
+        var minimum = ReadMinimum(reader);
         var resizable = reader.Boolean("resizable") ?? false;
         var subtitle = reader.String("subtitle");
-
-        UISize? minimum = (minimumWidth, minimumHeight) switch
-        {
-            (null, null) => null,
-            ({ } width, { } height) => new UISize(width, height),
-            (null, _) => throw reader.Missing("minWidth"),
-            _ => throw reader.Missing("minHeight"),
-        };
         return new UIWindow(size, minimum, resizable, subtitle);
     }
 
+    // minWidth and minHeight, which a window and a panel take alike: both or neither.
+    private static UISize? ReadMinimum(Attributes reader) => (reader.Number("minWidth"), reader.Number("minHeight")) switch
+    {
+        (null, null) => null,
+        ({ } width, { } height) => new UISize(width, height),
+        (null, _) => throw reader.Missing("minWidth"),
+        _ => throw reader.Missing("minHeight"),
+    };
+
     /// <summary>
-    /// A panel: a size and the edge it's pinned to, and nothing a title bar or resizing would need, so a panel can't
-    /// say them. An edge this reader doesn't know is refused rather than guessed, so a panel never lands where it
+    /// A panel: a size, the smallest it lays out at, and the edge it's pinned to, and nothing a title bar or resizing
+    /// would need, so a panel can't say them. A panel stretched across the screen uses its minimum so its anchored
+    /// controls don't run into each other on a narrow one. An edge this reader doesn't know is refused rather than guessed, so a panel never lands where it
     /// wasn't meant to.
     /// </summary>
     private static UIWindow ReadPanel(Attributes reader, int line)
     {
         UISize size = new(reader.RequiredNumber("width"), reader.RequiredNumber("height"));
+        var minimum = ReadMinimum(reader);
         var edge = reader.RequiredString("edge") switch
         {
             "top" => UIEdge.Top,
             "bottom" => UIEdge.Bottom,
             var other => throw new UIScriptException($"A panel's edge is top or bottom, not \"{other}\".", line),
         };
-        return new UIWindow(size, null, Role: UIWindowRole.Panel, Edge: edge);
+        return new UIWindow(size, minimum, Role: UIWindowRole.Panel, Edge: edge);
     }
 
     private static UIFrame ReadFrame(Attributes reader)

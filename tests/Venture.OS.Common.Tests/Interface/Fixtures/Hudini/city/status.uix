@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The status bar, a panel along the screen's bottom. The host stretches it to the screen's width,
+     never below minWidth, and its controls follow by their edge offsets. The host draws the news
+     ticker into its region. -->
+<UIScript version="1">
+  <Panel width="1024" height="48" minWidth="640" minHeight="48" edge="bottom"/>
+
+  <Style name="status" textColor="accent"/>
+  <Style name="funds" textColor="#7EE08A" fontSize="14"/>
+  <Style name="speed" textColor="text" selectedTextColor="accent" highlightedTextColor="#FFFFFF"/>
+
+  <Button name="pause" x="8" y="4" width="28" height="20" style="speed" text="||"/>
+  <Button name="normal" x="38" y="4" width="28" height="20" style="speed" text="&gt;"/>
+  <Button name="fast" x="68" y="4" width="34" height="20" style="speed" text="&gt;&gt;"/>
+  <Text name="date" x="112" y="7" width="80" height="14" style="status"/>
+  <Text name="cityName" x="196" y="7" width="200" height="14" style="status"/>
+  <Button name="funds" x="400" y="4" width="120" height="20" style="funds"/>
+  <Text name="population" x="530" y="7" width="160" height="14" style="status"/>
+  <Text name="state" x="0" y="7" width="120" height="14" style="status" edgeOffsetRight="8"/>
+  <Region name="ticker" x="8" y="28" width="1008" height="16" edgeOffsetLeft="8" edgeOffsetRight="8"/>
+</UIScript>

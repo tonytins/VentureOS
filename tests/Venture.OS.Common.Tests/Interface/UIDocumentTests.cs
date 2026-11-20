@@ -23,8 +23,9 @@ public sealed class UIDocumentTests : IDisposable
     {
         var documents = DocumentFiles();
 
-        Assert.Equal(5, documents.Count(file => file.EndsWith(".xml", StringComparison.Ordinal)));
-        Assert.True(documents.Count(file => file.EndsWith(".uix", StringComparison.Ordinal)) >= 8);
+        var hudini = documents.Count(file => file.StartsWith(Path.Combine("Interface", "Fixtures", "Hudini"), StringComparison.Ordinal));
+        Assert.Equal(14, hudini);
+        Assert.True(documents.Count - hudini >= 8);
     }
 
     [Theory]
@@ -141,7 +142,7 @@ public sealed class UIDocumentTests : IDisposable
     private static List<string> DocumentFiles()
     {
         var root = AppContext.BaseDirectory;
-        List<string> files = [.. Directory.EnumerateFiles(Path.Combine(root, "Interface", "Fixtures", "Hudini"), "*.xml")];
+        List<string> files = [.. Directory.EnumerateFiles(Path.Combine(root, "Interface", "Fixtures", "Hudini"), "*.uix", SearchOption.AllDirectories)];
         foreach (var top in new[] { "system", "user" })
             files.AddRange(Directory.EnumerateFiles(Path.Combine(root, top), "*.uix", SearchOption.AllDirectories));
 

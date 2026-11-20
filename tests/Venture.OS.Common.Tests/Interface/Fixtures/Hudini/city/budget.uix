@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The budget, a modal window that pauses the city while it's open. Reset asks first, in a
+     confirm window stacked on top. -->
+<UIScript version="1">
+  <Window width="320" height="214"/>
+
+  <Style name="label" textColor="accent"/>
+  <Style name="figure" textColor="text"/>
+
+  <Text name="taxLabel" x="12" y="14" width="90" height="14" style="label" text="Tax rate"/>
+  <Slider name="tax" x="110" y="14" width="150" height="14" maxValue="20"/>
+  <Text name="taxValue" x="268" y="14" width="44" height="14" style="figure"/>
+
+  <Text name="roadsLabel" x="12" y="40" width="90" height="14" style="label" text="Roads"/>
+  <Slider name="roads" x="110" y="40" width="150" height="14" maxValue="100"/>
+  <Text name="roadsValue" x="268" y="40" width="44" height="14" style="figure"/>
+
+  <Text name="parksLabel" x="12" y="66" width="90" height="14" style="label" text="Parks"/>
+  <Slider name="parks" x="110" y="66" width="150" height="14" maxValue="100"/>
+  <Text name="parksValue" x="268" y="66" width="44" height="14" style="figure"/>
+
+  <Text name="income" x="12" y="98" width="296" height="14" style="figure"/>
+  <Text name="upkeep" x="12" y="118" width="296" height="14" style="figure"/>
+  <Text name="balance" x="12" y="138" width="296" height="14" style="label"/>
+
+  <Button name="reset" x="12" y="176" width="90" height="26" text="Reset"/>
+  <Button name="done" x="218" y="176" width="90" height="26" text="Done"/>
+</UIScript>

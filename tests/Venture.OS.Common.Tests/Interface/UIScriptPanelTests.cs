@@ -66,8 +66,27 @@ public sealed class UIScriptPanelTests
 
         Assert.False(script.Window.IsResizable);
         Assert.Null(script.Window.Subtitle);
-        Assert.Null(script.Window.MinimumSize);
-        Assert.Equal(["minHeight", "minWidth", "resizable", "subtitle"], script.IgnoredAttributes.Select(ignored => ignored.Attribute).Order(StringComparer.Ordinal));
+        Assert.Equal(["resizable", "subtitle"], script.IgnoredAttributes.Select(ignored => ignored.Attribute).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void APanelTakesAMinimumAsAWindowDoes()
+    {
+        // Hudini's spec, 2026-11-20: a panel stretched across the screen keeps its anchored controls apart.
+        var script = UIScript.Parse("""<UIScript><Panel width="300" height="72" edge="bottom" minWidth="200" minHeight="72"/></UIScript>""");
+
+        Assert.Equal(new UISize(200, 72), script.Window.MinimumSize);
+        Assert.Empty(script.IgnoredAttributes);
+    }
+
+    [Theory]
+    [InlineData("""<Panel width="300" height="72" minWidth="200" edge="bottom"/>""", "minHeight")]
+    [InlineData("""<Panel width="300" height="72" minWidth="400" minHeight="72" edge="bottom"/>""", "minWidth and minHeight")]
+    public void RefusesAPanelsBadMinimum(string panel, string message)
+    {
+        var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse($"<UIScript>{panel}</UIScript>"));
+
+        Assert.Contains(message, problem.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -6,12 +6,17 @@ public sealed class UIScriptTests
 {
     private static readonly string Fixtures = Path.Combine(AppContext.BaseDirectory, "Interface", "Fixtures", "Hudini");
 
+    /// <summary>Every example copied from Hudini, so a refresh that adds one tests it too.</summary>
+    public static TheoryData<string> HudiniExamples()
+    {
+        TheoryData<string> files = [];
+        foreach (var file in Directory.EnumerateFiles(Fixtures, "*.uix", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+            files.Add(Path.GetRelativePath(Fixtures, file));
+        return files;
+    }
+
     [Theory]
-    [InlineData("chatdialog.xml")]
-    [InlineData("livepanel1024.xml")]
-    [InlineData("movelot.xml")]
-    [InlineData("optionspanel.xml")]
-    [InlineData("statspanel.xml")]
+    [MemberData(nameof(HudiniExamples))]
     public void ReadsEveryHudiniExample(string file)
     {
         var script = UIScript.Load(Path.Combine(Fixtures, file));
@@ -22,9 +27,20 @@ public sealed class UIScriptTests
     }
 
     [Fact]
+    public void ReadsAPanelsMinimumAsHudiniDoes()
+    {
+        var script = UIScript.Load(Path.Combine(Fixtures, "city", "status.uix"));
+
+        Assert.Equal(UIWindowRole.Panel, script.Window.Role);
+        Assert.Equal(UIEdge.Bottom, script.Window.Edge);
+        Assert.Equal(new UISize(1024, 48), script.Window.Size);
+        Assert.Equal(new UISize(640, 48), script.Window.MinimumSize);
+    }
+
+    [Fact]
     public void ReadsTheChatDialogAsHudiniDoes()
     {
-        var script = UIScript.Load(Path.Combine(Fixtures, "chatdialog.xml"));
+        var script = UIScript.Load(Path.Combine(Fixtures, "chatdialog.uix"));
 
         Assert.Equal(new UISize(400, 255), script.Window.Size);
         Assert.Equal(new UISize(350, 196), script.Window.MinimumSize);

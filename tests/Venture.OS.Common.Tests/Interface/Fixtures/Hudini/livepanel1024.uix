@@ -6,8 +6,8 @@
   image.
 -->
 <UIScript version="1">
-  <!-- The reference declares no window size. This is the smallest that holds the controls. -->
-  <Window width="1024" height="160"/>
+  <!-- The reference declares no size. This is the smallest that holds the controls. -->
+  <Panel width="1024" height="160" edge="bottom"/>
 
   <Image name="moodPositive" path="demo/moodPositive"/>
   <Image name="moodNegative" path="demo/moodNegative"/>

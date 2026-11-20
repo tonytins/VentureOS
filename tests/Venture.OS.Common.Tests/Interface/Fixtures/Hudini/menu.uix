@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The demo's opening menu. Each button starts one of the demos. -->
+<UIScript version="1">
+  <Window width="520" height="300"/>
+
+  <Style name="heading" textColor="accent" fontSize="largeTitle"/>
+  <Style name="note" textColor="secondaryText" fontSize="caption"/>
+
+  <Text name="heading" x="20" y="18" width="480" height="24" style="heading" text="Hudini demos"/>
+  <Text name="intro" x="20" y="48" width="480" height="14" style="note"
+        text="Two games' interfaces, built from the same library."/>
+
+  <Button name="simsDemo" x="20" y="80" width="480" height="40" text="The Sims Online style"/>
+  <Text name="simsNote" x="20" y="126" width="480" height="30" style="note"
+        text="A property chat, a control panel that swaps modes, a lemonade stand read from&#10;Maxis' .uis format, and text from CST tables."/>
+
+  <Button name="cityDemo" x="20" y="166" width="480" height="40" text="CityLimits style"/>
+  <Text name="cityNote" x="20" y="212" width="480" height="30" style="note"
+        text="A city map with HUD panels, and windows run by a WindowManager: a modal budget&#10;that pauses the city, a stacked confirm, and windows that minimize to icons."/>
+
+  <Button name="quit" x="400" y="258" width="100" height="28" text="Quit"/>
+</UIScript>
