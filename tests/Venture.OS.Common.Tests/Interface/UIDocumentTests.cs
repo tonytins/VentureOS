@@ -121,6 +121,28 @@ public sealed class UIDocumentTests : IDisposable
     }
 
     [Fact]
+    public void ANestedDocumentOpensForTextEditingWithItsElementsFound()
+    {
+        // Nested menus are the spec's, but this reader doesn't read them yet; the text still maps, for the editor.
+        const string text = """
+            <UIScript>
+              <Window width="100" height="100"/>
+              <Menu name="m" title="M">
+                <MenuItem name="i" title="I"/>
+              </Menu>
+            </UIScript>
+            """;
+
+        var document = UIDocument.Read(text);
+
+        Assert.False(document.IsEditable);
+        Assert.Equal(["Window", "Menu", "MenuItem"], document.Xml!.Children.Select(child => child.Name));
+        Assert.Equal(4, document.Problem!.Line);
+        Assert.Contains("<MenuItem> can't be inside <Menu>", document.Problem.Message, StringComparison.Ordinal);
+        Assert.Throws<UIScriptException>(() => UIScript.Parse(text));
+    }
+
+    [Fact]
     public void TextThatIsntXmlOpensWithTheLineThatsWrong()
     {
         var document = UIDocument.Read("<UIScript>\n  <Window width=\"1\"\n");

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (UIScript spec moves here) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (nested reading) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-20)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,982 tests, and 275 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,009 tests, and 275 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -839,13 +839,24 @@ unknown `requires` feature, or an unknown element refuses the bundle with the
 reason, and an unknown attribute is skipped and listed, to catch typos.
 
 Both `Info.xml` and `.uix` files are read by `FlatXml`, because Cosmos can't
-link `System.Xml` (§1.1). It reads exactly the flat subset they use: an
+link `System.Xml` (§1.1). It reads exactly the subset they use: an
 optional declaration, comments, one root whose elements hold attributes and
 nothing else, the five standard entities, and numeric character references.
-A `DOCTYPE`, text, deeper nesting, CDATA, or an unknown entity is refused
-with its line. Each element also records where it sits in the text
-(`FlatXmlElementSource`): its whole span, the end of its name, where its
-closing tag begins, and each attribute's span, value as written, and quote.
+A caller that allows nesting (`allowNesting`, as `UIScript` and `UIDocument`
+do) also gets elements inside elements, up to `FlatXml.MaximumDepth` (32)
+deep; `Info.xml` and the settings files don't, so nesting stays refused
+there. `Children` stays one list in document order, each element before
+those inside it, with its `Parent` and `Depth`; `FlatXmlDocument.End` and
+`ChildrenOf` recover the structure, and a flat document numbers its
+elements as it always did. A `DOCTYPE`, text, nesting that isn't allowed,
+CDATA, or an unknown entity is refused with its line. Each element also
+records where it sits in the text (`FlatXmlElementSource`): its whole span,
+its children included, the end of its name, where its closing tag begins,
+and each attribute's span, value as written, and quote. `FlatXmlEditor`
+inserts inside a given parent (opening up one written `<Name/>`), and
+removes or moves an element among its siblings with everything inside it.
+Until 0.7.7xx's nested menus, `UIScript` refuses any nested element, so a
+nested document opens in Roundhouse for text editing only.
 
 `UIDocument` is a `.uix` as Roundhouse holds it: the exact text (a byte
 order mark and line endings included, as strict UTF-8), those positions,
@@ -1744,6 +1755,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | Interfaces (§9): `FlatXml` reads nested elements when its caller allows (UIScript, `UIDocument`), with parents, depth, and a 32-level limit; `FlatXmlEditor` inserts inside a parent and moves or removes an element with what's inside it; `UIScript` refuses nesting until nested menus. |
 | 2026-11-20 | minor | UIScript (§9): VentureOS keeps the spec, in `docs/uiscript/`, and Hudini reads a subset of it. Menus, sidebars, shelves, and panes are ordinary elements rather than modules, so they need no `requires`; the old names are accepted and mean nothing, and the designer no longer adds them. |
 | 2026-11-19 | minor | Roundhouse's Run on VentureOS (§8.1, §9): Common's `VdbClient` and `VdbApp`; `VentureOSRun`, its window, `TcpLineTransport`, and the vdb tool's identity file in Roundhouse. |
 | 2026-11-19 | minor | vdb sealed (§8.1): Common's own SHA-256, HMAC, HKDF, and ChaCha20-Poly1305; key IDs, pairing, and sealed lines in vdb/1 on both ends; `VdbRandom` for VentureOS's nonces. |

@@ -311,7 +311,7 @@ stay flat.
 
 - [x] The spec moves from Hudini to `docs/uiscript/`, modules join the
   format, and `requires` keeps its old names, which mean nothing.
-- [ ] Nested reading: `FlatXml`, `FlatXmlEditor`, and `UIDocument` read and
+- [x] Nested reading: `FlatXml`, `FlatXmlEditor`, and `UIDocument` read and
   edit nested elements in place; `Info.xml` stays flat.
 - [ ] Nested menus and submenus in the reader.
 - [ ] Submenus in the desktop's menu bar, and Notes ▸ Sort By.
@@ -365,6 +365,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | patch | 0.7.7xx: nested reading. `FlatXml` reads nested elements for UIScript, and the editor edits them in place; `Info.xml` stays flat. |
 | 2026-11-20 | minor | 0.7.7xx is planned, from its approved design: nested reading, nested menus and submenus, submenus in the menu bar with Notes ▸ Sort By as the first, panes that hold their controls, and a tree outline in Roundhouse. |
 | 2026-11-20 | minor | 0.7.7xx begins, by my decision, with the UIScript spec moving from Hudini to `docs/uiscript/`: VentureOS keeps the format, and Hudini reads a subset. Modules join the format as ordinary elements, which takes away the rule nesting was planned around; menus and panes still nest in this band. |
 | 2026-11-20 | minor | 0.7.6xx is complete: the welcome window, with File ▸ Close to bring it back. The design is marked built, with its corrections. The next band, 0.7.7xx, nesting, is the owner's to plan. |

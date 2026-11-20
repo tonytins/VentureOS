@@ -189,7 +189,7 @@ public sealed class UIScriptTests
     [InlineData("<UIScript><Window width='1' height='1'/><List name='l' x='0' y='0' width='1' height='1'/><Button name='b' x='0' y='0' width='1' height='1' scrolls='l'/></UIScript>", "scrolls or direction")]
     [InlineData("<UIScript><Window width='1' height='1'/><Text name='x' x='0' y='0' width='1' height='1'/><Button name='b' x='0' y='0' width='1' height='1' scrolls='x' direction='up'/></UIScript>", "scrolls or direction")]
     [InlineData("<UIScript><Window width='1' height='1'/><Button name='b' x='0' y='0' width='1' height='1' direction='up'/></UIScript>", "scrolls or direction")]
-    [InlineData("<UIScript><Window width='1' height='1'/><Region name='r' x='0' y='0' width='1' height='1'>text</Region></UIScript>", "can't hold text")]
+    [InlineData("<UIScript><Window width='1' height='1'/><Region name='r' x='0' y='0' width='1' height='1'>text</Region></UIScript>", "Text isn't allowed inside <Region>")]
     [InlineData("<!DOCTYPE x><UIScript/>", "DOCTYPE")]
     public void RefusesWhatHudiniRefuses(string text, string message) =>
         Assert.Contains(message, Assert.Throws<UIScriptException>(() => UIScript.Parse(text)).Message);

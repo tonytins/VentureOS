@@ -433,7 +433,7 @@ public sealed class UIScript
         FlatXmlDocument document;
         try
         {
-            document = FlatXml.Parse(text);
+            document = FlatXml.Parse(text, allowNesting: true);
         }
         catch (FlatXmlException exception)
         {
@@ -493,6 +493,12 @@ public sealed class UIScript
 
         foreach (var element in document.Children)
         {
+            // The spec lets some elements hold others; until this reader reads them, every nested element is refused.
+            if (element.Parent != FlatXmlDocument.RootIndex)
+                throw new UIScriptException(
+                    $"<{element.Name}> can't be inside <{document.Children[element.Parent].Name}>; this VentureOS reads only elements directly inside <UIScript>.",
+                    element.Line);
+
             Attributes reader = new(element);
             switch (element.Name)
             {

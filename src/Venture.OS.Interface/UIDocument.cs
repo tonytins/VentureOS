@@ -34,7 +34,8 @@ public sealed class UIDocument
 
     /// <summary>
     /// The document's elements with where each sits in <see cref="Text"/>, or <see langword="null"/> when the text
-    /// isn't well-formed XML.
+    /// isn't well-formed XML. Its <see cref="FlatXmlDocument.Children"/> are every element in document order, each
+    /// before those inside it, and that order is what every edit's element index counts.
     /// </summary>
     public FlatXmlDocument? Xml { get; }
 
@@ -58,7 +59,7 @@ public sealed class UIDocument
         FlatXmlDocument xml;
         try
         {
-            xml = FlatXml.Parse(text);
+            xml = FlatXml.Parse(text, allowNesting: true);
         }
         catch (FlatXmlException exception)
         {
@@ -107,7 +108,7 @@ public sealed class UIDocument
     /// element's attributes are: on the same line, or each on its own line with the same indentation. Nothing else in
     /// the text changes; a value that already reads as <paramref name="value"/> is left as written.
     /// </summary>
-    /// <param name="element">The element's index among the root's children, or <see cref="Root"/>.</param>
+    /// <param name="element">The element's index in <see cref="Xml"/>'s children, or <see cref="Root"/>.</param>
     /// <returns>The edited document; this one is unchanged.</returns>
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
@@ -120,7 +121,7 @@ public sealed class UIDocument
     /// Removes an attribute and the space before it, leaving the rest of the text as it was. Removing an attribute
     /// the element doesn't have changes nothing.
     /// </summary>
-    /// <param name="element">The element's index among the root's children, or <see cref="Root"/>.</param>
+    /// <param name="element">The element's index in <see cref="Xml"/>'s children, or <see cref="Root"/>.</param>
     /// <returns>The edited document; this one is unchanged.</returns>
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
@@ -130,23 +131,28 @@ public sealed class UIDocument
         Finish(FlatXmlEditor.RemoveAttribute(Text, Editable(), element, name));
 
     /// <summary>
-    /// Adds an element, written as <c>&lt;Name a="1"/&gt;</c>, so it becomes the root's child at
-    /// <paramref name="index"/>: right after the element before it, on a line of its own with the same indentation
-    /// as its neighbours, or on their line when they share one. A comment above the element now after it stays
-    /// with that element.
+    /// Adds an element, written as <c>&lt;Name a="1"/&gt;</c>, inside <paramref name="parent"/> so that its index
+    /// becomes <paramref name="index"/>: right after the element before it, on a line of its own with the same
+    /// indentation as its neighbours, or on their line when they share one. A comment above the element now after it
+    /// stays with that element.
     /// </summary>
-    /// <param name="index">Where the element goes among the root's children, from 0 to their count.</param>
+    /// <param name="index">
+    /// Where the element goes: before one of <paramref name="parent"/>'s elements, by its index, or at
+    /// <see cref="FlatXmlDocument.End"/> of the parent, after them all. Directly inside the root, that's from 0 to
+    /// the count of elements in a document that doesn't nest.
+    /// </param>
+    /// <param name="parent">The element it goes inside, or <see cref="Root"/>.</param>
     /// <returns>The edited document; this one is unchanged.</returns>
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is past the end.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such parent, or <paramref name="index"/> isn't a place inside it.</exception>
     /// <exception cref="ArgumentException">A name isn't one, or an attribute is given twice.</exception>
     /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a second window.</exception>
-    public UIDocument InsertElement(int index, string name, IReadOnlyList<KeyValuePair<string, string>> attributes) =>
-        Finish(FlatXmlEditor.InsertElement(Text, Editable(), index, name, attributes));
+    public UIDocument InsertElement(int index, string name, IReadOnlyList<KeyValuePair<string, string>> attributes, int parent = Root) =>
+        Finish(FlatXmlEditor.InsertElement(Text, Editable(), index, name, attributes, parent));
 
     /// <summary>
-    /// Removes the root's child at <paramref name="index"/> with the comments that describe it (those right above it,
-    /// with no blank line between); one on a line of its own takes the line.
+    /// Removes the element at <paramref name="index"/>, everything inside it, and the comments that describe it (those
+    /// right above it, with no blank line between); one on a line of its own takes the line.
     /// </summary>
     /// <returns>The edited document; this one is unchanged.</returns>
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
@@ -155,13 +161,14 @@ public sealed class UIDocument
     public UIDocument RemoveElement(int index) => Finish(FlatXmlEditor.RemoveElement(Text, Editable(), index));
 
     /// <summary>
-    /// Moves the root's child at <paramref name="from"/> so it's at <paramref name="to"/>, written exactly as it
-    /// was, with the comments that describe it (those right above it, with no blank line between). Later controls
-    /// are drawn over earlier ones, so this changes what's in front.
+    /// Moves the element at <paramref name="from"/> into the place of <paramref name="to"/>, inside the same
+    /// parent, written exactly as it was, with everything inside it and the comments that describe it (those right
+    /// above it, with no blank line between). Later controls are drawn over earlier ones, so this changes what's in
+    /// front.
     /// </summary>
     /// <returns>The edited document; this one is unchanged, and it's returned as is when the element doesn't move.</returns>
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">There's no such element, or no such place.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element, or the two aren't inside the same parent.</exception>
     /// <exception cref="UIScriptException">VentureOS would refuse the result.</exception>
     public UIDocument MoveElement(int from, int to) => Finish(FlatXmlEditor.MoveElement(Text, Editable(), from, to));
 

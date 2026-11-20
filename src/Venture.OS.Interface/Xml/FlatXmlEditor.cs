@@ -8,11 +8,14 @@ namespace Venture.OS.Interface.Xml;
 /// written. Each edit gives new text; whether a format accepts it is the caller's to check, as
 /// <see cref="UIDocument"/> does for UIScript and a bundle's <c>Info.xml</c> document does for bundles.
 /// </summary>
-/// <remarks>Elements are named by their index among the root's children, or <see cref="Root"/>.</remarks>
+/// <remarks>
+/// Elements are named by their index in <see cref="FlatXmlDocument.Children"/>, which is document order with each
+/// element before those inside it, or <see cref="Root"/>. An element is removed or moved with everything inside it.
+/// </remarks>
 public static class FlatXmlEditor
 {
     /// <summary>The root element, wherever an edit takes an element's index.</summary>
-    public const int Root = -1;
+    public const int Root = FlatXmlDocument.RootIndex;
 
     /// <summary>
     /// Sets an attribute, in place if the element has it, or after its last attribute if not, laid out as the
@@ -75,22 +78,34 @@ public static class FlatXmlEditor
     }
 
     /// <summary>
-    /// Adds an element, written as <c>&lt;Name a="1"/&gt;</c>, so it becomes the root's child at
-    /// <paramref name="index"/>: right after the element before it, on a line of its own with the same indentation
-    /// as its neighbours, or on their line when they share one, with the document's own line breaks. A comment
-    /// above the element now after it stays with that element.
+    /// Adds an element, written as <c>&lt;Name a="1"/&gt;</c>, inside <paramref name="parent"/> so that its index
+    /// becomes <paramref name="index"/>: right after the element before it, on a line of its own with the same
+    /// indentation as its neighbours, or on their line when they share one, with the document's own line breaks. A
+    /// comment above the element now after it stays with that element. A parent written as <c>&lt;Name/&gt;</c> is
+    /// opened up to hold it, with its closing tag on a line of its own.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is past the end.</exception>
+    /// <param name="index">
+    /// Where it goes: the index of one of <paramref name="parent"/>'s elements, which it goes before, or the index
+    /// just past the parent's last element (<see cref="FlatXmlDocument.End"/>), to go after them all.
+    /// </param>
+    /// <param name="parent">The element it goes inside, or <see cref="Root"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such parent, or <paramref name="index"/> isn't a place inside it.</exception>
     /// <exception cref="ArgumentException">A name isn't one, or an attribute is given twice.</exception>
     /// <exception cref="InvalidOperationException">The root is written as <c>&lt;Root/&gt;</c>, so it holds nothing.</exception>
     public static string InsertElement(
-        string text, FlatXmlDocument xml, int index, string name, IReadOnlyList<KeyValuePair<string, string>> attributes)
+        string text, FlatXmlDocument xml, int index, string name, IReadOnlyList<KeyValuePair<string, string>> attributes,
+        int parent = Root)
     {
         ArgumentNullException.ThrowIfNull(xml);
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(attributes);
-        if (index < 0 || index > xml.Children.Count)
-            throw new ArgumentOutOfRangeException(nameof(index), index, $"An element goes from 0 to {xml.Children.Count}.");
+        if (parent != Root)
+            CheckChild(xml, parent, nameof(parent));
+        var places = xml.ChildrenOf(parent);
+        if (index != xml.End(parent) && Array.IndexOf(places, index) < 0)
+            throw new ArgumentOutOfRangeException(nameof(index), index, parent == Root
+                ? $"An element goes before one directly inside the root, or at {xml.End(parent)}, after them all."
+                : $"An element inside element {parent} goes before one directly inside it, or at {xml.End(parent)}, after them all.");
         if (!FlatXml.IsName(name))
             throw new ArgumentException($"\"{name}\" isn't an element name.", nameof(name));
 
@@ -107,12 +122,12 @@ public static class FlatXmlEditor
         }
 
         element.Append("/>");
-        return Insert(text, xml, index, element.ToString());
+        return Insert(text, xml, parent, index, element.ToString());
     }
 
     /// <summary>
-    /// Removes the root's child at <paramref name="index"/> with the comments that describe it (those right above it,
-    /// with no blank line between); one on a line of its own takes the line.
+    /// Removes the element at <paramref name="index"/>, everything inside it, and the comments that describe it (those
+    /// right above it, with no blank line between); one on a line of its own takes the line.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
     public static string RemoveElement(string text, FlatXmlDocument xml, int index)
@@ -123,11 +138,13 @@ public static class FlatXmlEditor
     }
 
     /// <summary>
-    /// Moves the root's child at <paramref name="from"/> so it's at <paramref name="to"/>, written exactly as it was,
-    /// with the comments that describe it.
+    /// Moves the element at <paramref name="from"/> into the place of <paramref name="to"/>, another element inside
+    /// the same parent, written exactly as it was, with everything inside it and the comments that describe it.
+    /// Moving back puts it before <paramref name="to"/>, and moving forward after it, so its neighbours keep their
+    /// order, as they would in a list.
     /// </summary>
     /// <returns>The edited text, or <paramref name="text"/> itself when the element doesn't move.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">There's no such element, or no such place.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element, or the two aren't inside the same parent.</exception>
     public static string MoveElement(string text, FlatXmlDocument xml, int from, int to)
     {
         ArgumentNullException.ThrowIfNull(xml);
@@ -135,12 +152,20 @@ public static class FlatXmlEditor
         CheckChild(xml, to, nameof(to));
         if (from == to)
             return text;
+        var parent = xml.Children[from].Parent;
+        if (xml.Children[to].Parent != parent)
+            throw new ArgumentOutOfRangeException(nameof(to), to, $"Element {to} isn't inside the same element as {from}, so it can't take its place.");
 
+        var place = Array.IndexOf(xml.ChildrenOf(parent), to);
         var element = Block(text, xml, from).Of(text);
         var removed = Remove(text, xml, from);
 
-        // The text between the two steps can lack something a format needs, so it's only read as XML.
-        return Insert(removed, FlatXml.Parse(removed), to, element);
+        // The text between the two steps can lack something a format needs, so it's only read as XML. The parent
+        // comes before the element, so its index is the same in both.
+        var between = FlatXml.Parse(removed, allowNesting: true);
+        var siblings = between.ChildrenOf(parent);
+        var index = place < siblings.Length ? siblings[place] : between.End(parent);
+        return Insert(removed, between, parent, index, element);
     }
 
     private static void CheckChild(FlatXmlDocument xml, int index, string parameter)
@@ -165,21 +190,35 @@ public static class FlatXmlEditor
     private static string Replace(string text, FlatXmlSpan span, string replacement) =>
         string.Concat(text.AsSpan(0, span.Start), replacement, text.AsSpan(span.End));
 
-    private static string Insert(string text, FlatXmlDocument xml, int index, string element)
+    /// <summary>Puts <paramref name="element"/>'s text inside <paramref name="parent"/>, before <paramref name="index"/>.</summary>
+    private static string Insert(string text, FlatXmlDocument xml, int parent, int index, string element)
     {
-        var children = xml.Children;
-        var root = xml.Root.Source!;
-        if (root.CloseStart is null)
-            throw new InvalidOperationException($"The root is written as <{xml.Root.Name}/>, so it has nowhere to hold an element.");
+        var holder = parent == Root ? xml.Root : xml.Children[parent];
+        var source = holder.Source!;
+        if (source.CloseStart is null)
+        {
+            if (parent == Root)
+                throw new InvalidOperationException($"The root is written as <{xml.Root.Name}/>, so it has nowhere to hold an element.");
+            return Open(text, holder, element);
+        }
 
-        // The new element follows the one before it, or the root's start tag, and takes its neighbour's layout.
-        var after = index > 0 ? children[index - 1].Source!.Span.End : ContentStart(text, root);
-        var neighbour = index < children.Count ? children[index] : children.Count > 0 ? children[^1] : null;
+        // The new element follows the sibling before it, or the parent's start tag, and takes its neighbour's layout.
+        var siblings = xml.ChildrenOf(parent);
+        var place = index == xml.End(parent) ? siblings.Length : Array.IndexOf(siblings, index);
+        var after = place > 0 ? xml.Children[siblings[place - 1]].Source!.Span.End : ContentStart(text, source);
+        var neighbour = place < siblings.Length ? xml.Children[siblings[place]]
+            : siblings.Length > 0 ? xml.Children[siblings[^1]] : null;
 
         string separator;
+        var closing = "";
         if (neighbour is null)
         {
-            separator = NewLine(text) + LineIndent(text, root.Span.Start, out _) + "  ";
+            var indent = LineIndent(text, source.Span.Start, out _);
+            separator = NewLine(text) + indent + "  ";
+
+            // A parent closed on its own line keeps it; one written as <A></A> gets one, so its closing tag lines up.
+            if (!text.AsSpan(after, source.CloseStart.Value - after).Contains('\n'))
+                closing = NewLine(text) + indent;
         }
         else
         {
@@ -187,7 +226,28 @@ public static class FlatXmlEditor
             separator = ownLine ? NewLine(text) + indent : "";
         }
 
-        return string.Concat(text.AsSpan(0, after), separator, element, text.AsSpan(after));
+        return string.Concat(text[..after], separator, element, closing, text[after..]);
+    }
+
+    /// <summary>
+    /// Opens up an element written as <c>&lt;Name/&gt;</c> to hold <paramref name="element"/>, which goes on a line
+    /// of its own, indented one step further, with the closing tag on the next line.
+    /// </summary>
+    private static string Open(string text, FlatXmlElement holder, string element)
+    {
+        var source = holder.Source!;
+        var slash = source.Span.End - 2;
+
+        // Spaces before "/>" on the same line would be left before ">", so they go.
+        var tagEnd = slash;
+        while (tagEnd > source.NameEnd && text[tagEnd - 1] is ' ' or '\t')
+            tagEnd--;
+        var indent = LineIndent(text, source.Span.Start, out _);
+        var newLine = NewLine(text);
+        return string.Concat(
+            text.AsSpan(0, tagEnd),
+            $">{newLine}{indent}  {element}{newLine}{indent}</{holder.Name}>",
+            text.AsSpan(source.Span.End));
     }
 
     private static string Remove(string text, FlatXmlDocument xml, int index)
@@ -221,7 +281,14 @@ public static class FlatXmlEditor
     private static FlatXmlSpan Block(string text, FlatXmlDocument xml, int index)
     {
         var span = xml.Children[index].Source!.Span;
-        var floor = index > 0 ? xml.Children[index - 1].Source!.Span.End : ContentStart(text, xml.Root.Source!);
+
+        // Comments can only be found back to the sibling before, or the parent's start tag.
+        var parent = xml.Children[index].Parent;
+        var siblings = xml.ChildrenOf(parent);
+        var place = Array.IndexOf(siblings, index);
+        var floor = place > 0
+            ? xml.Children[siblings[place - 1]].Source!.Span.End
+            : ContentStart(text, (parent == Root ? xml.Root : xml.Children[parent]).Source!);
 
         // Between two elements there's only space and comments, as the reader checked, so they're found going forward.
         List<FlatXmlSpan> comments = [];
@@ -247,9 +314,9 @@ public static class FlatXmlEditor
         return new(start, span.End - start);
     }
 
-    /// <summary>Where the root's children begin: just after its start tag.</summary>
-    private static int ContentStart(string text, FlatXmlElementSource root) =>
-        text.IndexOf('>', root.Attributes.Count > 0 ? root.Attributes[^1].Span.End : root.NameEnd) + 1;
+    /// <summary>Where an element's children begin: just after its start tag.</summary>
+    private static int ContentStart(string text, FlatXmlElementSource element) =>
+        text.IndexOf('>', element.Attributes.Count > 0 ? element.Attributes[^1].Span.End : element.NameEnd) + 1;
 
     /// <summary>The spaces and tabs before <paramref name="position"/> on its line, and whether nothing else is.</summary>
     private static string LineIndent(string text, int position, out bool ownLine)

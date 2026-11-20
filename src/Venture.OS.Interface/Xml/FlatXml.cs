@@ -20,9 +20,9 @@ public readonly record struct FlatXmlSpan(int Start, int Length)
 public sealed record FlatXmlAttributeSource(string Name, FlatXmlSpan Span, FlatXmlSpan Value, char Quote);
 
 /// <summary>
-/// Where an element sits in the text: the whole element, from its <c>&lt;</c> through its closing <c>&gt;</c> (and
-/// its children's, for the root), the end of its name, its attributes, and, when it isn't written as
-/// <c>&lt;Name/&gt;</c>, where its closing tag begins.
+/// Where an element sits in the text: the whole element, from its <c>&lt;</c> through its closing <c>&gt;</c>, its
+/// children included, the end of its name, its attributes, and, when it isn't written as <c>&lt;Name/&gt;</c>, where
+/// its closing tag begins.
 /// </summary>
 public sealed record FlatXmlElementSource(
     FlatXmlSpan Span,
@@ -31,13 +31,16 @@ public sealed record FlatXmlElementSource(
     int? CloseStart);
 
 /// <summary>
-/// One element of a <see cref="FlatXml"/> document: a name, its attributes in document order, and its line.
+/// One element of a <see cref="FlatXml"/> document: a name, its attributes in document order, its line, and, in a
+/// nested document, the element it's inside.
 /// </summary>
 public sealed class FlatXmlElement(
     string name,
     IReadOnlyList<KeyValuePair<string, string>> attributes,
     int line,
-    FlatXmlElementSource? source = null)
+    FlatXmlElementSource? source = null,
+    int parent = FlatXmlDocument.RootIndex,
+    int depth = 0)
 {
     /// <summary>The element's name, such as <c>Info</c>.</summary>
     public string Name { get; } = name;
@@ -53,6 +56,15 @@ public sealed class FlatXmlElement(
     /// langword="null"/> for an element that wasn't read from text.
     /// </summary>
     public FlatXmlElementSource? Source { get; } = source;
+
+    /// <summary>
+    /// The index in <see cref="FlatXmlDocument.Children"/> of the element this one is inside, or
+    /// <see cref="FlatXmlDocument.RootIndex"/> when it's directly inside the root.
+    /// </summary>
+    public int Parent { get; } = parent;
+
+    /// <summary>How deep it is: 0 directly inside the root, 1 inside one of those, and so on.</summary>
+    public int Depth { get; } = depth;
 
     /// <summary>The value of an attribute, or <see langword="null"/> when it's absent. Names match exactly.</summary>
     public string? this[string attribute]
@@ -70,14 +82,55 @@ public sealed class FlatXmlElement(
     }
 }
 
-/// <summary>A <see cref="FlatXml"/> document: one root element and the elements directly inside it.</summary>
+/// <summary>
+/// A <see cref="FlatXml"/> document: one root element and every element inside it, in the order they're written.
+/// </summary>
+/// <remarks>
+/// <see cref="Children"/> is one list even when elements nest: each element comes straight before the elements
+/// inside it, so an index always means the element at that place in the text, and a document that doesn't nest
+/// numbers its elements as it always did. <see cref="FlatXmlElement.Parent"/> and <see cref="End"/> recover the
+/// structure.
+/// </remarks>
 public sealed class FlatXmlDocument(FlatXmlElement root, IReadOnlyList<FlatXmlElement> children)
 {
+    /// <summary>The root's index, wherever an element's index or parent is asked for.</summary>
+    public const int RootIndex = -1;
+
     /// <summary>The root element.</summary>
     public FlatXmlElement Root { get; } = root;
 
-    /// <summary>The elements inside the root, in document order.</summary>
+    /// <summary>Every element inside the root, in document order, each before the elements inside it.</summary>
     public IReadOnlyList<FlatXmlElement> Children { get; } = children;
+
+    /// <summary>
+    /// The index just past the elements inside <paramref name="element"/>, so they're the ones from
+    /// <c>element + 1</c> up to it; for <see cref="RootIndex"/>, the count of <see cref="Children"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
+    public int End(int element)
+    {
+        if (element == RootIndex)
+            return Children.Count;
+        if (element < 0 || element >= Children.Count)
+            throw new ArgumentOutOfRangeException(nameof(element), element, $"The document has {Children.Count} elements inside its root.");
+
+        var depth = Children[element].Depth;
+        var end = element + 1;
+        while (end < Children.Count && Children[end].Depth > depth)
+            end++;
+        return end;
+    }
+
+    /// <summary>The indices of the elements directly inside <paramref name="element"/>, or the root's, in order.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such element.</exception>
+    public int[] ChildrenOf(int element)
+    {
+        var end = End(element);
+        List<int> direct = [];
+        for (var index = element + 1; index < end; index = End(index))
+            direct.Add(index);
+        return [.. direct];
+    }
 }
 
 /// <summary>Why a <see cref="FlatXml"/> document couldn't be read, with the line it happened on.</summary>
@@ -98,22 +151,35 @@ public sealed class FlatXmlException(string message, int line) : FormatException
 /// lacks), and these formats need only a small part of XML, so this reads exactly that part:</para>
 /// <list type="bullet">
 /// <item><description>An optional <c>&lt;?xml ...?&gt;</c> declaration first, and comments anywhere.</description></item>
-/// <item><description>One root element, holding elements that don't nest further. Elements hold no text, only
-/// attributes, in single or double quotes.</description></item>
+/// <item><description>One root element, holding elements that don't nest further, unless the caller allows
+/// nesting, as UIScript does; then they may hold elements too, up to <see cref="MaximumDepth"/> deep. Elements hold
+/// no text, only attributes, in single or double quotes.</description></item>
 /// <item><description>The five standard entities, such as <c>&amp;amp;</c>, and numeric references such as
 /// <c>&amp;#233;</c>.</description></item>
 /// </list>
-/// <para>Anything else, such as a <c>DOCTYPE</c>, text, deeper nesting, or an unknown entity, is refused with the
-/// line it's on, rather than read some other way. A document either reads completely or throws.</para>
+/// <para>Anything else, such as a <c>DOCTYPE</c>, text, nesting the caller didn't allow, or an unknown entity, is
+/// refused with the line it's on, rather than read some other way. A document either reads completely or
+/// throws.</para>
 /// </remarks>
 public static class FlatXml
 {
+    /// <summary>
+    /// How deep elements may nest inside the root when nesting is allowed. It bounds the reader, which reads each
+    /// level by recursing, so a hostile document can't exhaust the stack; real documents nest a few levels at most.
+    /// </summary>
+    public const int MaximumDepth = 32;
+
     /// <summary>Reads a document.</summary>
+    /// <param name="text">The document's text.</param>
+    /// <param name="allowNesting">
+    /// Whether the root's elements may hold elements of their own. Formats that never nest, such as a bundle's
+    /// <c>Info.xml</c>, leave it off, so nesting is refused as malformed.
+    /// </param>
     /// <exception cref="FlatXmlException">The text isn't well-formed flat XML.</exception>
-    public static FlatXmlDocument Parse(string text)
+    public static FlatXmlDocument Parse(string text, bool allowNesting = false)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return new Reader(text).ReadDocument();
+        return new Reader(text, allowNesting).ReadDocument();
     }
 
     /// <summary>Whether <paramref name="name"/> can be written as an element or attribute name, as this reader reads one.</summary>
@@ -171,7 +237,7 @@ public static class FlatXml
         return Parse(File.ReadAllText(path, Encoding.UTF8));
     }
 
-    private sealed class Reader(string text)
+    private sealed class Reader(string text, bool allowNesting)
     {
         private int position;
         private int line = 1;
@@ -190,55 +256,64 @@ public static class FlatXml
             if (AtEnd)
                 throw Error("The document is empty.");
 
-            var rootLine = line;
-            var rootStart = position;
-            var (rootName, rootAttributes, rootEmpty, rootNameEnd, rootSources) = ReadStartTag();
-            int? rootClose = null;
-            List<FlatXmlElement> children = [];
+            List<FlatXmlElement?> children = [];
+            var root = ReadElement(children, FlatXmlDocument.RootIndex, -1)!;
 
-            if (!rootEmpty)
+            SkipMisc();
+            if (!AtEnd)
+                throw Error($"Nothing may follow the closing </{root.Name}>.");
+
+            return new FlatXmlDocument(root, [.. children.Select(child => child!)]);
+        }
+
+        /// <summary>
+        /// Reads one element and everything inside it. Each element takes its place in <paramref name="children"/>
+        /// before those inside it, so the list is in document order; the root (at depth -1) isn't added.
+        /// </summary>
+        private FlatXmlElement? ReadElement(List<FlatXmlElement?> children, int parent, int depth)
+        {
+            var elementLine = line;
+            var start = position;
+            var (name, attributes, empty, nameEnd, sources) = ReadStartTag();
+            var index = FlatXmlDocument.RootIndex;
+            if (depth >= 0)
+            {
+                index = children.Count;
+                children.Add(null);
+            }
+
+            int? close = null;
+            if (!empty)
             {
                 while (true)
                 {
                     SkipMisc();
                     if (AtEnd)
-                        throw Error($"<{rootName}> is never closed.");
+                        throw Error($"<{name}> is never closed.");
                     if (StartsWith("</"))
                     {
-                        rootClose = position;
-                        ReadEndTag(rootName);
+                        close = position;
+                        ReadEndTag(name);
                         break;
                     }
 
+                    // Inside the root, the only question is text; inside another element, whether it may hold any.
+                    if (depth >= 0 && !allowNesting)
+                        throw Error($"<{name}> can't hold text or other elements.");
                     if (Peek() != '<')
-                        throw Error($"Text isn't allowed inside <{rootName}>; put it in an attribute.");
+                        throw Error($"Text isn't allowed inside <{name}>; put it in an attribute.");
+                    if (depth + 1 >= MaximumDepth)
+                        throw Error($"Elements nest more than {MaximumDepth} deep inside <{name}>.");
 
-                    var childLine = line;
-                    var childStart = position;
-                    var (name, attributes, empty, nameEnd, sources) = ReadStartTag();
-                    int? close = null;
-                    if (!empty)
-                    {
-                        SkipMisc();
-                        if (!StartsWith("</"))
-                            throw Error($"<{name}> can't hold text or other elements.");
-                        close = position;
-                        ReadEndTag(name);
-                    }
-
-                    FlatXmlElementSource childSource = new(new(childStart, position - childStart), nameEnd, sources, close);
-                    children.Add(new FlatXmlElement(name, attributes, childLine, childSource));
+                    ReadElement(children, index, depth + 1);
                 }
             }
 
-            FlatXmlElementSource rootSource = new(new(rootStart, position - rootStart), rootNameEnd, rootSources, rootClose);
-            var root = new FlatXmlElement(rootName, rootAttributes, rootLine, rootSource);
-
-            SkipMisc();
-            if (!AtEnd)
-                throw Error($"Nothing may follow the closing </{rootName}>.");
-
-            return new FlatXmlDocument(root, children);
+            FlatXmlElementSource source = new(new(start, position - start), nameEnd, sources, close);
+            FlatXmlElement element = new(name, attributes, elementLine, source, parent, Math.Max(depth, 0));
+            if (depth >= 0)
+                children[index] = element;
+            return element;
         }
 
         private bool AtEnd => position >= text.Length;
