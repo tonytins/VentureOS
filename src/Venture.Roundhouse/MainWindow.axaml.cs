@@ -21,10 +21,12 @@ using AvaloniaEdit.TextMate;
 using TextMateSharp.Grammars;
 using Venture.OS.Desktop;
 using Venture.OS.Interface;
+using Venture.OS.Interface.Strings;
 using Venture.OS.Bundles;
 using Venture.Roundhouse.Bundles;
 using Venture.Roundhouse.Designer;
 using Venture.Roundhouse.Drawing;
+using Venture.Roundhouse.Highlighting;
 using Venture.Roundhouse.Logging;
 using Venture.Roundhouse.Menus;
 using Venture.Roundhouse.Simulator;
@@ -57,13 +59,19 @@ public sealed partial class MainWindow : Window
     // The drag under way on the canvas, if any.
     private Drag? drag;
 
-    // The file editor's highlighting, sharing the designer's grammars, and whether it's being filled, not typed in.
-    private readonly RegistryOptions highlightOptions;
-
     // The shared string tables a preview finds shared <String>s in, from the rootfs Roundhouse runs, or null.
     private readonly string? sharedStrings = SimulatedDisk.FindSharedStrings();
+
+    // The file editor's highlighting, sharing the designer's grammars and adding CST's, and whether it's being
+    // filled, not typed in.
+    private readonly RegistryOptions highlightOptions;
+    private readonly Grammars grammars;
     private readonly TextMate.Installation fileHighlighting;
     private bool loadingFile;
+
+    // A table's check waits for a pause in typing, as the canvas's redraw does; what it last found is logged once.
+    private readonly DispatcherTimer tableCheck = new() { Interval = PreviewDelay };
+    private IReadOnlyList<string> tableProblems = [];
 
     // Whether closing has asked about unsaved edits already, and may go ahead.
     private bool closingAsked;
@@ -157,7 +165,8 @@ public sealed partial class MainWindow : Window
         highlightOptions = new(HighlightTheme());
         var highlighting = Editor.InstallTextMate(highlightOptions);
         highlighting.SetGrammar(highlightOptions.GetScopeByLanguageId(highlightOptions.GetLanguageByExtension(".xml").Id));
-        fileHighlighting = FileEditor.InstallTextMate(highlightOptions);
+        grammars = new Grammars(highlightOptions);
+        fileHighlighting = FileEditor.InstallTextMate(grammars);
         ActualThemeVariantChanged += (_, _) =>
         {
             highlighting.SetTheme(highlightOptions.LoadTheme(HighlightTheme()));
@@ -168,6 +177,12 @@ public sealed partial class MainWindow : Window
         {
             redraw.Stop();
             RenderNow();
+        };
+        tableCheck.Tick += (_, _) =>
+        {
+            tableCheck.Stop();
+            if (CurrentFile is { } table && IsTable(table))
+                CheckTable(table);
         };
         AskToLeave = files => new UnsavedDialog(files).ShowDialog<LeaveChoice>(this);
         Closing += (_, e) =>
@@ -533,13 +548,53 @@ public sealed partial class MainWindow : Window
         FileEditor.Text = text;
         FileEditor.Document.UndoStack.ClearAll();
         loadingFile = false;
-        var language = highlightOptions.GetLanguageByExtension(Path.GetExtension(file));
-        fileHighlighting.SetGrammar(language is null ? null : highlightOptions.GetScopeByLanguageId(language.Id));
+        fileHighlighting.SetGrammar(grammars.ScopeFor(file));
         ShowCenter(FileEditor);
         StatusText.Text = "";
+        tableProblems = [];
+        if (IsTable(file))
+            CheckTable(file);
         ShowUndo();
         ShowCaret();
     }
+
+    private static bool IsTable(string file) => file.EndsWith(".cst", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Reads a string table as VentureOS would, beside the documents that use it and over the shared tables, and says
+    /// what's wrong with it: in the status line, and in the Log when that changes, so a pause in typing doesn't repeat
+    /// it there.
+    /// </summary>
+    private void CheckTable(string file)
+    {
+        var name = Path.GetFileName(file);
+        if (StringTables.TableNumber(name) is not { } number)
+        {
+            StatusText.Text = $"{name} isn't named like a table, such as _1_strings.cst, so no document finds its text.";
+            return;
+        }
+
+        var problems = new StringTables(Path.GetDirectoryName(file) ?? "/", sharedStrings, ReadEdited()).Check(number);
+        StatusText.Text = problems.Count switch
+        {
+            0 => $"VentureOS reads this as table {number}.",
+            1 => problems[0],
+            _ => $"{name} has {problems.Count} problems; see the Log.",
+        };
+
+        if (!problems.SequenceEqual(tableProblems))
+        {
+            // What the reader skipped names the file already; a reference that can't be followed names its table.
+            foreach (var problem in problems)
+                log.Warn(problem.StartsWith(name, StringComparison.Ordinal) ? problem : $"{name}: {problem}");
+        }
+
+        tableProblems = problems;
+    }
+
+    /// <summary>Reads a file as the bundle has it, unsaved edits included, so tables being edited show in the canvas.</summary>
+    private Func<string, string>? ReadEdited() =>
+        Bundle is { } open ? file => open.Contains(file) ? open.Text(file) : File.ReadAllText(file) : null;
 
     /// <summary>The bundle's <c>Info.xml</c> as last read, while it's the file shown, or <see langword="null"/>.</summary>
     public InfoDocument? Info { get; private set; }
@@ -712,6 +767,11 @@ public sealed partial class MainWindow : Window
         open.Edit(file, FileEditor.Text);
         ShowUnsaved();
         ShowUndo();
+        if (IsTable(file))
+        {
+            tableCheck.Stop();
+            tableCheck.Start();
+        }
     }
 
     /// <summary>
@@ -954,8 +1014,10 @@ public sealed partial class MainWindow : Window
     {
         var file = path ?? throw new InvalidOperationException("Only an open document is drawn.");
         List<string> problems = [];
+        // The tables as edited, so a change to one shows when the document is drawn again.
+        var folder = Path.GetDirectoryName(file) ?? "/";
         var view = DocumentView.Open(
-            script, Path.GetDirectoryName(file) ?? "/", image => SkiaImages.Load(image), problems.Add, sharedStrings);
+            script, folder, new StringTables(folder, sharedStrings, ReadEdited()), image => SkiaImages.Load(image), problems.Add);
         ShowPane(view, script);
         var menus = MenusFor(document, script, file);
         using var painter = RenderCommand.Draw(view, Path.GetFileName(file), fonts, out var drawn, menus);

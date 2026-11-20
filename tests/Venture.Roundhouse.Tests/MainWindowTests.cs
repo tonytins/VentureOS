@@ -1061,6 +1061,70 @@ public sealed class MainWindowTests : IDisposable
     });
 
     [Fact]
+    public void ATableSaysWhatsWrongWithItAndCatchesUpAfterTyping() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle(app =>
+            File.WriteAllText(Path.Combine(app, "Contents", "Resources", "_1_calculator.cst"), "1 ^one^\n1 ^again^\n"));
+        var table = Path.Combine(app, "Contents", "Resources", "_1_calculator.cst");
+        Select(window, table);
+        var editor = window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(editor.IsVisible);
+        Assert.Contains("the key \"1\" is used again", window.Status);
+        Assert.Contains("_1_calculator.cst, line 2", window.FindControl<AvaloniaEdit.TextEditor>("LogView")!.Text);
+
+        // Fixed by typing: the check waits for a pause, as the canvas's redraw does.
+        editor.Document.Replace(0, editor.Document.TextLength, "1 ^one^\n2 ^two^\n");
+        Pause();
+
+        Assert.Equal("VentureOS reads this as table 1.", window.Status);
+        window.Close();
+    });
+
+    [Fact]
+    public void ATableNamedSoNoDocumentFindsItSaysSo() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle(app =>
+            File.WriteAllText(Path.Combine(app, "Contents", "Resources", "strings.cst"), "1 ^one^\n"));
+        Select(window, Path.Combine(app, "Contents", "Resources", "strings.cst"));
+
+        Assert.Contains("isn't named like a table", window.Status);
+        window.Close();
+    });
+
+    [Fact]
+    public void TheDesignerDrawsATablesUnsavedText() => TestApp.Run(() =>
+    {
+        var (window, app) = OpenCalculatorBundle(app =>
+        {
+            var resources = Path.Combine(app, "Contents", "Resources");
+            File.WriteAllText(Path.Combine(resources, "_1_calculator.cst"), "1 ^one^\n");
+            File.WriteAllText(Path.Combine(resources, "main.uix"), """
+                <UIScript version="1">
+                  <Window width="200" height="80"/>
+                  <String name="two" table="1" index="2"/>
+                  <Text name="label" x="10" y="10" width="180" height="20" string="two"/>
+                </UIScript>
+                """);
+        });
+        var table = Path.Combine(app, "Contents", "Resources", "_1_calculator.cst");
+        var document = Path.Combine(app, "Contents", "Resources", "main.uix");
+        Select(window, document);
+        Assert.Contains("no text for the string \"two\"", window.Status);
+
+        // Edited, not saved: the designer reads the table as the bundle has it.
+        Select(window, table);
+        window.FindControl<AvaloniaEdit.TextEditor>("FileEditor")!.Document.Insert(0, "2 ^two^\n");
+        Select(window, document);
+
+        Assert.Equal("VentureOS reads this document.", window.Status);
+        Assert.False(window.Bundle!.IsUnsaved(document));
+        Assert.True(window.Bundle.IsUnsaved(table));
+        window.Close();
+    });
+
+    [Fact]
     public void UndoInTheFileEditorUndoesTyping() => TestApp.Run(() =>
     {
         var (window, app) = OpenCalculatorBundle();
@@ -1445,7 +1509,8 @@ public sealed class MainWindowTests : IDisposable
     }
 
     /// <summary>Opens a copy of Calculator.app, by its folder.</summary>
-    private (MainWindow Window, string App) OpenCalculatorBundle()
+    /// <param name="prepare">Changes the copy's files, given its folder, before it's opened.</param>
+    private (MainWindow Window, string App) OpenCalculatorBundle(Action<string>? prepare = null)
     {
         var app = Path.Combine(folder, "Calculator.app");
         var source = Path.Combine(SkiaPainterTests.RepositoryRoot(), "rootfs", "user", "apps", "Calculator.app");
@@ -1456,11 +1521,21 @@ public sealed class MainWindowTests : IDisposable
             File.Copy(file, target);
         }
 
+        prepare?.Invoke(app);
+
         MainWindow window = new() { AskToLeave = DontSave };
         window.Show();
         window.Open(app);
         Dispatcher.UIThread.RunJobs();
         return (window, app);
+    }
+
+    /// <summary>Lets timers that wait for a pause in typing run, as the window's own thread would.</summary>
+    private static void Pause()
+    {
+        DispatcherFrame frame = new();
+        DispatcherTimer.RunOnce(() => frame.Continue = false, MainWindow.PreviewDelay * 3);
+        Dispatcher.UIThread.PushFrame(frame);
     }
 
     /// <summary>Chooses a file in the navigator, as a click would.</summary>

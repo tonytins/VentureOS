@@ -231,6 +231,61 @@ public sealed class StringTablesTests : IDisposable
         Assert.StartsWith("Table 8, key 1", tables.Problems[0], StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ReadsThroughTheReaderItsGiven()
+    {
+        // As an editor's unsaved text stands in for what's saved.
+        File.WriteAllText(Path.Combine(root, "_1_pad.cst"), "1 ^Saved^\n");
+        StringTables tables = new(root, read: path => path.EndsWith("_1_pad.cst", StringComparison.Ordinal) ? "1 ^Edited^\n" : File.ReadAllText(path));
+
+        Assert.Equal("Edited", tables.Find(new UIStringResource("one", "1", 1)));
+    }
+
+    [Fact]
+    public void ATableThatCantBeReadIsReported()
+    {
+        File.WriteAllText(Path.Combine(root, "_1_pad.cst"), "1 ^Saved^\n");
+        StringTables tables = new(root, read: _ => throw new InvalidDataException("It isn't text."));
+
+        Assert.Null(tables.Find(new UIStringResource("one", "1", 1)));
+        Assert.Equal("Couldn't read _1_pad.cst: It isn't text.", Assert.Single(tables.Problems));
+    }
+
+    [Theory]
+    [InlineData("_1_settings.cst", 1)]
+    [InlineData("_100_common.CST", 100)]
+    [InlineData("settings.cst", null)]
+    [InlineData("_x_settings.cst", null)]
+    [InlineData("_1_settings.txt", null)]
+    public void NumbersATableByItsName(string name, int? number) => Assert.Equal(number, StringTables.TableNumber(name));
+
+    [Fact]
+    public void CheckingATableFindsEverythingWrongWithIt()
+    {
+        var shared = Shared();
+        File.WriteAllText(Path.Combine(shared, "_100_common.cst"), "1 ^OK^\n");
+        File.WriteAllText(Path.Combine(root, "_1_pad.cst"),
+            "1 ^one^\n1 ^again^\n"
+            + "2 ^\u0002<cst><cst_id>100</cst_id><string_id>1</string_id></cst>^\n"
+            + "3 ^\u0002<cst><cst_id>100</cst_id><string_id>9</string_id></cst>^\n"
+            + "4 ^never closed\n");
+
+        var problems = new StringTables(root, shared).Check(1);
+
+        Assert.Equal(3, problems.Count);
+        Assert.Contains("the key \"1\" is used again", problems[0], StringComparison.Ordinal);
+        Assert.Contains("never closed", problems[1], StringComparison.Ordinal);
+        Assert.StartsWith("Table 1, key 3 refers to table 100, key 9, which isn't there", problems[2], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CheckingATableInTheSharedRangeSaysSo()
+    {
+        File.WriteAllText(Path.Combine(root, "_100_mine.cst"), "1 ^Mine^\n");
+
+        Assert.Contains("kept for the shared tables", Assert.Single(new StringTables(root, Shared()).Check(100)), StringComparison.Ordinal);
+    }
+
     private string Shared()
     {
         var shared = Path.Combine(root, "shared");

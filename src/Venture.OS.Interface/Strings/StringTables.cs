@@ -31,12 +31,52 @@ public sealed class StringTables
     private readonly Layer[] layers;
 
     /// <summary>Finds tables in <paramref name="folder"/>, then in <paramref name="sharedFolder"/> when there's one.</summary>
-    public StringTables(string folder, string? sharedFolder = null)
+    /// <param name="read">
+    /// Reads a table's text by its path, such as an editor's unsaved text in place of what's saved; by default, the
+    /// file. It may throw <see cref="IOException"/>, <see cref="UnauthorizedAccessException"/>, or
+    /// <see cref="InvalidDataException"/>, which are reported as the table not being read.
+    /// </param>
+    public StringTables(string folder, string? sharedFolder = null, Func<string, string>? read = null)
     {
         ArgumentNullException.ThrowIfNull(folder);
+        var reader = read ?? File.ReadAllText;
         layers = sharedFolder is null
-            ? [new Layer(folder, shared: false, problems)]
-            : [new Layer(folder, shared: false, problems), new Layer(sharedFolder, shared: true, problems)];
+            ? [new Layer(folder, shared: false, problems, reader)]
+            : [new Layer(folder, shared: false, problems, reader), new Layer(sharedFolder, shared: true, problems, reader)];
+    }
+
+    /// <summary>
+    /// The number a table's file name gives it, such as 1 for <c>_1_settings.cst</c>, or <see langword="null"/> for a
+    /// name that isn't a table's, which no document finds.
+    /// </summary>
+    public static int? TableNumber(string fileName)
+    {
+        ArgumentNullException.ThrowIfNull(fileName);
+        return Number(fileName);
+    }
+
+    /// <summary>
+    /// Reads table <paramref name="table"/> from the document's own folder and follows every reference in it, so an
+    /// editor can show everything wrong with the table at once: what the reader skipped, a number in the shared range,
+    /// and references it can't follow.
+    /// </summary>
+    /// <returns>The problems found, each once.</returns>
+    public IReadOnlyList<string> Check(int table)
+    {
+        var known = problems.Count;
+        if (layers[0].Table(table) is { } found)
+        {
+            foreach (var entry in found.Entries)
+            {
+                if (entry.Key is { } key && entry.Value is { } value && CstReference.Is(value))
+                    _ = Follow(table, key, value);
+            }
+        }
+
+        List<string> lately = [];
+        for (var index = known; index < problems.Count; index++)
+            lately.Add(problems[index]);
+        return lately;
     }
 
     /// <summary>What went wrong reading the tables, each naming its file and line where it has one.</summary>
@@ -118,7 +158,7 @@ public sealed class StringTables
     }
 
     // One folder of tables, read as they're asked for. shared says which range of numbers it may hold.
-    private sealed class Layer(string folder, bool shared, List<string> problems)
+    private sealed class Layer(string folder, bool shared, List<string> problems, Func<string, string> read)
     {
         private readonly Dictionary<int, CSTTable?> tables = [];
         private Dictionary<int, string>? files;
@@ -133,11 +173,11 @@ public sealed class StringTables
             {
                 try
                 {
-                    table = CSTTable.Parse(File.ReadAllText(path));
+                    table = CSTTable.Parse(read(path));
                     foreach (var problem in table.Problems)
                         problems.Add($"{Path.GetFileName(path)}, {Describe(problem)}");
                 }
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
                 {
                     problems.Add($"Couldn't read {Path.GetFileName(path)}: {exception.Message}");
                 }

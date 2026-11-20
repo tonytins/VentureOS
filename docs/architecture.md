@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,974 tests, and 208 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,983 tests, and 218 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -165,6 +165,7 @@ VentureOS/
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
 │     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedRun, SimulatedDisk, SimulatedSystem
 │     ├─ Vdb/                      Venture.Roundhouse.Vdb: Run on VentureOS (VentureOSRun, its window, TCP, and the identity file)
+│     ├─ Highlighting/             Venture.Roundhouse.Highlighting: Grammars, TextMateSharp's grammars and CST's (cst.tmLanguage.json)
 │     ├─ Logging/                  Venture.Roundhouse.Logging: RoundhouseLog (NLog), LogBuffer, LoggedOutput
 │     ├─ Menus/                    Venture.Roundhouse.Menus: AppMenu, one list for the global menu bar and the ☰ button
 │     ├─ TitleBars.cs              where the coloured bar can be the window's title bar
@@ -1040,8 +1041,14 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   until it's saved; text the same as what's saved isn't an edit. An
   interface opens in the designer from that text; other text files open in
   a file editor of their own, highlighted by TextMate's grammar for their
-  extension (Lua, XML, or none), and edits reach the bundle as they're
-  typed; pictures show in an image view; a file that isn't UTF-8 text says
+  extension (Lua, XML, CST, or none; `Grammars` adds CST's, built into
+  Roundhouse, to TextMateSharp's), and edits reach the bundle as they're
+  typed. A string table (`.cst`) is checked as VentureOS reads it, beside
+  the documents that use it and over the shared tables, when it's shown
+  and after a pause in typing (`StringTables.Check`): what's wrong goes to
+  the status line, and to the Log when it changes, and a name no document
+  finds is said. The designer reads tables through the bundle, so a
+  table's unsaved text shows when its document is drawn again; pictures show in an image view; a file that isn't UTF-8 text says
   so. A file that can't be read is reported and what was shown stays.
   Unsaved files are marked ● in the list, which is rebuilt only when which
   files are unsaved changes. Save saves the file shown; Save All every file
@@ -1744,6 +1751,7 @@ in the clear (2026-11-11).
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
+| 2026-11-20 | minor | Roundhouse (§9): `.cst` tables highlighted (`Grammars`), checked as VentureOS reads them (`StringTables.Check`), and drawn in the designer from their unsaved text (`StringTables`' reader). |
 | 2026-11-20 | minor | Apps (§9): `venture.cst.get` and `format`, and `window:string`, give apps' text from Lua, placeholders filled (`CstLibrary`); Files' item count comes from its table. |
 | 2026-11-20 | minor | Hover text (§9): `StringTables` follows references between tables one step, with their arguments (`CstReference`). |
 | 2026-11-20 | minor | Panels (§9): `<Panel>` takes `minWidth` and `minHeight`, as Hudini's core does since adopting it; the Hudini examples the tests read are its current ones. |

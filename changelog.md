@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.504
+
+- Roundhouse highlights string tables (`.cst`): keys, values, placeholders such as `%d`, references, and comments each in their own color.
+- It checks a table as VentureOS reads it when you open it and as you type: anything wrong, such as a repeated key or a reference to text that isn't there, shows in the status line and the Log, and so does a name no document finds.
+- The designer shows a table's unsaved edits when you go back to the interface that uses it.
+
 ## 0.7.503
 
 - Apps can show their own text from Lua: `venture.cst.get(table, key)` gives a string from the app's tables or the shared ones, `venture.cst.format(table, key, ...)` fills in its placeholders, such as `%d items`, and `window:string(name, ...)` does the same for a `<String>` a window's document names. Each gives `nil` and why when there's no text.

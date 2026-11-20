@@ -281,8 +281,8 @@ new number. `roll` still works in the shell, since both live in the same app.
   It shows after the pointer rests on the control for half a second.
   Settings' color swatches do this. Tables follow the
   [CST specification](https://github.com/tonytins/swift-cst/blob/main/doc/CST.md),
-  and VentureOS tells you about anything wrong in one. Number your own
-  tables below 100. A value can also borrow another table's text, as
+  and VentureOS tells you about anything wrong in one, as Roundhouse does
+  while you edit it. Number your own tables below 100. A value can also borrow another table's text, as
   The Sims Online's do, with a reference: the control character U+0002,
   then `<cst><cst_id>100</cst_id><string_id>1</string_id></cst>` for
   table 100's "OK", all between the value's carets.

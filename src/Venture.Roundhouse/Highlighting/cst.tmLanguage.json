@@ -1,0 +1,46 @@
+{
+  "name": "CST",
+  "scopeName": "source.cst",
+  "comment": "Caret-Separated Text, as the CST specification describes it: comments, keys, values between carets that may run across lines, placeholders, and references.",
+  "patterns": [
+    { "include": "#lineComment" },
+    { "include": "#blockComment" },
+    {
+      "comment": "A key, then its value. A key on its own line, above its value, is a key too.",
+      "match": "^\\s*([^\\^\\s][^\\^]*?)\\s*(?=\\^|$)",
+      "captures": { "1": { "name": "support.type.property-name.cst" } }
+    },
+    { "include": "#value" }
+  ],
+  "repository": {
+    "lineComment": {
+      "match": "^\\s*(//|#).*$",
+      "name": "comment.line.cst"
+    },
+    "blockComment": {
+      "begin": "^\\s*/\\*",
+      "end": "\\*/",
+      "name": "comment.block.cst"
+    },
+    "value": {
+      "begin": "\\^",
+      "end": "\\^",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.cst" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.cst" } },
+      "name": "string.quoted.other.cst",
+      "patterns": [
+        { "include": "#lineComment" },
+        {
+          "comment": "A reference to another table's text: U+0002, then <cst>…</cst>.",
+          "match": "\\x{0002}?<cst>.*?</cst>",
+          "name": "keyword.control.reference.cst"
+        },
+        {
+          "comment": "The placeholders the specification lists: %s, %d, %i, %u, %ld, %02d, %.2d, %3d, and %% for a percent sign.",
+          "match": "%%|%(?:\\.\\d+|\\d+)?l?[diu]|%s",
+          "name": "constant.character.format.placeholder.cst"
+        }
+      ]
+    }
+  }
+}

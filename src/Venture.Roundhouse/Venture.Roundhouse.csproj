@@ -42,6 +42,8 @@
   <ItemGroup>
     <!-- The window's icon. -->
     <AvaloniaResource Include="Assets/Roundhouse.png" />
+    <!-- Grammars for the formats TextMateSharp has none for, read by Highlighting/Grammars. -->
+    <EmbeddedResource Include="Highlighting/*.tmLanguage.json" LogicalName="Venture.Roundhouse.Highlighting.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
