@@ -1562,6 +1562,145 @@ public sealed class MainWindowTests : IDisposable
     });
 
     [Fact]
+    public void NewInterfaceOpensAnUntitledCanvasAtOnce() => TestApp.Run(() =>
+    {
+        MainWindow window = new() { AskToLeave = DontSave, AskWhereToSave = () => throw new InvalidOperationException("Asked where before saving.") };
+        window.Show();
+
+        Command(window, "File", "New Interface…").Run();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(window.IsUntitled);
+        Assert.Equal("Untitled.uix — not saved", window.FindControl<TextBlock>("DocumentTitle")!.Text);
+        Assert.Contains("found once it's saved", window.Status);
+        Assert.NotNull(window.Preview);
+
+        // It's designed as any document is.
+        var button = Designer.DesignEdits.Add(window.Document!, "Button");
+        window.Apply(button.Document);
+        Assert.Contains("<Button", window.Text);
+        Assert.Equal(["Untitled.uix"], window.UnsavedFiles().Select(Path.GetFileName));
+        window.Close();
+    });
+
+    [Fact]
+    public void SavingAnUntitledInterfaceAsksWhereAndOpensItThere() => TestApp.Run(() =>
+    {
+        var (window, project) = OpenCounterProject();
+        window.NewInterface();
+        window.Text = window.Text.Replace("width=\"320\"", "width=\"300\"", StringComparison.Ordinal);
+        var target = Path.Combine(project, "Interfaces", "open.uix");
+        var asked = 0;
+        window.AskWhereToSave = () =>
+        {
+            asked++;
+            return Task.FromResult<string?>(target);
+        };
+
+        Assert.False(window.Save());
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(1, asked);
+        Assert.False(window.IsUntitled);
+        Assert.Equal(target, window.CurrentFile);
+        Assert.Equal(project, window.Bundle!.Root);
+        Assert.Contains("width=\"300\"", File.ReadAllText(target));
+        Assert.Equal("open.uix — Counter.rproj", window.FindControl<TextBlock>("DocumentTitle")!.Text);
+        Assert.Empty(window.UnsavedFiles());
+        window.Close();
+    });
+
+    [Fact]
+    public void SavingAnUntitledInterfaceAsAFileOfItsOwnOpensItAlone() => TestApp.Run(() =>
+    {
+        MainWindow window = new() { AskToLeave = DontSave };
+        window.Show();
+        window.NewInterface();
+        var target = Path.Combine(folder, "loose", "open.uix");
+
+        Assert.True(window.SaveUntitledTo(target));
+
+        Assert.Null(window.Bundle);
+        Assert.Equal(target, window.CurrentFile);
+        Assert.Contains(window.Recent, item => item.Path == target);
+        Assert.False(window.SaveUntitledTo(target));
+        window.Close();
+    });
+
+    [Theory]
+    [InlineData(Bundles.LeaveChoice.Cancel, true)]
+    [InlineData(Bundles.LeaveChoice.DontSave, false)]
+    public void LeavingAChangedUntitledInterfaceAsksFirst(Bundles.LeaveChoice answer, bool staysUntitled) => TestApp.Run(() =>
+    {
+        var (window, project) = OpenCounterProject();
+        window.NewInterface();
+        var asked = 0;
+        window.AskToLeave = _ =>
+        {
+            asked++;
+            return Task.FromResult(answer);
+        };
+
+        // Unchanged, there's nothing to lose, so nothing's asked.
+        window.OpenAsync(Path.Combine(project, "App", "Info.xml")).GetAwaiter().GetResult();
+        Assert.Equal(0, asked);
+
+        window.NewInterface();
+        window.Text = window.Text.Replace("width=\"320\"", "width=\"300\"", StringComparison.Ordinal);
+        window.OpenAsync(Path.Combine(project, "App", "Info.xml")).GetAwaiter().GetResult();
+
+        Assert.Equal(1, asked);
+        Assert.Equal(staysUntitled, window.IsUntitled);
+        window.AskToLeave = DontSave;
+        window.Close();
+    });
+
+    [Fact]
+    public void AnUntitledInterfaceRunsAsAWindowOfItsOwnEvenInAProject() => TestApp.Run(() =>
+    {
+        var (window, _) = OpenCounterProject();
+        window.NewInterface();
+
+        window.Run();
+
+        Assert.Contains(window.Simulator!.Run!.Session.Windows.Windows, shown => shown.Title == "Untitled.uix");
+        Assert.DoesNotContain(window.Simulator.Run.Apps.Running, app => app.Bundle.Name == "Counter");
+        window.StopRun();
+        window.AskToLeave = DontSave;
+        window.Close();
+    });
+
+    [Fact]
+    public void TheSaveDialogOffersTheProjectAndElsewhereAndSaysWhatsWrong() => TestApp.Run(() =>
+    {
+        var project = Projects.RoundhouseProject.Create("Dialogs", folder);
+        Bundles.SaveInterfaceWindow dialog = new(project, folder);
+        dialog.Show();
+
+        // A project without an app offers its interfaces first.
+        Assert.Equal(Bundles.InterfacePlace.ProjectInterfaces, dialog.Place);
+        dialog.InterfaceName = "open";
+        Assert.Equal(Path.Combine(project.Root, "Interfaces", "open.uix"), dialog.Choose());
+
+        Bundles.SaveInterfaceWindow alone = new(null, folder);
+        alone.Show();
+        Assert.Equal(Bundles.InterfacePlace.NewProject, alone.Place);
+        alone.InterfaceName = "save";
+        alone.ProjectName = "a/b";
+        Assert.Null(alone.Choose());
+        Assert.Contains("project's folder", alone.Problem);
+        alone.ProjectName = "System Dialogs";
+        Assert.Equal(Path.Combine(folder, "System Dialogs.rproj", "Interfaces", "save.uix"), alone.Choose());
+
+        Bundles.SaveInterfaceWindow file = new(null, folder) { Place = Bundles.InterfacePlace.File };
+        file.Show();
+        file.FilePath = "relative.uix";
+        Assert.Null(file.Choose());
+        file.FilePath = Path.Combine(folder, "about");
+        Assert.Equal(Path.Combine(folder, "about.uix"), file.Choose());
+    });
+
+    [Fact]
     public void OpeningAnotherBundleFromTheDesignerOpensIt() => TestApp.Run(() =>
     {
         var (window, _) = OpenCalculatorBundle();

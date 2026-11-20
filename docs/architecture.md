@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,983 tests, and 258 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,983 tests, and 265 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1145,6 +1145,19 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   puts them in place only while it works (`SimulatedRun.Within`). Run
   folders carry Roundhouse's process ID, and a new run deletes those whose
   process has ended.
+- **Untitled interfaces** (0.7.6xx): File ▸ New ▸ New Interface (Ctrl+Alt+N)
+  opens a blank interface (`MainWindow.BlankInterface`, a `<Window>` and
+  nothing else) in the designer at once, with no questions, beside whatever
+  project is open. Its text lives in the window's own folder
+  (`RunCopies/untitled/Untitled.uix`), so the designer, Undo, and Run work
+  on it as on any document; with nothing beside it, its images and strings
+  are missing until it's saved, as the status line says. The first Save
+  asks where it goes (`SaveInterfaceWindow`): the open project's app or
+  interfaces, a new project's interfaces, or a file of its own; then it's
+  written there and opened as an ordinary file. Leaving it with changes, by
+  choosing another file, opening something, New, or quitting, asks first,
+  and Save All there asks where. Run in Simulation runs it as a window of
+  its own, even in a project.
 - **Run's button** is a drop-down, "▶ Run ▾", of Run in Simulation
   (Ctrl+R) and Run on VentureOS (Ctrl+Alt+R), as the Run menu has them. A
   project's app runs from an `.app` assembled in a folder of the window's
@@ -1778,6 +1791,7 @@ in the clear (2026-11-11).
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
+| 2026-11-20 | minor | Roundhouse (§9): untitled interfaces: New Interface opens a blank canvas at once, and the first Save asks where it goes (`SaveInterfaceWindow`). |
 | 2026-11-20 | minor | Roundhouse (§9): projects open, run, and export; File ▸ New makes projects; stray `.app`s are offered as projects; Run is a drop-down; recent items are kept. |
 | 2026-11-20 | minor | Layout (§2): Roundhouse's `Projects/` (`RoundhouseProject`: `.rproj` projects and assembling their `.app`) and `Welcome/` (`RoundhouseSettings`), not yet in its windows. |
 | 2026-11-20 | minor | Roundhouse (§9): `.cst` tables highlighted (`Grammars`), checked as VentureOS reads them (`StringTables.Check`), and drawn in the designer from their unsaved text (`StringTables`' reader). |

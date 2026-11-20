@@ -80,6 +80,28 @@ public sealed partial class MainWindow : Window
     /// <summary>Where a project's app is assembled to run it; it's deleted when the window closes.</summary>
     public string RunCopies => runCopies;
 
+    /// <summary>What New Interface starts from: a window and nothing else.</summary>
+    public const string BlankInterface = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <UIScript version="1">
+          <Window width="320" height="240"/>
+        </UIScript>
+
+        """;
+
+    // An untitled interface's text lives here, in the window's own folder, until Save says where it goes; nothing is
+    // beside it, so its images and strings are missing until then.
+    private string UntitledFile => Path.Combine(runCopies, "untitled", "Untitled.uix");
+
+    /// <summary>Whether the designer has an untitled interface, one New Interface opened that hasn't been saved yet.</summary>
+    public bool IsUntitled => path is not null && path == UntitledFile;
+
+    // Whether the untitled interface has anything to lose: it's been changed since New Interface opened it.
+    private bool UntitledChanged => IsUntitled && Editor.Text != WithoutByteOrderMark(BlankInterface);
+
+    /// <summary>Asks where an untitled interface goes, giving the file to write; tests answer it themselves.</summary>
+    public Func<Task<string?>> AskWhereToSave { get; set; }
+
     // A table's check waits for a pause in typing, as the canvas's redraw does; what it last found is logged once.
     private readonly DispatcherTimer tableCheck = new() { Interval = PreviewDelay };
     private IReadOnlyList<string> tableProblems = [];
@@ -121,6 +143,7 @@ public sealed partial class MainWindow : Window
                  [
                      (Key.N, KeyModifiers.Control, () => _ = NewAppAsync()),
                      (Key.N, KeyModifiers.Control | KeyModifiers.Shift, () => _ = NewProjectAsync()),
+                     (Key.N, KeyModifiers.Control | KeyModifiers.Alt, () => _ = NewInterfaceAsync()),
                      (Key.O, KeyModifiers.Control, () => _ = PickAndOpenAsync()),
                      (Key.O, KeyModifiers.Control | KeyModifiers.Shift, () => _ = PickAndOpenBundleAsync()),
                      (Key.S, KeyModifiers.Control, () => Save()),
@@ -198,6 +221,7 @@ public sealed partial class MainWindow : Window
                 CheckTable(table);
         };
         AskToLeave = files => new UnsavedDialog(files).ShowDialog<LeaveChoice>(this);
+        AskWhereToSave = () => new SaveInterfaceWindow(Project, NewAppWindow.SuggestedFolder()).ShowDialog<string?>(this);
         AskToReplace = app => ConfirmDialog.AskAsync(this, "Replace App",
             $"There's already {Path.GetFileName(app)} in {Path.GetDirectoryName(app)}. Replace it?",
             "The app there is deleted and the project's put in its place.", "Replace");
@@ -540,7 +564,7 @@ public sealed partial class MainWindow : Window
         UIDocument document;
         try
         {
-            document = Bundle is { } open ? UIDocument.Read(open.Text(full)) : UIDocument.Load(full);
+            document = Bundle is { } open && open.Contains(full) ? UIDocument.Read(open.Text(full)) : UIDocument.Load(full);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
         {
@@ -563,7 +587,7 @@ public sealed partial class MainWindow : Window
         Editor.Document.UndoStack.ClearAll();
         loading = false;
         Title = $"{Path.GetFileName(full)} — {ProductTitle}";
-        DocumentTitle.Text = BarTitle(full);
+        DocumentTitle.Text = IsUntitled ? "Untitled.uix — not saved" : BarTitle(full);
         RenderNow();
     }
 
@@ -919,8 +943,10 @@ public sealed partial class MainWindow : Window
     {
         KeepEdit();
         if (Bundle is { } open)
-            return [.. open.Unsaved.Order(StringComparer.Ordinal)];
+            return [.. open.Unsaved.Order(StringComparer.Ordinal), .. UntitledChanged ? (string[])[UntitledFile] : []];
 
+        if (IsUntitled)
+            return UntitledChanged ? [UntitledFile] : [];
         if (path is null || !File.Exists(path))
             return [];
         try
@@ -951,7 +977,8 @@ public sealed partial class MainWindow : Window
 
         return await AskToLeave(unsaved) switch
         {
-            LeaveChoice.SaveAll => SaveAll(),
+            // An untitled interface is asked where it goes first; not saying is staying.
+            LeaveChoice.SaveAll => (!UntitledChanged || await SaveUntitledAsync()) && SaveAll(),
             LeaveChoice.DontSave => true,
             _ => false,
         };
@@ -966,6 +993,7 @@ public sealed partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(file);
         var leaving = Bundle is { } open ? !open.Contains(file) && Path.GetFullPath(file) != open.Root : path is not null && Path.GetFullPath(file) != path;
+        leaving |= UntitledChanged;
         if (leaving && !await LeaveAsync())
             return false;
 
@@ -1009,7 +1037,13 @@ public sealed partial class MainWindow : Window
 
     private void OnFileSelected(object? sender, SelectionChangedEventArgs e)
     {
-        if (!syncing && FileTree.SelectedItem is BundleItem { IsFolder: false } item && item.Path != CurrentFile)
+        if (syncing || FileTree.SelectedItem is not BundleItem { IsFolder: false } item || item.Path == CurrentFile)
+            return;
+
+        // Leaving an untitled interface with changes asks first, as leaving a bundle does.
+        if (UntitledChanged)
+            _ = LeaveUntitledThenShowAsync(item.Path);
+        else
             ShowFile(item.Path);
     }
 
@@ -1020,6 +1054,13 @@ public sealed partial class MainWindow : Window
     /// <returns>Whether it was saved.</returns>
     public bool Save()
     {
+        // An untitled interface is asked where it goes, which takes a moment, so Save returns before it's written.
+        if (IsUntitled)
+        {
+            _ = SaveUntitledAsync();
+            return false;
+        }
+
         KeepEdit();
 
         // A bundle's file other than the designer's is saved from the bundle, whichever editor shows it.
@@ -1090,7 +1131,9 @@ public sealed partial class MainWindow : Window
             Selection = null;
         var problems = Draw(document, script);
         ShowPanels();
-        StatusText.Text = problems.Count == 0 ? "VentureOS reads this document." : string.Join(" ", problems);
+        StatusText.Text = IsUntitled
+            ? "Untitled: VentureOS reads it, and its images and strings are found once it's saved."
+            : problems.Count == 0 ? "VentureOS reads this document." : string.Join(" ", problems);
     }
 
     /// <summary>Draws a document VentureOS reads onto the canvas, with the selection over it; the text isn't touched.</summary>
@@ -1516,6 +1559,7 @@ public sealed partial class MainWindow : Window
             [
                 new AppMenuGroup("New",
                 [
+                    new MenuCommand("New Interface…", () => _ = NewInterfaceAsync(), Ctrl(Key.N, KeyModifiers.Alt)),
                     new MenuCommand("New App…", () => _ = NewAppAsync(), Ctrl(Key.N)),
                     new MenuCommand("New Project…", () => _ = NewProjectAsync(), Ctrl(Key.N, KeyModifiers.Shift)),
                 ]),
@@ -1756,12 +1800,13 @@ public sealed partial class MainWindow : Window
             foreach (var file in bundle.Unsaved)
                 edits[file] = bundle.Text(file);
         }
-        else if (path is not null)
+        if (path is not null && !edits.ContainsKey(Path.GetFullPath(path)))
         {
             edits[Path.GetFullPath(path)] = byteOrderMark + Editor.Text;
         }
 
-        if (Project is not { } project)
+        // An untitled interface runs as a window of its own, from its text, wherever it's going.
+        if (Project is not { } project || IsUntitled)
             return (CurrentFile, edits);
 
         var loose = CurrentFile is { } shown && IsInside(shown, project.InterfacesFolder);
@@ -1986,6 +2031,89 @@ public sealed partial class MainWindow : Window
         {
             Open(made);
             Say($"Made {Path.GetFileName(made)}, with its app.", NLog.LogLevel.Info);
+        }
+    }
+
+    /// <summary>
+    /// New Interface: an untitled canvas, at once, with no questions; Save asks where it goes. An untitled one with
+    /// changes, or a document outside a bundle with edits, is asked about first; a bundle's edits are kept, as moving
+    /// between its files keeps them.
+    /// </summary>
+    private async Task NewInterfaceAsync()
+    {
+        if ((Bundle is null || UntitledChanged) && !await LeaveAsync())
+            return;
+        NewInterface();
+    }
+
+    /// <summary>Opens a blank, untitled interface in the designer, beside whatever project is open.</summary>
+    /// <exception cref="IOException">Its text couldn't be kept in Roundhouse's own folder.</exception>
+    public void NewInterface()
+    {
+        KeepEdit();
+        Directory.CreateDirectory(Path.GetDirectoryName(UntitledFile)!);
+        File.WriteAllText(UntitledFile, BlankInterface);
+        ShowFile(UntitledFile);
+        SelectInFiles("");
+        log.Info("New untitled interface");
+    }
+
+    /// <summary>Asks where the untitled interface goes, and saves it there.</summary>
+    /// <returns>Whether it was saved.</returns>
+    public async Task<bool> SaveUntitledAsync()
+    {
+        if (!IsUntitled)
+            return false;
+        return await AskWhereToSave() is { } target && SaveUntitledTo(target);
+    }
+
+    /// <summary>
+    /// Writes the untitled interface to <paramref name="target"/>, which mustn't exist yet, and opens it there: in its
+    /// project or bundle when it's in one, so its images and strings are found, or as a document of its own.
+    /// </summary>
+    /// <returns>Whether it was saved; why not is said.</returns>
+    public bool SaveUntitledTo(string target)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(target);
+        if (!IsUntitled)
+            return false;
+
+        target = Path.GetFullPath(target);
+        try
+        {
+            if (File.Exists(target))
+                throw new IOException($"There's already {Path.GetFileName(target)} there.");
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.WriteAllText(target, byteOrderMark + Editor.Text);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Say($"The interface couldn't be saved to {target}: {exception.Message}", NLog.LogLevel.Warn);
+            return false;
+        }
+
+        // Let go of the untitled text first, so opening the saved file doesn't ask about it.
+        LeaveDesigner(null);
+        CurrentFile = null;
+        File.Delete(UntitledFile);
+        Open(target);
+        Say($"Saved {Path.GetFileName(target)}.", NLog.LogLevel.Info);
+        return true;
+    }
+
+    // Leaving an untitled interface for another file: asks, then shows it, or goes back to the untitled one.
+    private async Task LeaveUntitledThenShowAsync(string file)
+    {
+        if (await LeaveAsync())
+        {
+            if (IsUntitled)
+                ShowFile(file);
+            else if (Bundle?.Contains(file) == true)
+                ShowFile(file);
+        }
+        else
+        {
+            SelectInFiles("");
         }
     }
 

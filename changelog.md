@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.603
+
+- Roundhouse's File ▸ New ▸ New Interface (Ctrl+Alt+N) opens a blank interface in the designer at once, so you can start drawing before deciding anything else. The first time you save it, Roundhouse asks where it goes: into the open project's app or its interfaces, into a new project, or as a file of its own. Its images and strings show once it's saved.
+- Leaving an untitled interface with changes, or quitting, asks first. Run in Simulation runs it as a window of its own.
+
 ## 0.7.602
 
 - Roundhouse has projects: a `.rproj` folder holds an app (in `App/`) and its interfaces (in `Interfaces/`) while you work on them, so a work-in-progress `.app` no longer sits in your Documents. Roundhouse makes the `.app` only to run it, and File ▸ Export… writes it where you choose, such as `rootfs/user/apps/`.
