@@ -1131,7 +1131,7 @@ public static class UiLibrary
                 Names.Add(sidebar.Name);
             foreach (var menu in view.Script.Menus)
             {
-                foreach (var entry in menu.Entries)
+                foreach (var entry in menu.AllEntries())
                 {
                     if (entry.Name is { } item)
                         Names.Add(item);

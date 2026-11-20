@@ -91,6 +91,44 @@ public sealed class WindowPartsTests : IDisposable
         Assert.Empty(withSeparator.Script.Menus[1].Entries);
     }
 
+    private const string NestedMenu = """
+        <UIScript version="1">
+          <Window width="300" height="200"/>
+          <Menu name="note" title="Note">
+            <MenuItem name="add" title="Add"/>
+            <Menu name="sort" title="Sort By">
+              <MenuItem name="byDate" title="Date"/>
+            </Menu>
+          </Menu>
+          <Button name="ok" x="10" y="10" width="60" height="24" text="OK"/>
+        </UIScript>
+        """;
+
+    [Theory]
+    [InlineData(1, 5, 1)] // The menu: after the submenu, its last entry.
+    [InlineData(2, 5, 1)] // An item in it: the same menu.
+    [InlineData(3, 5, 3)] // The submenu: after its own last item.
+    [InlineData(4, 5, 3)] // An item in the submenu: the submenu.
+    public void AMenuItemGoesInsideAMenuThatHoldsItsItems(int selected, int expected, int parent)
+    {
+        var (edited, item) = DesignEdits.Add(UIDocument.Read(NestedMenu), "MenuItem", selected);
+
+        Assert.Equal(expected, item);
+        Assert.Equal(parent, edited.Xml!.Children[item].Parent);
+        Assert.Null(edited.Xml.Children[item]["menu"]);
+        Assert.NotNull(edited.Script);
+    }
+
+    [Fact]
+    public void ADuplicatedItemStaysInItsMenu()
+    {
+        var (edited, copy) = DesignEdits.Duplicate(UIDocument.Read(NestedMenu), 4);
+
+        Assert.Equal(5, copy);
+        Assert.Equal(3, edited.Xml!.Children[copy].Parent);
+        Assert.Equal(["byDate", "byDate2"], edited.Script!.Menus[0].Entries[1].Submenu!.Entries.Select(entry => entry.Name));
+    }
+
     [Fact]
     public void AMenuItemWithoutASelectedMenuJoinsTheLastAndWithoutAnyIsRefused()
     {

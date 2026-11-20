@@ -121,9 +121,8 @@ public sealed class UIDocumentTests : IDisposable
     }
 
     [Fact]
-    public void ANestedDocumentOpensForTextEditingWithItsElementsFound()
+    public void ANestedMenuIsEditableAndItsElementsAreFound()
     {
-        // Nested menus are the spec's, but this reader doesn't read them yet; the text still maps, for the editor.
         const string text = """
             <UIScript>
               <Window width="100" height="100"/>
@@ -135,11 +134,31 @@ public sealed class UIDocumentTests : IDisposable
 
         var document = UIDocument.Read(text);
 
-        Assert.False(document.IsEditable);
+        Assert.True(document.IsEditable);
         Assert.Equal(["Window", "Menu", "MenuItem"], document.Xml!.Children.Select(child => child.Name));
+        Assert.Equal("i", Assert.Single(document.Script!.Menus[0].Entries).Name);
+
+        var added = document.InsertElement(3, "MenuItem", [new("name", "j"), new("title", "J")], parent: 1);
+        Assert.Equal(["i", "j"], added.Script!.Menus[0].Entries.Select(entry => entry.Name));
+    }
+
+    [Fact]
+    public void AControlInsideAMenuOpensForTextEditingAndSaysWhy()
+    {
+        const string text = """
+            <UIScript>
+              <Window width="100" height="100"/>
+              <Menu name="m" title="M">
+                <Button name="b" x="0" y="0" width="1" height="1"/>
+              </Menu>
+            </UIScript>
+            """;
+
+        var document = UIDocument.Read(text);
+
+        Assert.False(document.IsEditable);
         Assert.Equal(4, document.Problem!.Line);
-        Assert.Contains("<MenuItem> can't be inside <Menu>", document.Problem.Message, StringComparison.Ordinal);
-        Assert.Throws<UIScriptException>(() => UIScript.Parse(text));
+        Assert.Contains("<Button> can't be inside <Menu>", document.Problem.Message, StringComparison.Ordinal);
     }
 
     [Fact]

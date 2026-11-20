@@ -1019,7 +1019,7 @@ public sealed class DesktopSession
     {
         foreach (var menu in document)
         {
-            foreach (var entry in menu.Entries)
+            foreach (var entry in menu.AllEntries())
             {
                 if (entry.Shortcut is { } own && own.Control == shortcut.Control && own.Shift == shortcut.Shift
                     && own.Alt == shortcut.Alt && char.ToUpperInvariant(own.Key) == char.ToUpperInvariant(shortcut.Key))

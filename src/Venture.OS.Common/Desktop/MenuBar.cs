@@ -41,9 +41,13 @@ public sealed record BarMenu(
     UIMenu Menu, MenuGroup Group, UIView? View = null, bool Emphasized = false, IReadOnlyList<UIMenuEntry>? Own = null,
     Func<UIMenuEntry, bool>? OwnEnabled = null, DesktopImage? Icon = null)
 {
-    /// <summary>Whether an entry can be chosen: an item that isn't disabled.</summary>
+    /// <summary>
+    /// Whether an entry can be chosen: an item that isn't disabled. A submenu's entry can't be yet: the bar doesn't
+    /// open submenus, so it shows dimmed rather than reporting the submenu as chosen.
+    /// </summary>
     public bool IsEnabled(UIMenuEntry entry) =>
-        entry.Name is { } name && (IsOwn(entry) ? OwnEnabled?.Invoke(entry) ?? true : !(View?.IsDisabled(name) ?? false));
+        entry.Name is { } name && !entry.IsSubmenu
+        && (IsOwn(entry) ? OwnEnabled?.Invoke(entry) ?? true : !(View?.IsDisabled(name) ?? false));
 
     /// <summary>Whether an item has a check mark.</summary>
     public bool IsChecked(UIMenuEntry entry) => entry.Name is { } name && !IsOwn(entry) && (View?.IsSelected(name) ?? false);

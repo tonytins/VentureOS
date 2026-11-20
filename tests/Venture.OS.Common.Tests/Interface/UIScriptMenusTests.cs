@@ -60,7 +60,7 @@ public sealed class UIScriptMenusTests
     [InlineData("<MenuItem menu='nope' name='i' title='I'/>", "\"i\" is in the menu \"nope\", which isn't declared")]
     [InlineData("<MenuSeparator menu='nope'/>", "A separator is in the menu \"nope\"")]
     [InlineData("<Menu name='m' title='M'/><MenuItem menu='m' title='I'/>", "needs name")]
-    [InlineData("<Menu name='m' title='M'/><MenuItem menu='m' name='i' title='I' hotkey='A'/><MenuItem menu='m' name='j' title='J' hotkey='a'/>", "Two items in the M menu use the hotkey")]
+    [InlineData("<Menu name='m' title='M'/><MenuItem menu='m' name='i' title='I' hotkey='A'/><MenuItem menu='m' name='j' title='J' hotkey='a'/>", "Two entries in the M menu use the hotkey")]
     [InlineData("<Menu name='m' title='M'/><MenuItem menu='m' name='i' title='I' shortcut='Ctrl+N'/><MenuItem menu='m' name='j' title='J' shortcut='Ctrl+n'/>", "Two menu items use the shortcut Ctrl+N")]
     [InlineData("<Menu name='m' title='M'/><MenuItem menu='m' name='i' title='I' shortcut='N'/>", "needs Ctrl or Alt")]
     [InlineData("<Menu name='m' title='M'/><MenuItem menu='m' name='i' title='I' shortcut='Shift+N'/>", "needs Ctrl or Alt")]

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** patch (a shared title bar) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (nested menus) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-20)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,009 tests, and 277 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,030 tests, and 282 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -857,8 +857,9 @@ its children included, the end of its name, where its closing tag begins,
 and each attribute's span, value as written, and quote. `FlatXmlEditor`
 inserts inside a given parent (opening up one written `<Name/>`), and
 removes or moves an element among its siblings with everything inside it.
-Until 0.7.7xx's nested menus, `UIScript` refuses any nested element, so a
-nested document opens in Roundhouse for text editing only.
+`UIScript` lets only a `<Menu>` hold elements: its items, separators, and
+submenus; anything else nested is refused, naming both elements, and opens
+in Roundhouse for text editing only.
 
 `UIDocument` is a `.uix` as Roundhouse holds it: the exact text (a byte
 order mark and line endings included, as strict UTF-8), those positions,
@@ -1535,14 +1536,20 @@ reads a subset of it. Version and `requires` are checked first; unknown
 elements refuse the document and unknown attributes are listed; references,
 sizes, and per-control attributes are validated, so a document reads
 completely or not at all. Menus (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`,
-with hotkeys and Ctrl or Alt shortcuts), the sidebar (`<Sidebar>`, a list of
+with hotkeys and Ctrl or Alt shortcuts, either holding their entries or
+named by them with `menu`, and with submenus to any depth: a
+`UIMenuEntry` whose `Submenu` is set, walked with `UIMenu.AllEntries`),
+the sidebar (`<Sidebar>`, a list of
 places beside the content), shelves, and panes are ordinary elements; they
 were modules a document named in `requires` until 2026-11-20, and those four
 names are still accepted (`UIScript.RetiredFeatures`) and mean nothing. Styles
 take color roles (`secondaryText`, `panel`, ...), size roles (`caption` to
 `largeTitle`), and `dark` twins of each color. It's tested against Hudini's
 five example documents, copied into the tests with Hudini's license, so every
-document Hudini reads reads the same here. `UIView` draws documents in desktop windows,
+document Hudini reads reads the same here. Until the menu bar opens
+submenus, `BarMenu.IsEnabled` keeps a submenu's entry dimmed, so it's never
+reported as chosen; items in submenus are still disabled and checked by
+name. `UIView` draws documents in desktop windows,
 resolving each style once per palette, so styles with roles follow a switch
 to dark or a new accent. `ShippedContrastTests` draws every shipped
 interface in every palette and fails on any text below a 3 to 1 contrast.
@@ -1760,6 +1767,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | Interfaces (§9): nested menus and submenus. A `<Menu>` holds its items, separators, and submenus, beside the flat form; `UIMenuEntry.Submenu` and `UIMenu.AllEntries`; the spec's rules (one form per menu, submenus only nest and take no role, hotkeys per menu, names and shortcuts across depths). The menu bar shows a submenu's entry dimmed until it opens them; Roundhouse adds an item inside a nested menu and keeps a copy in its parent. |
 | 2026-11-20 | patch | Roundhouse (§9): the main and welcome windows share `WindowTitleBar` (`TitleBarStyles.axaml` for its look), so the welcome window's bar is its title bar too, with its zoom dot dimmed. |
 | 2026-11-20 | minor | Interfaces (§9): `FlatXml` reads nested elements when its caller allows (UIScript, `UIDocument`), with parents, depth, and a 32-level limit; `FlatXmlEditor` inserts inside a parent and moves or removes an element with what's inside it; `UIScript` refuses nesting until nested menus. |
 | 2026-11-20 | minor | UIScript (§9): VentureOS keeps the spec, in `docs/uiscript/`, and Hudini reads a subset of it. Menus, sidebars, shelves, and panes are ordinary elements rather than modules, so they need no `requires`; the old names are accepted and mean nothing, and the designer no longer adds them. |

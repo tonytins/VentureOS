@@ -649,8 +649,9 @@ The format leaves to the host everything about live data and drawing. A host:
 
 ### VentureOS
 
-VentureOS reads version 1, the whole spec except nested menus: it reads only the flat form, with `menu` on each
-item, and refuses a nested one. Nesting comes in 0.7.7xx.
+VentureOS reads version 1, the whole spec, nested menus and submenus included. Its menu bar doesn't open submenus
+yet: it shows a submenu's entry dimmed, and nothing in it can be chosen, by its entry or its shortcut. Opening them
+comes later in 0.7.7xx.
 
 As a host, it also:
 

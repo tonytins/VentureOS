@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.704
+
+- A `<Menu>` in an interface can hold its items and separators, rather than each naming its menu with `menu`; both forms work. A `<Menu>` inside another is a submenu: VentureOS reads it, but the menu bar shows its entry dimmed until a later update opens submenus.
+- Roundhouse adds a menu item inside a menu that holds its items, and a duplicated item stays in its menu.
+
 ## 0.7.703
 
 - Roundhouse's welcome window has the same blue-to-teal title bar as the main window, with VentureOS's window buttons, in place of the system's title bar over a bar of its own.

@@ -85,11 +85,11 @@ public static class DesignEdits
 
             case "MenuItem" or "MenuSeparator":
             {
-                var (menu, after) = MenuFor(document, selected);
-                List<KeyValuePair<string, string>> entry = [new("menu", menu)];
+                var (menu, nested, place) = MenuFor(document, selected);
+                List<KeyValuePair<string, string>> entry = nested ? [] : [new("menu", document.Xml.Children[menu]["name"]!)];
                 if (element == "MenuItem")
                     entry.AddRange([new("name", UniqueName(document, "item")), new("title", "Item")]);
-                return Insert(document, after + 1, element, entry);
+                return (document.InsertElement(place, element, entry, nested ? menu : UIDocument.Root), place);
             }
 
             case "Sidebar":
@@ -164,7 +164,9 @@ public static class DesignEdits
             });
         }
 
-        return (document.InsertElement(element + 1, original.Name, attributes), element + 1);
+        // The copy goes just after the original and everything inside it, in the same parent, such as a menu.
+        var place = document.Xml!.End(element);
+        return (document.InsertElement(place, original.Name, attributes, original.Parent), place);
     }
 
     /// <summary>
@@ -224,31 +226,61 @@ public static class DesignEdits
     }
 
     /// <summary>
-    /// The menu a new item joins, and the last element of that menu, which the item goes after: the selected menu,
-    /// the menu of the selected item or separator, or else the document's last menu.
+    /// The menu a new item joins, by its index, whether it holds its items inside it, and where the item goes: after
+    /// its last entry. The menu is the selected one, the menu of the selected item or separator, or else the
+    /// document's last menu. A menu that holds anything, or is a submenu, takes the item inside it; an empty menu in
+    /// the bar, or one whose items name it, takes it flat, as before.
     /// </summary>
-    private static (string Menu, int Last) MenuFor(UIDocument document, int? selected)
+    private static (int Menu, bool Nested, int Place) MenuFor(UIDocument document, int? selected)
     {
-        var children = document.Xml!.Children;
-        string? menu = null;
+        var xml = document.Xml!;
+        var children = xml.Children;
+        int? menu = null;
         if (selected is { } index && index >= 0 && index < children.Count)
         {
             var chosen = children[index];
-            menu = chosen.Name == "Menu" ? chosen["name"] : chosen.Name is "MenuItem" or "MenuSeparator" ? chosen["menu"] : null;
+            if (chosen.Name == "Menu")
+                menu = index;
+            else if (chosen.Name is "MenuItem" or "MenuSeparator")
+                menu = chosen.Parent != UIDocument.Root ? chosen.Parent : FindMenu(children, chosen["menu"]);
         }
 
-        menu ??= children.LastOrDefault(child => child.Name == "Menu")?["name"]
-            ?? throw new ArgumentException("Add a menu first, then its items.", nameof(selected));
+        if (menu is null)
+        {
+            for (var at = children.Count - 1; at >= 0 && menu is null; at--)
+            {
+                if (children[at].Name == "Menu")
+                    menu = at;
+            }
+        }
 
-        var last = -1;
+        if (menu is not { } found)
+            throw new ArgumentException("Add a menu first, then its items.", nameof(selected));
+
+        if (xml.ChildrenOf(found).Length > 0 || children[found].Parent != UIDocument.Root)
+            return (found, true, xml.End(found));
+
+        // Flat: after the menu, or the last item that names it.
+        var name = children[found]["name"];
+        var last = found;
         for (var at = 0; at < children.Count; at++)
         {
-            var child = children[at];
-            if ((child.Name == "Menu" && child["name"] == menu) || (child.Name is "MenuItem" or "MenuSeparator" && child["menu"] == menu))
-                last = at;
+            if (children[at].Parent == UIDocument.Root && children[at].Name is "MenuItem" or "MenuSeparator" && children[at]["menu"] == name)
+                last = Math.Max(last, at);
         }
 
-        return last < 0 ? throw new ArgumentException($"There's no menu named {menu}.", nameof(selected)) : (menu, last);
+        return (found, false, last + 1);
+    }
+
+    private static int? FindMenu(IReadOnlyList<FlatXmlElement> children, string? name)
+    {
+        for (var at = 0; at < children.Count; at++)
+        {
+            if (children[at].Name == "Menu" && children[at]["name"] == name)
+                return at;
+        }
+
+        return null;
     }
 
     private static (UIDocument, int) Insert(UIDocument document, int index, string element, List<KeyValuePair<string, string>> attributes) =>

@@ -210,10 +210,11 @@ public sealed class UIView
         if (script.TitleField is { } titleField)
             states[titleField.Name] = new State { Placeholder = titleField.Placeholder };
 
-        // Menu items share the namespace, so they're disabled and checked by name like controls.
+        // Menu items share the namespace, so they're disabled and checked by name like controls, submenus and the
+        // items in them included.
         foreach (var menu in script.Menus)
         {
-            foreach (var entry in menu.Entries)
+            foreach (var entry in menu.AllEntries())
             {
                 if (entry.Name is { } item)
                     states[item] = new State();

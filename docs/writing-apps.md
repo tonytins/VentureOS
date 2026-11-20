@@ -301,8 +301,11 @@ new number. `roll` still works in the shell, since both live in the same app.
   you can show it. Files writes its "3 items" this way, from
   `2 ^%d items^` in its `_1_files.cst`:
   `venture.cst.format(1, 2, #list)`.
-- **Menus:** add `<Menu>` elements to the `.uix` file,
-  and they appear in the menu bar while the window is in front. A chosen
+- **Menus:** add `<Menu>` elements to the `.uix` file, each holding its
+  `<MenuItem>`s and `<MenuSeparator>`s (or with the items after it, each
+  naming it with `menu`), and they appear in the menu bar while the window is
+  in front. A `<Menu>` inside another is a submenu; the menu bar doesn't open
+  submenus yet, so leave them out for now. A chosen
   item reports `pressed` with its name, like a button. Every app already
   has File, with Close Window (Ctrl+W); Edit, with Cut, Copy, Paste, and
   Select All; and Help, with About your app, which shows its `name`,

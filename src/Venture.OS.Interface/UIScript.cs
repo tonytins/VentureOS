@@ -270,17 +270,46 @@ public enum UIMenuRole
 }
 
 /// <summary>
-/// A drop-down menu in the global menu bar. <see cref="Role"/> is the standard menu it
-/// adds to, when it says; a role this reader doesn't know is skipped, so the menu shows as the document's own.
+/// A drop-down menu in the global menu bar, or a submenu inside one. <see cref="Role"/> is the standard menu it
+/// adds to, when it says; a role this reader doesn't know is skipped, so the menu shows as the document's own. A
+/// submenu has no role.
 /// </summary>
 public sealed record UIMenu(
-    string Name, string Title, char? Hotkey, IReadOnlyList<UIMenuEntry> Entries, int Line, UIMenuRole? Role = null);
+    string Name, string Title, char? Hotkey, IReadOnlyList<UIMenuEntry> Entries, int Line, UIMenuRole? Role = null)
+{
+    /// <summary>
+    /// Every entry in the menu and, after each submenu's entry, everything in that submenu, however deep: what's
+    /// disabled, checked, or named, and every shortcut, is found among these.
+    /// </summary>
+    public IReadOnlyList<UIMenuEntry> AllEntries()
+    {
+        List<UIMenuEntry> all = [];
+        Collect(this, all);
+        return all;
 
-/// <summary>An item or a separator in a <see cref="UIMenu"/>. A separator has no name.</summary>
-public sealed record UIMenuEntry(string? Name, string? Title, char? Hotkey, UIShortcut? Shortcut, int Line)
+        static void Collect(UIMenu menu, List<UIMenuEntry> into)
+        {
+            foreach (var entry in menu.Entries)
+            {
+                into.Add(entry);
+                if (entry.Submenu is { } submenu)
+                    Collect(submenu, into);
+            }
+        }
+    }
+}
+
+/// <summary>
+/// An item, a separator, or a submenu's entry in a <see cref="UIMenu"/>. A separator has no name; a submenu's entry
+/// has the submenu's name, title, and hotkey, and no shortcut.
+/// </summary>
+public sealed record UIMenuEntry(string? Name, string? Title, char? Hotkey, UIShortcut? Shortcut, int Line, UIMenu? Submenu = null)
 {
     /// <summary>Whether it's a separator line rather than an item.</summary>
     public bool IsSeparator => Name is null;
+
+    /// <summary>Whether it opens <see cref="Submenu"/> rather than being chosen.</summary>
+    public bool IsSubmenu => Submenu is not null;
 }
 
 /// <summary>A key combination that chooses a menu item from anywhere, such as Ctrl+N.</summary>
@@ -484,20 +513,31 @@ public sealed class UIScript
         Dictionary<string, UIStyle> styles = [];
         List<UIVisual> visuals = [];
         List<UIControl> controls = [];
-        List<(string Name, string Title, char? Hotkey, int Line, UIMenuRole? Role)> menus = [];
+        Dictionary<int, MenuDraft> menus = [];
+        List<MenuDraft> bar = [];
         List<(string Menu, UIMenuEntry Entry)> entries = [];
         List<UIToolbarItem> toolbar = [];
         UITitleField? titleField = null;
         UISidebar? sidebar = null;
         List<UIPane> panes = [];
 
-        foreach (var element in document.Children)
+        for (var at = 0; at < document.Children.Count; at++)
         {
-            // The spec lets some elements hold others; until this reader reads them, every nested element is refused.
+            var element = document.Children[at];
+
+            // Only a menu holds elements: its items, separators, and submenus. Everything else sits in <UIScript>.
+            MenuDraft? holder = null;
             if (element.Parent != FlatXmlDocument.RootIndex)
-                throw new UIScriptException(
-                    $"<{element.Name}> can't be inside <{document.Children[element.Parent].Name}>; this VentureOS reads only elements directly inside <UIScript>.",
-                    element.Line);
+            {
+                var parent = document.Children[element.Parent];
+                if (parent.Name != "Menu" || element.Name is not ("Menu" or "MenuItem" or "MenuSeparator"))
+                    throw new UIScriptException(
+                        parent.Name == "Menu"
+                            ? $"<{element.Name}> can't be inside <Menu>; a menu holds menu items, separators, and submenus."
+                            : $"<{element.Name}> can't be inside <{parent.Name}>; only a <Menu> holds other elements.",
+                        element.Line);
+                holder = menus[element.Parent];
+            }
 
             Attributes reader = new(element);
             switch (element.Name)
@@ -550,23 +590,35 @@ public sealed class UIScript
 
                 case "Menu":
                 {
+                    // A submenu sits in its parent menu and goes nowhere else, so it has no standard menu to join.
+                    if (holder is not null && element["role"] is not null)
+                        throw new UIScriptException("A submenu can't have a role; only a menu in the bar joins a standard menu.", element.Line);
+
                     // An unknown role is a newer document's; its menu still works as the document's own.
                     var role = reader.String("role") is { } written ? ParseMenuRole(written) : null;
                     if (role is null && element["role"] is not null)
                         ignored.Add(new UIIgnoredAttribute("Menu", "role", element.Line));
-                    menus.Add((reader.RequiredString("name"), reader.RequiredString("title"), reader.Hotkey("hotkey"),
-                        element.Line, role));
+                    MenuDraft draft = new(reader.RequiredString("name"), reader.RequiredString("title"), reader.Hotkey("hotkey"),
+                        element.Line, role, IsSubmenu: holder is not null);
+                    menus[at] = draft;
+                    if (holder is null)
+                        bar.Add(draft);
+                    else
+                        holder.Contents.Add(draft);
                     break;
                 }
 
                 case "MenuItem":
-                    entries.Add((reader.RequiredString("menu"), new UIMenuEntry(
+                {
+                    UIMenuEntry item = new(
                         reader.RequiredString("name"),
                         reader.RequiredString("title"),
                         reader.Hotkey("hotkey"),
                         reader.Shortcut("shortcut"),
-                        element.Line)));
+                        element.Line);
+                    Place(holder, item, reader, entries);
                     break;
+                }
 
                 case "ToolbarItem":
                     toolbar.Add(new UIToolbarItem(
@@ -597,7 +649,7 @@ public sealed class UIScript
                     break;
 
                 case "MenuSeparator":
-                    entries.Add((reader.RequiredString("menu"), new UIMenuEntry(null, null, null, null, element.Line)));
+                    Place(holder, new UIMenuEntry(null, null, null, null, element.Line), reader, entries);
                     break;
 
                 default:
@@ -624,7 +676,7 @@ public sealed class UIScript
             Styles = styles,
             Visuals = visuals,
             Controls = controls,
-            Menus = BuildMenus(menus, entries),
+            Menus = BuildMenus(bar, menus.Values, entries),
             ToolbarItems = toolbar,
             TitleField = titleField,
             Sidebar = sidebar,
@@ -759,42 +811,104 @@ public sealed class UIScript
             Pane: reader.String("pane"));
     }
 
-    private static IReadOnlyList<UIMenu> BuildMenus(
-        List<(string Name, string Title, char? Hotkey, int Line, UIMenuRole? Role)> menus,
-        List<(string Menu, UIMenuEntry Entry)> entries)
+    /// <summary>
+    /// A menu as it's read, before it's built: what it holds in document order, each an entry or a submenu, whether
+    /// it holds them nested, and whether it's itself a submenu.
+    /// </summary>
+    private sealed record MenuDraft(string Name, string Title, char? Hotkey, int Line, UIMenuRole? Role, bool IsSubmenu)
     {
-        List<UIMenu> built = [];
-        HashSet<char> menuHotkeys = [];
-        foreach (var (name, title, hotkey, line, role) in menus)
+        public List<object> Contents { get; } = [];
+
+        // Flat items join a menu by name after everything is read; nested ones are in it as they're read.
+        public bool HoldsNested { get; set; }
+    }
+
+    /// <summary>
+    /// Puts an item or separator where it belongs: inside the menu that holds it, which it must not also name, or,
+    /// written flat, in the menu its <c>menu</c> names, once every menu is known.
+    /// </summary>
+    private static void Place(MenuDraft? holder, UIMenuEntry entry, Attributes reader, List<(string Menu, UIMenuEntry Entry)> flat)
+    {
+        if (holder is null)
         {
-            if (built.Exists(menu => menu.Name == name))
-                throw Duplicate(name, line);
-            if (hotkey is { } key && !menuHotkeys.Add(char.ToUpperInvariant(key)))
-                throw new UIScriptException($"Two menus use the hotkey {key}.", line);
-
-            List<UIMenuEntry> items = [];
-            HashSet<char> itemHotkeys = [];
-            foreach (var (menuName, entry) in entries)
-            {
-                if (menuName != name)
-                    continue;
-                if (entry.Hotkey is { } itemKey && !itemHotkeys.Add(char.ToUpperInvariant(itemKey)))
-                    throw new UIScriptException($"Two items in the {title} menu use the hotkey {itemKey}.", entry.Line);
-                items.Add(entry);
-            }
-
-            built.Add(new UIMenu(name, title, hotkey, items, line, role));
+            flat.Add((reader.RequiredString("menu"), entry));
+            return;
         }
 
-        foreach (var (menuName, entry) in entries)
+        if (reader.String("menu") is not null)
+            throw new UIScriptException(
+                $"{(entry.IsSeparator ? "A separator" : $"\"{entry.Name}\"")} is inside the menu \"{holder.Name}\", so it doesn't name one with menu.",
+                entry.Line);
+        holder.Contents.Add(entry);
+        holder.HoldsNested = true;
+    }
+
+    private static IReadOnlyList<UIMenu> BuildMenus(
+        List<MenuDraft> bar, IEnumerable<MenuDraft> all, List<(string Menu, UIMenuEntry Entry)> flat)
+    {
+        // Submenus are entries in their parents, so a parent holding one holds all it has, nested.
+        foreach (var draft in all)
         {
-            if (!built.Exists(menu => menu.Name == menuName))
+            if (draft.IsSubmenu)
+                continue;
+            foreach (var content in draft.Contents)
+            {
+                if (content is MenuDraft)
+                    draft.HoldsNested = true;
+            }
+        }
+
+        foreach (var (menuName, entry) in flat)
+        {
+            var draft = all.FirstOrDefault(menu => menu.Name == menuName);
+            var what = entry.IsSeparator ? "A separator" : $"\"{entry.Name}\"";
+            if (draft is null)
+                throw new UIScriptException($"{what} is in the menu \"{menuName}\", which isn't declared.", entry.Line);
+            if (draft.IsSubmenu)
                 throw new UIScriptException(
-                    $"{(entry.IsSeparator ? "A separator" : $"\"{entry.Name}\"")} is in the menu \"{menuName}\", which isn't declared.",
+                    $"{what} names the submenu \"{menuName}\"; a submenu holds its items inside it.", entry.Line);
+            if (draft.HoldsNested)
+                throw new UIScriptException(
+                    $"{what} names the menu \"{menuName}\", which holds its items inside it; a menu uses one form or the other.",
                     entry.Line);
+            draft.Contents.Add(entry);
+        }
+
+        List<UIMenu> built = [];
+        HashSet<char> barHotkeys = [];
+        foreach (var draft in bar)
+        {
+            if (draft.Hotkey is { } key && !barHotkeys.Add(char.ToUpperInvariant(key)))
+                throw new UIScriptException($"Two menus use the hotkey {key}.", draft.Line);
+            built.Add(Build(draft));
         }
 
         return built;
+
+        static UIMenu Build(MenuDraft draft)
+        {
+            List<UIMenuEntry> entries = [];
+            HashSet<char> hotkeys = [];
+            foreach (var content in draft.Contents)
+            {
+                UIMenuEntry entry;
+                if (content is MenuDraft inner)
+                {
+                    var submenu = Build(inner);
+                    entry = new UIMenuEntry(submenu.Name, submenu.Title, submenu.Hotkey, null, submenu.Line, submenu);
+                }
+                else
+                {
+                    entry = (UIMenuEntry)content;
+                }
+
+                if (entry.Hotkey is { } key && !hotkeys.Add(char.ToUpperInvariant(key)))
+                    throw new UIScriptException($"Two entries in the {draft.Title} menu use the hotkey {key}.", entry.Line);
+                entries.Add(entry);
+            }
+
+            return new UIMenu(draft.Name, draft.Title, draft.Hotkey, entries, draft.Line, draft.Role);
+        }
     }
 
     private void Validate()
@@ -842,10 +956,11 @@ public sealed class UIScript
             Unique(names, control.Name, control.Line);
         foreach (var pane in Panes)
             Unique(names, pane.Name, pane.Line);
+        // A submenu's name is its entry's, so it's counted once, however deep.
         foreach (var menu in Menus)
         {
             Unique(names, menu.Name, menu.Line);
-            foreach (var entry in menu.Entries)
+            foreach (var entry in menu.AllEntries())
             {
                 if (entry.Name is { } entryName)
                     Unique(names, entryName, entry.Line);
@@ -855,7 +970,7 @@ public sealed class UIScript
         HashSet<string> shortcuts = [];
         foreach (var menu in Menus)
         {
-            foreach (var entry in menu.Entries)
+            foreach (var entry in menu.AllEntries())
             {
                 if (entry.Shortcut is { } shortcut && !shortcuts.Add(shortcut.ToString()))
                     throw new UIScriptException($"Two menu items use the shortcut {shortcut}.", entry.Line);
