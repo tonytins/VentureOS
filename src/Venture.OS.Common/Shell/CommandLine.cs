@@ -103,6 +103,59 @@ public static class CommandLine
     }
 
     /// <summary>
+    /// Splits off the first word, read as <see cref="TryParse"/> reads words, and the rest of the line exactly as it
+    /// was typed, without the space after the word or at its end: for a command that takes text rather than words
+    /// (<see cref="ITextCommand"/>).
+    /// </summary>
+    /// <param name="input">The line the user typed.</param>
+    /// <param name="first">The first word, or empty when the line is blank.</param>
+    /// <param name="rest">What follows it, as written.</param>
+    /// <param name="error">Why the first word couldn't be read, when the method returns <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> if the first word was read; <see langword="false"/> if its quote or escape was left open.</returns>
+    public static bool TrySplitFirst(string input, out string first, out string rest, [NotNullWhen(false)] out string? error)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        first = "";
+        rest = "";
+
+        var start = 0;
+        while (start < input.Length && input[start] is ' ' or '\t')
+            start++;
+
+        // The word ends at the first space or tab outside quotes, where TryParse would end it too.
+        var end = start;
+        while (end < input.Length && input[end] is not (' ' or '\t'))
+        {
+            switch (input[end])
+            {
+                case '\'':
+                    var closing = input.IndexOf('\'', end + 1);
+                    end = closing < 0 ? input.Length : closing + 1;
+                    break;
+                case '"':
+                    var position = end + 1;
+                    while (position < input.Length && input[position] != '"')
+                        position += input[position] == '\\' && position + 1 < input.Length ? 2 : 1;
+                    end = Math.Min(input.Length, position + 1);
+                    break;
+                case '\\':
+                    end = Math.Min(input.Length, end + 2);
+                    break;
+                default:
+                    end++;
+                    break;
+            }
+        }
+
+        if (!TryParse(input[start..end], out var words, out error))
+            return false;
+
+        first = words.Count > 0 ? words[0] : "";
+        rest = input[end..].Trim(' ', '\t');
+        return true;
+    }
+
+    /// <summary>
     /// Reads a double-quoted part starting at the opening quote, and moves <paramref name="index"/> past the closing one.
     /// </summary>
     /// <returns><see langword="false"/> if the line ends before the closing quote.</returns>

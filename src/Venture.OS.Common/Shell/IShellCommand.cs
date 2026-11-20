@@ -26,3 +26,14 @@ public interface IShellCommand
     /// </summary>
     void Execute(ShellContext context, IReadOnlyList<string> arguments);
 }
+
+/// <summary>
+/// A command whose argument is code or text rather than words, such as <c>lua</c>: it gets the rest of the line as
+/// written, quotes and backslashes included, as its one argument, or none when nothing follows its name.
+/// </summary>
+/// <remarks>
+/// The shell's quoting is for words, so <c>lua print("x")</c> split into words would reach Lua as <c>print(x)</c>.
+/// Text that starts with a quote is read the old way, as one quoted word, so <c>lua "print(1)"</c> still works: no
+/// Lua statement starts with a quote, so nothing written for Lua is lost by it.
+/// </remarks>
+public interface ITextCommand : IShellCommand;

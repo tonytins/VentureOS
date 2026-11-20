@@ -37,6 +37,59 @@ public sealed class CommandShellTests
         Assert.Empty(output.Lines);
     }
 
+    [Theory]
+    [InlineData("lua print(\"x\")", "print(\"x\")")]
+    [InlineData("lua   print('it\\'s')  ", "print('it\\'s')")]
+    [InlineData("lua venture.setAppearance({wallpaper=\"Charger\"})", "venture.setAppearance({wallpaper=\"Charger\"})")]
+    [InlineData("lua print(\"a  b\")", "print(\"a  b\")")]
+    [InlineData("lua x = \"unclosed", "x = \"unclosed")]
+    [InlineData("lua \"print(1)\"", "print(1)")]
+    [InlineData("lua 'print(\"x\")'", "print(\"x\")")]
+    [InlineData("\"lua\" print(1)", "print(1)")]
+    public void ATextCommandGetsTheRestOfTheLineAsWritten(string input, string text)
+    {
+        TestTextCommand command = new("lua");
+        registry.Register(command);
+
+        CreateShell().Execute(input);
+
+        Assert.Equal([text], Assert.Single(command.Calls));
+        Assert.Empty(output.Lines);
+    }
+
+    [Fact]
+    public void ATextCommandWithNothingAfterItGetsNoArgument()
+    {
+        TestTextCommand command = new("lua");
+        registry.Register(command);
+
+        CreateShell().Execute("  lua   ");
+
+        Assert.Empty(Assert.Single(command.Calls));
+    }
+
+    [Fact]
+    public void OtherCommandsStillGetWords()
+    {
+        TestCommand command = new("echo", maxArguments: 2);
+        registry.Register(command);
+        registry.Register(new TestTextCommand("lua"));
+
+        CreateShell().Execute("echo \"a  b\" c");
+
+        Assert.Equal(["a  b", "c"], Assert.Single(command.Calls));
+    }
+
+    [Fact]
+    public void AnUnclosedQuoteInTheCommandsNameIsReported()
+    {
+        registry.Register(new TestTextCommand("lua"));
+
+        CreateShell().Execute("\"lua print(1)");
+
+        Assert.Equal(["Missing closing double quote (\")."], output.Lines);
+    }
+
     [Fact]
     public void MatchesCommandNamesIgnoringCase()
     {

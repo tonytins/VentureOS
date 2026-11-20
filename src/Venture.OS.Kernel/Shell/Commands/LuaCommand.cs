@@ -7,7 +7,9 @@ namespace Venture.OS.Shell.Commands;
 /// Runs one chunk of Lua code, or with no code, opens an interactive Lua prompt.
 /// </summary>
 /// <remarks>
-/// <para><c>lua "code"</c> runs through <see cref="LuaRunner"/>, as script commands do, in a fresh interpreter. Plain
+/// <para><c>lua code</c> runs through <see cref="LuaRunner"/>, as script commands do, in a fresh interpreter; the code is
+/// the rest of the line as typed (<see cref="ITextCommand"/>), so its quotes reach Lua, and <c>lua "code"</c> still
+/// works. Plain
 /// <c>lua</c> opens <see cref="LuaRepl"/>, where values carry over between lines until <c>exit</c>.</para>
 /// <para>Either way, output goes through the shell, relative paths start at the shell's current folder (so
 /// <c>dofile('script.lua')</c> in <c>/mnt</c> runs <c>/mnt/script.lua</c>), Lua errors and <c>os.exit</c> are reported here, and
@@ -23,7 +25,7 @@ namespace Venture.OS.Shell.Commands;
 /// </param>
 /// <param name="runShell">Runs a line as if typed at the shell, for <c>!</c> and <c>venture.shell</c>.</param>
 internal sealed class LuaCommand(ISystemInfo system, Func<RuntimeCommands?> commands, Action<string> runShell)
-    : IShellCommand
+    : ITextCommand
 {
     private readonly ISystemInfo system = system ?? throw new ArgumentNullException(nameof(system));
     private readonly Func<RuntimeCommands?> commands = commands ?? throw new ArgumentNullException(nameof(commands));
@@ -42,7 +44,7 @@ internal sealed class LuaCommand(ISystemInfo system, Func<RuntimeCommands?> comm
             // The prompt reads the console's keyboard directly, which a shell in a window doesn't have.
             if (!context.HasConsole)
             {
-                context.Output.WriteLine("lua: the interactive prompt needs the text console; run a line with lua \"<code>\" instead.");
+                context.Output.WriteLine("lua: the interactive prompt needs the text console; run a line with lua <code> instead.");
                 return;
             }
 

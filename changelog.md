@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.708
+
+- `lua` gets the rest of the line exactly as typed, so `lua print("hello world")` and `lua venture.setAppearance({wallpaper="Charger"})` work as written; before, the shell took the double quotes away. `lua "code"` still works.
+
 ## 0.7.707
 
 - Roundhouse's outline is a tree: what's in a menu or pane is indented under it, and a menu or pane can be folded with Left or a double-click, and opened again with Right or another double-click.

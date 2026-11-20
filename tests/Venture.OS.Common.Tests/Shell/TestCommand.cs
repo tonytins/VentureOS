@@ -26,3 +26,17 @@ internal sealed class TestCommand(string name, int minArguments = 0, int maxArgu
             throw ExceptionToThrow;
     }
 }
+
+/// <summary>A command that takes the rest of the line as written, as <c>lua</c> does, and records it.</summary>
+internal sealed class TestTextCommand(string name) : ITextCommand
+{
+    public string Name { get; } = name;
+    public string Summary => $"The {Name} text command.";
+    public string Usage => $"{Name} [text]";
+    public int MinArguments => 0;
+    public int MaxArguments => 1;
+
+    public List<IReadOnlyList<string>> Calls { get; } = [];
+
+    public void Execute(ShellContext context, IReadOnlyList<string> arguments) => Calls.Add(arguments);
+}

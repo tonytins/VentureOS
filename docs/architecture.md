@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,062 tests, and 295 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,073 tests, and 295 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -559,7 +559,12 @@ flowchart LR
 - **Parsing** (`CommandLine`): words are separated by spaces or tabs.
   `'single quotes'` are literal, `"double quotes"` allow `\"` and `\\`,
   and a backslash outside quotes makes the next character literal. An
-  unclosed quote or a trailing backslash is reported, not thrown.
+  unclosed quote or a trailing backslash is reported, not thrown. The shell
+  reads the command's name first (`CommandLine.TrySplitFirst`): a command
+  that takes text rather than words (`ITextCommand`, such as `lua`) gets
+  the rest of the line as typed, quotes included, so `lua print("x")`
+  reaches Lua whole; text that starts with a quote and is one quoted word
+  is read as that word, so `lua "print(1)"` still works.
 - **Commands** (`IShellCommand`) declare a name (lowercase letters, digits,
   and hyphens), a one-line summary, a usage line, and their minimum and
   maximum argument counts. The shell checks the count before running a
@@ -760,7 +765,7 @@ the interpreter, so nothing it set up outlives it. There are two owners:
 | `init.lua` | The whole boot; if it fails partway, its undos run at once, so no half-registered commands are left | Until shutdown |
 | A `lua` prompt session | Until `exit` or the end of its input | Vanish on `exit`, restoring any script they replaced |
 
-One-shot code (`lua "code"` and script commands) has no lasting owner, so
+One-shot code (`lua code` and script commands) has no lasting owner, so
 `venture.command` and `venture.shell` there explain that they only work in
 `init.lua` and at the `lua` prompt.
 
@@ -1789,6 +1794,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | patch | Shell (§9): `ITextCommand` commands, `lua` among them, get the rest of the line as typed, so quotes in Lua code reach Lua. |
 | 2026-11-20 | minor | Roundhouse (§9): the outline is a tree, indented by depth, with menus and panes folding; Edit ▸ Move Into and Move Out, and Tab and Shift+Tab in the outline, through `FlatXmlEditor.MoveInto` and `MoveOut`, which re-indent what they move. |
 | 2026-11-20 | minor | Interfaces (§9): a `<Pane>` holds its controls, beside the flat form; the shipped apps' menus and Settings' panes nest; Roundhouse adds inside menus and panes by default and restacks among siblings. The Charger wallpaper ships beside Earthset. |
 | 2026-11-20 | minor | Menu bar (§9): submenus open beside their entry from the pointer and the keys, and cross over without closing; a disabled submenu blocks its items and their shortcuts; a pointer resting off the menus no longer clears what the keys highlighted. Notes has Note ▸ Sort By (Order Added, Newest First, A to Z), changing only the list's order. |
