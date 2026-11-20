@@ -53,7 +53,7 @@ rows icons and groups, which apps set through `window:setItems` (see [Writing ap
 
 - **Nested menus.** Since 2026-11-20, Hudini's `menus` module lets a `<Menu>` hold its items, separators, and
   submenus. VentureOS reads only the flat form, with `menu` on each item, and refuses a nested one, so for now it
-  doesn't read every document Hudini does. Nesting comes in 0.7.6xx, as do panes that hold their controls, following
+  doesn't read every document Hudini does. Nesting comes in 0.7.7xx, as do panes that hold their controls, following
   Hudini's rule that only a module's elements nest and core elements, such as a `<Window>`'s controls, stay flat.
 
 - A four-state button image holds normal, pressed, hovered, and disabled pictures, left to right, as Hudini's spec

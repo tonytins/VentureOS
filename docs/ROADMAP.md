@@ -44,7 +44,7 @@ stage to the next, and add a line to the revision history.
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
-| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; UIScript 2; then Roundhouse on VentureOS itself |
+| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; Roundhouse projects; nesting; then Roundhouse on VentureOS itself |
 
 ## 0.4, Pere Marquette
 
@@ -280,7 +280,24 @@ CST.NET's `CSTLayers` takes them, upstream.
 - [x] Roundhouse: highlighting `.cst` files, their problems in the Log, and
   the designer redrawing when a table changes.
 
-**0.7.6xx, nesting**
+**0.7.6xx, Roundhouse projects**
+
+A place for work in progress, and a way in that starts with drawing, from
+[its design](./design/2026-11-20-roundhouse-projects-design.md). A Roundhouse
+Project (`.rproj`) holds one app and its interfaces, and Roundhouse makes the
+`.app` from it only to run or export it, so an `.app` only appears where
+something runs it.
+
+- [ ] Projects: `.rproj` opened, edited, run in the simulator and on
+  VentureOS, and exported as an `.app`; File ▸ New… with New Project, New
+  App, and New Interface; a stray `.app` can become a project.
+- [ ] Untitled interfaces: New Interface opens a blank canvas at once, and
+  saving asks where it goes.
+- [ ] A welcome window: recent items, the ways to start, and a status bar
+  with hints and "Show at startup".
+- [ ] Run as a drop-down: Run in Simulation and Run on VentureOS.
+
+**0.7.7xx, nesting**
 
 UIScript nesting, as Hudini's spec settled it on 2026-11-20: a module's
 elements may nest, core elements stay flat, and `version` stays `1`. Menus
@@ -336,6 +353,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | 0.7.6xx is Roundhouse projects, from its approved design: `.rproj` projects, untitled interfaces, a welcome window, and Run as a drop-down. Nesting moves to 0.7.7xx, by my decision. |
 | 2026-11-20 | minor | 0.7.5xx is complete: Roundhouse highlights `.cst` tables, checks them as VentureOS reads them, and draws their unsaved text. The next band, 0.7.6xx, nesting, is the owner's to plan. |
 | 2026-11-20 | patch | 0.7.5xx: `venture.cst` (named so by my decision), `get` and `format`, and `window:string`, for apps; Files' count is its first user. |
 | 2026-11-20 | patch | 0.7.5xx: references between tables are followed one step, with their arguments, through `StringTables`. |

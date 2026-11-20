@@ -17,6 +17,7 @@ design's status says so. What's planned and when is in [the roadmap](../ROADMAP.
 | [Supervised processes](./2026-11-18-processes-design.md)                  | Every app as a process the desktop watches, ends, and restarts               | Built in 0.7.2xx, Seto     |
 | [The dock and the menu bar as apps](./2026-11-18-dock-app-design.md)      | Panel windows and shelves, with the dock and the menu bar as apps            | Built in 0.7.3xx, Seto     |
 | [vdb: encrypting the conversation](./2026-11-19-vdb-encryption-design.md) | Sealing vdb/1 with keys from the computer's identity, which stops being sent | Built in 0.7.4xx, Seto |
+| [Roundhouse projects](./2026-11-20-roundhouse-projects-design.md)        | A welcome window, untitled interfaces, `.rproj` projects, and Run's drop-down | Approved for 0.7.6xx, Seto |
 
 [`interface.figcraft`](./interface.figcraft) is a mock-up of the desktop's windows, made in
 [Figcraft](https://github.com/storytold/figcraft), from when the title bar was designed.
