@@ -338,10 +338,11 @@ new number. `roll` still works in the shell, since both live in the same app.
   content, so the window's size and your controls' positions don't change.
   See [UIScript sidebar](./uiscript/README.md#sidebar).
 - **Panes:** for a sidebar that switches between sets of controls, as
-  Settings has, add a `<Pane name="general" title="General"/>` for each row, in order, and `pane="general"` on each
-  control in it. The sidebar shows the panes' titles and only the chosen
-  pane's controls, with no code of yours; a control without `pane` shows on
-  every pane. The rows are the document's, so `setItems` on that sidebar is
+  Settings has, add a `<Pane name="general" title="General">` for each row,
+  in order, holding its controls (or `pane="general"` on each control
+  instead, outside any pane). The sidebar shows the panes' titles and only
+  the chosen pane's controls, with no code of yours; a control in no pane
+  shows on every pane. The rows are the document's, so `setItems` on that sidebar is
   an error, but `select` and the `selected` event work as usual. See
   [UIScript panes](./uiscript/README.md#panes).
 - **Resizing:** `resizable="true"` on `<Window>` puts a grip in the window's

@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (submenus in the menu bar) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (panes that hold their controls) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-20)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,044 tests, and 282 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,051 tests, and 287 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -857,9 +857,12 @@ its children included, the end of its name, where its closing tag begins,
 and each attribute's span, value as written, and quote. `FlatXmlEditor`
 inserts inside a given parent (opening up one written `<Name/>`), and
 removes or moves an element among its siblings with everything inside it.
-`UIScript` lets only a `<Menu>` hold elements: its items, separators, and
-submenus; anything else nested is refused, naming both elements, and opens
-in Roundhouse for text editing only.
+`UIScript` lets only a `<Menu>` and a `<Pane>` hold elements: a menu its
+items, separators, and submenus, and a pane its controls; anything else
+nested is refused, naming both elements, and opens in Roundhouse for text
+editing only. Roundhouse's designer adds a menu item or a control inside its
+menu or pane, unless that menu's items or pane's controls name it from
+outside, and moves controls forward and back only among their siblings.
 
 `UIDocument` is a `.uix` as Roundhouse holds it: the exact text (a byte
 order mark and line endings included, as strict UTF-8), those positions,
@@ -925,8 +928,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   a side and 8 megapixels) before Cosmos's `Graphics.Png` decodes it, and
   says on serial why a picture couldn't be read. The session keeps each
   picture at the size it's drawn, read and scaled once, including those that
-  failed. The Earthset wallpaper ships pre-scaled to 1024x768, so it isn't
-  scaled at boot. `IPainter.DrawImage` blends by opacity; `CanvasPainter`
+  failed. The wallpapers, Earthset and Charger (the owner's photo, CC0),
+  ship pre-scaled to 1024x768, so they aren't scaled at boot. `IPainter.DrawImage` blends by opacity; `CanvasPainter`
   copies an opaque picture and blends any other into the canvas's buffer.
   An app's icon is a `DesktopIcon`: pixels in exactly `#00FF01` are made
   clear first, at full size, so scaling smooths the edge; then an icon with
@@ -1375,8 +1378,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   separators aren't rows). Clicks, hover, and scrolling count the lines'
   room. Files sets System apart from its places with one.
 - **Panes** (0.7.4xx, [spec](./uiscript/README.md#panes)): a document's
-  `<Pane>`s are its sidebar's rows, and a control's
-  `pane` puts it in one. `UIView` fills the rows from the panes, selects the
+  `<Pane>`s are its sidebar's rows, and a pane holds its controls (since
+  0.7.7xx; a control's `pane` still puts one written outside it there, one
+  form per pane). `UIView` fills the rows from the panes, selects the
   first, and shows a control in a pane only while that pane's row is
   selected (`IsShowing`), apart from what the app hides (`IsHidden`); a
   field whose pane goes away loses the keyboard. `window:setItems` refuses
@@ -1773,6 +1777,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | Interfaces (§9): a `<Pane>` holds its controls, beside the flat form; the shipped apps' menus and Settings' panes nest; Roundhouse adds inside menus and panes by default and restacks among siblings. The Charger wallpaper ships beside Earthset. |
 | 2026-11-20 | minor | Menu bar (§9): submenus open beside their entry from the pointer and the keys, and cross over without closing; a disabled submenu blocks its items and their shortcuts; a pointer resting off the menus no longer clears what the keys highlighted. Notes has Note ▸ Sort By (Order Added, Newest First, A to Z), changing only the list's order. |
 | 2026-11-20 | minor | Interfaces (§9): nested menus and submenus. A `<Menu>` holds its items, separators, and submenus, beside the flat form; `UIMenuEntry.Submenu` and `UIMenu.AllEntries`; the spec's rules (one form per menu, submenus only nest and take no role, hotkeys per menu, names and shortcuts across depths). The menu bar shows a submenu's entry dimmed until it opens them; Roundhouse adds an item inside a nested menu and keeps a copy in its parent. |
 | 2026-11-20 | patch | Roundhouse (§9): the main and welcome windows share `WindowTitleBar` (`TitleBarStyles.axaml` for its look), so the welcome window's bar is its title bar too, with its zoom dot dimmed. |

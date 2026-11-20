@@ -101,15 +101,16 @@ public static class DesignEdits
             {
                 if (document.Script?.Sidebar is null)
                     throw new UIScriptException("A pane is a row of a sidebar; add a sidebar first.");
-                var children = document.Xml!.Children;
+                // After the last pane and everything in it, or else after the sidebar.
+                var xml = document.Xml!;
                 var after = -1;
-                for (var child = 0; child < children.Count; child++)
+                foreach (var child in xml.ChildrenOf(UIDocument.Root))
                 {
-                    if (children[child].Name is "Pane" || (after < 0 && children[child].Name == "Sidebar"))
+                    if (xml.Children[child].Name is "Pane" || (after < 0 && xml.Children[child].Name == "Sidebar"))
                         after = child;
                 }
 
-                return Insert(document, after + 1, element, [new("name", UniqueName(document, "pane")), new("title", "Pane")]);
+                return Insert(document, after < 0 ? 0 : xml.End(after), element, [new("name", UniqueName(document, "pane")), new("title", "Pane")]);
             }
         }
 
@@ -130,8 +131,20 @@ public static class DesignEdits
         ];
         if (control.Text is { } text)
             attributes.Add(new("text", text));
-        if (pane is not null)
+
+        // In a pane, a control goes inside it, unless its controls name it from outside, the form it then keeps.
+        if (pane is not null && PaneElement(document, pane) is { } holder)
+        {
+            var xml = document.Xml!;
+            var named = xml.ChildrenOf(UIDocument.Root).Any(child => xml.Children[child]["pane"] == pane);
+            if (xml.ChildrenOf(holder).Length > 0 || !named)
+            {
+                var inside = xml.End(holder);
+                return (document.InsertElement(inside, element, attributes, holder), inside);
+            }
+
             attributes.Add(new("pane", pane));
+        }
 
         var index = document.Xml!.Children.Count;
         return (document.InsertElement(index, element, attributes), index);
@@ -212,24 +225,44 @@ public static class DesignEdits
     private static (UIDocument, int) Restack(UIDocument document, int element, int direction)
     {
         ArgumentNullException.ThrowIfNull(document);
-        var children = document.Xml?.Children ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
+        var xml = document.Xml ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
         if (Layer(Child(document, element).Name) is not { } layer)
             return (document, element);
 
-        for (var index = element + direction; index >= 0 && index < children.Count; index += direction)
+        // Among its siblings: the controls in the same pane, or those directly in the window. A control in a pane is
+        // drawn where it's written, so it passes only its neighbours there.
+        var siblings = xml.ChildrenOf(xml.Children[element].Parent);
+        for (var place = Array.IndexOf(siblings, element) + direction; place >= 0 && place < siblings.Length; place += direction)
         {
-            if (Layer(children[index].Name) == layer)
-                return (document.MoveElement(element, index), index);
+            var index = siblings[place];
+            if (Layer(xml.Children[index].Name) == layer)
+            {
+                var moved = document.MoveElement(element, index);
+                return (moved, moved.Xml!.ChildrenOf(xml.Children[element].Parent)[place]);
+            }
         }
 
         return (document, element);
     }
 
+    /// <summary>The index of the pane named <paramref name="name"/>, or <see langword="null"/>.</summary>
+    private static int? PaneElement(UIDocument document, string name)
+    {
+        var xml = document.Xml!;
+        foreach (var child in xml.ChildrenOf(UIDocument.Root))
+        {
+            if (xml.Children[child].Name == "Pane" && xml.Children[child]["name"] == name)
+                return child;
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// The menu a new item joins, by its index, whether it holds its items inside it, and where the item goes: after
     /// its last entry. The menu is the selected one, the menu of the selected item or separator, or else the
-    /// document's last menu. A menu that holds anything, or is a submenu, takes the item inside it; an empty menu in
-    /// the bar, or one whose items name it, takes it flat, as before.
+    /// document's last menu. The item goes inside the menu, opening up an empty one, unless the menu's items name it
+    /// from outside with <c>menu</c>, the flat form, which it then keeps.
     /// </summary>
     private static (int Menu, bool Nested, int Place) MenuFor(UIDocument document, int? selected)
     {
@@ -257,19 +290,16 @@ public static class DesignEdits
         if (menu is not { } found)
             throw new ArgumentException("Add a menu first, then its items.", nameof(selected));
 
-        if (xml.ChildrenOf(found).Length > 0 || children[found].Parent != UIDocument.Root)
-            return (found, true, xml.End(found));
-
-        // Flat: after the menu, or the last item that names it.
+        // Flat only where its items already name it from outside, the form it then keeps; otherwise inside it.
         var name = children[found]["name"];
-        var last = found;
+        var last = -1;
         for (var at = 0; at < children.Count; at++)
         {
             if (children[at].Parent == UIDocument.Root && children[at].Name is "MenuItem" or "MenuSeparator" && children[at]["menu"] == name)
-                last = Math.Max(last, at);
+                last = at;
         }
 
-        return (found, false, last + 1);
+        return last < 0 ? (found, true, xml.End(found)) : (found, false, last + 1);
     }
 
     private static int? FindMenu(IReadOnlyList<FlatXmlElement> children, string? name)

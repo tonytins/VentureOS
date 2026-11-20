@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.706
+
+- A `<Pane>` in an interface can hold its controls, rather than each naming its pane with `pane`; both forms work. Settings and every app's menus are now written the nested way.
+- Roundhouse adds a control inside the pane on show, and a menu item inside its menu, unless the document names them from outside; moving a control forward or back stays within its pane.
+- A new wallpaper, Charger: Amtrak 315 with the southbound Crescent at New Orleans. Choose it in Settings ▸ Appearance.
+
 ## 0.7.705
 
 - Submenus open in the menu bar: rest the pointer on one, or use the right arrow, Enter, or its letter, and it opens beside its menu. Left or Esc closes it. Moving the pointer across toward an open submenu keeps it open.

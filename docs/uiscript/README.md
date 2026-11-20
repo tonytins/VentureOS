@@ -7,7 +7,7 @@ by The Sims Online's `.uis` files.
 
 This is the official spec. VentureOS keeps it, and two readers follow it:
 
-- **VentureOS** reads all of it (see [Readers](#readers) for what it doesn't yet), in
+- **VentureOS** reads all of it (see [Readers](#readers) for what it adds as a host), in
   `src/Venture.OS.Interface/UIScript.cs`.
 - **[Hudini](https://github.com/tonytins/Hudini)**, a Swift interface library for raylib games, reads a subset: the
   parts a game needs. Its [UISCRIPT.md](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) covers its
@@ -58,9 +58,11 @@ demo documents.
 - `DOCTYPE` declarations are not allowed, which also rules out custom entities. The five standard entities, such as
   `&lt;`, work as usual.
 - Every element is a direct child of `<UIScript>`, in any order, and holds no children, except where its section
-  says it may hold others, as a [`<Menu>`](#menus) does. An element anywhere else refuses the document.
+  says it may hold others, as a [`<Menu>`](#menus) and a [`<Pane>`](#panes) do. An element anywhere else refuses the
+  document.
 - No element holds text. Text goes in attributes.
-- Controls draw in document order, with later controls on top. Visuals draw before all controls.
+- Controls draw in document order, with later controls on top, whether they sit in `<UIScript>` or in a pane.
+  Visuals draw before all controls.
 - Names are unique among controls, visuals, title bar elements, menus and their items, and panes, and within each
   kind of resource. A control and an image may share a name.
 
@@ -540,17 +542,27 @@ time with no code of the app's, and a designer that runs no code shows them the 
   <Window width="380" height="200"/>
 
   <Sidebar name="panes" width="130"/>
-  <Pane name="general" title="General"/>
-  <Pane name="advanced" title="Advanced"/>
-
-  <Text name="nameLabel" x="12" y="12" width="80" height="20" text="Name" pane="general"/>
-  <TextField name="name" x="96" y="10" width="200" height="26" pane="general"/>
-  <Button name="reset" x="12" y="10" width="120" height="26" text="Reset" pane="advanced"/>
+  <Pane name="general" title="General">
+    <Text name="nameLabel" x="12" y="12" width="80" height="20" text="Name"/>
+    <TextField name="name" x="96" y="10" width="200" height="26"/>
+  </Pane>
+  <Pane name="advanced" title="Advanced">
+    <Button name="reset" x="12" y="10" width="120" height="26" text="Reset"/>
+  </Pane>
 </UIScript>
 ```
 
-A pane doesn't hold its controls: each control names its pane with `pane`, and a control without one shows on every
-pane.
+A pane holds its controls, and a control directly in `<UIScript>` shows on every pane.
+
+A pane's controls may instead sit directly in `<UIScript>`, each naming its pane with `pane`, as menu items can name
+their menu. This is the form panes had before they nested, and it still reads the same:
+
+```xml
+<Pane name="general" title="General"/>
+<Text name="nameLabel" x="12" y="12" width="80" height="20" text="Name" pane="general"/>
+```
+
+A pane uses one form or the other: one that holds anything can't also be named by a control's `pane`.
 
 `<Pane>` is one of the sidebar's rows, in document order.
 
@@ -562,7 +574,10 @@ pane.
 Rules:
 
 - Panes need a `<Sidebar>`. Panes without one refuse the document.
-- A `pane` that names no pane refuses the document.
+- A pane holds controls only, not visuals, other panes, or anything else, and a control in a pane takes no `pane` of
+  its own. Either refuses the document.
+- A `pane` that names no pane, or a pane that holds anything, refuses the document.
+- Positions in a pane are the window's content's, as for any control: a pane is a set of controls, not a box.
 - The first pane starts selected.
 
 A host that shows panes:
@@ -675,6 +690,9 @@ reads `.uis` files into the same model.
 ## Change log
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
+
+- **2026-11-20:** A `<Pane>` may hold its controls, which then take no `pane`. The flat form, with `pane` on each
+  control, still reads the same, and a pane uses one form or the other.
 
 - **2026-11-20:** VentureOS keeps the spec, and Hudini reads a subset of it. Modules are gone: menus, sidebars,
   shelves, and panes are ordinary elements, and a subset reader refuses them as unknown elements, as it would any

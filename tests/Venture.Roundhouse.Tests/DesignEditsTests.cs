@@ -168,7 +168,78 @@ public sealed class DesignEditsTests
 
         var (edited, element) = DesignEdits.Add(withPanes, "Button", null, "general");
 
-        Assert.Equal("general", edited.Xml!.Children[element]["pane"]);
+        // An empty pane is opened up to hold it, the form new documents take.
+        Assert.Equal(2, edited.Xml!.Children[element].Parent);
+        Assert.Null(edited.Xml.Children[element]["pane"]);
+        Assert.Contains("""<Pane name="general" title="General">""", edited.Text, StringComparison.Ordinal);
         Assert.Equal("general", edited.Script!.Controls.Single().Pane);
+    }
+
+    private const string NestedPanes = """
+        <UIScript>
+          <Window width="300" height="200"/>
+          <Sidebar name="side" width="100"/>
+          <Pane name="general" title="General">
+            <Button name="a" x="0" y="0" width="10" height="10"/>
+            <Button name="b" x="20" y="0" width="10" height="10"/>
+          </Pane>
+          <Pane name="advanced" title="Advanced">
+            <Button name="c" x="0" y="0" width="10" height="10"/>
+          </Pane>
+          <Text name="always" x="0" y="50" width="10" height="10"/>
+        </UIScript>
+        """;
+
+    [Fact]
+    public void AControlGoesInsideAPaneThatHoldsItsControls()
+    {
+        var (edited, element) = DesignEdits.Add(UIDocument.Read(NestedPanes), "Button", null, "general");
+
+        Assert.Equal(5, element);
+        Assert.Equal(2, edited.Xml!.Children[element].Parent);
+        Assert.Equal(["a", "b", "button"], edited.Script!.Controls.Where(control => control.Pane == "general").Select(control => control.Name));
+    }
+
+    [Fact]
+    public void AControlJoinsAPaneWhoseControlsNameItTheSameWay()
+    {
+        var flat = UIDocument.Read("""
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Sidebar name="side" width="100"/>
+              <Pane name="general" title="General"/>
+              <Button name="a" x="0" y="0" width="10" height="10" pane="general"/>
+            </UIScript>
+            """);
+
+        var (edited, element) = DesignEdits.Add(flat, "Button", null, "general");
+
+        Assert.Equal("general", edited.Xml!.Children[element]["pane"]);
+        Assert.Equal(-1, edited.Xml.Children[element].Parent);
+    }
+
+    [Fact]
+    public void ForwardAndBackwardStayAmongAPanesControls()
+    {
+        var document = UIDocument.Read(NestedPanes);
+
+        var (forward, a) = DesignEdits.BringForward(document, 3);
+        Assert.Equal(4, a);
+        Assert.Equal(["b", "a"], forward.Script!.Controls.Where(control => control.Pane == "general").Select(control => control.Name));
+
+        // At the end of its pane, it stays, rather than passing a control in another pane.
+        var (same, b) = DesignEdits.BringForward(forward, 4);
+        Assert.Same(forward, same);
+        Assert.Equal(4, b);
+    }
+
+    [Fact]
+    public void ANewPaneGoesAfterTheLastPaneAndWhatItHolds()
+    {
+        var (edited, pane) = DesignEdits.Add(UIDocument.Read(NestedPanes), "Pane", null);
+
+        Assert.Equal(7, pane);
+        Assert.Equal(["general", "advanced", "pane"], edited.Script!.Panes.Select(each => each.Name));
+        Assert.Equal(-1, edited.Xml!.Children[pane].Parent);
     }
 }

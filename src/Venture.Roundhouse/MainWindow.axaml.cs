@@ -363,7 +363,7 @@ public sealed partial class MainWindow : Window
         if (element is { } index && (Document?.Xml is not { } xml || index < 0 || index >= xml.Children.Count))
             throw new ArgumentOutOfRangeException(nameof(element), element, "The document has no such element.");
         Selection = element;
-        if (element is { } selected && PaneOf(Document!.Xml!.Children[selected]) is { } pane && pane != ShownPane)
+        if (element is { } selected && PaneOf(Document!.Xml!, selected) is { } pane && pane != ShownPane)
         {
             ShownPane = pane;
             RedrawCanvas();
@@ -374,8 +374,14 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>The pane an element shows on: a pane's own, or the one a control is in; <see langword="null"/> for the rest.</summary>
-    private static string? PaneOf(OS.Interface.Xml.FlatXmlElement element) =>
-        element.Name == "Pane" ? element["name"] : element["pane"];
+    // A pane is its own; a control is in the pane that holds it, or the one it names.
+    private static string? PaneOf(OS.Interface.Xml.FlatXmlDocument xml, int index)
+    {
+        var element = xml.Children[index];
+        if (element.Name == "Pane")
+            return element["name"];
+        return element.Parent >= 0 && xml.Children[element.Parent].Name == "Pane" ? xml.Children[element.Parent]["name"] : element["pane"];
+    }
 
     /// <summary>Selects the pane the canvas shows in a view about to be drawn, as a click on its row would.</summary>
     private void ShowPane(UIView view, UIScript script)
@@ -1214,7 +1220,8 @@ public sealed partial class MainWindow : Window
         var children = Document!.Xml!.Children;
         if (choice is { } chosen && chosen.Menu.Group == MenuGroup.Window)
         {
-            Select(Index(children, child => child.Name == "MenuItem" && child["name"] == chosen.Item.Name && child["menu"] == chosen.Menu.Menu.Name));
+            // Names are unique in a document, so the item is found by its name, inside its menu or naming it.
+            Select(Index(children, child => child.Name == "MenuItem" && child["name"] == chosen.Item.Name));
         }
         else if (pressed && bar.OpenMenu is { Group: MenuGroup.Window } opened)
         {

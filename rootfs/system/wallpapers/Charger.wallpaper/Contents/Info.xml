@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Charger: Amtrak 315, an ALC-42 Charger, with the southbound Crescent at New Orleans, December 2024. A photo by
+     Tony Bark, under CC0: https://commons.wikimedia.org/wiki/File:Amtrak_315_at_New_Orleans,_December_2024.jpg -->
+<Wallpaper version="1">
+  <Info identifier="dev.tonytins.ventureos.wallpaper.charger" name="Charger" image="Contents/Resources/Charger.png"
+        icon="Contents/Resources/Thumbnail.png"
+        description="Amtrak 315 with the southbound Crescent at New Orleans."/>
+</Wallpaper>

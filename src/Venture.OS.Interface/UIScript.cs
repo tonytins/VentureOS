@@ -514,6 +514,9 @@ public sealed class UIScript
         List<UIVisual> visuals = [];
         List<UIControl> controls = [];
         Dictionary<int, MenuDraft> menus = [];
+        Dictionary<int, string> paneNames = [];
+        HashSet<string> holdingPanes = [];
+        List<(string Pane, UIControl Control)> flatPaned = [];
         List<MenuDraft> bar = [];
         List<(string Menu, UIMenuEntry Entry)> entries = [];
         List<UIToolbarItem> toolbar = [];
@@ -525,18 +528,31 @@ public sealed class UIScript
         {
             var element = document.Children[at];
 
-            // Only a menu holds elements: its items, separators, and submenus. Everything else sits in <UIScript>.
+            // Only a menu and a pane hold elements: a menu its items, separators, and submenus, and a pane its
+            // controls. Everything else sits in <UIScript>.
             MenuDraft? holder = null;
+            string? inPane = null;
             if (element.Parent != FlatXmlDocument.RootIndex)
             {
                 var parent = document.Children[element.Parent];
-                if (parent.Name != "Menu" || element.Name is not ("Menu" or "MenuItem" or "MenuSeparator"))
-                    throw new UIScriptException(
-                        parent.Name == "Menu"
-                            ? $"<{element.Name}> can't be inside <Menu>; a menu holds menu items, separators, and submenus."
-                            : $"<{element.Name}> can't be inside <{parent.Name}>; only a <Menu> holds other elements.",
-                        element.Line);
-                holder = menus[element.Parent];
+                switch (parent.Name)
+                {
+                    case "Menu" when element.Name is "Menu" or "MenuItem" or "MenuSeparator":
+                        holder = menus[element.Parent];
+                        break;
+                    case "Pane" when ControlType(element.Name) is not null:
+                        inPane = paneNames[element.Parent];
+                        break;
+                    default:
+                        throw new UIScriptException(
+                            parent.Name switch
+                            {
+                                "Menu" => $"<{element.Name}> can't be inside <Menu>; a menu holds menu items, separators, and submenus.",
+                                "Pane" => $"<{element.Name}> can't be inside <Pane>; a pane holds controls.",
+                                _ => $"<{element.Name}> can't be inside <{parent.Name}>; only a <Menu> or a <Pane> holds other elements.",
+                            },
+                            element.Line);
+                }
             }
 
             Attributes reader = new(element);
@@ -645,8 +661,14 @@ public sealed class UIScript
                     break;
 
                 case "Pane":
-                    panes.Add(new UIPane(reader.RequiredString("name"), reader.RequiredString("title"), element.Line));
+                {
+                    var pane = new UIPane(reader.RequiredString("name"), reader.RequiredString("title"), element.Line);
+                    panes.Add(pane);
+                    paneNames[at] = pane.Name;
+                    if (document.ChildrenOf(at).Length > 0)
+                        holdingPanes.Add(pane.Name);
                     break;
+                }
 
                 case "MenuSeparator":
                     Place(holder, new UIMenuEntry(null, null, null, null, element.Line), reader, entries);
@@ -656,11 +678,34 @@ public sealed class UIScript
                     if (ControlType(element.Name) is not { } type)
                         throw new UIScriptException($"<{element.Name}> isn't a UIScript element.", element.Line);
 
-                    controls.Add(ReadControl(type, reader, element.Line));
+                    // A control in a pane is in it; one written flat names its pane, which mustn't also hold controls.
+                    var control = ReadControl(type, reader, element.Line);
+                    if (inPane is not null)
+                    {
+                        if (control.Pane is not null)
+                            throw new UIScriptException(
+                                $"\"{control.Name}\" is inside the pane \"{inPane}\", so it doesn't name one with pane.", element.Line);
+                        control = control with { Pane = inPane };
+                    }
+                    else if (control.Pane is { } named)
+                    {
+                        flatPaned.Add((named, control));
+                    }
+
+                    controls.Add(control);
                     break;
             }
 
             ignored.AddRange(reader.Unused());
+        }
+
+        // A pane uses one form: one that holds its controls can't also be named by a control written flat.
+        foreach (var (pane, control) in flatPaned)
+        {
+            if (holdingPanes.Contains(pane))
+                throw new UIScriptException(
+                    $"\"{control.Name}\" names the pane \"{pane}\", which holds its controls inside it; a pane uses one form or the other.",
+                    control.Line);
         }
 
         if (window is null)

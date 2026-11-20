@@ -171,13 +171,14 @@ public sealed class SettingsAppTests : IDisposable
     [Fact]
     public void TheWallpaperPickerShowsTheSkyThenTheSystemsWallpapers()
     {
-        // The sky, then Earthset, the only wallpaper the system ships; the other slots are hidden.
+        // The sky, then the system's wallpapers by name, Charger and Earthset; the other slots are hidden.
         Assert.Empty(Window.View.MissingImages);
         Assert.True(Window.View.IsShowing("wallpaper1"));
         Assert.True(Window.View.IsShowing("wallpaper2"));
-        Assert.False(Window.View.IsShowing("wallpaper3"));
+        Assert.True(Window.View.IsShowing("wallpaper3"));
+        Assert.False(Window.View.IsShowing("wallpaper4"));
         Assert.False(Window.View.IsShowing("wallpaper5"));
-        Assert.True(Window.View.IsSelected("wallpaper2"));
+        Assert.True(Window.View.IsSelected("wallpaper3"));
         Assert.Equal("Earthset", Window.View.Text("wallpaperName"));
         Assert.Equal("", Window.View.Text("status"));
 
@@ -191,8 +192,8 @@ public sealed class SettingsAppTests : IDisposable
         // Coming back to Appearance from Clock keeps the unused slots hidden.
         Choose(2);
         Choose(0);
-        Assert.False(Window.View.IsShowing("wallpaper3"));
-        Assert.True(Window.View.IsShowing("wallpaper2"));
+        Assert.False(Window.View.IsShowing("wallpaper4"));
+        Assert.True(Window.View.IsShowing("wallpaper3"));
     }
 
     [Fact]

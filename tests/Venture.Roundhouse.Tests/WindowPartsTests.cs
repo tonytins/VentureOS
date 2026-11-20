@@ -84,11 +84,31 @@ public sealed class WindowPartsTests : IDisposable
         var (withItem, item) = DesignEdits.Add(withView, "MenuItem", file);
         var (withSeparator, separator) = DesignEdits.Add(withItem, "MenuSeparator", item);
 
+        // New menus come out nested: the empty menu opens up to hold its first item.
         Assert.Equal(file + 1, item);
         Assert.Equal(item + 1, separator);
-        Assert.Equal("menu", withSeparator.Xml!.Children[separator]["menu"]);
+        Assert.Equal(file, withSeparator.Xml!.Children[separator].Parent);
+        Assert.Null(withSeparator.Xml.Children[separator]["menu"]);
         Assert.Equal(2, withSeparator.Script!.Menus[0].Entries.Count);
         Assert.Empty(withSeparator.Script.Menus[1].Entries);
+    }
+
+    [Fact]
+    public void AMenuWhoseItemsNameItKeepsThatForm()
+    {
+        var flat = UIDocument.Read("""
+            <UIScript version="1">
+              <Window width="300" height="200"/>
+              <Menu name="file" title="File"/>
+              <MenuItem menu="file" name="open" title="Open"/>
+            </UIScript>
+            """);
+
+        var (edited, item) = DesignEdits.Add(flat, "MenuItem", 1);
+
+        Assert.Equal(3, item);
+        Assert.Equal("file", edited.Xml!.Children[item]["menu"]);
+        Assert.Equal(-1, edited.Xml.Children[item].Parent);
     }
 
     private const string NestedMenu = """
@@ -137,7 +157,7 @@ public sealed class WindowPartsTests : IDisposable
 
         var (edited, item) = DesignEdits.Add(two, "MenuItem", null);
 
-        Assert.Equal("menu2", edited.Xml!.Children[item]["menu"]);
+        Assert.Equal("menu2", edited.Xml!.Children[edited.Xml.Children[item].Parent]["name"]);
         Assert.Contains("Add a menu first", Assert.Throws<ArgumentException>(() => DesignEdits.Add(UIDocument.Read(Plain), "MenuItem", null)).Message);
     }
 

@@ -861,7 +861,8 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.Equal(menu + 1, window.Selection);
         Assert.DoesNotContain("requires", window.Text, StringComparison.Ordinal);
-        Assert.Contains("""<MenuItem menu="menu" name="item" title="Item"/>""", window.Text);
+        Assert.Contains("""<MenuItem name="item" title="Item"/>""", window.Text);
+        Assert.Equal(menu, window.Document!.Xml!.Children[menu + 1].Parent);
         Assert.Equal("MenuItem  item", ((string[])window.FindControl<ListBox>("OutlineList")!.ItemsSource!)[menu + 1]);
         window.Close();
     });

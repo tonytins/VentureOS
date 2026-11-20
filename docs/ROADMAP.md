@@ -315,7 +315,7 @@ stay flat.
   edit nested elements in place; `Info.xml` stays flat.
 - [x] Nested menus and submenus in the reader.
 - [x] Submenus in the desktop's menu bar, and Notes ▸ Sort By.
-- [ ] Panes that hold their controls, in the spec and the reader; the shipped
+- [x] Panes that hold their controls, in the spec and the reader; the shipped
   apps move to nested menus and panes.
 - [ ] Roundhouse: a tree outline, adding inside menus and panes, and Move
   Into and Move Out.
@@ -365,6 +365,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | patch | 0.7.7xx: panes hold their controls, and the shipped apps' menus and panes nest. The owner's Charger wallpaper ships with it. |
 | 2026-11-20 | patch | 0.7.7xx: submenus in the menu bar, and Notes ▸ Sort By, the first. |
 | 2026-11-20 | patch | 0.7.7xx: nested menus and submenus in the reader. The menu bar shows a submenu dimmed until it can open one. |
 | 2026-11-20 | patch | 0.7.7xx: nested reading. `FlatXml` reads nested elements for UIScript, and the editor edits them in place; `Info.xml` stays flat. |

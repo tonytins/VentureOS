@@ -3,8 +3,9 @@
 <UIScript version="1">
   <Window width="640" height="400"/>
 
-  <Menu name="shellMenu" title="Shell" hotkey="S"/>
-  <MenuItem menu="shellMenu" name="clearItem" title="Clear" hotkey="C" shortcut="Ctrl+K"/>
+  <Menu name="shellMenu" title="Shell" hotkey="S">
+    <MenuItem name="clearItem" title="Clear" hotkey="C" shortcut="Ctrl+K"/>
+  </Menu>
 
   <Style name="mono" font="monospace"/>
   <Style name="prompt" font="monospace" textColor="secondaryText"/>

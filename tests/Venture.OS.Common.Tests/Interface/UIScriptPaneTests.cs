@@ -88,4 +88,40 @@ public sealed class UIScriptPaneTests
         Assert.Equal(["Appearance", "Dock", "Clock", "Developer"], script.Panes.Select(pane => pane.Title));
         Assert.All(script.Controls, control => Assert.NotNull(control.Pane));
     }
+
+    [Fact]
+    public void APaneHoldsItsControlsWhichAreDrawnInDocumentOrder()
+    {
+        var script = UIScript.Parse(Head + """
+            <Pane name="general" title="General">
+              <Text name="label" x="0" y="0" width="10" height="10"/>
+              <Button name="go" x="0" y="0" width="10" height="10"/>
+            </Pane>
+            <Pane name="advanced" title="Advanced"/>
+            <Button name="flat" x="0" y="0" width="10" height="10" pane="advanced"/>
+            <Text name="always" x="0" y="0" width="10" height="10"/>
+            </UIScript>
+            """);
+
+        Assert.Equal(["label", "go", "flat", "always"], script.Controls.Select(control => control.Name));
+        Assert.Equal(["general", "general", "advanced", null], script.Controls.Select(control => control.Pane));
+    }
+
+    [Theory]
+    [InlineData("<Pane name='p' title='P'><Button name='b' x='0' y='0' width='1' height='1' pane='p'/></Pane>", "\"b\" is inside the pane \"p\", so it doesn't name one with pane")]
+    [InlineData("<Pane name='p' title='P'><Button name='a' x='0' y='0' width='1' height='1'/></Pane><Button name='b' x='0' y='0' width='1' height='1' pane='p'/>", "\"b\" names the pane \"p\", which holds its controls inside it")]
+    [InlineData("<Pane name='p' title='P'><Visual name='v' image='i' x='0' y='0' width='1' height='1'/></Pane>", "<Visual> can't be inside <Pane>; a pane holds controls")]
+    [InlineData("<Pane name='p' title='P'><Pane name='q' title='Q'/></Pane>", "<Pane> can't be inside <Pane>")]
+    [InlineData("<Pane name='p' title='P'><Style name='s'/></Pane>", "<Style> can't be inside <Pane>")]
+    public void RefusesWhatTheSpecRefusesOfNestedPanes(string elements, string message) =>
+        Assert.Contains(message, Assert.Throws<UIScriptException>(() => UIScript.Parse(Head + elements + "</UIScript>")).Message, StringComparison.Ordinal);
+
+    [Fact]
+    public void NestedPanesNeedASidebarToo()
+    {
+        var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse(
+            "<UIScript><Window width='1' height='1'/><Pane name='p' title='P'><Button name='b' x='0' y='0' width='1' height='1'/></Pane></UIScript>"));
+
+        Assert.Contains("needs a <Sidebar>", problem.Message, StringComparison.Ordinal);
+    }
 }

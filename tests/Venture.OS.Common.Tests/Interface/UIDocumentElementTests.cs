@@ -241,9 +241,10 @@ public sealed class UIDocumentElementTests
                 var after = moved.Xml!.ChildrenOf(parent);
                 Assert.Equal(Elements(document)[siblings[place]], Elements(moved)[after[^1]]);
 
-                // Blank lines and comments stay where they were, so only the elements are sure to be as they were.
+                // Blank lines and comments stay where they were, so only the elements are sure to be as they were;
+                // a pane's or menu's text holds the blank lines between its children, so only those are compared.
                 var back = moved.MoveElement(after[^1], after[place]);
-                Assert.Equal(Elements(document), Elements(back));
+                Assert.Equal(Leaves(document), Leaves(back));
                 Assert.Equal(Comments(document), Comments(back));
             }
         }
@@ -287,6 +288,9 @@ public sealed class UIDocumentElementTests
             }
         }
     }
+
+    private static List<string> Leaves(UIDocument document) =>
+        [.. document.Xml!.Children.Where((_, index) => document.Xml.End(index) == index + 1).Select(element => element.Source!.Span.Of(document.Text))];
 
     private static List<string> Elements(UIDocument document) =>
         [.. document.Xml!.Children.Select(element => element.Source!.Span.Of(document.Text))];

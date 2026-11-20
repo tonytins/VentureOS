@@ -108,7 +108,11 @@ public sealed class PaneDesignTests : IDisposable
 
         Assert.True(window.AddControl("Slider"));
 
-        Assert.Contains("""pane="clock"/>""", window.Text);
+        // Settings' panes hold their controls, so the slider goes inside Clock.
+        var slider = window.Document!.Xml!.Children[window.Selection!.Value];
+        Assert.Equal("Slider", slider.Name);
+        Assert.Equal(Index(window, "clock"), slider.Parent);
+        Assert.Null(slider["pane"]);
         Assert.NotNull(window.Map!.BoundsOf(window.Selection!.Value));
         window.Close();
     });
