@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Notes' window. main.lua fills the list and handles the events. -->
-<UIScript version="1" requires="menus">
+<UIScript version="1">
   <Window width="362" height="220"/>
 
   <ToolbarItem name="add" title="Add"/>

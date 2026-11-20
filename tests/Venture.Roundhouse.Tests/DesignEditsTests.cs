@@ -144,8 +144,7 @@ public sealed class DesignEditsTests
 
         Assert.Equal(2, one);
         Assert.Equal(3, two);
-        Assert.Contains(UIScript.PanesFeature, second.Script!.RequiredFeatures);
-        Assert.Equal(["pane", "pane2"], second.Script.Panes.Select(pane => pane.Name));
+        Assert.Equal(["pane", "pane2"], second.Script!.Panes.Select(pane => pane.Name));
     }
 
     [Fact]

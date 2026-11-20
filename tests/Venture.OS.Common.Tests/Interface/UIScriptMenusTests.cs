@@ -40,16 +40,15 @@ public sealed class UIScriptMenusTests
     public void LetsAMenuBeEmpty() =>
         Assert.Empty(UIScript.Parse(Head + "<Menu name='m' title='Later'/></UIScript>").Menus[0].Entries);
 
-    [Theory]
-    [InlineData("<Menu name='m' title='M'/>")]
-    [InlineData("<MenuItem menu='m' name='i' title='I'/>")]
-    [InlineData("<MenuSeparator menu='m'/>")]
-    public void NeedsTheFeatureDeclared(string element)
+    [Fact]
+    public void NeedsNoRequires()
     {
-        var exception = Assert.Throws<UIScriptException>(() =>
-            UIScript.Parse($"<UIScript><Window width='1' height='1'/>{element}</UIScript>"));
+        var script = UIScript.Parse(
+            "<UIScript><Window width='1' height='1'/><Menu name='m' title='M'/>"
+            + "<MenuItem menu='m' name='i' title='I'/><MenuSeparator menu='m'/></UIScript>");
 
-        Assert.Contains("Add requires=\"menus\"", exception.Message);
+        Assert.Empty(script.RequiredFeatures);
+        Assert.Equal(2, script.Menus[0].Entries.Count);
     }
 
     [Theory]

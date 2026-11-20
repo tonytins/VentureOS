@@ -25,24 +25,22 @@ public sealed class UIScriptPaneTests
     }
 
     [Fact]
-    public void RefusesAPaneWithoutTheFeatureAndSaysHow()
+    public void NeedsNoRequires()
     {
-        var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse("""
-            <UIScript requires="sidebar"><Window width="300" height="200"/><Sidebar name="side" width="100"/><Pane name="p" title="P"/></UIScript>
-            """));
+        var script = UIScript.Parse("""
+            <UIScript><Window width="300" height="200"/><Sidebar name="side" width="100"/><Pane name="p" title="P"/></UIScript>
+            """);
 
-        Assert.Contains("Add requires=\"panes\" to <UIScript> to use panes.", problem.Message, StringComparison.Ordinal);
+        Assert.Equal("p", Assert.Single(script.Panes).Name);
     }
 
     [Fact]
-    public void WithoutTheFeatureAControlsPaneIsSkippedAndListed()
+    public void AControlsPaneIsReadEvenWithoutPanesAndMustNameOne()
     {
-        var script = UIScript.Parse("""
+        // pane was skipped without the old panes module; now it's always read, so one naming no pane refuses.
+        Assert.Throws<UIScriptException>(() => UIScript.Parse("""
             <UIScript><Window width="300" height="200"/><Text name="t" x="0" y="0" width="10" height="10" pane="p"/></UIScript>
-            """);
-
-        Assert.Null(script.Control("t")!.Pane);
-        Assert.Equal(new UIIgnoredAttribute("Text", "pane", 1), Assert.Single(script.IgnoredAttributes));
+            """));
     }
 
     [Fact]

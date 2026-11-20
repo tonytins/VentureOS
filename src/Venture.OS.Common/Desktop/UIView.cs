@@ -2,7 +2,7 @@ using Venture.OS.Interface;
 
 namespace Venture.OS.Desktop;
 
-/// <summary>What a control reports for its owner to act on, as Hudini's <c>UIScriptView.Event</c> does.</summary>
+/// <summary>What a control reports for its owner to act on, as Hudini's <c>UIView.Event</c> does.</summary>
 public enum UIEventKind
 {
     /// <summary>An enabled button without a scroll binding was pressed.</summary>
@@ -69,7 +69,7 @@ public sealed class UIListState
 }
 
 /// <summary>
-/// Builds, updates, and draws the controls a UIScript document describes, as Hudini's <c>UIScriptView</c> does.
+/// Builds, updates, and draws the controls a UIScript document describes, as Hudini's <c>UIView</c> does.
 /// </summary>
 /// <remarks>
 /// <para>The view owns the controls and their interaction state: text, values, focus, lists, and what's hidden or

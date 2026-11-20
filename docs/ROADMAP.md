@@ -300,14 +300,17 @@ something runs it.
 
 **0.7.7xx, nesting**
 
-UIScript nesting, as Hudini's spec settled it on 2026-11-20: a module's
-elements may nest, core elements stay flat, and `version` stays `1`. Menus
-nest as Hudini's `menus` module has them, a `<Menu>` holding its items,
-separators, and submenus, so VentureOS reads every document Hudini does
-again; and the `panes` draft lets a `<Pane>` hold its controls. A
-`<Window>`'s controls stay flat. The shipped apps move to the nested forms,
-and `FlatXml`, `UIDocument`, and Roundhouse's designer learn to nest. Not yet
-planned in detail.
+UIScript nesting, with `version` staying `1`. VentureOS keeps the UIScript
+spec now, in [uiscript/](./uiscript/README.md), and Hudini reads a subset of
+it, so the menus, sidebars, shelves, and panes that were modules are ordinary
+elements, and each element's section says what it may hold. Menus nest as the
+spec has them, a `<Menu>` holding its items, separators, and submenus; and a
+`<Pane>` may hold its controls. A `<Window>`'s controls stay flat. The shipped
+apps move to the nested forms, and `FlatXml`, `UIDocument`, and Roundhouse's
+designer learn to nest. Not yet planned in detail.
+
+- [x] The spec moves from Hudini to `docs/uiscript/`, modules join the
+  format, and `requires` keeps its old names, which mean nothing.
 
 **Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
 first, as capable as a desktop code editor, and in the long run a designer
@@ -354,6 +357,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | 0.7.7xx begins, by my decision, with the UIScript spec moving from Hudini to `docs/uiscript/`: VentureOS keeps the format, and Hudini reads a subset. Modules join the format as ordinary elements, which takes away the rule nesting was planned around; menus and panes still nest in this band. |
 | 2026-11-20 | minor | 0.7.6xx is complete: the welcome window, with File ▸ Close to bring it back. The design is marked built, with its corrections. The next band, 0.7.7xx, nesting, is the owner's to plan. |
 | 2026-11-20 | patch | 0.7.6xx: untitled interfaces. New Interface asks nothing before the canvas, even in a project; the first Save asks where. |
 | 2026-11-20 | patch | 0.7.6xx: projects open, run, and export, File ▸ New makes them, and Run is a drop-down. New Interface moves to the untitled-interfaces item, where it opens untitled. |

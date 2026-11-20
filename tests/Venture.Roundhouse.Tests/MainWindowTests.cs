@@ -858,7 +858,7 @@ public sealed class MainWindowTests : IDisposable
         Command(window, "Insert", "Menu Item").Run();
 
         Assert.Equal(menu + 1, window.Selection);
-        Assert.Contains("requires=\"menus\"", window.Text);
+        Assert.DoesNotContain("requires", window.Text, StringComparison.Ordinal);
         Assert.Contains("""<MenuItem menu="menu" name="item" title="Item"/>""", window.Text);
         Assert.Equal("MenuItem  item", ((string[])window.FindControl<ListBox>("OutlineList")!.ItemsSource!)[menu + 1]);
         window.Close();

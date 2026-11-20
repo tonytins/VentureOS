@@ -206,7 +206,7 @@ To split the app's code into several files, put modules in `Contents/Lua/`.
 ## Give the app a window
 
 An app can open windows on the desktop. Each window's layout is a `.uix`
-file, in the [UIScript format](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md),
+file, in the [UIScript format](./uiscript/README.md),
 in `Contents/Resources/`. Opening windows needs no scope, so `needs` stays
 as it was. (Before 0.6, windows needed `ui`; it's still accepted, and means
 nothing.)
@@ -276,7 +276,7 @@ new number. `roll` still works in the shell, since both live in the same app.
   `backgroundColor="inputBackground"`, `fontSize="title"`. A hex color such
   as `#1E5AA0` stays exactly that in every look unless you give it a dark
   twin, such as `darkTextColor="#8CB8F0"`. See
-  [UIScript styles](./uiscript/styles.md) for every role.
+  [UIScript styles](./uiscript/README.md#styles) for every role.
 - **Hover text:** give a control `tooltip="saveTip"`, naming a
   `<String name="saveTip" table="1" index="3"/>`, and put its text in a
   table beside your `.uix`, named `_1_<anything>.cst`, as `3 ^Save the file^`.
@@ -301,7 +301,7 @@ new number. `roll` still works in the shell, since both live in the same app.
   you can show it. Files writes its "3 items" this way, from
   `2 ^%d items^` in its `_1_files.cst`:
   `venture.cst.format(1, 2, #list)`.
-- **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
+- **Menus:** add `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen
   item reports `pressed` with its name, like a button. Every app already
   has File, with Close Window (Ctrl+W); Edit, with Cut, Copy, Paste, and
@@ -312,9 +312,8 @@ new number. `roll` still works in the shell, since both live in the same app.
   with no code of yours, Undo and Redo included; setting a field's text
   yourself starts its undo history over. Don't add your own Close Window, or
   your own copy and paste. See
-  [UIScript menus](./uiscript/menus.md).
-- **A sidebar:** add `sidebar` to `requires` and
-  `<Sidebar name="places" width="120"/>`, and the window gets a list of
+  [UIScript menus](./uiscript/README.md#menus).
+- **A sidebar:** add `<Sidebar name="places" width="120"/>`, and the window gets a list of
   places down its left, its full height, as Files has. Fill and read it like
   a selectable list: `setItems`, `select`, `selected`, and a `selected`
   event. A row can be a table with an icon, naming an `<Image>`, and
@@ -333,15 +332,14 @@ new number. `roll` still works in the shell, since both live in the same app.
   color, as toolbar icons do; draw them as dark shapes. Only a sidebar
   takes tables; a plain list takes strings. The sidebar sits beside the
   content, so the window's size and your controls' positions don't change.
-  See [UIScript sidebar](./uiscript/sidebar.md).
+  See [UIScript sidebar](./uiscript/README.md#sidebar).
 - **Panes:** for a sidebar that switches between sets of controls, as
-  Settings has, add `panes` to `requires`, a `<Pane name="general"
-  title="General"/>` for each row, in order, and `pane="general"` on each
+  Settings has, add a `<Pane name="general" title="General"/>` for each row, in order, and `pane="general"` on each
   control in it. The sidebar shows the panes' titles and only the chosen
   pane's controls, with no code of yours; a control without `pane` shows on
   every pane. The rows are the document's, so `setItems` on that sidebar is
   an error, but `select` and the `selected` event work as usual. See
-  [UIScript panes](./uiscript/panes.md).
+  [UIScript panes](./uiscript/README.md#panes).
 - **Resizing:** `resizable="true"` on `<Window>` puts a grip in the window's
   bottom-right corner. The window starts at its `width` and `height` and
   shrinks no further than `minWidth` and `minHeight` (or its starting size,
@@ -378,7 +376,7 @@ no title bar, as the dock is. Write `<Panel>`, with an `edge`, in place of
 `<Window>`:
 
 ```xml
-<UIScript version="1" requires="shelf">
+<UIScript version="1">
   <Panel width="400" height="72" edge="bottom"/>
   <Shelf name="apps" x="0" y="0" width="400" height="72"/>
 </UIScript>
@@ -390,13 +388,13 @@ no title bar, as the dock is. Write `<Panel>`, with an `edge`, in place of
   Settings; a top panel spans the screen.
 - The top edge holds the menu bar, Files' top panel, and there's one top
   panel at a time, so opening another is an error.
-- A **shelf** (`<Shelf>`, with `requires="shelf"`) is a row of icons. Fill
+- A **shelf** (`<Shelf>`) is a row of icons. Fill
   it with `window:setItems`, each item a table: `title`, and if you like an
   `icon` (a PNG, in your app or any app's bundle), `open = true` for a dot
   under it, a `group` number, with a divider between groups, and
   `window = true` for a window's pale tile. A click is a `pressed` event with
   the item's `index`.
-- See [panels](uiscript/panel.md) and [the shelf](uiscript/shelf.md) for the
+- See [panels](uiscript/README.md#panel) and [the shelf](uiscript/README.md#shelf) for the
   rules.
 
 An app with the `system` scope can do what the dock does through

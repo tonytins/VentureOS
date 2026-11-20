@@ -28,22 +28,22 @@ public sealed class WindowPartsTests : IDisposable
     }
 
     [Fact]
-    public void AMenuAddsTheMenusFeatureOnce()
+    public void AMenuAddsNoRequires()
     {
         var (once, menu) = DesignEdits.Add(UIDocument.Read(Plain), "Menu", null);
         var (twice, _) = DesignEdits.Add(once, "Menu", null);
 
-        Assert.Contains("""<UIScript version="1" requires="menus">""", twice.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("requires", twice.Text, StringComparison.Ordinal);
         Assert.Equal("""<Menu name="menu" title="Menu"/>""", once.Xml!.Children[menu].Source!.Span.Of(once.Text));
         Assert.Equal(["menu", "menu2"], twice.Script!.Menus.Select(item => item.Name));
     }
 
     [Fact]
-    public void AShelfAddsTheShelfFeature()
+    public void AShelfAddsNoRequires()
     {
         var (edited, shelf) = DesignEdits.Add(UIDocument.Read(Plain), "Shelf", null);
 
-        Assert.Contains("""<UIScript version="1" requires="shelf">""", edited.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("requires", edited.Text, StringComparison.Ordinal);
         Assert.Equal(UIControlType.Shelf, edited.Script!.Controls.Single(control => control.Name == "shelf").Type);
         Assert.Equal("Shelf", edited.Xml!.Children[shelf].Name);
     }
@@ -66,15 +66,14 @@ public sealed class WindowPartsTests : IDisposable
     }
 
     [Fact]
-    public void AFeatureAlreadyRequiredIsKeptWithTheNewOne()
+    public void ARetiredRequiresIsLeftAsWritten()
     {
         var document = UIDocument.Read(Plain.Replace("""version="1">""", """version="1" requires="menus">""", StringComparison.Ordinal));
 
         var (edited, _) = DesignEdits.Add(document, "Sidebar", null);
 
-        Assert.Contains("""requires="menus sidebar">""", edited.Text, StringComparison.Ordinal);
+        Assert.Contains("""requires="menus">""", edited.Text, StringComparison.Ordinal);
         Assert.Equal(160, edited.Script!.Sidebar!.Width);
-        Assert.Same(document, DesignEdits.Require(document, "menus"));
     }
 
     [Fact]

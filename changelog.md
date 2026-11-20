@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.700
+
+- Interfaces no longer need `requires` to use menus, a sidebar, a shelf, or panes; they're ordinary parts of UIScript now. Documents that still name them read as before. Roundhouse's designer stops adding `requires` when you add one.
+- The UIScript spec now lives in VentureOS, in `docs/uiscript/`, and Hudini reads a subset of it.
+
 ## 0.7.604
 
 - Roundhouse opens on a welcome window when you start it with nothing named: New Interface…, New App…, New Project…, and Open… on the left, your recent projects, apps, and interfaces on the right, and a status bar that says what each one does. Double-click a recent item to open it; one that's gone is dimmed, and right-clicking or Delete takes it off the list. Uncheck "Show at startup" to start on the main window instead.

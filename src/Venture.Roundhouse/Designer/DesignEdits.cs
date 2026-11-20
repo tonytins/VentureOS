@@ -61,10 +61,9 @@ public static class DesignEdits
 
     /// <summary>
     /// Adds a control (see <see cref="Add(UIDocument, string)"/>) or one of the window's other <see cref="Parts"/>. A
-    /// menu or sidebar first adds the feature it needs to <c>requires</c>. A menu item or separator joins the
-    /// <paramref name="selected"/> menu, or the menu of the selected item, or else the last menu, after its last entry.
-    /// A pane needs a sidebar, adds the <c>panes</c> feature, and goes after the last pane, so it's the sidebar's last
-    /// row. A control goes in <paramref name="pane"/>, the pane on show, when there is one.
+    /// menu item or separator joins the <paramref name="selected"/> menu, or the menu of the selected item, or else
+    /// the last menu, after its last entry. A pane needs a sidebar, and goes after the last pane, so it's the
+    /// sidebar's last row. A control goes in <paramref name="pane"/>, the pane on show, when there is one.
     /// </summary>
     /// <exception cref="ArgumentException">The library has no such element, or a menu item has no menu to join.</exception>
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a second title field.</exception>
@@ -81,8 +80,7 @@ public static class DesignEdits
                 return Insert(document, end, element, [new("name", UniqueName(document, "title")), new("placeholder", "Title")]);
             case "Menu":
             {
-                var withMenus = Require(document, UIScript.MenusFeature);
-                return Insert(withMenus, end, element, [new("name", UniqueName(withMenus, "menu")), new("title", "Menu")]);
+                return Insert(document, end, element, [new("name", UniqueName(document, "menu")), new("title", "Menu")]);
             }
 
             case "MenuItem" or "MenuSeparator":
@@ -96,16 +94,14 @@ public static class DesignEdits
 
             case "Sidebar":
             {
-                var withSidebar = Require(document, UIScript.SidebarFeature);
-                return Insert(withSidebar, end, element, [new("name", UniqueName(withSidebar, "sidebar")), new("width", "160")]);
+                return Insert(document, end, element, [new("name", UniqueName(document, "sidebar")), new("width", "160")]);
             }
 
             case "Pane":
             {
                 if (document.Script?.Sidebar is null)
                     throw new UIScriptException("A pane is a row of a sidebar; add a sidebar first.");
-                var withPanes = Require(document, UIScript.PanesFeature);
-                var children = withPanes.Xml!.Children;
+                var children = document.Xml!.Children;
                 var after = -1;
                 for (var child = 0; child < children.Count; child++)
                 {
@@ -113,16 +109,13 @@ public static class DesignEdits
                         after = child;
                 }
 
-                return Insert(withPanes, after + 1, element, [new("name", UniqueName(withPanes, "pane")), new("title", "Pane")]);
+                return Insert(document, after + 1, element, [new("name", UniqueName(document, "pane")), new("title", "Pane")]);
             }
         }
 
         var control = Library.FirstOrDefault(item => item.Element == element)
             ?? throw new ArgumentException($"The library has no <{element}>.", nameof(element));
 
-        // A shelf is a feature, as menus and the sidebar are, which the document says it requires.
-        if (element == "Shelf")
-            document = Require(document, UIScript.ShelfFeature);
         var script = document.Script ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
 
         var x = (int)MathF.Max(0, MathF.Round((script.Window.Size.Width - control.Width) / 2));
@@ -201,20 +194,6 @@ public static class DesignEdits
             if (!taken.Contains(candidate))
                 return candidate;
         }
-    }
-
-    /// <summary>
-    /// Adds <paramref name="feature"/> to the document's <c>requires</c>, keeping what's there, unless it's already
-    /// listed; elements that need it are refused until it is.
-    /// </summary>
-    public static UIDocument Require(UIDocument document, string feature)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        var listed = document.Xml?.Root["requires"] ?? "";
-        var features = listed.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
-        return features.Contains(feature)
-            ? document
-            : document.SetAttribute(UIDocument.Root, "requires", string.Join(' ', [.. features, feature]));
     }
 
     /// <summary>

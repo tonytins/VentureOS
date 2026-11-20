@@ -19,7 +19,7 @@ public enum UIControlType
     Region,
 
     /// <summary>
-    /// A row of icons with labels and open-dots, such as the dock's (the <c>shelf</c> feature); the app fills it with
+    /// A row of icons with labels and open-dots, such as the dock's; the app fills it with
     /// items, as it fills a list.
     /// </summary>
     Shelf,
@@ -270,7 +270,7 @@ public enum UIMenuRole
 }
 
 /// <summary>
-/// A drop-down menu in the global menu bar (the <c>menus</c> feature). <see cref="Role"/> is the standard menu it
+/// A drop-down menu in the global menu bar. <see cref="Role"/> is the standard menu it
 /// adds to, when it says; a role this reader doesn't know is skipped, so the menu shows as the document's own.
 /// </summary>
 public sealed record UIMenu(
@@ -295,9 +295,8 @@ public sealed record UIShortcut(bool Control, bool Shift, bool Alt, char Key)
 /// the bar; items run in document order along its end, or its start with <c>placement="start"</c>.
 /// </summary>
 /// <remarks>
-/// <c>image</c> and <c>placement</c> are VentureOS's, drafted for Hudini. With an image, the item shows it as a
-/// symbol and its title as hover text. A reader that skips both shows a text item at the end, which still works, so
-/// neither is a required feature.
+/// With an image, the item shows it as a symbol and its title as hover text. A reader that skips <c>image</c> and
+/// <c>placement</c> shows a text item at the end, which still works, so neither needs a new element.
 /// </remarks>
 /// <param name="Image">The <c>&lt;Image&gt;</c> it shows, by name, or <see langword="null"/> for its title.</param>
 public sealed record UIToolbarItem(
@@ -320,14 +319,14 @@ public enum UIToolbarPlacement
 public sealed record UITitleField(string Name, string? Placeholder, int Line);
 
 /// <summary>
-/// A list of places down the window's left, as Nautilus and Finder have, with the <c>sidebar</c> feature. The host
+/// A list of places down the window's left, as Nautilus and Finder have. The host
 /// draws it the window's full height, beside the content rather than in it, so it has a width and no position, and
 /// the window's own size is the content's. Code treats it as a selectable <c>&lt;List&gt;</c> of this name.
 /// </summary>
 public sealed record UISidebar(string Name, float Width, int Line);
 
 /// <summary>
-/// One of a sidebar's panes, with the <c>panes</c> feature: a row in the sidebar, by <see cref="Title"/>, and the
+/// One of a sidebar's panes: a row in the sidebar, by <see cref="Title"/>, and the
 /// controls whose <c>pane</c> names it, which show only while its row is selected. The document says what each pane
 /// holds, so a host, or a designer that runs no code, shows one pane at a time without the app's help.
 /// </summary>
@@ -346,14 +345,14 @@ public sealed class UIScriptException(string message, int? line = null)
 
 /// <summary>
 /// A UIScript document (<c>.uix</c>): one interface's window size, resources, styles, decorative images, and
-/// controls, plus its menus with the <c>menus</c> feature and its sidebar with the <c>sidebar</c> feature.
+/// controls, plus its title bar, menus, sidebar, and panes.
 /// </summary>
 /// <remarks>
-/// <para>This reads the format Hudini defines (Draft, version 1), and a superset of it: Hudini's <c>menus</c> and
-/// <c>sidebar</c> modules, and VentureOS's additions (see docs/uiscript/), with the same rules as Hudini's reader, so a document reads the same in both. A document
-/// reads completely and validly, or throws <see cref="UIScriptException"/>.</para>
+/// <para>This reads the UIScript spec VentureOS keeps (docs/uiscript/, Draft, version 1). Hudini reads a subset of
+/// it, so a document Hudini reads reads the same here. A document reads completely and validly, or throws
+/// <see cref="UIScriptException"/>.</para>
 /// <list type="bullet">
-/// <item><description>A newer <c>version</c> or an unknown <c>requires</c> feature refuses the document, before
+/// <item><description>A newer <c>version</c> or an unknown <c>requires</c> name refuses the document, before
 /// anything else is checked, so the message says a newer reader is needed.</description></item>
 /// <item><description>An unknown element refuses it; an unknown attribute is skipped and listed in
 /// <see cref="IgnoredAttributes"/>.</description></item>
@@ -364,29 +363,12 @@ public sealed class UIScript
     /// <summary>The newest format version this reader understands.</summary>
     public const int SupportedVersion = 1;
 
-    /// <summary>The <c>requires</c> features this reader understands.</summary>
-    public static readonly IReadOnlyList<string> SupportedFeatures = [MenusFeature, SidebarFeature, ShelfFeature, PanesFeature];
-
-    /// <summary>The feature that adds <c>&lt;Menu&gt;</c>, <c>&lt;MenuItem&gt;</c>, and <c>&lt;MenuSeparator&gt;</c>.</summary>
-    public const string MenusFeature = "menus";
-
     /// <summary>
-    /// The feature that adds <c>&lt;Sidebar&gt;</c>. A reader that skipped a sidebar would lose the window's way
-    /// around, so it's a feature older readers refuse rather than an element they could ignore.
+    /// The <c>requires</c> names this reader accepts. Menus, sidebars, shelves, and panes were modules with these
+    /// names until 2026-11-20, when they joined the format; documents written before still name them, so they're
+    /// accepted and mean nothing. Any other name refuses the document.
     /// </summary>
-    public const string SidebarFeature = "sidebar";
-
-    /// <summary>
-    /// The feature that adds <c>&lt;Shelf&gt;</c>. A new element refuses a document in an older reader, so a shelf is
-    /// a feature it can name in its refusal, rather than an element it would trip over.
-    /// </summary>
-    public const string ShelfFeature = "shelf";
-
-    /// <summary>
-    /// The feature that adds <c>&lt;Pane&gt;</c> and the <c>pane</c> attribute on controls. A reader that skipped
-    /// <c>pane</c> would draw every pane's controls over each other, so it's a feature older readers refuse.
-    /// </summary>
-    public const string PanesFeature = "panes";
+    public static readonly IReadOnlyList<string> RetiredFeatures = ["menus", "sidebar", "shelf", "panes"];
 
     private UIScript()
     {
@@ -412,7 +394,7 @@ public sealed class UIScript
     /// <summary>Controls in document order, which is drawing order: later ones on top.</summary>
     public IReadOnlyList<UIControl> Controls { get; private init; } = [];
 
-    /// <summary>Menus in document order, with the <c>menus</c> feature.</summary>
+    /// <summary>Menus in document order.</summary>
     public IReadOnlyList<UIMenu> Menus { get; private init; } = [];
 
     /// <summary>The title bar's buttons, in document order, which is left to right.</summary>
@@ -421,10 +403,10 @@ public sealed class UIScript
     /// <summary>The editable title, or <see langword="null"/> for a plain one.</summary>
     public UITitleField? TitleField { get; private init; }
 
-    /// <summary>The sidebar, with the <c>sidebar</c> feature, or <see langword="null"/>.</summary>
+    /// <summary>The sidebar, or <see langword="null"/>.</summary>
     public UISidebar? Sidebar { get; private init; }
 
-    /// <summary>The sidebar's panes, in document order, which is the sidebar's, with the <c>panes</c> feature.</summary>
+    /// <summary>The sidebar's panes, in document order, which is the sidebar's.</summary>
     public IReadOnlyList<UIPane> Panes { get; private init; } = [];
 
     /// <summary>Attributes the reader didn't know and skipped. Log them while developing, to catch typos.</summary>
@@ -476,7 +458,7 @@ public sealed class UIScript
         if (root.Name != "UIScript")
             throw new UIScriptException($"The root element must be <UIScript>, not <{root.Name}>.", root.Line);
 
-        // Version and features come first: a newer document may hold elements this reader would otherwise refuse.
+        // Version and requires come first: a newer document may hold elements this reader would otherwise refuse.
         Attributes rootReader = new(root);
         var version = rootReader.Integer("version") ?? 1;
         if (version < 1)
@@ -487,21 +469,9 @@ public sealed class UIScript
 
         var features = (rootReader.String("requires") ?? "").Split([' ', '\t', '\n', '\r'],
             StringSplitOptions.RemoveEmptyEntries);
-        var hasMenus = false;
-        var hasSidebar = false;
-        var hasShelf = false;
-        var hasPanes = false;
         foreach (var feature in features)
         {
-            if (feature == MenusFeature)
-                hasMenus = true;
-            else if (feature == SidebarFeature)
-                hasSidebar = true;
-            else if (feature == ShelfFeature)
-                hasShelf = true;
-            else if (feature == PanesFeature)
-                hasPanes = true;
-            else
+            if (!RetiredFeatures.Contains(feature))
                 throw new UIScriptException(
                     $"This document requires \"{feature}\", which this reader doesn't support; it needs a newer VentureOS.");
         }
@@ -572,7 +542,7 @@ public sealed class UIScript
                         reader.RequiredString("name"), reader.RequiredString("image"), ReadFrame(reader), element.Line));
                     break;
 
-                case "Menu" when hasMenus:
+                case "Menu":
                 {
                     // An unknown role is a newer document's; its menu still works as the document's own.
                     var role = reader.String("role") is { } written ? ParseMenuRole(written) : null;
@@ -583,7 +553,7 @@ public sealed class UIScript
                     break;
                 }
 
-                case "MenuItem" when hasMenus:
+                case "MenuItem":
                     entries.Add((reader.RequiredString("menu"), new UIMenuEntry(
                         reader.RequiredString("name"),
                         reader.RequiredString("title"),
@@ -610,35 +580,25 @@ public sealed class UIScript
                     titleField = new UITitleField(reader.RequiredString("name"), reader.String("placeholder"), element.Line);
                     break;
 
-                case "Sidebar" when hasSidebar:
+                case "Sidebar":
                     if (sidebar is not null)
                         throw new UIScriptException("There's more than one <Sidebar>; a window has one.", element.Line);
                     sidebar = new UISidebar(reader.RequiredString("name"), reader.RequiredNumber("width"), element.Line);
                     break;
 
-                case "Pane" when hasPanes:
+                case "Pane":
                     panes.Add(new UIPane(reader.RequiredString("name"), reader.RequiredString("title"), element.Line));
                     break;
 
-                case "MenuSeparator" when hasMenus:
+                case "MenuSeparator":
                     entries.Add((reader.RequiredString("menu"), new UIMenuEntry(null, null, null, null, element.Line)));
                     break;
 
                 default:
-                    if (ControlType(element.Name) is not { } type || (type == UIControlType.Shelf && !hasShelf))
-                    {
-                        var hint = element.Name switch
-                        {
-                            "Menu" or "MenuItem" or "MenuSeparator" => $" Add requires=\"{MenusFeature}\" to <UIScript> to use menus.",
-                            "Sidebar" => $" Add requires=\"{SidebarFeature}\" to <UIScript> to use a sidebar.",
-                            "Shelf" => $" Add requires=\"{ShelfFeature}\" to <UIScript> to use a shelf.",
-                            "Pane" => $" Add requires=\"{PanesFeature}\" to <UIScript> to use panes.",
-                            _ => "",
-                        };
-                        throw new UIScriptException($"<{element.Name}> isn't a UIScript element.{hint}", element.Line);
-                    }
+                    if (ControlType(element.Name) is not { } type)
+                        throw new UIScriptException($"<{element.Name}> isn't a UIScript element.", element.Line);
 
-                    controls.Add(ReadControl(type, reader, element.Line, hasPanes));
+                    controls.Add(ReadControl(type, reader, element.Line));
                     break;
             }
 
@@ -750,7 +710,7 @@ public sealed class UIScript
             offsets);
     }
 
-    private static UIControl ReadControl(UIControlType type, Attributes reader, int line, bool hasPanes)
+    private static UIControl ReadControl(UIControlType type, Attributes reader, int line)
     {
         var name = reader.RequiredString("name");
 
@@ -790,7 +750,7 @@ public sealed class UIScript
             ValueRange: range,
             Orientation: reader.Enum("orientation", ParseOrientation),
             Follows: reader.Boolean("follows") ?? false,
-            Pane: hasPanes ? reader.String("pane") : null);
+            Pane: reader.String("pane"));
     }
 
     private static IReadOnlyList<UIMenu> BuildMenus(

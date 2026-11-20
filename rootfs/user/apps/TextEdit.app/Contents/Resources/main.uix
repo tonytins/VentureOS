@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- A TextEdit window. main.lua loads and saves the file. -->
-<UIScript version="1" requires="menus">
+<UIScript version="1">
   <Window width="520" height="360" minWidth="320" minHeight="200" resizable="true"/>
 
   <ToolbarItem name="save" title="Save"/>

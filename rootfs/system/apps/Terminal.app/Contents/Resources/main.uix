@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- A Terminal window: what the shell printed, and a line to type the next command. -->
-<UIScript version="1" requires="menus">
+<UIScript version="1">
   <Window width="640" height="400"/>
 
   <Menu name="shellMenu" title="Shell" hotkey="S"/>

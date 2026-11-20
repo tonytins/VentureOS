@@ -129,6 +129,15 @@ public sealed class UIScriptTests
             script.IgnoredAttributes);
     }
 
+    [Fact]
+    public void AcceptsTheRetiredModuleNames()
+    {
+        // Menus, sidebars, shelves, and panes were modules until 2026-11-20; documents written then still read.
+        var script = UIScript.Parse("<UIScript requires='menus sidebar shelf panes'><Window width='1' height='1'/></UIScript>");
+
+        Assert.Equal(["menus", "sidebar", "shelf", "panes"], script.RequiredFeatures);
+    }
+
     [Theory]
     [InlineData("<UIScript version='2'><Bogus/></UIScript>", "version 2")]
     [InlineData("<UIScript requires='teleport'><Bogus/></UIScript>", "requires \"teleport\"")]

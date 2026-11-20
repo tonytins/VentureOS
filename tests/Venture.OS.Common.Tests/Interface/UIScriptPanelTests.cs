@@ -120,7 +120,7 @@ public sealed class UIScriptPanelTests
     public void ATopPanelMayHaveMenus()
     {
         var script = UIScript.Parse("""
-            <UIScript requires="menus"><Panel width="1024" height="24" edge="top"/><Menu name="file" title="File"/></UIScript>
+            <UIScript><Panel width="1024" height="24" edge="top"/><Menu name="file" title="File"/></UIScript>
             """);
 
         Assert.Equal(UIEdge.Top, script.Window.Edge);
@@ -128,10 +128,10 @@ public sealed class UIScriptPanelTests
     }
 
     [Fact]
-    public void ReadsAShelfInADocumentThatRequiresIt()
+    public void ReadsAShelf()
     {
         var script = UIScript.Parse("""
-            <UIScript requires="shelf">
+            <UIScript>
               <Panel width="400" height="72" edge="bottom"/>
               <Shelf name="apps" x="0" y="0" width="400" height="72"/>
             </UIScript>
@@ -140,24 +140,24 @@ public sealed class UIScriptPanelTests
         var shelf = Assert.Single(script.Controls);
         Assert.Equal(("apps", UIControlType.Shelf), (shelf.Name, shelf.Type));
         Assert.Equal(new UIFrame(0, 0, 400, 72, null), shelf.Frame);
-        Assert.Contains(UIScript.ShelfFeature, UIScript.SupportedFeatures);
     }
 
     [Fact]
-    public void RefusesAShelfWithoutTheFeatureAndSaysHow()
+    public void StillReadsAShelfInADocumentWrittenWhenItWasAModule()
     {
-        var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse("""
-            <UIScript><Window width="400" height="72"/><Shelf name="apps" x="0" y="0" width="400" height="72"/></UIScript>
-            """));
+        var script = UIScript.Parse("""
+            <UIScript requires="shelf"><Window width="400" height="72"/><Shelf name="apps" x="0" y="0" width="400" height="72"/></UIScript>
+            """);
 
-        Assert.Contains("Add requires=\"shelf\" to <UIScript> to use a shelf.", problem.Message, StringComparison.Ordinal);
+        Assert.Equal(["shelf"], script.RequiredFeatures);
+        Assert.Single(script.Controls);
     }
 
     [Fact]
     public void AShelfDoesNotHaveToBeInAPanel()
     {
         var script = UIScript.Parse("""
-            <UIScript requires="shelf"><Window width="400" height="200"/><Shelf name="apps" x="0" y="0" width="400" height="72"/></UIScript>
+            <UIScript><Window width="400" height="200"/><Shelf name="apps" x="0" y="0" width="400" height="72"/></UIScript>
             """);
 
         Assert.Equal(UIWindowRole.Window, script.Window.Role);

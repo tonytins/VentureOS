@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (Roundhouse projects) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (UIScript spec moves here) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-20)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,983 tests, and 275 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,982 tests, and 275 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1011,8 +1011,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   set its size; the right edge for the sidebar, which sets its width. The
   library (`DesignEdits.Parts`) adds toolbar items, the title field, menus,
   menu items and separators (joining the selected menu after its last
-  entry), the sidebar, and panes, after the last; a menu, sidebar, or pane
-  first adds its feature to `requires` (`DesignEdits.Require`). The canvas
+  entry), the sidebar, and panes, after the last. The canvas
   shows one pane (`MainWindow.ShownPane`), kept across edits: selecting a
   pane's row, or anything in a pane, shows it, and a control from the
   library joins it. Toolbar items restack among
@@ -1225,8 +1224,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   window brings it to the front and focuses it; its title bar drags it,
   kept on screen far enough to grab again; its close button closes it on
   release.
-- **Panels** (0.7.3xx, [draft](./uiscript/panel.md), in Hudini's core since
-  2026-11-20): a window whose document is a `<Panel>` with an `edge`
+- **Panels** (0.7.3xx, [spec](./uiscript/README.md#panel)): a window whose document is a `<Panel>` with an `edge`
   (`UIWindow.Role` is `Panel`), and optionally `minWidth` and `minHeight`,
   read and checked as a window's. `WindowManager.Arrange` pins
   it each frame, a top one across the screen and a bottom one as wide as its
@@ -1238,7 +1236,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   to the top of the bottom panel: new windows open in it and zoom fills it,
   and a window can't be dragged above it, though it can be dragged over a
   bottom panel, as on macOS.
-- **Shelves** (`Shelf`, [draft](./uiscript/shelf.md)): the dock's drawing,
+- **Shelves** (`Shelf`, [spec](./uiscript/README.md#shelf)): the dock's drawing,
   moved out of the desktop so a `<Shelf>` control draws it, from its
   frame's left. Apps fill one with `window:setItems`, each item a table of
   `title`, `icon` (a PNG, which may be in any app's bundle, read once and
@@ -1359,8 +1357,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   (`GroupStarts`, which `window:setItems` fills from `{ separator = true }`;
   separators aren't rows). Clicks, hover, and scrolling count the lines'
   room. Files sets System apart from its places with one.
-- **Panes** (0.7.4xx, [draft](./uiscript/panes.md)): with the `panes`
-  feature, a document's `<Pane>`s are its sidebar's rows, and a control's
+- **Panes** (0.7.4xx, [spec](./uiscript/README.md#panes)): a document's
+  `<Pane>`s are its sidebar's rows, and a control's
   `pane` puts it in one. `UIView` fills the rows from the panes, selects the
   first, and shows a control in a pane only while that pane's row is
   selected (`IsShowing`), apart from what the app hides (`IsHidden`); a
@@ -1389,7 +1387,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   (pressed, submitted, changed, selected), which the window's owner handles.
   A double-click (two presses on one item within 500 ms, timed by
   `DesktopInput.Time`) in a selectable list reports `submitted` with the
-  item, a VentureOS addition proposed for Hudini's spec.
+  item, as the spec has it.
 - **The bar's place** (0.7.3xx): the bar is Files' top panel. Files opens
   `menubar.uix`, a top panel 26 pixels tall (the bar's 22 and 4 that windows
   keep clear of), when it starts, and the desktop
@@ -1514,23 +1512,21 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   reported, so the screen is never left in graphics. While the desktop is
   open, system messages go to serial only (`KernelLog.WriteSerialLine`).
 
-**Interfaces.** `UIScript` reads `.uix` documents in the format Hudini
-defines (a Draft, version 1), with the same rules as Hudini's reader:
-version and `requires` are checked first; unknown elements refuse the
-document and unknown attributes are listed; references, sizes, and
-per-control attributes are validated, so a document reads completely or not
-at all. It's tested against Hudini's five example documents, copied into the
-tests with Hudini's license. VentureOS's UIScript is a superset of
-Hudini's, described in [uiscript/](./uiscript/README.md): it implements
-Hudini's `menus` module (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`, with
-hotkeys and Ctrl or Alt shortcuts) and `sidebar` module (`<Sidebar>`, a list
-of places beside the content), and style roles (`secondaryText`, `panel`,
-...), size roles (`caption` to `largeTitle`), and `dark` twins of each
-color, all first drafted here ([menus](./uiscript/menus.md),
-[sidebar](./uiscript/sidebar.md), [styles](./uiscript/styles.md)) and taken
-into Hudini's spec on 2026-11-12. What it adds since, `subtitle` and toolbar
-items' `image` and `placement`, is drafted in
-[uiscript/title-bar.md](./uiscript/title-bar.md). `UIView` draws documents in desktop windows,
+**Interfaces.** `UIScript` reads `.uix` documents in the UIScript format (a
+Draft, version 1), whose spec VentureOS keeps in
+[uiscript/](./uiscript/README.md). Hudini kept it until 2026-11-20, and now
+reads a subset of it. Version and `requires` are checked first; unknown
+elements refuse the document and unknown attributes are listed; references,
+sizes, and per-control attributes are validated, so a document reads
+completely or not at all. Menus (`<Menu>`, `<MenuItem>`, `<MenuSeparator>`,
+with hotkeys and Ctrl or Alt shortcuts), the sidebar (`<Sidebar>`, a list of
+places beside the content), shelves, and panes are ordinary elements; they
+were modules a document named in `requires` until 2026-11-20, and those four
+names are still accepted (`UIScript.RetiredFeatures`) and mean nothing. Styles
+take color roles (`secondaryText`, `panel`, ...), size roles (`caption` to
+`largeTitle`), and `dark` twins of each color. It's tested against Hudini's
+five example documents, copied into the tests with Hudini's license, so every
+document Hudini reads reads the same here. `UIView` draws documents in desktop windows,
 resolving each style once per palette, so styles with roles follow a switch
 to dark or a new accent. `ShippedContrastTests` draws every shipped
 interface in every palette and fails on any text below a 3 to 1 contrast.
@@ -1748,6 +1744,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | UIScript (§9): VentureOS keeps the spec, in `docs/uiscript/`, and Hudini reads a subset of it. Menus, sidebars, shelves, and panes are ordinary elements rather than modules, so they need no `requires`; the old names are accepted and mean nothing, and the designer no longer adds them. |
 | 2026-11-19 | minor | Roundhouse's Run on VentureOS (§8.1, §9): Common's `VdbClient` and `VdbApp`; `VentureOSRun`, its window, `TcpLineTransport`, and the vdb tool's identity file in Roundhouse. |
 | 2026-11-19 | minor | vdb sealed (§8.1): Common's own SHA-256, HMAC, HKDF, and ChaCha20-Poly1305; key IDs, pairing, and sealed lines in vdb/1 on both ends; `VdbRandom` for VentureOS's nonces. |
 | 2026-11-19 | minor | Panes (§9): the `panes` feature, `<Pane>` and `pane` on controls; `UIView` shows one pane at a time; Settings declares its panes; Roundhouse's designer draws the rows and the shown pane, and switches it from the canvas. |

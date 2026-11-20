@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- The Settings window: a sidebar of panes, as GNOME Settings has, each pane's controls in one place, of which the
      sidebar shows one pane at a time. main.lua applies and saves each choice. -->
-<UIScript version="1" requires="sidebar panes">
+<UIScript version="1">
   <Window width="380" height="444"/>
   <Sidebar name="panes" width="130"/>
   <Pane name="appearance" title="Appearance"/>

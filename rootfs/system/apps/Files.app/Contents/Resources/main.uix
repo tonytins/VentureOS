@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- A Files window. main.lua fills the lists and handles the events. -->
-<UIScript version="1" requires="menus sidebar">
+<UIScript version="1">
   <Window width="370" height="300" minWidth="280" minHeight="200" resizable="true"/>
   <Sidebar name="bookmarks" width="120"/>
 

@@ -44,14 +44,13 @@ public sealed class UIScriptSidebarTests
     }
 
     [Fact]
-    public void NeedsTheFeature()
+    public void NeedsNoRequires()
     {
-        var exception = Assert.Throws<UIScriptException>(() => UIScript.Parse("""
+        var script = UIScript.Parse("""
             <UIScript><Window width="300" height="200"/><Sidebar name="places" width="130"/></UIScript>
-            """));
+            """);
 
-        Assert.Contains("<Sidebar> isn't a UIScript element", exception.Message);
-        Assert.Contains("Add requires=\"sidebar\"", exception.Message);
+        Assert.Equal("places", script.Sidebar!.Name);
     }
 
     [Fact]

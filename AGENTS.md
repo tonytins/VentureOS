@@ -27,13 +27,13 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   reference the Cosmos kernel; `Cosmos.Executable.Lua` is allowed, since it  
   runs on ordinary .NET.
 - `src/Venture.OS.Interface` holds the formats interfaces are written in.  
-  The UIScript reader (`UIScript.cs`) must keep matching Hudini's (its  
-  examples are copied into the tests) and reads a superset of it, described  
-  in [docs/uiscript](docs/uiscript/README.md), where each addition is drafted  
-  for Hudini. The superset is deliberate: an operating system needs more  
-  from its interfaces (panels, panes, menus a global bar merges) than a  
-  game's, so VentureOS adds what it needs first and drafts it for Hudini,  
-  rather than waiting on Hudini's spec. The project also holds what editors  
+  VentureOS keeps the UIScript spec, in  
+  [docs/uiscript](docs/uiscript/README.md), and its reader (`UIScript.cs`)  
+  reads all of it. Hudini reads a subset, the parts a game needs; its  
+  examples are copied into the tests, so every document Hudini reads, VentureOS  
+  reads the same way. Change the spec and the reader together, and keep  
+  additions safe for a subset reader by the spec's compatibility rules.  
+  The project also holds what editors  
   build on (`UIDocument`, which edits a `.uix` in place, and  
   `UIScriptSchema`, each element's attributes, which must match the reader);  
   the flat XML reader (`Xml/`); and CST string tables (`Strings/`), read by  
