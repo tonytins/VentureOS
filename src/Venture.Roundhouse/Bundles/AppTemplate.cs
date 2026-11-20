@@ -12,7 +12,7 @@ namespace Venture.Roundhouse.Bundles;
 public static class AppTemplate
 {
     /// <summary>The longest name an app is given here, as a folder's name and a title.</summary>
-    public const int LongestName = 40;
+    public const int LongestName = FolderNames.Longest;
 
     /// <summary>The template's folder, beside Roundhouse.</summary>
     public static string Folder => Path.Combine(AppContext.BaseDirectory, "Templates", "WindowApp");
@@ -35,20 +35,7 @@ public static class AppTemplate
     }
 
     /// <summary>Why a name can't be a new app's, or <see langword="null"/> when it can.</summary>
-    public static string? ProblemWithName(string name)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        var trimmed = name.Trim();
-        if (trimmed.Length == 0)
-            return "An app needs a name.";
-        if (trimmed.Length > LongestName)
-            return $"A name is at most {LongestName} characters.";
-        if (trimmed.StartsWith('.'))
-            return "A name can't start with a dot.";
-        if (trimmed.Any(character => char.IsControl(character) || character is '/' or '\\' or ':' or '*' or '?' or '"' or '<' or '>' or '|'))
-            return "A name can't have / \\ : * ? \" < > | in it, since it names the app's folder.";
-        return null;
-    }
+    public static string? ProblemWithName(string name) => FolderNames.Problem(name, "app");
 
     /// <summary>
     /// Makes <c>Name.app</c> in <paramref name="folder"/> from the template, and checks it as VentureOS reads apps.
