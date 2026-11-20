@@ -1,4 +1,5 @@
 using Venture.OS.Desktop;
+using Venture.OS.Interface.Strings;
 using Venture.OS.Processes;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
@@ -207,6 +208,7 @@ public sealed class AppManager(
             starting.Attach(owner);
             AppLibrary.Open(owner.Interpreter.State, bundle, system?.Root);
             UiLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
+            CstLibrary.Open(owner.Interpreter.State, new StringTables(Path.Combine(bundle.Path, "Contents", "Resources"), UiLibrary.SharedStrings(windows)));
             DesktopLibrary.Open(owner.Interpreter.State, owner, bundle, windows, this);
 
             // A main script that failed partway is undone when the process ends, so nothing half-open is left.

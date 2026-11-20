@@ -89,9 +89,11 @@ local function openWindow(start)
     window:select("entries", nil)
     window:setText("address", path)
     window:setTitle(path == "/" and "/" or path:match("[^/]+$"))
-    -- How many items, under the title; the line at the bottom is for problems.
-    window:setSubtitle(#list == 1 and "1 item" or (#list .. " items"))
+    -- How many items, under the title, in Files' own words; the line at the bottom is for problems.
     window:setText("status", "")
+    local count, why = venture.cst.format(1, #list == 1 and 1 or 2, #list)
+    window:setSubtitle(count or "")
+    if why then window:setText("status", why) end
     window:setDisabled("enclosing", parent(path) == nil)
 
     -- The bookmark for this folder, if there is one, stays selected.

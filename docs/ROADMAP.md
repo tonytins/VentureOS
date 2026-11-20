@@ -276,7 +276,7 @@ CST.NET's `CSTLayers` takes them, upstream.
   common words. An empty value is text, as in The Sims Online.
 - [x] References between tables (`U+0002<cst>…`), one step, with their
   arguments.
-- [ ] Placeholders and `venture.strings`, for apps' Lua.
+- [x] Placeholders, `venture.cst`, and `window:string`, for apps' Lua.
 - [ ] Roundhouse: highlighting `.cst` files, their problems in the Log, and
   the designer redrawing when a table changes.
 
@@ -336,6 +336,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | patch | 0.7.5xx: `venture.cst` (named so by my decision), `get` and `format`, and `window:string`, for apps; Files' count is its first user. |
 | 2026-11-20 | patch | 0.7.5xx: references between tables are followed one step, with their arguments, through `StringTables`. |
 | 2026-11-20 | minor | 0.7.6xx is nesting, Hudini's way, not UIScript 2, by my decision: Hudini's spec now nests modules' elements with no new `version`, and keeps core elements, such as a window's controls, flat. 0.7.5xx catches up with the spec first: Hudini's current examples, and panels' `minWidth` and `minHeight`. |
 | 2026-11-19 | minor | 0.7.5xx, the CST specification, begins, by my decision, with layers: apps' tables below 100 over the system's shared ones from 100. 0.7.6xx, UIScript 2, nested and refused by Hudini until it follows, comes after. |

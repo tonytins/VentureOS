@@ -117,6 +117,9 @@ public static class VentureLibrary
             Gated("status", ScriptScopes.System, scopes, "developer.", lua => PushDeveloperStatus(lua, system.Developer)),
         ]);
         state.SetField(-2, "developer");
+
+        // An app's own text; CstLibrary replaces this for apps.
+        CstLibrary.OpenNotApp(state);
         state.SetGlobal(GlobalName);
     }
 

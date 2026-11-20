@@ -654,15 +654,12 @@ public static class UiLibrary
 
         // A document's <String>s and <Image>s come from beside it, such as an app's Contents/Resources, and its
         // <String>s from the system's shared tables too.
-        var shared = host.SystemFolder is { } system ? FileRoot.Host(host.Root, system + "/strings") : null;
+        var folder = Path.GetDirectoryName(path) ?? "/";
+        StringTables strings = new(folder, SharedStrings(host));
         var view = DocumentView.Open(
-            script,
-            Path.GetDirectoryName(path) ?? "/",
-            host.LoadImage,
-            problem => host.Output.WriteLine($"{app.Name}: {given}: {problem}"),
-            shared);
+            script, folder, strings, host.LoadImage, problem => host.Output.WriteLine($"{app.Name}: {given}: {problem}"));
 
-        Handle handle = new(owner, host, view, Path.GetFileName(path)) { Folder = Path.GetDirectoryName(path) ?? "/", App = app };
+        Handle handle = new(owner, host, view, Path.GetFileName(path)) { Folder = folder, App = app, Strings = strings };
         handle.Window = new DesktopWindow(title, handle.View)
         {
             App = app.Name,
@@ -678,6 +675,10 @@ public static class UiLibrary
         return 1;
     }
 
+    /// <summary>The system's shared string tables, as the host sees them, or <see langword="null"/> without a system folder.</summary>
+    internal static string? SharedStrings(AppWindows? host) =>
+        host?.SystemFolder is { } system ? FileRoot.Host(host.Root, system + "/strings") : null;
+
     private static void PushHandle(ILuaState lua, Handle handle)
     {
         lua.NewTable();
@@ -690,6 +691,15 @@ public static class UiLibrary
             else
                 state.PushNil();
             return 1;
+        });
+        Method(lua, "string", handle, (state, h) =>
+        {
+            var name = LuaText.Decode(state.L_CheckString(2));
+            if (!h.View.Script.Strings.TryGetValue(name, out var resource))
+                return Fail(state, $"window:string: {h.Document} has no <String name=\"{name}\">");
+
+            return CstLibrary.Push(
+                state, h.Strings, () => h.Strings.Find(resource), $"the string \"{name}\"", 3, fill: true, "window:string");
         });
         Method(lua, "setText", handle, (state, h) =>
         {
@@ -1097,6 +1107,9 @@ public static class UiLibrary
         private readonly LuaOwner owner;
         private readonly AppWindows host;
         private readonly string workingDirectory;
+
+        /// <summary>The tables the window's document found its strings in, for <c>window:string</c>.</summary>
+        public required StringTables Strings { get; init; }
 
         public Handle(LuaOwner owner, AppWindows host, UIView view, string document)
         {

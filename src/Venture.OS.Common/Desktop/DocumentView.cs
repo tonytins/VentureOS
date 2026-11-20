@@ -32,11 +32,22 @@ public static class DocumentView
     public static UIView Open(
         UIScript script, string folder, Func<string, DesktopImage?>? loadImage, Action<string> report, string? sharedStrings = null)
     {
+        ArgumentNullException.ThrowIfNull(folder);
+        return Open(script, folder, new StringTables(folder, sharedStrings), loadImage, report);
+    }
+
+    /// <summary>
+    /// Makes a view of a document already read with its strings from <paramref name="tables"/>, which the caller keeps,
+    /// such as for an app's <c>window:string</c>, and its images from <paramref name="folder"/>.
+    /// </summary>
+    public static UIView Open(
+        UIScript script, string folder, StringTables tables, Func<string, DesktopImage?>? loadImage, Action<string> report)
+    {
         ArgumentNullException.ThrowIfNull(script);
         ArgumentNullException.ThrowIfNull(folder);
+        ArgumentNullException.ThrowIfNull(tables);
         ArgumentNullException.ThrowIfNull(report);
 
-        StringTables tables = new(folder, sharedStrings);
         UIView view = new(script, tables.Find);
         foreach (var problem in tables.Problems)
             report(problem);

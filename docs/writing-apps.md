@@ -291,6 +291,14 @@ new number. `roll` still works in the shell, since both live in the same app.
   OK, Cancel, Save, Don't Save, Open, Close, and Delete, keyed 1 to 7, so
   `<String name="ok" table="100" index="1"/>` and `string="ok"` on a button
   gives it "OK".
+- **Text from Lua:** `venture.cst.get(table, key)` gives a table's text as
+  written, and `venture.cst.format(table, key, ...)` fills its placeholders
+  (`%s`, `%d`, `%02d`, ...) in order, from your own tables and the shared
+  ones. `window:string(name, ...)` does the same for a `<String>` your
+  window's `.uix` names. Each gives `nil` and why when there's no text, so
+  you can show it. Files writes its "3 items" this way, from
+  `2 ^%d items^` in its `_1_files.cst`:
+  `venture.cst.format(1, 2, #list)`.
 - **Menus:** add `requires="menus"` and `<Menu>` elements to the `.uix` file,
   and they appear in the menu bar while the window is in front. A chosen
   item reports `pressed` with its name, like a button. Every app already

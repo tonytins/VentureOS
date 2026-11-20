@@ -54,11 +54,20 @@ public sealed class StringTables
             return null;
         }
 
-        var key = resource.Index.ToString(CultureInfo.InvariantCulture);
-        if (Lookup(id, key) is not { } value)
+        return Find(id, resource.Index.ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>
+    /// The text under <paramref name="key"/> in table <paramref name="table"/>, a reference followed, or
+    /// <see langword="null"/> when there's none. Code asks this way, by key, since a table's keys needn't be numbers.
+    /// </summary>
+    public string? Find(int table, string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        if (Lookup(table, key) is not { } value)
             return null;
 
-        return CstReference.Is(value) ? Follow(id, key, value) : value;
+        return CstReference.Is(value) ? Follow(table, key, value) : value;
     }
 
     // A value as written, from the first layer that has it.

@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (1,965 tests, and 208 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (1,974 tests, and 208 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1515,7 +1515,10 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
 - **One instance:** an app already open, by identifier, isn't opened again.
 - **What its code gets:** the `venture` table through its `needs`, as any
   script; `venture.app` (`name`, `identifier`, `version`, `path`, and
-  `resource(path)` for `Contents/Resources/`); and `require` searching its
+  `resource(path)` for `Contents/Resources/`); `venture.cst` (`CstLibrary`:
+  `get` and `format`, its text from `Contents/Resources/` and the shared
+  tables, placeholders filled by CSTNet's `CST.Format`, and `nil` and why
+  when there's none; other code's explains it's for apps); and `require` searching its
   own `Contents/Lua/`, then the system library. Apps can't replace system
   script commands, and `help` shows their commands as `From:` the app.
 - **Windows** (`venture.ui`, `UiLibrary`; no scope since 0.6, and a `ui`
@@ -1741,6 +1744,7 @@ in the clear (2026-11-11).
 | 2026-11-17 | minor | Header bars done (§9): flat toolbar items with symbols at either end, the subtitle (Files' item count), taller bars, and the green zoom button. |
 | 2026-11-17 | minor | Header bars begin (§9): `subtitle` on `<Window>`, `image` and `placement` on `<ToolbarItem>`, drafted for Hudini and read but not drawn yet; each window has its own bar height (30, or 42 with a subtitle or toolbar images); apps' documents load their images. |
 | 2026-11-17 | minor | Clock (§4, §9): `WallClock`, the clock boot step after the time manager (a boot-order change), `venture.time` and `setUtcOffset`, the `clock` command, Settings' Clock, and the time in the menu bar; `venture.args` takes a dash then a digit as a value. |
+| 2026-11-20 | minor | Apps (§9): `venture.cst.get` and `format`, and `window:string`, give apps' text from Lua, placeholders filled (`CstLibrary`); Files' item count comes from its table. |
 | 2026-11-20 | minor | Hover text (§9): `StringTables` follows references between tables one step, with their arguments (`CstReference`). |
 | 2026-11-20 | minor | Panels (§9): `<Panel>` takes `minWidth` and `minHeight`, as Hudini's core does since adopting it; the Hudini examples the tests read are its current ones. |
 | 2026-11-19 | minor | Hover text (§9): string tables are layered, an app's (below 100) over the system's shared ones in `/mnt/system/strings` (100 and up), starting with `_100_common.cst`. |

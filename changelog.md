@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.503
+
+- Apps can show their own text from Lua: `venture.cst.get(table, key)` gives a string from the app's tables or the shared ones, `venture.cst.format(table, key, ...)` fills in its placeholders, such as `%d items`, and `window:string(name, ...)` does the same for a `<String>` a window's document names. Each gives `nil` and why when there's no text.
+- Files' item count, such as "3 items", now comes from its string table.
+
 ## 0.7.502
 
 - A value in a string table can refer to another table's text, as The Sims Online's do (`U+0002<cst><cst_id>…</cst_id><string_id>…</string_id></cst>`), and VentureOS shows that text, with any arguments the reference gives filling its placeholders. A reference to a missing string, or to another reference, is reported and shows as missing.
