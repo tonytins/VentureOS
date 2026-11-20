@@ -304,8 +304,9 @@ new number. `roll` still works in the shell, since both live in the same app.
 - **Menus:** add `<Menu>` elements to the `.uix` file, each holding its
   `<MenuItem>`s and `<MenuSeparator>`s (or with the items after it, each
   naming it with `menu`), and they appear in the menu bar while the window is
-  in front. A `<Menu>` inside another is a submenu; the menu bar doesn't open
-  submenus yet, so leave them out for now. A chosen
+  in front. A `<Menu>` inside another is a submenu, which opens beside its
+  entry, as Notes' Note ▸ Sort By does; disabling the submenu by its name
+  disables everything in it, shortcuts included. A chosen
   item reports `pressed` with its name, like a button. Every app already
   has File, with Close Window (Ctrl+W); Edit, with Cut, Copy, Paste, and
   Select All; and Help, with About your app, which shows its `name`,

@@ -132,13 +132,4 @@ public sealed class UIScriptNestedMenusTests
         Assert.True(view.IsSelected("sortByTitle"));
         Assert.True(view.IsDisabled("sortMenu"));
     }
-
-    [Fact]
-    public void TheBarDoesntChooseASubmenusEntryUntilItCanOpenIt()
-    {
-        var script = UIScript.Parse(SpecExample);
-        BarMenu menu = new(script.Menus[0], MenuGroup.Window, new UIView(script));
-
-        Assert.Equal([true, false, false, true], menu.Menu.Entries.Select(menu.IsEnabled));
-    }
 }

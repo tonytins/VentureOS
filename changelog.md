@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.705
+
+- Submenus open in the menu bar: rest the pointer on one, or use the right arrow, Enter, or its letter, and it opens beside its menu. Left or Esc closes it. Moving the pointer across toward an open submenu keeps it open.
+- Notes has Note ▸ Sort By: Order Added, Newest First, and A to Z. It changes only the order the list shows; `notes.txt` and the `note` command keep the order notes were added in.
+- A menu opened from the keyboard keeps its highlighted item while the pointer rests elsewhere.
+
 ## 0.7.704
 
 - A `<Menu>` in an interface can hold its items and separators, rather than each naming its menu with `menu`; both forms work. A `<Menu>` inside another is a submenu: VentureOS reads it, but the menu bar shows its entry dimmed until a later update opens submenus.

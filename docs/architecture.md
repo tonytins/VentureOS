@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (nested menus) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (submenus in the menu bar) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-20)
 
@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,030 tests, and 282 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,044 tests, and 282 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
@@ -1441,8 +1441,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   brought forward, or the app last opened from the dock. Clicking or
   press-drag-release chooses; Alt and a menu's hotkey opens it; the arrows,
   Enter, item hotkeys, and Esc work while a menu is open, and an open menu
-  takes every key and the click that closes it. Shortcuts match from
-  anywhere, the desktop's own first. A chosen window item reaches the window
+  takes every key and the click that closes it. Open menus are a stack of
+  levels, the drop-down and then each submenu: resting on a submenu's
+  entry, Right, Enter, or its hotkey opens it beside the entry (on the
+  left when the right has no room), with an arrow drawn on the entry; Left
+  and Esc close the innermost; and moving toward an open submenu across its
+  parent's other entries keeps it open (`MenuBar.HeadingInto`). A pointer
+  resting off the menus keeps what the keys highlighted, since the desktop
+  passes the pointer every frame while a menu is open. Shortcuts match from
+  anywhere, the desktop's own first, inside submenus too, except a disabled
+  submenu's. A chosen window item reaches the window
   as a pressed event with the item's name, and items are disabled and
   checked by name through the window's `UIView`. Titles and items are laid
   out when drawn, so the pointer hits what was last on screen.
@@ -1546,10 +1554,8 @@ names are still accepted (`UIScript.RetiredFeatures`) and mean nothing. Styles
 take color roles (`secondaryText`, `panel`, ...), size roles (`caption` to
 `largeTitle`), and `dark` twins of each color. It's tested against Hudini's
 five example documents, copied into the tests with Hudini's license, so every
-document Hudini reads reads the same here. Until the menu bar opens
-submenus, `BarMenu.IsEnabled` keeps a submenu's entry dimmed, so it's never
-reported as chosen; items in submenus are still disabled and checked by
-name. `UIView` draws documents in desktop windows,
+document Hudini reads reads the same here. Items in submenus are disabled
+and checked by name like any other. `UIView` draws documents in desktop windows,
 resolving each style once per palette, so styles with roles follow a switch
 to dark or a new accent. `ShippedContrastTests` draws every shipped
 interface in every palette and fails on any text below a 3 to 1 contrast.
@@ -1767,6 +1773,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-20 | minor | Menu bar (§9): submenus open beside their entry from the pointer and the keys, and cross over without closing; a disabled submenu blocks its items and their shortcuts; a pointer resting off the menus no longer clears what the keys highlighted. Notes has Note ▸ Sort By (Order Added, Newest First, A to Z), changing only the list's order. |
 | 2026-11-20 | minor | Interfaces (§9): nested menus and submenus. A `<Menu>` holds its items, separators, and submenus, beside the flat form; `UIMenuEntry.Submenu` and `UIMenu.AllEntries`; the spec's rules (one form per menu, submenus only nest and take no role, hotkeys per menu, names and shortcuts across depths). The menu bar shows a submenu's entry dimmed until it opens them; Roundhouse adds an item inside a nested menu and keeps a copy in its parent. |
 | 2026-11-20 | patch | Roundhouse (§9): the main and welcome windows share `WindowTitleBar` (`TitleBarStyles.axaml` for its look), so the welcome window's bar is its title bar too, with its zoom dot dimmed. |
 | 2026-11-20 | minor | Interfaces (§9): `FlatXml` reads nested elements when its caller allows (UIScript, `UIDocument`), with parents, depth, and a 32-level limit; `FlatXmlEditor` inserts inside a parent and moves or removes an element with what's inside it; `UIScript` refuses nesting until nested menus. |

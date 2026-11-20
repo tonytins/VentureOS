@@ -50,14 +50,17 @@ public sealed class UIDocumentTests : IDisposable
         var text = document.Text;
         var root = document.Xml!.Root.Source!;
 
-        var previousEnd = root.NameEnd;
-        foreach (var element in document.Xml.Children)
+        for (var at = 0; at < document.Xml.Children.Count; at++)
         {
+            var element = document.Xml.Children[at];
             var source = element.Source!;
 
-            // Children follow one another inside the root, without overlapping.
-            Assert.True(source.Span.Start >= previousEnd && source.Span.End <= root.CloseStart);
-            previousEnd = source.Span.End;
+            // Elements follow one another inside their parent, the root or a menu, without overlapping.
+            var container = element.Parent < 0 ? root : document.Xml.Children[element.Parent].Source!;
+            var siblings = document.Xml.ChildrenOf(element.Parent);
+            var place = Array.IndexOf(siblings, at);
+            var floor = place > 0 ? document.Xml.Children[siblings[place - 1]].Source!.Span.End : container.NameEnd;
+            Assert.True(source.Span.Start >= floor && source.Span.End <= container.CloseStart);
             Assert.Equal($"<{element.Name}", text[source.Span.Start..source.NameEnd]);
             Assert.Equal('>', text[source.Span.End - 1]);
 

@@ -42,12 +42,11 @@ public sealed record BarMenu(
     Func<UIMenuEntry, bool>? OwnEnabled = null, DesktopImage? Icon = null)
 {
     /// <summary>
-    /// Whether an entry can be chosen: an item that isn't disabled. A submenu's entry can't be yet: the bar doesn't
-    /// open submenus, so it shows dimmed rather than reporting the submenu as chosen.
+    /// Whether an entry can be chosen, or, for a submenu's entry, opened: one that isn't disabled. A disabled
+    /// submenu's items can't be reached at all, by the pointer, the keys, or their shortcuts.
     /// </summary>
     public bool IsEnabled(UIMenuEntry entry) =>
-        entry.Name is { } name && !entry.IsSubmenu
-        && (IsOwn(entry) ? OwnEnabled?.Invoke(entry) ?? true : !(View?.IsDisabled(name) ?? false));
+        entry.Name is { } name && (IsOwn(entry) ? OwnEnabled?.Invoke(entry) ?? true : !(View?.IsDisabled(name) ?? false));
 
     /// <summary>Whether an item has a check mark.</summary>
     public bool IsChecked(UIMenuEntry entry) => entry.Name is { } name && !IsOwn(entry) && (View?.IsSelected(name) ?? false);
@@ -72,18 +71,22 @@ public sealed record BarMenu(
 public readonly record struct MenuChoice(BarMenu Menu, UIMenuEntry Item);
 
 /// <summary>
-/// The global menu bar along the top of the screen, and the menu that drops down from it.
+/// The global menu bar along the top of the screen, the menu that drops down from it, and the submenus open beside it.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>Clicking a title opens its menu, and clicking it again closes it. While one is open, moving
 /// over another title opens that one instead. Releasing over an item chooses it, so a press, drag, and release
 /// works as well as two clicks.</description></item>
-/// <item><description>Alt with a menu's hotkey opens it. While a menu is open, the arrows move through menus and
-/// items, Enter chooses, an item's hotkey chooses it, and Esc closes the menu. An open menu takes every key, so
-/// nothing reaches the window behind it.</description></item>
-/// <item><description><see cref="FindShortcut"/> matches a key against every item's shortcut, such as Ctrl+N, so
-/// the host can choose items from anywhere.</description></item>
+/// <item><description>Resting on a submenu's entry opens the submenu beside it, on the right, or on the left where
+/// the right has no room. Moving toward an open submenu over its parent's other entries keeps it open, so the
+/// pointer can cross to it.</description></item>
+/// <item><description>Alt with a menu's hotkey opens it. While a menu is open, Up and Down move through the
+/// innermost menu, Right opens the highlighted submenu or else the next menu in the bar, Left closes the innermost
+/// submenu or else opens the menu before, Enter chooses or opens, an entry's hotkey chooses or opens it, and Esc
+/// closes the innermost menu. An open menu takes every key, so nothing reaches the window behind it.</description></item>
+/// <item><description><see cref="FindShortcut"/> matches a key against every item's shortcut, such as Ctrl+N, in
+/// submenus too, except those in a disabled submenu, so the host can choose items from anywhere.</description></item>
 /// </list>
 /// <para>Text widths come from the painter, so titles and items are placed when the bar is drawn and hit-tested
 /// against what was last drawn: the pointer can only reach what's on screen.</para>
@@ -101,6 +104,7 @@ public sealed class MenuBar
     private const int MenuPadding = 4;
     private const int CheckRoom = 20;
     private const int ShortcutGap = 24;
+    private const int ArrowRoom = 18;
     private const int MinimumMenuWidth = 160;
 
     private IReadOnlyList<BarMenu> menus = [];
@@ -115,11 +119,24 @@ public sealed class MenuBar
     // An icon title's silhouette in the open title's text color, made when first shown and kept until the icon
     // or the color changes.
     private (DesktopImage Icon, UIColor Color, DesktopImage Silhouette)? silhouette;
-    private readonly List<(int Y, int Height)> rows = [];
-    private UIRect dropdown;
+
+    // The open menus: the bar's drop-down first, then each submenu open beside the one before. Empty when closed.
+    private readonly List<Level> levels = [];
     private int open = -1;
-    private int highlighted = -1;
     private bool openedByThisPress;
+    private (int X, int Y)? lastPointer;
+
+    /// <summary>One open menu: what it shows, its highlighted entry, and where it and its rows were last drawn.</summary>
+    private sealed class Level(UIMenu menu)
+    {
+        public UIMenu Menu { get; } = menu;
+
+        public int Highlighted { get; set; } = -1;
+
+        public UIRect Box { get; set; }
+
+        public List<(int Y, int Height)> Rows { get; } = [];
+    }
 
     /// <summary>The menus in the bar, left to right.</summary>
     public IReadOnlyList<BarMenu> Menus => menus;
@@ -130,8 +147,14 @@ public sealed class MenuBar
     /// <summary>The open menu, or <see langword="null"/>.</summary>
     public BarMenu? OpenMenu => open >= 0 ? menus[open] : null;
 
-    /// <summary>The highlighted item in the open menu, or <see langword="null"/>.</summary>
-    public UIMenuEntry? Highlighted => open >= 0 && highlighted >= 0 ? menus[open].Menu.Entries[highlighted] : null;
+    /// <summary>
+    /// The open menus, the bar's drop-down first and then each open submenu, as they're shown; empty when none is.
+    /// </summary>
+    public IReadOnlyList<UIMenu> OpenMenus => [.. levels.Select(level => level.Menu)];
+
+    /// <summary>The highlighted entry in the innermost open menu, or <see langword="null"/>.</summary>
+    public UIMenuEntry? Highlighted =>
+        levels.Count > 0 && levels[^1].Highlighted is >= 0 and var at ? levels[^1].Menu.Entries[at] : null;
 
     /// <summary>Puts new menus in the bar, such as when focus moves to another app. Any open menu closes.</summary>
     public void SetMenus(IReadOnlyList<BarMenu> newMenus)
@@ -145,13 +168,11 @@ public sealed class MenuBar
         Close();
     }
 
-    /// <summary>Closes the open menu, if there is one.</summary>
+    /// <summary>Closes the open menu and its submenus, if there are any.</summary>
     public void Close()
     {
         open = -1;
-        highlighted = -1;
-        rows.Clear();
-        dropdown = default;
+        levels.Clear();
     }
 
     /// <summary>
@@ -162,14 +183,23 @@ public sealed class MenuBar
         index >= 0 && index < titles.Count ? new UIRect(titles[index].X, 0, titles[index].Width, Height) : null;
 
     /// <summary>
-    /// Where an entry of the open menu was last drawn, by its position in the menu, or <see langword="null"/> when no
-    /// menu is open or it hasn't been drawn.
+    /// Where an entry of an open menu was last drawn, by its position in the menu, or <see langword="null"/> when that
+    /// menu isn't open or it hasn't been drawn. <paramref name="level"/> is 0 for the bar's drop-down, 1 for a submenu
+    /// open beside it, and so on.
     /// </summary>
-    public UIRect? EntryBounds(int index) =>
-        open >= 0 && index >= 0 && index < rows.Count ? new UIRect(dropdown.X, rows[index].Y, dropdown.Width, rows[index].Height) : null;
+    public UIRect? EntryBounds(int index, int level = 0)
+    {
+        if (level < 0 || level >= levels.Count)
+            return null;
 
-    /// <summary>Whether a point is on the bar or in the open menu.</summary>
-    public bool Contains(int x, int y) => y < Height || (open >= 0 && dropdown.Contains(x, y));
+        var shown = levels[level];
+        return index >= 0 && index < shown.Rows.Count
+            ? new UIRect(shown.Box.X, shown.Rows[index].Y, shown.Box.Width, shown.Rows[index].Height)
+            : null;
+    }
+
+    /// <summary>Whether a point is on the bar or in an open menu.</summary>
+    public bool Contains(int x, int y) => y < Height || LevelAt(x, y) >= 0;
 
     /// <summary>Opens a menu by its position in the bar, with its first item that can be chosen highlighted.</summary>
     public void OpenAt(int index)
@@ -177,23 +207,29 @@ public sealed class MenuBar
         if (index < 0 || index >= menus.Count)
             return;
 
-        if (open != index)
+        if (open != index || levels.Count == 0)
         {
-            rows.Clear();
-            dropdown = default;
+            levels.Clear();
+            levels.Add(new Level(menus[index].Menu));
+        }
+        else
+        {
+            levels.RemoveRange(1, levels.Count - 1);
         }
 
         open = index;
-        highlighted = Step(-1, 1);
+        levels[0].Highlighted = Step(levels[0], -1, 1);
     }
 
     /// <summary>Handles the pointer for a frame, while the bar owns it or a menu is open.</summary>
     /// <returns>The item chosen, if one was.</returns>
     public MenuChoice? UpdatePointer(int x, int y, bool pressed, bool released)
     {
+        var previous = lastPointer;
+        lastPointer = (x, y);
         var title = TitleAt(x, y);
-        var inMenu = open >= 0 && dropdown.Contains(x, y);
-        var row = inMenu ? RowAt(y) : -1;
+        var level = LevelAt(x, y);
+        var row = level >= 0 ? RowAt(levels[level], y) : -1;
 
         if (pressed)
         {
@@ -207,16 +243,16 @@ public sealed class MenuBar
                 else
                 {
                     OpenAt(title);
-                    highlighted = -1;
+                    levels[0].Highlighted = -1;
                     openedByThisPress = true;
                 }
 
                 return null;
             }
 
-            if (!inMenu)
+            if (level < 0)
             {
-                // A press anywhere else just closes the menu, and goes no further.
+                // A press anywhere else just closes the menus, and goes no further.
                 Close();
                 return null;
             }
@@ -225,27 +261,37 @@ public sealed class MenuBar
         if (open < 0)
             return null;
 
-        // While a menu is open, the pointer moves between menus and picks out items.
+        // While a menu is open, the pointer moves between menus and picks out entries.
         if (title >= 0 && title != open)
         {
             OpenAt(title);
-            highlighted = -1;
+            levels[0].Highlighted = -1;
             return null;
         }
 
-        if (row >= 0)
-            highlighted = menus[open].IsEnabled(menus[open].Menu.Entries[row]) ? row : -1;
-        else if (title < 0)
-            highlighted = -1;
+        if (level >= 0)
+        {
+            Hover(level, row, x, y, previous);
+        }
+        else if (title < 0 && previous != (x, y))
+        {
+            // Moving off every menu, the innermost lets go of its highlight; the ones holding a submenu open keep
+            // theirs. A pointer resting off the menus leaves alone what the keys highlighted, since the desktop
+            // passes the pointer on every frame while a menu is open.
+            levels[^1].Highlighted = -1;
+        }
 
         if (!released)
             return null;
 
-        if (row >= 0 && highlighted == row)
-            return Choose(row);
+        if (level >= 0 && row >= 0 && levels[level].Highlighted == row)
+        {
+            var entry = levels[level].Menu.Entries[row];
+            return entry.IsSubmenu ? null : Choose(entry);
+        }
 
         // Releasing on the title that just opened leaves the menu open, to be clicked through.
-        if (title < 0 && !inMenu && !openedByThisPress)
+        if (title < 0 && level < 0 && !openedByThisPress)
             Close();
         return null;
     }
@@ -257,34 +303,44 @@ public sealed class MenuBar
         if (open < 0)
             return null;
 
+        var innermost = levels[^1];
         switch (key.Key)
         {
             case DesktopKey.Escape:
-                Close();
+                if (levels.Count > 1)
+                    levels.RemoveAt(levels.Count - 1);
+                else
+                    Close();
                 return null;
             case DesktopKey.Left:
-                OpenAt((open + menus.Count - 1) % menus.Count);
+                if (levels.Count > 1)
+                    levels.RemoveAt(levels.Count - 1);
+                else
+                    OpenAt((open + menus.Count - 1) % menus.Count);
                 return null;
             case DesktopKey.Right:
-                OpenAt((open + 1) % menus.Count);
+                if (innermost.Highlighted >= 0 && innermost.Menu.Entries[innermost.Highlighted].IsSubmenu)
+                    OpenSubmenu(levels.Count - 1, innermost.Highlighted, highlightFirst: true);
+                else
+                    OpenAt((open + 1) % menus.Count);
                 return null;
             case DesktopKey.Up:
-                highlighted = Step(highlighted, -1);
+                innermost.Highlighted = Step(innermost, innermost.Highlighted, -1);
                 return null;
             case DesktopKey.Down:
-                highlighted = Step(highlighted, 1);
+                innermost.Highlighted = Step(innermost, innermost.Highlighted, 1);
                 return null;
             case DesktopKey.Enter:
-                return highlighted >= 0 ? Choose(highlighted) : null;
+                return innermost.Highlighted >= 0 ? Activate(levels.Count - 1, innermost.Highlighted) : null;
             case DesktopKey.Character when key.Alt && !key.Control:
                 OpenByHotkey(key.Character);
                 return null;
             case DesktopKey.Character when !key.Control:
-                var entries = menus[open].Menu.Entries;
+                var entries = innermost.Menu.Entries;
                 for (var index = 0; index < entries.Count; index++)
                 {
                     if (entries[index].Hotkey is { } hotkey && SameLetter(hotkey, key.Character) && menus[open].IsEnabled(entries[index]))
-                        return Choose(index);
+                        return Activate(levels.Count - 1, index);
                 }
 
                 return null;
@@ -309,7 +365,7 @@ public sealed class MenuBar
         return false;
     }
 
-    /// <summary>The item whose shortcut this key is, if it can be chosen.</summary>
+    /// <summary>The item whose shortcut this key is, if it can be chosen, however deep its submenu.</summary>
     public MenuChoice? FindShortcut(KeyPress key)
     {
         if (key.Key != DesktopKey.Character || !(key.Control || key.Alt))
@@ -317,20 +373,34 @@ public sealed class MenuBar
 
         foreach (var menu in menus)
         {
-            foreach (var entry in menu.Menu.Entries)
-            {
-                if (entry.Shortcut is { } shortcut && shortcut.Control == key.Control && shortcut.Alt == key.Alt
-                    && shortcut.Shift == key.Shift && SameLetter(shortcut.Key, key.Character) && menu.IsEnabled(entry))
-                {
-                    return new MenuChoice(menu, entry);
-                }
-            }
+            if (Find(menu, menu.Menu, key) is { } entry)
+                return new MenuChoice(menu, entry);
         }
 
         return null;
+
+        static UIMenuEntry? Find(BarMenu menu, UIMenu shown, KeyPress key)
+        {
+            foreach (var entry in shown.Entries)
+            {
+                // A disabled submenu keeps everything in it from being chosen, shortcuts included.
+                if (entry.Submenu is { } submenu)
+                {
+                    if (menu.IsEnabled(entry) && Find(menu, submenu, key) is { } inner)
+                        return inner;
+                }
+                else if (entry.Shortcut is { } shortcut && shortcut.Control == key.Control && shortcut.Alt == key.Alt
+                    && shortcut.Shift == key.Shift && SameLetter(shortcut.Key, key.Character) && menu.IsEnabled(entry))
+                {
+                    return entry;
+                }
+            }
+
+            return null;
+        }
     }
 
-    /// <summary>Draws the bar across the top of the screen, then the open menu below its title.</summary>
+    /// <summary>Draws the bar across the top of the screen, then the open menu below its title and its submenus.</summary>
     public void Draw(IPainter painter)
     {
         ArgumentNullException.ThrowIfNull(painter);
@@ -374,8 +444,8 @@ public sealed class MenuBar
         if (Status is { Length: > 0 } status)
             painter.DrawText(status, painter.Width - StatusMargin - painter.MeasureText(status, Size), textY, DesktopTheme.Text, Size);
 
-        if (open >= 0)
-            DrawMenu(painter);
+        for (var level = 0; level < levels.Count; level++)
+            DrawMenu(painter, level);
     }
 
     private DesktopImage Silhouette(DesktopImage icon, UIColor color)
@@ -388,13 +458,14 @@ public sealed class MenuBar
         return made;
     }
 
-    private void DrawMenu(IPainter painter)
+    private void DrawMenu(IPainter painter, int depth)
     {
         const int Size = DesktopTheme.TextSize;
         var menu = menus[open];
-        var entries = menu.Menu.Entries;
+        var level = levels[depth];
+        var entries = level.Menu.Entries;
 
-        // Wide enough for the longest title and shortcut, kept on the screen.
+        // Wide enough for the longest title and shortcut, or a submenu's arrow, kept on the screen.
         var widest = MinimumMenuWidth;
         foreach (var entry in entries)
         {
@@ -404,6 +475,8 @@ public sealed class MenuBar
             var width = CheckRoom + painter.MeasureText(entry.Title!, Size) + 12;
             if (entry.Shortcut is { } shortcut)
                 width += ShortcutGap + painter.MeasureText(shortcut.ToString(), Size);
+            if (entry.IsSubmenu)
+                width += ArrowRoom;
             widest = Math.Max(widest, width);
         }
 
@@ -411,32 +484,50 @@ public sealed class MenuBar
         foreach (var entry in entries)
             height += entry.IsSeparator ? SeparatorHeight : ItemHeight;
 
-        var (titleX, _) = titles[open];
-        var left = Math.Max(0, Math.Min(titleX, painter.Width - widest));
-        dropdown = new UIRect(left, Height - 1, widest, height);
+        int left, top;
+        if (depth == 0)
+        {
+            var (titleX, _) = titles[open];
+            left = Math.Max(0, Math.Min(titleX, painter.Width - widest));
+            top = Height - 1;
+        }
+        else
+        {
+            // Beside its entry, its first row level with it: on the right, or on the left where the right has no room.
+            // The entry that opened it is its parent's highlighted one.
+            var parent = levels[depth - 1];
+            var entryRow = parent.Rows[parent.Highlighted];
+            var parentLeft = (int)parent.Box.X;
+            left = parentLeft + (int)parent.Box.Width - 2;
+            if (left + widest > painter.Width)
+                left = Math.Max(0, parentLeft - widest + 2);
+            top = Math.Max(Height - 1, Math.Min(entryRow.Y - MenuPadding, painter.Height - height));
+        }
 
-        painter.FillRectangle(left + DesktopTheme.ShadowSize, Height - 1 + DesktopTheme.ShadowSize, widest, height, DesktopTheme.Shadow);
-        painter.FillRectangle(left, Height - 1, widest, height, DesktopTheme.MenuBackground);
-        DesktopTheme.Outline(painter, left, Height - 1, widest, height, DesktopTheme.Border);
+        level.Box = new UIRect(left, top, widest, height);
 
-        rows.Clear();
-        var y = Height - 1 + MenuPadding;
+        painter.FillRectangle(left + DesktopTheme.ShadowSize, top + DesktopTheme.ShadowSize, widest, height, DesktopTheme.Shadow);
+        painter.FillRectangle(left, top, widest, height, DesktopTheme.MenuBackground);
+        DesktopTheme.Outline(painter, left, top, widest, height, DesktopTheme.Border);
+
+        level.Rows.Clear();
+        var y = top + MenuPadding;
         for (var index = 0; index < entries.Count; index++)
         {
             var entry = entries[index];
             if (entry.IsSeparator)
             {
-                rows.Add((y, SeparatorHeight));
+                level.Rows.Add((y, SeparatorHeight));
                 painter.FillRectangle(left + 1, y + (SeparatorHeight / 2), widest - 2, 1, DesktopTheme.Separator);
                 y += SeparatorHeight;
                 continue;
             }
 
-            rows.Add((y, ItemHeight));
+            level.Rows.Add((y, ItemHeight));
             var enabled = menu.IsEnabled(entry);
             var color = enabled ? DesktopTheme.Text : DesktopTheme.DisabledText;
             var shortcutColor = enabled ? DesktopTheme.SecondaryText : DesktopTheme.DisabledText;
-            if (index == highlighted)
+            if (index == level.Highlighted)
             {
                 painter.FillRectangle(left + 1, y, widest - 2, ItemHeight, DesktopTheme.Accent);
                 color = shortcutColor = DesktopTheme.HighlightedText;
@@ -447,7 +538,9 @@ public sealed class MenuBar
 
             var textY = TextY(y, ItemHeight);
             DrawLabel(painter, entry.Title!, entry.Hotkey, left + CheckRoom, textY, color, emphasized: false);
-            if (entry.Shortcut is { } shortcut)
+            if (entry.IsSubmenu)
+                DrawArrow(painter, left + widest - 14, y + ((ItemHeight - 7) / 2), color);
+            else if (entry.Shortcut is { } shortcut)
             {
                 var text = shortcut.ToString();
                 painter.DrawText(text, left + widest - 12 - painter.MeasureText(text, Size), textY, shortcutColor, Size);
@@ -487,22 +580,103 @@ public sealed class MenuBar
             painter.FillRectangle(x + 3 + step, y + 6 - step, 2, 2, color);
     }
 
+    /// <summary>A submenu's arrow: a small triangle pointing right, 4 pixels wide and 7 tall.</summary>
+    private static void DrawArrow(IPainter painter, int x, int y, UIColor color)
+    {
+        for (var column = 0; column < 4; column++)
+            painter.FillRectangle(x + column, y + column, 1, 7 - (2 * column), color);
+    }
+
     private static int TextY(int top, int height) => top + ((height - (int)MathF.Ceiling(DesktopTheme.TextSize * 1.35f)) / 2);
 
-    private MenuChoice Choose(int index)
+    /// <summary>
+    /// The pointer over a row of an open menu: it highlights the row and opens or keeps a submenu as it should,
+    /// closing any deeper menus it leaves behind.
+    /// </summary>
+    private void Hover(int level, int row, int x, int y, (int X, int Y)? previous)
     {
-        var choice = new MenuChoice(menus[open], menus[open].Menu.Entries[index]);
+        var shown = levels[level];
+
+        // Crossing a parent's other rows on the way into its open submenu keeps the submenu open.
+        if (level < levels.Count - 1 && row != shown.Highlighted && HeadingInto(levels[level + 1].Box, x, y, previous))
+            return;
+
+        if (row < 0)
+        {
+            // A separator, or the menu's padding: deeper menus stay, with the entry that opened them.
+            if (level == levels.Count - 1)
+                shown.Highlighted = -1;
+            return;
+        }
+
+        var entry = shown.Menu.Entries[row];
+        var enabled = menus[open].IsEnabled(entry);
+        if (shown.Highlighted == row && level < levels.Count - 1)
+            return; // Its submenu is already open.
+
+        levels.RemoveRange(level + 1, levels.Count - level - 1);
+        shown.Highlighted = enabled ? row : -1;
+        if (enabled && entry.IsSubmenu)
+            OpenSubmenu(level, row, highlightFirst: false);
+    }
+
+    /// <summary>
+    /// Whether the pointer moved this frame from <paramref name="previous"/> toward a submenu: across, toward its
+    /// side, more than it moved up or down, and not past its top or bottom.
+    /// </summary>
+    private static bool HeadingInto(UIRect submenu, int x, int y, (int X, int Y)? previous)
+    {
+        if (previous is not { } from || submenu.Width == 0)
+            return false;
+
+        var across = x - from.X;
+        var toward = submenu.X >= from.X ? across > 0 : across < 0;
+        return toward && Math.Abs(y - from.Y) <= 2 * Math.Abs(across)
+            && y >= submenu.Y - ItemHeight && y < submenu.Y + submenu.Height;
+    }
+
+    /// <summary>Opens the submenu of the entry at <paramref name="row"/> in the menu at <paramref name="level"/>.</summary>
+    private void OpenSubmenu(int level, int row, bool highlightFirst)
+    {
+        var entry = levels[level].Menu.Entries[row];
+        if (entry.Submenu is not { } submenu || !menus[open].IsEnabled(entry))
+            return;
+
+        levels.RemoveRange(level + 1, levels.Count - level - 1);
+        levels[level].Highlighted = row;
+        Level opened = new(submenu);
+        levels.Add(opened);
+        if (highlightFirst)
+            opened.Highlighted = Step(opened, -1, 1);
+    }
+
+    /// <summary>Chooses an item, or opens a submenu with its first entry highlighted, as Enter or a hotkey does.</summary>
+    private MenuChoice? Activate(int level, int row)
+    {
+        var entry = levels[level].Menu.Entries[row];
+        if (entry.IsSubmenu)
+        {
+            OpenSubmenu(level, row, highlightFirst: true);
+            return null;
+        }
+
+        return Choose(entry);
+    }
+
+    private MenuChoice Choose(UIMenuEntry entry)
+    {
+        var choice = new MenuChoice(menus[open], entry);
         Close();
         return choice;
     }
 
-    /// <summary>The next item that can be chosen, from <paramref name="from"/> in a direction, wrapping round.</summary>
-    private int Step(int from, int direction)
+    /// <summary>The next entry in a menu that can be chosen or opened, from <paramref name="from"/> in a direction, wrapping round.</summary>
+    private int Step(Level level, int from, int direction)
     {
         if (open < 0)
             return -1;
 
-        var entries = menus[open].Menu.Entries;
+        var entries = level.Menu.Entries;
         for (var tried = 1; tried <= entries.Count; tried++)
         {
             var index = (((from + (direction * tried)) % entries.Count) + entries.Count) % entries.Count;
@@ -527,12 +701,24 @@ public sealed class MenuBar
         return -1;
     }
 
-    private int RowAt(int y)
+    /// <summary>The innermost open menu under a point, since a submenu may cover its parent, or -1.</summary>
+    private int LevelAt(int x, int y)
     {
-        for (var index = 0; index < rows.Count; index++)
+        for (var level = levels.Count - 1; level >= 0; level--)
         {
-            if (y >= rows[index].Y && y < rows[index].Y + rows[index].Height)
-                return menus[open].Menu.Entries[index].IsSeparator ? -1 : index;
+            if (levels[level].Box.Contains(x, y))
+                return level;
+        }
+
+        return -1;
+    }
+
+    private static int RowAt(Level level, int y)
+    {
+        for (var index = 0; index < level.Rows.Count; index++)
+        {
+            if (y >= level.Rows[index].Y && y < level.Rows[index].Y + level.Rows[index].Height)
+                return level.Menu.Entries[index].IsSeparator ? -1 : index;
         }
 
         return -1;

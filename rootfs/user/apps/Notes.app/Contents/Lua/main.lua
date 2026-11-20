@@ -30,12 +30,51 @@ end
 
 local window = venture.ui.open("main.uix")
 
+-- How the list shows the notes, from Note > Sort By. Only the list changes:
+-- notes.txt, and `note`, keep the order they were added in.
+local orders = { sortAdded = "added", sortNewest = "newest", sortTitle = "title" }
+local order = "added"
+
+-- The note number each row of the list shows, in the order the list shows them.
+local shown = {}
+
+local function arrange(notes)
+  local numbers = {}
+  for number = 1, #notes do numbers[number] = number end
+  if order == "newest" then
+    table.sort(numbers, function(a, b) return a > b end)
+  elseif order == "title" then
+    table.sort(numbers, function(a, b)
+      local left, right = notes[a]:lower(), notes[b]:lower()
+      if left == right then return a < b end
+      return left < right
+    end)
+  end
+  return numbers
+end
+
+-- The note the list has selected, by its number in notes.txt, or nil.
+local function selectedNote()
+  local row = window:selected("notes")
+  return row and shown[row]
+end
+
 -- Shows the notes as they are in the file, so the window and `note` agree,
--- selecting the note numbered `selected` when it's given.
+-- in the order chosen, keeping the note numbered `selected` selected when
+-- it's given, or else the one selected before.
 local function refresh(selected)
   local notes = load()
-  window:setItems("notes", notes)
-  if selected then window:select("notes", selected) end
+  selected = selected or selectedNote()
+  shown = arrange(notes)
+  local rows = {}
+  local selectedRow = nil
+  for row, number in ipairs(shown) do
+    rows[row] = notes[number]
+    if number == selected then selectedRow = row end
+  end
+  window:setItems("notes", rows)
+  window:select("notes", selectedRow)
+  for item, name in pairs(orders) do window:setChecked(item, name == order) end
   local nothingSelected = window:selected("notes") == nil
   window:setDisabled("remove", nothingSelected)
   window:setDisabled("deleteNote", nothingSelected)
@@ -57,7 +96,7 @@ local function add()
 end
 
 local function remove()
-  local number = window:selected("notes")
+  local number = selectedNote()
   if not number then return end
   local notes = load()
   table.remove(notes, number)
@@ -76,6 +115,12 @@ window:on("newNote", function() window:focus("text") end)
 window:on("clearAll", function()
   if save({}) then refresh() end
 end)
+for item, name in pairs(orders) do
+  window:on(item, function()
+    order = name
+    refresh()
+  end)
+end
 
 local spec = {
   name = "note",

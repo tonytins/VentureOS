@@ -649,9 +649,9 @@ The format leaves to the host everything about live data and drawing. A host:
 
 ### VentureOS
 
-VentureOS reads version 1, the whole spec, nested menus and submenus included. Its menu bar doesn't open submenus
-yet: it shows a submenu's entry dimmed, and nothing in it can be chosen, by its entry or its shortcut. Opening them
-comes later in 0.7.7xx.
+VentureOS reads version 1, the whole spec, nested menus and submenus included. Its menu bar opens a submenu beside
+its entry, on the right or, without room, the left, when the pointer rests on the entry or with the right arrow, and
+keeps it open while the pointer crosses toward it. Left and Esc close the innermost submenu.
 
 As a host, it also:
 

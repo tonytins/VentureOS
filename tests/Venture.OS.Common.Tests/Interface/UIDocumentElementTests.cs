@@ -218,33 +218,38 @@ public sealed class UIDocumentElementTests
     public void EveryShippedElementMovedToTheFrontAndBackKeepsEveryElementAndComment(string file)
     {
         var document = UIDocument.Load(Path.Combine(AppContext.BaseDirectory, file));
-        var last = document.Xml!.Children.Count - 1;
         var moves = 0;
 
-        for (var index = 0; index < last; index++)
+        // Each element moves among its siblings: those directly inside the root, or inside the same menu.
+        foreach (var parent in (int[])[UIDocument.Root, .. Enumerable.Range(0, document.Xml!.Children.Count)])
         {
-            UIDocument moved;
-            try
+            var siblings = document.Xml.ChildrenOf(parent);
+            for (var place = 0; place < siblings.Length - 1; place++)
             {
-                moved = document.MoveElement(index, last);
-            }
-            catch (UIScriptException)
-            {
-                // Some elements must come before others, such as a style before the controls that use it.
-                continue;
-            }
+                UIDocument moved;
+                try
+                {
+                    moved = document.MoveElement(siblings[place], siblings[^1]);
+                }
+                catch (UIScriptException)
+                {
+                    // Some elements must come before others, such as a style before the controls that use it.
+                    continue;
+                }
 
-            moves++;
-            Assert.Equal(Elements(document)[index], Elements(moved)[last]);
+                moves++;
+                var after = moved.Xml!.ChildrenOf(parent);
+                Assert.Equal(Elements(document)[siblings[place]], Elements(moved)[after[^1]]);
 
-            // Blank lines and comments stay where they were, so only the elements are sure to be as they were.
-            var back = moved.MoveElement(last, index);
-            Assert.Equal(Elements(document), Elements(back));
-            Assert.Equal(Comments(document), Comments(back));
+                // Blank lines and comments stay where they were, so only the elements are sure to be as they were.
+                var back = moved.MoveElement(after[^1], after[place]);
+                Assert.Equal(Elements(document), Elements(back));
+                Assert.Equal(Comments(document), Comments(back));
+            }
         }
 
         // A document of one element, such as the menu bar's panel, has nothing to move.
-        Assert.True(moves > 0 || last < 1);
+        Assert.True(moves > 0 || document.Xml.Children.Count < 2);
     }
 
     [Theory]
@@ -252,13 +257,34 @@ public sealed class UIDocumentElementTests
     public void AnElementAddedAnywhereInAShippedDocumentAndRemovedLeavesItAsItWas(string file)
     {
         var document = UIDocument.Load(Path.Combine(AppContext.BaseDirectory, file));
+        var xml = document.Xml!;
 
-        for (var index = 0; index <= document.Xml!.Children.Count; index++)
+        // A style anywhere directly inside the root, and a separator anywhere inside each menu.
+        foreach (var parent in (int[])[UIDocument.Root, .. Enumerable.Range(0, xml.Children.Count)])
         {
-            var added = document.InsertElement(index, "Style", [new("name", "roundTripStyle")]);
+            string name;
+            KeyValuePair<string, string>[] attributes = [];
+            if (parent == UIDocument.Root)
+            {
+                name = "Style";
+                attributes = [new("name", "roundTripStyle")];
+            }
+            else if (xml.Children[parent].Name == "Menu" && xml.Children[parent].Source!.CloseStart is not null)
+            {
+                name = "MenuSeparator";
+            }
+            else
+            {
+                continue;
+            }
 
-            Assert.Equal("Style", added.Xml!.Children[index].Name);
-            Assert.Equal(document.Text, added.RemoveElement(index).Text);
+            foreach (var index in (int[])[.. xml.ChildrenOf(parent), xml.End(parent)])
+            {
+                var added = document.InsertElement(index, name, attributes, parent);
+
+                Assert.Equal(name, added.Xml!.Children[index].Name);
+                Assert.Equal(document.Text, added.RemoveElement(index).Text);
+            }
         }
     }
 

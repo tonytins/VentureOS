@@ -168,6 +168,57 @@ public sealed class NotesAppTests : IDisposable
     }
 
     [Fact]
+    public void SortByChangesOnlyTheListsOrderAndChecksTheOrderChosen()
+    {
+        Open();
+        shell.Execute("note banana");
+        shell.Execute("note Apple");
+        shell.Execute("note cherry");
+        var window = Assert.Single(windows.Windows);
+        var notes = window.View.List("notes")!;
+
+        Assert.Equal(["banana", "Apple", "cherry"], notes.Items);
+        Assert.True(window.View.IsSelected("sortAdded"));
+        Assert.Equal("sortMenu", window.View.Script.Menus[0].Entries[3].Name);
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "sortNewest"));
+        Assert.Equal(["cherry", "Apple", "banana"], notes.Items);
+        Assert.True(window.View.IsSelected("sortNewest"));
+        Assert.False(window.View.IsSelected("sortAdded"));
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "sortTitle"));
+        Assert.Equal(["Apple", "banana", "cherry"], notes.Items);
+
+        // The file, and the command, keep the order the notes were added in.
+        Assert.Equal("banana\nApple\ncherry\n", File.ReadAllText(Path.Combine(root, "notes.txt")));
+        Assert.Empty(events.Lines);
+    }
+
+    [Fact]
+    public void DeletingInASortedListDeletesTheNoteShownAndKeepsTheSelectionAcrossASort()
+    {
+        Open();
+        shell.Execute("note banana");
+        shell.Execute("note Apple");
+        shell.Execute("note cherry");
+        var window = Assert.Single(windows.Windows);
+        var notes = window.View.List("notes")!;
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "sortTitle"));
+        notes.SelectedIndex = 1;
+        Send(window, new UIEvent(UIEventKind.Selected, "notes", Index: 1));
+
+        // Sorting again keeps banana selected, wherever it lands.
+        Send(window, new UIEvent(UIEventKind.Pressed, "sortNewest"));
+        Assert.Equal("banana", notes.Items[notes.SelectedIndex]);
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "deleteNote"));
+        Assert.Equal("Apple\ncherry\n", File.ReadAllText(Path.Combine(root, "notes.txt")));
+        Assert.Equal(["cherry", "Apple"], notes.Items);
+        Assert.Empty(events.Lines);
+    }
+
+    [Fact]
     public void ClosingNotesClosesItsWindow()
     {
         Open();
