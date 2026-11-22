@@ -65,18 +65,21 @@
     <Text name="accentName" x="12" y="186" width="356" height="20" style="quiet"/>
     <TextField name="custom" x="12" y="216" width="120" height="26" placeholder="#RRGGBB"/>
     <Text name="status" x="142" y="219" width="226" height="20" style="quiet"/>
-
+<!-- 
     <Text name="cornersHeading" x="12" y="256" width="356" height="24" style="heading" text="Window corners"/>
     <Button name="rounded" x="12" y="286" width="84" height="26" text="Rounded"/>
     <Button name="square" x="102" y="286" width="84" height="26" text="Square"/>
-
-    <Text name="wallpaperHeading" x="12" y="330" width="356" height="24" style="heading" text="Wallpaper"/>
-    <Button name="wallpaper1" x="12" y="360" width="64" height="48" image="thumb1"/>
-    <Button name="wallpaper2" x="84" y="360" width="64" height="48" image="thumb2"/>
-    <Button name="wallpaper3" x="156" y="360" width="64" height="48" image="thumb3"/>
-    <Button name="wallpaper4" x="228" y="360" width="64" height="48" image="thumb4"/>
-    <Button name="wallpaper5" x="300" y="360" width="64" height="48" image="thumb5"/>
-    <Text name="wallpaperName" x="12" y="414" width="356" height="20" style="quiet"/>
+-->
+  </Pane>
+  
+  <Pane name="wallpaper" title="Wallpaper">
+     <Text name="wallpaperHeading" x="12" y="24" width="356" height="24" style="heading" text="Wallpaper"/>
+    <Button name="wallpaper1" x="12" y="56" width="64" height="48" image="thumb1"/>
+    <Button name="wallpaper2" x="84" y="56" width="64" height="48" image="thumb2"/>
+    <Button name="wallpaper3" x="156" y="56" width="64" height="48" image="thumb3"/>
+    <Button name="wallpaper4" x="228" y="56" width="64" height="48" image="thumb4"/>
+    <Button name="wallpaper5" x="300" y="56" width="64" height="48" image="thumb5"/>
+    <Text name="wallpaperName" x="12" y="120" width="356" height="20" style="quiet"/>
   </Pane>
 
   <Pane name="dock" title="Dock">

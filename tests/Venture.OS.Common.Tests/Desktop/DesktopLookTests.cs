@@ -37,11 +37,11 @@ public sealed class DesktopLookTests
     }
 
     [Fact]
-    public void TheStandardLookIsLightBlueRoundedAndEarthset()
+    public void TheStandardLookIsAutoBlueRoundedAndCharger()
     {
         var look = DesktopLook.Standard;
 
-        Assert.Equal(LookMode.Light, look.Mode);
+        Assert.Equal(LookMode.Auto, look.Mode);
         Assert.Equal(DesktopPalette.StandardAccent, look.Accent);
         Assert.True(look.RoundedCorners);
         Assert.Equal("Earthset", look.Wallpaper);
@@ -93,7 +93,7 @@ public sealed class DesktopLookTests
     [Fact]
     public void ReadsAFileFromBeforeTheLookGrewWithTheRestStandard()
     {
-        var look = DesktopAppearance.Read("""<Appearance version="1" mode="dark" accent="#E8922A"/>""");
+        var look = DesktopAppearance.Read("""<Appearance version="1" mode="auto" accent="#E8922A"/>""");
 
         Assert.Equal(DesktopLook.Standard with { Mode = LookMode.Dark, Accent = new UIColor(232, 146, 42) }, look);
     }

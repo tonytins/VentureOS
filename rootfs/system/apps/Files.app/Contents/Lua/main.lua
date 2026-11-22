@@ -11,8 +11,7 @@ local files = venture.files
 -- The folders in every window's sidebar: places, then, past a line, the
 -- system's own folder, set apart as Nautilus sets apart its drives.
 local BOOKMARKS = {
-  { name = "Home", path = "/mnt" },
-  { name = "User", path = "/mnt/user" },
+  { name = "Home", path = "/mnt/user" },
   { name = "Apps", path = "/mnt/user/apps" },
   { name = "System", path = "/mnt/system", separated = true },
 }

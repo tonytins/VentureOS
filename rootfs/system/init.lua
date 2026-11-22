@@ -12,6 +12,8 @@
 
 print('Type "help" for a list of commands.')
 
+venture.setUtcOffset("-5")
+
 -- A developer's own build may have developer.local.lua beside this file, to
 -- turn on developer mode and trust their vdb at every boot. It's git-ignored,
 -- so no build anyone else makes has it; `vdb identity --lua` prints its lines.

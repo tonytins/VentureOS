@@ -36,8 +36,8 @@ local function show()
   window:setChecked("auto", look.mode == "auto")
   window:setText("darkFrom", look.darkFrom)
   window:setText("darkUntil", look.darkUntil)
-  window:setChecked("rounded", look.corners == "rounded")
-  window:setChecked("square", look.corners == "square")
+  -- window:setChecked("rounded", look.corners == "rounded")
+  -- window:setChecked("square", look.corners == "square")
 
   local shown = look.wallpaper
   for slot, wallpaper in ipairs(wallpapers) do
@@ -85,8 +85,8 @@ for slot = 1, WALLPAPER_SLOTS do
   end
 end
 
-window:on("rounded", function() corners("rounded") end)
-window:on("square", function() corners("square") end)
+-- window:on("rounded", function() corners("rounded") end)
+-- window:on("square", function() corners("square") end)
 window:on("light", function() choose("light") end)
 window:on("dark", function() choose("dark") end)
 window:on("auto", function() choose("auto") end)

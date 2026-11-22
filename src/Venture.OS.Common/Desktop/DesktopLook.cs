@@ -68,9 +68,9 @@ public sealed record DesktopLook(
     /// <summary>The wallpaper name for the sky, the gradient the palette draws, in place of a picture.</summary>
     public const string Sky = "sky";
 
-    /// <summary>The look a desktop starts with: light, GNOME blue, rounded corners, Earthset, and dark 7 PM to 7 AM.</summary>
+    /// <summary>The look a desktop starts with: auto, GNOME blue, rounded corners, Charger, and dark 7 PM to 7 AM.</summary>
     public static DesktopLook Standard { get; } = new(
-        LookMode.Light, DesktopPalette.StandardAccent, RoundedCorners: true, "Earthset",
+        LookMode.Auto, DesktopPalette.StandardAccent, RoundedCorners: true, "Charger",
         TimeSpan.FromHours(19), TimeSpan.FromHours(7));
 
     /// <summary>

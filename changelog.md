@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.709
+
+- New Defaults:
+    - Charger wallpaper
+    - -5 time zone
+    - Style (dark/light) is set to Auto
+- System's About window looses the redundant "Okay" button
+- Wallpapers moves to its own section
+- File's new Home bookmark is now ``/mnt/user``
+
 ## 0.7.708
 
 - `lua` gets the rest of the line exactly as typed, so `lua print("hello world")` and `lua venture.setAppearance({wallpaper="Charger"})` work as written; before, the shell took the double quotes away. `lua "code"` still works.
