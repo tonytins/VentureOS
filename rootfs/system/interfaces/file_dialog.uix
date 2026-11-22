@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UIScript version="1">
+  <Window width="355" height="252"/>
+  <Sidebar name="bookmarks" width="163"/>
+  <TextField name="fileName" x="11" y="215" width="332" height="24"/>
+  <ToolbarItem name="saveOrOpen" title="Save"/>
+  <ToolbarItem name="canel" title="Cancel"/>
+  <List name="entries" x="10" y="8" width="335" height="200"/>
+  <TitleField name="savePath" placeholder="/mnt/usr"/>
+</UIScript>
