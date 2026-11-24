@@ -19,7 +19,7 @@ internal sealed class HelpCommand : IShellCommand
         {
             if (!context.Commands.TryGet(arguments[0], out var command))
             {
-                context.Output.WriteLine($"\"{arguments[0]}\" is not a command.");
+                context.Output.WriteLine($"\"{arguments[0]}\" isn't a command.");
                 return;
             }
 

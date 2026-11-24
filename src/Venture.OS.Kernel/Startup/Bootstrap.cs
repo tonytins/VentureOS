@@ -172,14 +172,14 @@ internal static class Bootstrap
     {
         if (!File.Exists(InitScriptPath))
         {
-            KernelLog.WriteLine($"No {InitScriptPath}; skipping it.");
+            KernelLog.WriteLine($"No {InitScriptPath} to run.");
             return null;
         }
 
         var header = ScriptHeader.Read(InitScriptPath);
         if (header.Error is { } error)
         {
-            KernelLog.WriteLine($"{InitScriptPath} can't run. Its -- Needs: line: {error} The shell still works.");
+            KernelLog.WriteLine($"{InitScriptPath} can't run. Its -- Needs: line: {error}");
             return null;
         }
 
@@ -201,7 +201,7 @@ internal static class Bootstrap
 
         // A script that failed partway undoes what it set up, so no half-registered commands are left behind.
         owner.Dispose();
-        KernelLog.WriteLine($"{InitScriptPath} failed; see the error above. The shell still works.");
+        KernelLog.WriteLine($"{InitScriptPath} failed; see the error above.");
         return null;
     }
 
@@ -242,7 +242,7 @@ internal static class Bootstrap
         // NetworkManager.Primary is a handle that may name no device, so check for one first.
         if (NetworkManager.DeviceCount == 0)
         {
-            KernelLog.WriteLine("No network device found; skipping network setup.");
+            KernelLog.WriteLine("No network device found.");
             return;
         }
 

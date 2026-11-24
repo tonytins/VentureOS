@@ -107,7 +107,7 @@ public sealed class CommandShellTests
         CreateShell().Execute("nope");
 
         var line = Assert.Single(output.Lines);
-        Assert.Contains("\"nope\" is not a command", line);
+        Assert.Equal("\"nope\" isn't a command. \"help\" lists them.", line);
     }
 
     [Fact]

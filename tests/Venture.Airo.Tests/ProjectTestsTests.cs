@@ -207,7 +207,7 @@ public sealed class ProjectTestsTests : IDisposable
               test.equal(app:text("result"), "Opened /mnt/user/folder/note.txt")
 
               test.equal(app:command("echo hello")[1], "hello")
-              test.expect(app:command("nothing")[1]:find("is not a command", 1, true))
+              test.expect(app:command("nothing")[1]:find("isn't a command", 1, true))
             end)
             """));
 

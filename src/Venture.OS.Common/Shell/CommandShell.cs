@@ -28,7 +28,7 @@ public sealed class CommandShell(ShellContext context)
 
         if (!context.Commands.TryGet(name, out var command))
         {
-            context.Output.WriteLine($"\"{name}\" is not a command. Type \"help\" for a list of commands.");
+            context.Output.WriteLine($"\"{name}\" isn't a command. \"help\" lists them.");
             return;
         }
 

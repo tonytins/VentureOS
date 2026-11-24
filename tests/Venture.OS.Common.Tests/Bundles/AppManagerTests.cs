@@ -55,7 +55,7 @@ public sealed class AppManagerTests : IDisposable
         Assert.True(manager.CloseApp("Notes", output));
         shell.Execute("note again");
 
-        Assert.Equal(["Notes is ready", "noted: buy milk", "\"note\" is not a command. Type \"help\" for a list of commands."],
+        Assert.Equal(["Notes is ready", "noted: buy milk", "\"note\" isn't a command. \"help\" lists them."],
             output.Lines);
         Assert.Empty(manager.Running);
     }

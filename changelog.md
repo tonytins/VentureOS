@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.110
+
+- An unknown command says `"nope" isn't a command. "help" lists them.`, and boot's messages stop at what happened: `No network device found.`, without "skipping network setup" or "The shell still works."
+
 ## 0.8.108
 
 - The boot banner no longer ends with an exclamation mark: `VentureOS 0.8.108 (Build …) booted successfully.`

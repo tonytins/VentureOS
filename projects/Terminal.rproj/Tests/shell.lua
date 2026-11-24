@@ -26,7 +26,7 @@ end)
 test.case("Reports an unknown command and carries on", function(app)
   run(app, "nothing")
   run(app, "echo still here")
-  test.expect(app:text("output"):find('"nothing" is not a command', 1, true))
+  test.expect(app:text("output"):find('"nothing" isn\'t a command', 1, true))
   test.expect(app:text("output"):find("still here$"))
 end)
 
