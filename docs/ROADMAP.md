@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-24 · **Latest release:** 0.7, Seto · **Next:** 0.8, in development
+> **Last updated:** 2026-11-24 · **Latest release:** 0.7, Seto · **Next:** 0.8, Hokutosei, in development
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -45,7 +45,7 @@ stage to the next, and add a line to the revision history.
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
 | 0.7 | Seto | released 2026-11-24, `v0.7.712`; [notes](./releases/0.7.md) | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; Roundhouse projects; nesting |
-| 0.8 | (none yet) | in development | Not yet themed |
+| 0.8 | Hokutosei | in development | Making apps: airo and app tests, and richer interfaces |
 
 ## 0.4, Pere Marquette
 
@@ -321,9 +321,12 @@ stay flat.
 - [x] Roundhouse: a tree outline, adding inside menus and panes, and Move
   Into and Move Out.
 
-## 0.8
+## 0.8, Hokutosei
 
-No code name or theme yet.
+Named after the Hokutosei, the Big Dipper, which ran from Ueno to Sapporo on
+Cassiopeia's route. 0.8 is about making apps: building and testing them from
+Roundhouse Projects, and giving their interfaces more to show, such as
+pictures in panes and sidebars that hold controls, with no code of their own.
 
 **0.8.1xx, airo and app tests**
 
@@ -341,6 +344,26 @@ approved for airo alone.
 - [x] Projects for the built-in apps, with their tests; VentureOS's tests
   stop opening the shipped apps, except Dock's, which need a desktop.
 - [x] Roundhouse runs a project's tests: Run ▸ Test.
+
+**0.8.2xx, richer interfaces**
+
+Panes and the sidebar hold more than controls, as GNOME's do, so the About
+window can show its app's icon beside its credits. Roundhouse designs what
+UIScript can hold, and the apps' and About's changes ship.
+
+- [ ] A window that comes back to the front when the one before it closes or
+  minimizes gets its focused field back.
+- [ ] `airo build` names a bundle as the shipped one is named, so `--replace`
+  replaces System Monitor rather than adding a second one beside it.
+- [ ] UIScript: a `<Visual>` may sit in a pane; its `<Image>` stays at the
+  root.
+- [ ] UIScript: a `<Sidebar>` may hold controls and visuals, positioned in
+  the sidebar, and sit on either edge (`edge`). One that holds nothing is
+  the list of rows it is today.
+- [ ] The desktop draws both, and Roundhouse's designer places them, adding
+  a picture's `<Image>` at the root itself.
+- [ ] The About window, from `projects/about.rproj`, ships with its icon and
+  credits.
 
 ## Ideas
 
@@ -387,6 +410,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | 0.8 is Hokutosei, about making apps, by my decision. 0.8.2xx begins: richer interfaces, with pictures in panes, sidebars that hold controls on either edge, the focus fix, and shipping the About window. |
 | 2026-11-24 | minor | 0.8.1xx is complete: AGENTS.md and REVIEW.md say VentureOS's tests cover the system and the built-in apps are tested in their projects; the app guide's testing step uses a project, and its tests are run. The next band is the owner's to plan. |
 | 2026-11-24 | patch | 0.8.1xx: Roundhouse's Run ▸ Test runs the open project's tests, edits and all, into the Log. |
 | 2026-11-24 | patch | 0.8.1xx: the built-in apps' projects, in `projects/`, with their tests; VentureOS's tests stop opening the shipped apps, Dock's aside, and stop pinning the standard look. |
