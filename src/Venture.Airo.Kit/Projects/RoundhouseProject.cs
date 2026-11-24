@@ -1,8 +1,7 @@
 using Venture.OS.Bundles;
 using Venture.OS.Interface.Xml;
-using Venture.Roundhouse.Bundles;
 
-namespace Venture.Roundhouse.Projects;
+namespace Venture.Airo.Projects;
 
 /// <summary>A project Roundhouse can't open or make, and why, said for the person using it.</summary>
 public sealed class ProjectException(string message, Exception? inner = null) : Exception(message, inner);
@@ -18,7 +17,7 @@ public sealed class ProjectException(string message, Exception? inner = null) : 
 ///   App/          optional: the app, laid out as a bundle's Contents/, which <see cref="Assemble"/> makes into Dice.app
 ///   Interfaces/   optional: loose .uix files, such as system components to wire later
 /// </code>
-/// <para>Only Roundhouse reads a project; VentureOS gets the <c>.app</c>. <c>Project.xml</c> follows the format rules
+/// <para>Only Roundhouse and airo read a project; VentureOS gets the <c>.app</c>. <c>Project.xml</c> follows the format rules
 /// VentureOS's own files do: a newer <c>version</c> is refused, since it may mean something this can't keep, and an
 /// attribute this doesn't know is ignored and, since nothing here rewrites the file, kept.</para>
 /// </remarks>

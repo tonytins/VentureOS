@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.101
+
+- airo, VentureOS's build tool: `airo build Dice.rproj --output rootfs/user/apps` builds a Roundhouse Project's app into a `.app`, checked as VentureOS reads apps, and prints where it went. `--replace` replaces one that's there; without it, airo leaves it and says so. Roundhouse's Run and Export build apps the same way.
+
 ## 0.8.100
 
 - VentureOS 0.8 begins. It has no code name yet.

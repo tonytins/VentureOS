@@ -325,10 +325,21 @@ stay flat.
 
 No code name or theme yet.
 
-**0.8.1xx**
+**0.8.1xx, airo and app tests**
 
-No plan of its own yet: each build's changes are in the
-[changelog](../changelog.md).
+VentureOS's own tests cover the system, and the built-in apps are tested on
+their own terms, from Roundhouse Projects, by airo, a build tool in C# that
+Roundhouse uses. The shipped `.app`s stay in `rootfs/`; each gets a project
+copy, which is where it's designed and tested, and ships when it's built
+into `rootfs/`. The two may differ until then. System.CommandLine is
+approved for airo alone.
+
+- [x] airo, and `airo build`, which makes a project's `.app` where it's told;
+  Roundhouse shares its project code.
+- [ ] App tests in Lua, in a project's `Tests/`, run by `airo test`.
+- [ ] Projects for the built-in apps, with their tests; VentureOS's tests
+  stop opening the shipped apps.
+- [ ] Roundhouse runs a project's tests.
 
 ## Ideas
 
@@ -375,6 +386,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | 0.8.1xx is airo and app tests, by my decision: VentureOS's tests cover the system, and the built-in apps are tested from Roundhouse Projects by airo, in C#. airo and `airo build` are the first item. |
 | 2026-11-24 | minor | 0.7, Seto, is released as `v0.7.712`. 0.8 begins with 0.8.1xx, unthemed and unplanned, by my decision. Roundhouse on VentureOS, which 0.7 didn't reach, moves to Ideas. |
 | 2026-11-20 | minor | 0.7.7xx is complete: Roundhouse's outline is a tree, with Move Into and Move Out. The design is marked built, with its corrections. The next band is the owner's to plan. |
 | 2026-11-20 | patch | 0.7.7xx: panes hold their controls, and the shipped apps' menus and panes nest. The owner's Charger wallpaper ships with it. |

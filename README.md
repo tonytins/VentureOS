@@ -92,6 +92,15 @@ packaging/windows/package.sh
 packaging/macos/package.sh
 ```
 
+### airo
+
+airo is VentureOS's build tool. `airo build` builds a Roundhouse Project (`.rproj`) into the `.app` VentureOS runs, and writes it to the folder you name, such as `rootfs/user/apps/` when it's ready to ship. It prints the app's path, never asks anything, and exits with 1 and the reason when it can't. See [its README](docs/airo/README.md).
+
+```
+dotnet run --project src/Venture.Airo -- build Dice.rproj --output rootfs/user/apps
+dotnet test --project tests/Venture.Airo.Tests
+```
+
 ### vdb
 
 [vdb](tools/vdb/README.md) sends an app to a running VentureOS and opens it, so you can try a change without rebuilding the kernel. Boot with `./run.sh --vdb`, open the desktop, and turn on Settings ▸ Developer; then, with Swift 6:

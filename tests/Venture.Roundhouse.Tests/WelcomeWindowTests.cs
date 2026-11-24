@@ -1,3 +1,4 @@
+using Venture.Airo.Projects;
 using Avalonia.Threading;
 using Venture.Roundhouse.Welcome;
 
@@ -52,7 +53,7 @@ public sealed class WelcomeWindowTests : IDisposable
     [Fact]
     public void ListsTheRecentItemsAndSaysWhatsGone() => TestApp.Run(() =>
     {
-        var project = Projects.RoundhouseProject.Create("Dice", folder).Root;
+        var project = RoundhouseProject.Create("Dice", folder).Root;
         var gone = Path.Combine(folder, "Gone.rproj");
         List<string> opened = [];
         List<string> forgotten = [];
@@ -127,7 +128,7 @@ public sealed class WelcomeWindowTests : IDisposable
     [Fact]
     public void OpeningARecentItemOpensItAndCloseBringsTheWelcomeBack() => TestApp.Run(() =>
     {
-        var project = Projects.RoundhouseProject.Create("Dialogs", folder).Root;
+        var project = RoundhouseProject.Create("Dialogs", folder).Root;
         MainWindow window = new() { AskToLeave = _ => Task.FromResult(Bundles.LeaveChoice.DontSave) };
         window.Show();
         window.Open(project);

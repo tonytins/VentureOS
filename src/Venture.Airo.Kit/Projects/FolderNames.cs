@@ -1,4 +1,4 @@
-namespace Venture.Roundhouse.Bundles;
+namespace Venture.Airo.Projects;
 
 /// <summary>
 /// What a new app or project may be called: its name becomes its folder's, such as <c>Dice.app</c> or

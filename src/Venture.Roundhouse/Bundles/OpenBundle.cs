@@ -1,3 +1,4 @@
+using Venture.Airo.Projects;
 using System.Text;
 
 namespace Venture.Roundhouse.Bundles;
@@ -16,7 +17,7 @@ public sealed record BundleItem(string Name, string Path, bool IsFolder, IReadOn
 public sealed class OpenBundle
 {
     /// <summary>The kinds of folder Roundhouse opens, by their extension: VentureOS's bundles, and its own projects.</summary>
-    public static IReadOnlyList<string> Extensions { get; } = [".app", ".wallpaper", Projects.RoundhouseProject.Extension];
+    public static IReadOnlyList<string> Extensions { get; } = [".app", ".wallpaper", RoundhouseProject.Extension];
 
     // Strict UTF-8, as UIDocument reads, so a file that isn't text isn't changed by being read and written back.
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -40,7 +41,7 @@ public sealed class OpenBundle
     public string Name => Path.GetFileName(Root);
 
     /// <summary>Whether it's a Roundhouse Project rather than one of VentureOS's bundles.</summary>
-    public bool IsProject => Projects.RoundhouseProject.IsProject(Root);
+    public bool IsProject => RoundhouseProject.IsProject(Root);
 
     /// <summary>
     /// The <c>Info.xml</c> its <c>Info.xml</c> form edits: a bundle's <c>Contents/Info.xml</c>, or a project's

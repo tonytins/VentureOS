@@ -1,8 +1,8 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-20 · **Change:** minor (Roundhouse's tree outline; 0.7.7xx complete) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (airo, and the kit it shares with Roundhouse) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
-## Current state (2026-11-20)
+## Current state (2026-11-24)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
@@ -15,7 +15,10 @@ the code wins and this page is out of date.
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
   for the library, `Venture.OS.Common.Tests` (2,073 tests, and 295 for Roundhouse, including runs of
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
-  command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests).
+  command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
+  and `airo`, a C# command-line tool in `src/Venture.Airo` that builds
+  Roundhouse Projects into apps, on `Venture.Airo.Kit`, which Roundhouse
+  shares (`Venture.Airo.Tests`, 28 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -112,6 +115,7 @@ grow):
 
 | Concern | Rule | Where |
 |---|---|---|
+| 2026-11-24 | minor | Layout (§2): airo, the build tool (`src/Venture.Airo`, `airo build`), and `Venture.Airo.Kit`, which `RoundhouseProject` and `FolderNames` move into from Roundhouse so both build an app the same way; `Venture.Airo.Tests`. |
 | **Namespaces** | Cosmos namespaces are imported once, in `GlobalUsings.cs`. A rename is a one-file fix. | `GlobalUsings.cs` |
 | **Cosmos calls** | Hardware and subsystem setup goes through `Startup/` steps, not scattered through commands. | `Startup/Bootstrap.cs` |
 | **Version pins** | `Cosmos.Sdk` and the `Cosmos.*` packages move together, in a change of their own, with a build and a headless boot. | `Venture.OS.Kernel.csproj` |
@@ -158,6 +162,10 @@ VentureOS/
 │  │  ├─ UIScriptSchema.cs         the attributes each element takes, as UIScript reads them, for editors
 │  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
 │  │  └─ Strings/                  Venture.OS.Interface.Strings: StringTables, over CSTNet's CSTTable
+│  ├─ Venture.Airo.Kit/            what airo and Roundhouse share, on Common and Interface; never in the kernel
+│  │  └─ Projects/                 Venture.Airo.Projects: RoundhouseProject (.rproj: Project.xml, App/, Interfaces/, assembling
+│  │                               the .app) and FolderNames (what a new app or project may be called)
+│  ├─ Venture.Airo/                airo, the build tool (System.CommandLine): AiroCommand, airo build
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
 │     ├─ Bundles/                  Venture.Roundhouse.Bundles: OpenBundle, a bundle's files and their unsaved edits
 │     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
@@ -165,7 +173,6 @@ VentureOS/
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
 │     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedRun, SimulatedDisk, SimulatedSystem
 │     ├─ Vdb/                      Venture.Roundhouse.Vdb: Run on VentureOS (VentureOSRun, its window, TCP, and the identity file)
-│     ├─ Projects/                 Venture.Roundhouse.Projects: RoundhouseProject (.rproj: Project.xml, App/, Interfaces/, assembling the .app)
 │     ├─ Welcome/                  Venture.Roundhouse.Welcome: WelcomeWindow, and RoundhouseSettings (recent items, Show at startup)
 │     ├─ Highlighting/             Venture.Roundhouse.Highlighting: Grammars, TextMateSharp's grammars and CST's (cst.tmLanguage.json)
 │     ├─ Logging/                  Venture.Roundhouse.Logging: RoundhouseLog (NLog), LogBuffer, LoggedOutput
@@ -189,7 +196,8 @@ VentureOS/
 │     └─ settings/appearance.xml   the look a boot starts with, which Settings and appearance change
 ├─ tests/
 │  ├─ Venture.OS.Common.Tests/     xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with rootfs/ copied in
-│  └─ Venture.Roundhouse.Tests/    xUnit v3 tests that drive Roundhouse off-screen with Avalonia.Headless
+│  ├─ Venture.Roundhouse.Tests/    xUnit v3 tests that drive Roundhouse off-screen with Avalonia.Headless
+│  └─ Venture.Airo.Tests/          xUnit v3 tests for airo and Venture.Airo.Kit, on sample projects of their own
 ├─ tools/vdb/                     vdb, a Swift command-line tool that sends apps to VentureOS (here until it has its own repository)
 ├─ packaging/                     Roundhouse's packages for Linux, Windows, and macOS, after CityLimits'; writes dist/
 ├─ docs/                          architecture, roadmap, scorecard, the app guide, the UIScript drafts, and vdb's protocol
@@ -1125,7 +1133,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   text as the change alone, so Undo takes it back. An `Info.xml` VentureOS
   refuses shows why in the form's place, over its text.
 - **Projects** (0.7.6xx, [design](./design/2026-11-20-roundhouse-projects-design.md)):
-  a Roundhouse Project (`RoundhouseProject`, a `.rproj` folder) is where an
+  a Roundhouse Project (`RoundhouseProject`, in `Venture.Airo.Kit` since
+  0.8.1xx, so `airo build` makes the same `.app`; a `.rproj` folder) is where an
   app and its interfaces live while they're made: `Project.xml` (a version
   and a name), an optional `App/` laid out as a bundle's `Contents/`, and
   `Interfaces/` for loose `.uix` files. Only Roundhouse reads one. It opens

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    airo, VentureOS's build tool: builds Roundhouse Projects into apps from the command line, for scripts and for
+    Roundhouse. Named after Amtrak's Airo trains. See docs/airo/README.md.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>airo</AssemblyName>
+    <RootNamespace>Venture.Airo</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- airo shares VentureOS's version, from GitInfo.txt at the repository root, as Roundhouse does. -->
+    <GitIgnoreTagVersion>true</GitIgnoreTagVersion>
+    <GitIgnoreBranchVersion>true</GitIgnoreBranchVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Approved for airo, 2026-11-24. 2.0.x rather than 3.0, which was two weeks old when airo began. -->
+    <PackageReference Include="System.CommandLine" Version="2.0.15" />
+    <PackageReference Include="GitInfo" Version="3.6.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Venture.Airo.Kit/Venture.Airo.Kit.csproj" />
+  </ItemGroup>
+
+</Project>

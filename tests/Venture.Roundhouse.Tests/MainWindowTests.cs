@@ -1,3 +1,4 @@
+using Venture.Airo.Projects;
 using Avalonia;
 using Avalonia.Input;
 using Avalonia.Controls;
@@ -1399,7 +1400,7 @@ public sealed class MainWindowTests : IDisposable
 
         dialog.AppName = "Dice";
         Assert.Equal(Path.Combine(folder, "Dice.rproj"), dialog.Create());
-        var app = Projects.RoundhouseProject.Open(Path.Combine(folder, "Dice.rproj")).Assemble(Path.Combine(folder, "out"));
+        var app = RoundhouseProject.Open(Path.Combine(folder, "Dice.rproj")).Assemble(Path.Combine(folder, "out"));
         Assert.Equal("dev.mine.dice", Venture.OS.Bundles.Bundle.Read(app.Replace('\\', '/'), Venture.OS.Bundles.BundleKind.App).Identifier);
     });
 
@@ -1679,7 +1680,7 @@ public sealed class MainWindowTests : IDisposable
     [Fact]
     public void TheSaveDialogOffersTheProjectAndElsewhereAndSaysWhatsWrong() => TestApp.Run(() =>
     {
-        var project = Projects.RoundhouseProject.Create("Dialogs", folder);
+        var project = RoundhouseProject.Create("Dialogs", folder);
         Bundles.SaveInterfaceWindow dialog = new(project, folder);
         dialog.Show();
 

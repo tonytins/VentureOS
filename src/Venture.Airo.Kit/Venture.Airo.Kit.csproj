@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    What airo, VentureOS's build tool, and Roundhouse share: Roundhouse Projects (.rproj), read and built into the
+    .app VentureOS runs. It runs on the computer that makes apps, never on VentureOS, so the kernel doesn't reference
+    it, and it may use what the kernel's compiler can't.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Venture.Airo</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Venture.OS.Common/Venture.OS.Common.csproj" />
+    <ProjectReference Include="../Venture.OS.Interface/Venture.OS.Interface.csproj" />
+  </ItemGroup>
+
+</Project>

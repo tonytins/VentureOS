@@ -1,8 +1,7 @@
 using Venture.OS.Bundles;
-using Venture.Roundhouse.Bundles;
-using Venture.Roundhouse.Projects;
+using Venture.Airo.Projects;
 
-namespace Venture.Roundhouse.Tests;
+namespace Venture.Airo.Tests;
 
 /// <summary>
 /// <see cref="RoundhouseProject"/>: a <c>.rproj</c> made, opened, and refused when it isn't one this reads, and its
@@ -170,14 +169,5 @@ public sealed class RoundhouseProjectTests : IDisposable
         Assert.Contains("has no app yet", Assert.Throws<ProjectException>(() => project.Assemble(folder)).Message);
     }
 
-    // A project with an app from Roundhouse's template, its Contents/ moved to App/, as New App will make one.
-    private RoundhouseProject WithApp(string name)
-    {
-        var project = RoundhouseProject.Create(name, folder);
-        var scratch = Path.Combine(folder, "scratch");
-        var app = AppTemplate.Create(name, AppTemplate.IdentifierFor(name), scratch);
-        Directory.Move(Path.Combine(app, "Contents"), project.AppFolder);
-        Directory.Delete(scratch, recursive: true);
-        return project;
-    }
+    private RoundhouseProject WithApp(string name) => SampleProjects.WithApp(folder, name);
 }

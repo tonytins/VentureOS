@@ -45,6 +45,13 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   VentureOS projects never reference them. Its Run runs VentureOS's own  
   desktop code over a copy of `rootfs/` (`Simulator/`). See  
   [its design](docs/design/2026-11-18-roundhouse-design.md).
+- `src/Venture.Airo` is airo, VentureOS's build tool: a command-line app  
+  (`airo build`) that builds a Roundhouse Project (`.rproj`) into the `.app`  
+  VentureOS runs, writing it where it's told. `src/Venture.Airo.Kit` holds  
+  what airo and Roundhouse share, starting with `RoundhouseProject`; it runs  
+  on the computer making apps, never on VentureOS, so the kernel doesn't  
+  reference it. System.CommandLine is approved for airo alone. See  
+  [its README](docs/airo/README.md).
 - `tools/vdb/` is vdb, a Swift package (`swift build`, `swift test`) that  
   sends apps to a running VentureOS over [vdb/1](docs/vdb/README.md), whose  
   recorded conversations both its tests and Common's replay. Swift Argument  
@@ -55,8 +62,9 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   [its README](packaging/README.md). Its icon is a placeholder, made from  
   `src/Venture.Roundhouse/Assets/Roundhouse.png` by `packaging/icons.sh`.
 - `tests/Venture.OS.Common.Tests` covers `Venture.OS.Common` and  
-  `Venture.OS.Interface` with xUnit v3, and `tests/Venture.Roundhouse.Tests`  
-  drives Roundhouse off-screen with `Avalonia.Headless`.
+  `Venture.OS.Interface` with xUnit v3, `tests/Venture.Roundhouse.Tests`  
+  drives Roundhouse off-screen with `Avalonia.Headless`, and  
+  `tests/Venture.Airo.Tests` covers airo and its kit.
 
 [docs/architecture.md](docs/architecture.md) explains how the system works,  
 [docs/ROADMAP.md](docs/ROADMAP.md) tracks releases and ideas, and  
@@ -70,6 +78,7 @@ Never commit build output (`bin/`, `obj/`, `output-*/`, `dist/`, `*.iso`, `*.img
 ```sh
 dotnet test --project tests/Venture.OS.Common.Tests   # all tests must pass
 dotnet test --project tests/Venture.Roundhouse.Tests  # Roundhouse's, off-screen
+dotnet test --project tests/Venture.Airo.Tests        # airo's and its kit's
 cosmos check                                        # always before building
 cosmos build -p src/Venture.OS.Kernel               # no new warnings
 ./run.sh                                            # boots x64 in QEMU; --headless for serial only, --vdb for vdb's port
