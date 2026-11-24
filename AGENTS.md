@@ -77,7 +77,9 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
 
 [docs/architecture.md](docs/architecture.md) explains how the system works,  
 [docs/ROADMAP.md](docs/ROADMAP.md) tracks releases and ideas, and  
-[docs/scorecard.md](docs/scorecard.md) records verified status. Read  
+[docs/scorecard.md](docs/scorecard.md) records verified status, and  
+[docs/hig](docs/hig/README.md), the VentureOS HIG, records the design  
+language the desktop draws; change it with the look. Read  
 `docs/architecture.md` before changing boot, storage, networking, or the shell.
 
 Never commit build output (`bin/`, `obj/`, `output-*/`, `dist/`, `*.iso`, `*.img`).
