@@ -1,3 +1,4 @@
+using Venture.Airo.Simulation;
 using System.Diagnostics;
 using Venture.OS.Bundles;
 using Venture.OS.Desktop;
@@ -54,7 +55,7 @@ public sealed class SimulatedRun : IDisposable, IShellHost
     {
         appOutput = new LoggedOutput(heldOutput, RoundhouseLog.For("VentureOS"));
         Disk = disk;
-        System = new SimulatedSystem(disk);
+        System = SystemFor(disk);
         painter = new SkiaPainter(SimulatorWindow.ScreenWidth, SimulatorWindow.ScreenHeight, fonts);
         look = new Look(
             DesktopLook.Standard,
@@ -106,6 +107,17 @@ public sealed class SimulatedRun : IDisposable, IShellHost
             };
         });
     }
+
+    /// <summary>
+    /// What a run on <paramref name="disk"/> tells its scripts about itself: VentureOS's version and commit, which
+    /// Roundhouse shares, as the kernel built from this commit would report them.
+    /// </summary>
+    public static SimulatedSystem SystemFor(SimulatedDisk disk) =>
+        new(
+            disk,
+            $"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}",
+            ThisAssembly.Git.Commit,
+            "Roundhouse");
 
     /// <summary>The run's copy of VentureOS's files.</summary>
     public SimulatedDisk Disk { get; }

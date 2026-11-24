@@ -1,4 +1,4 @@
-namespace Venture.Roundhouse.Simulator;
+namespace Venture.Airo.Simulation;
 
 /// <summary>
 /// The disk a simulated VentureOS runs from: a fresh copy of <c>rootfs/</c> in a temporary folder, laid out as the
@@ -51,11 +51,11 @@ public sealed class SimulatedDisk : IDisposable
     }
 
     /// <summary>What every run's folder in the temporary folder starts with, before the process's ID.</summary>
-    public const string Prefix = "roundhouse-run-";
+    public const string Prefix = "venture-run-";
 
     /// <summary>
-    /// Deletes runs' copies left behind by a Roundhouse that has ended without cleaning up, such as one that crashed
-    /// or was killed: those whose process isn't running. A running Roundhouse's are left alone.
+    /// Deletes runs' copies left behind by a Roundhouse or airo that has ended without cleaning up, such as one that crashed
+    /// or was killed: those whose process isn't running. A running one's are left alone.
     /// </summary>
     /// <returns>How many it deleted.</returns>
     public static int RemoveLeftovers()
@@ -96,7 +96,7 @@ public sealed class SimulatedDisk : IDisposable
     }
 
     /// <summary>
-    /// The <c>rootfs/</c> Roundhouse runs VentureOS from: beside it when packaged, or the repository's while it's
+    /// The <c>rootfs/</c> Roundhouse and airo run VentureOS from: beside the program when packaged, or the repository's while it's
     /// built from source; <see langword="null"/> when there's neither.
     /// </summary>
     public static string? FindRootfs()

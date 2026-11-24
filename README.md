@@ -94,10 +94,11 @@ packaging/macos/package.sh
 
 ### airo
 
-airo is VentureOS's build tool. `airo build` builds a Roundhouse Project (`.rproj`) into the `.app` VentureOS runs, and writes it to the folder you name, such as `rootfs/user/apps/` when it's ready to ship. It prints the app's path, never asks anything, and exits with 1 and the reason when it can't. See [its README](docs/airo/README.md).
+airo is VentureOS's build tool. `airo build` builds a Roundhouse Project (`.rproj`) into the `.app` VentureOS runs, and writes it to the folder you name, such as `rootfs/user/apps/` when it's ready to ship. `airo test` runs the app's tests, Lua files in the project's `Tests/` that use the app as a person would ([how to write them](docs/airo/testing.md)). airo never asks anything, and exits with 1 and the reason when it can't do what it's asked or a test fails. See [its README](docs/airo/README.md).
 
 ```
 dotnet run --project src/Venture.Airo -- build Dice.rproj --output rootfs/user/apps
+dotnet run --project src/Venture.Airo -- test Dice.rproj
 dotnet test --project tests/Venture.Airo.Tests
 ```
 

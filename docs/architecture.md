@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (airo, and the kit it shares with Roundhouse) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (airo test, and apps' tests in their projects) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-24)
 
@@ -17,8 +17,8 @@ the code wins and this page is out of date.
   the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
   and `airo`, a C# command-line tool in `src/Venture.Airo` that builds
-  Roundhouse Projects into apps, on `Venture.Airo.Kit`, which Roundhouse
-  shares (`Venture.Airo.Tests`, 28 tests).
+  Roundhouse Projects into apps and runs their tests, on `Venture.Airo.Kit`,
+  which Roundhouse shares (`Venture.Airo.Tests`, 43 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -115,6 +115,7 @@ grow):
 
 | Concern | Rule | Where |
 |---|---|---|
+| 2026-11-24 | minor | Layout (§2): `airo test` and apps' tests (`Venture.Airo.Testing`), run on a fresh simulated disk with no desktop; `SimulatedDisk` and `SimulatedSystem` move from Roundhouse into the kit for it, the system taking its version from whoever runs it. |
 | 2026-11-24 | minor | Layout (§2): airo, the build tool (`src/Venture.Airo`, `airo build`), and `Venture.Airo.Kit`, which `RoundhouseProject` and `FolderNames` move into from Roundhouse so both build an app the same way; `Venture.Airo.Tests`. |
 | **Namespaces** | Cosmos namespaces are imported once, in `GlobalUsings.cs`. A rename is a one-file fix. | `GlobalUsings.cs` |
 | **Cosmos calls** | Hardware and subsystem setup goes through `Startup/` steps, not scattered through commands. | `Startup/Bootstrap.cs` |
@@ -163,15 +164,18 @@ VentureOS/
 │  │  ├─ Xml/                      Venture.OS.Interface.Xml: FlatXml, for Info.xml, appearance.xml, and .uix files
 │  │  └─ Strings/                  Venture.OS.Interface.Strings: StringTables, over CSTNet's CSTTable
 │  ├─ Venture.Airo.Kit/            what airo and Roundhouse share, on Common and Interface; never in the kernel
-│  │  └─ Projects/                 Venture.Airo.Projects: RoundhouseProject (.rproj: Project.xml, App/, Interfaces/, assembling
-│  │                               the .app) and FolderNames (what a new app or project may be called)
-│  ├─ Venture.Airo/                airo, the build tool (System.CommandLine): AiroCommand, airo build
+│  │  ├─ Projects/                 Venture.Airo.Projects: RoundhouseProject (.rproj: Project.xml, App/, Interfaces/, assembling
+│  │  │                            the .app) and FolderNames (what a new app or project may be called)
+│  │  ├─ Simulation/               Venture.Airo.Simulation: SimulatedDisk (a fresh copy of rootfs/) and SimulatedSystem
+│  │  └─ Testing/                  Venture.Airo.Testing: ProjectTests (a project's Tests/*.lua), AppUnderTest (its app on a
+│  │                               fresh disk, with no desktop), and TestLibrary (the test table and the app it's handed)
+│  ├─ Venture.Airo/                airo, the build tool (System.CommandLine): AiroCommand, airo build and airo test
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
 │     ├─ Bundles/                  Venture.Roundhouse.Bundles: OpenBundle, a bundle's files and their unsaved edits
 │     ├─ Designer/                 Venture.Roundhouse.Designer: DesignMap (canvas points to elements), FrameDrag, FrameEdit,
 │     │                            InspectorPanel, and DesignEdits (the library and selection edits)
 │     ├─ Drawing/                  Venture.Roundhouse.Drawing: SkiaPainter, SkiaFonts, and SkiaImages
-│     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow, SimulatedRun, SimulatedDisk, SimulatedSystem
+│     ├─ Simulator/                Venture.Roundhouse.Simulator: SimulatorWindow and SimulatedRun, over the kit's SimulatedDisk and SimulatedSystem
 │     ├─ Vdb/                      Venture.Roundhouse.Vdb: Run on VentureOS (VentureOSRun, its window, TCP, and the identity file)
 │     ├─ Welcome/                  Venture.Roundhouse.Welcome: WelcomeWindow, and RoundhouseSettings (recent items, Show at startup)
 │     ├─ Highlighting/             Venture.Roundhouse.Highlighting: Grammars, TextMateSharp's grammars and CST's (cst.tmLanguage.json)

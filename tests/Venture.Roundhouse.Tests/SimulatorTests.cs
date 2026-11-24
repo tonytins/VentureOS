@@ -1,3 +1,4 @@
+using Venture.Airo.Simulation;
 using Venture.Roundhouse.Simulator;
 
 namespace Venture.Roundhouse.Tests;
@@ -70,7 +71,7 @@ public sealed class SimulatorTests
     public void TheSystemReportsWhatTheKernelBuiltFromThisCommitWould()
     {
         using var disk = SimulatedDisk.Create(SimulatedDisk.FindRootfs()!);
-        SimulatedSystem system = new(disk);
+        var system = SimulatedRun.SystemFor(disk);
 
         Assert.Equal("VentureOS", system.Name);
         Assert.Matches($@"^{System.Text.RegularExpressions.Regex.Escape(SkiaPainterTests.Release())}\.\d+$", system.Version);

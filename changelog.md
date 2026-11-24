@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.102
+
+- Apps can have tests: Lua files in a Roundhouse Project's `Tests/` folder, which press buttons, type in fields, choose rows, and check what the app's windows say, as a person would. `airo test Settings.rproj` runs each test on a fresh VentureOS with the project's app in it, prints a line a test and the counts, and exits with 1 when any failed. An error in the app fails the test even if nothing checked for it. See [Testing an app](docs/airo/testing.md).
+
 ## 0.8.101
 
 - airo, VentureOS's build tool: `airo build Dice.rproj --output rootfs/user/apps` builds a Roundhouse Project's app into a `.app`, checked as VentureOS reads apps, and prints where it went. `--replace` replaces one that's there; without it, airo leaves it and says so. Roundhouse's Run and Export build apps the same way.

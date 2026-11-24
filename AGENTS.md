@@ -46,9 +46,12 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   desktop code over a copy of `rootfs/` (`Simulator/`). See  
   [its design](docs/design/2026-11-18-roundhouse-design.md).
 - `src/Venture.Airo` is airo, VentureOS's build tool: a command-line app  
-  (`airo build`) that builds a Roundhouse Project (`.rproj`) into the `.app`  
-  VentureOS runs, writing it where it's told. `src/Venture.Airo.Kit` holds  
-  what airo and Roundhouse share, starting with `RoundhouseProject`; it runs  
+  (`airo build`, `airo test`) that builds a Roundhouse Project (`.rproj`)  
+  into the `.app` VentureOS runs, writing it where it's told, and runs the  
+  app's tests, Lua files in the project's `Tests/`  
+  ([their format](docs/airo/testing.md)). `src/Venture.Airo.Kit` holds  
+  what airo and Roundhouse share: projects, the simulated disk, and the  
+  test runner; it runs  
   on the computer making apps, never on VentureOS, so the kernel doesn't  
   reference it. System.CommandLine is approved for airo alone. See  
   [its README](docs/airo/README.md).

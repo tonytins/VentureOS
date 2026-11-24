@@ -27,6 +27,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- VentureOS's own files, which airo test copies afresh for each test, so a packaged airo can run apps. -->
+    <None Include="../../rootfs/**/*" LinkBase="rootfs" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Venture.Airo.Kit/Venture.Airo.Kit.csproj" />
   </ItemGroup>
 

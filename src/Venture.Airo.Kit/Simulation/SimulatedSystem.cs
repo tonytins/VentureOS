@@ -3,20 +3,24 @@ using System.Text;
 using Venture.OS.Scripting;
 using Venture.OS.Time;
 
-namespace Venture.Roundhouse.Simulator;
+namespace Venture.Airo.Simulation;
 
 /// <summary>
 /// What a simulated VentureOS tells its scripts about itself: the same name, version, and build number the kernel
 /// built from this commit would report, the computer's clock, and how long the run has lasted. There's no Cosmos,
 /// network, or measured memory to report, so those are left out, as the kernel leaves out what it can't read.
 /// </summary>
-public sealed class SimulatedSystem(SimulatedDisk disk) : ISystemInfo
+/// <param name="disk">The run's copy of VentureOS's files.</param>
+/// <param name="version">VentureOS's version, such as <c>0.8.102</c>, which the program running it shares.</param>
+/// <param name="commit">The commit it was built from, which the build number comes from.</param>
+/// <param name="host">What's running it, such as <c>Roundhouse</c>, which scripts see in place of Cosmos's version.</param>
+public sealed class SimulatedSystem(SimulatedDisk disk, string version, string commit, string host) : ISystemInfo
 {
     private readonly long started = Stopwatch.GetTimestamp();
 
     public string Name => "VentureOS";
 
-    public string Version => $"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}";
+    public string Version => version;
 
     /// <summary>The kernel's build number for this commit: its hash's first four characters, little-endian, modulo a million.</summary>
     public uint BuildNumber
@@ -28,10 +32,10 @@ public sealed class SimulatedSystem(SimulatedDisk disk) : ISystemInfo
         }
     }
 
-    public string Commit => ThisAssembly.Git.Commit;
+    public string Commit => commit;
 
-    /// <summary>No Cosmos runs underneath; Roundhouse says so rather than claiming a version.</summary>
-    public string CosmosVersion => "none (simulated in Roundhouse)";
+    /// <summary>No Cosmos runs underneath; the host says so rather than claiming a version.</summary>
+    public string CosmosVersion => $"none (simulated in {host})";
 
     public TimeSpan? Uptime => Stopwatch.GetElapsedTime(started);
 
@@ -55,7 +59,7 @@ public sealed class SimulatedSystem(SimulatedDisk disk) : ISystemInfo
         }
     }
 
-    /// <summary>The desktop's look, which Settings changes, as the kernel's; a run keeps its own (see <see cref="SimulatedRun"/>).</summary>
+    /// <summary>The desktop's look, which Settings changes, as the kernel's; a run keeps its own.</summary>
     public IAppearance? Appearance { get; } = new Venture.OS.Desktop.ScriptAppearance();
 
     public INetworkTools? NetworkTools => null;

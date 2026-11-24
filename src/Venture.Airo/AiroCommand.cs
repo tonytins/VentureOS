@@ -1,6 +1,9 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using Venture.Airo.Projects;
+using Venture.Airo.Simulation;
+using Venture.Airo.Testing;
+using Venture.OS.Shell;
 
 namespace Venture.Airo;
 
@@ -20,6 +23,7 @@ public static class AiroCommand
 
         var root = new RootCommand("airo builds Roundhouse Projects into apps VentureOS runs.");
         root.Subcommands.Add(BuildCommand());
+        root.Subcommands.Add(TestCommand());
 
         var result = root.Parse(args);
 
@@ -71,6 +75,74 @@ public static class AiroCommand
             }
         });
         return command;
+    }
+
+    private static Command TestCommand()
+    {
+        Argument<string> project = new("project") { Description = "The project to test: its .rproj folder, or its Project.xml." };
+        var command = new Command("test", "Run a project's tests, in its Tests/ folder, against its app in a simulated VentureOS.")
+        {
+            project,
+        };
+        command.SetAction(parse =>
+        {
+            var output = parse.InvocationConfiguration.Output;
+            var error = parse.InvocationConfiguration.Error;
+            try
+            {
+                var opened = RoundhouseProject.Open(ProjectFolder(parse.GetValue(project)!));
+                if (ProjectTests.Files(opened).Count == 0)
+                {
+                    error.WriteLine($"airo: {Path.GetFileName(opened.Root)} has no tests: there are no .lua files in its {ProjectTests.FolderName}/ folder.");
+                    return 1;
+                }
+
+                if (SimulatedDisk.FindRootfs() is not { } rootfs)
+                {
+                    error.WriteLine("airo: VentureOS's files (rootfs/) aren't beside airo or in a repository above it, so there's nothing to run the app in.");
+                    return 1;
+                }
+
+                var results = ProjectTests.Run(opened, rootfs, Version, new WriterOutput(error), result => output.WriteLine(Describe(result)));
+                var failed = results.Count(result => !result.Passed);
+                output.WriteLine($"{results.Count - failed} passed, {failed} failed");
+                return failed == 0 ? 0 : 1;
+            }
+            catch (ProjectException exception)
+            {
+                error.WriteLine($"airo: {exception.Message}");
+                return 1;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                error.WriteLine($"airo: the tests couldn't be run: {exception.Message}");
+                return 1;
+            }
+        });
+        return command;
+    }
+
+    /// <summary>A result as airo prints it, one line: <c>pass</c> or <c>fail</c>, the file, the case, and why it failed.</summary>
+    public static string Describe(AppTestResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        var what = result.Name is null ? result.File : $"{result.File}: {result.Name}";
+        var reason = result.Failure?.ReplaceLineEndings(" ");
+        return reason is null ? $"pass {what}" : $"fail {what}: {reason}";
+    }
+
+    // What the apps under test report as VentureOS's version: airo's own, as the kernel built from this commit would.
+    private static readonly SimulatedVersion Version = new(
+        $"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}", ThisAssembly.Git.Commit, "airo");
+
+    // The tests' own print, to the error output, so the output stays a line a result.
+    private sealed class WriterOutput(TextWriter writer) : IShellOutput
+    {
+        public void WriteLine(string text) => writer.WriteLine(text);
+
+        public void Clear()
+        {
+        }
     }
 
     // A project is named by its folder, or by its Project.xml, which a file picker or a shell's completion may give.
