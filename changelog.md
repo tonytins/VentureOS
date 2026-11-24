@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.712
+
+- VentureOS 0.7, Seto, is released. See [the release notes](docs/releases/0.7.md).
+
 ## 0.7.709
 
 - New Defaults:

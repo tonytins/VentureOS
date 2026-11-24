@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-19 · **Latest release:** 0.6, Izumo · **Next:** 0.7, Seto, in development
+> **Last updated:** 2026-11-24 · **Latest release:** 0.7, Seto · **Next:** 0.8, being planned
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -44,7 +44,7 @@ stage to the next, and add a line to the revision history.
 | 0.4 | Pere Marquette | released 2026-11-17, `v0.4.500`; [notes](./releases/0.4.md) | Standard menus, text selection, Edit, networking, and Undo and Redo |
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
-| 0.7 | Seto | in development | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; Roundhouse projects; nesting; then Roundhouse on VentureOS itself |
+| 0.7 | Seto | released 2026-11-24, `v0.7.712`; [notes](./releases/0.7.md) | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; Roundhouse projects; nesting |
 
 ## 0.4, Pere Marquette
 
@@ -320,16 +320,16 @@ stay flat.
 - [x] Roundhouse: a tree outline, adding inside menus and panes, and Move
   Into and Move Out.
 
-**Roundhouse on VentureOS,** after vdb, and not yet planned: a text editor
-first, as capable as a desktop code editor, and in the long run a designer
-like the desktop version's, gaining widgets as it needs them. A designer needs
-from the platform: a `<Region>` that hosts and draws another `.uix`, pointer
-input in regions, UIScript to and from Lua, text with more than one style, and
-persistence.
-
 ## Ideas
 
 Worth doing someday, in no order, and not yet given a release.
+
+- **Roundhouse on VentureOS,** carried over from 0.7: a text editor first, as
+  capable as a desktop code editor, and in the long run a designer like the
+  desktop version's, gaining widgets as it needs them. A designer needs from
+  the platform: a `<Region>` that hosts and draws another `.uix`, pointer
+  input in regions, UIScript to and from Lua, text with more than one style,
+  and persistence.
 
 - **Persistence:** keeping files, apps, and settings across reboots on a
   real disk, which the RAM disk can't. Installing apps from outside the
@@ -365,6 +365,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | 0.7, Seto, is released as `v0.7.712`. Roundhouse on VentureOS, which 0.7 didn't reach, moves to Ideas. |
 | 2026-11-20 | minor | 0.7.7xx is complete: Roundhouse's outline is a tree, with Move Into and Move Out. The design is marked built, with its corrections. The next band is the owner's to plan. |
 | 2026-11-20 | patch | 0.7.7xx: panes hold their controls, and the shipped apps' menus and panes nest. The owner's Charger wallpaper ships with it. |
 | 2026-11-20 | patch | 0.7.7xx: submenus in the menu bar, and Notes ▸ Sort By, the first. |
