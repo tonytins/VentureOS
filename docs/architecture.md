@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (Roundhouse's Run ▸ Test) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (testing: the system's tests and the apps' own) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-24)
 
@@ -19,7 +19,7 @@ the code wins and this page is out of date.
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
   and `airo`, a C# command-line tool in `src/Venture.Airo` that builds
   Roundhouse Projects into apps and runs their tests, on `Venture.Airo.Kit`,
-  which Roundhouse shares (`Venture.Airo.Tests`, 52 tests).
+  which Roundhouse shares (`Venture.Airo.Tests`, 53 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -116,6 +116,7 @@ grow):
 
 | Concern | Rule | Where |
 |---|---|---|
+| 2026-11-24 | minor | Testing (§12): VentureOS's tests cover the system; the built-in apps' tests live in their projects and run by `airo test` and Run ▸ Test. |
 | 2026-11-24 | minor | Roundhouse: Run ▸ Test runs a project's tests a case a turn of the window's loop; `ProjectTests` steps through cases (`Next`) and takes unsaved edits. |
 | 2026-11-24 | minor | Layout (§2): `projects/`, the built-in apps' projects with their Lua tests, which replace the C# tests that opened the shipped apps (Dock's stay until airo test has a desktop). VentureOS's tests stop pinning the standard look. |
 | 2026-11-24 | minor | Layout (§2): `airo test` and apps' tests (`Venture.Airo.Testing`), run on a fresh simulated disk with no desktop; `SimulatedDisk` and `SimulatedSystem` move from Roundhouse into the kit for it, the system taking its version from whoever runs it. |
@@ -1793,7 +1794,16 @@ builds and runs its example, so it can't drift from what works.
 | Build | x64 and ARM64 with no warnings, locally | Nothing more |
 | Boot | Headless boots by hand, read through `[Venture]` serial lines | Nothing more |
 | Failure paths | A forced panic and a no-NIC boot, verified by hand | Kept as repeatable checks |
-| Logic | xUnit v3 tests for `Venture.OS.Common`, run locally | Each new kernel-free type comes with tests |
+| Logic | xUnit v3 tests for `Venture.OS.Common` and `Venture.OS.Interface`, run locally | Each new kernel-free type comes with tests |
+| Built-in apps | Lua tests in each app's project (`projects/<App>.rproj/Tests/`), run by `airo test` or Roundhouse's Run ▸ Test, each case on a fresh simulated VentureOS with no desktop | A desktop around the app, so Dock's tests can move to its project |
+| Tools | xUnit v3 tests for airo and its kit, and for Roundhouse off-screen | Nothing more |
+
+VentureOS's own tests cover the system, and never pin what ships: they don't
+open a shipped app (Dock's tests aside, until `airo test` has a desktop) or
+assert an app's layout or the standard look, so changing an app's design or a
+default fails only that app's own tests. Rules over everything that ships,
+such as every interface reading and keeping its contrast, stay in VentureOS's
+tests.
 
 xUnit v3 runs on Microsoft.Testing.Platform, which the .NET 10 SDK's
 `dotnet test` only uses when `global.json` opts in; without it, `dotnet

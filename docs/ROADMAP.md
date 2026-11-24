@@ -387,6 +387,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | 0.8.1xx is complete: AGENTS.md and REVIEW.md say VentureOS's tests cover the system and the built-in apps are tested in their projects; the app guide's testing step uses a project, and its tests are run. The next band is the owner's to plan. |
 | 2026-11-24 | patch | 0.8.1xx: Roundhouse's Run ▸ Test runs the open project's tests, edits and all, into the Log. |
 | 2026-11-24 | patch | 0.8.1xx: the built-in apps' projects, in `projects/`, with their tests; VentureOS's tests stop opening the shipped apps, Dock's aside, and stop pinning the standard look. |
 | 2026-11-24 | patch | 0.8.1xx: app tests in Lua, run by `airo test`, each on a fresh VentureOS with no desktop. |

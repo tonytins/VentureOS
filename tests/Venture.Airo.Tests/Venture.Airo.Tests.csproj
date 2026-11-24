@@ -17,6 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The app guide, whose testing step these tests run, so it stays true. -->
+    <None Include="../../docs/writing-apps.md" Link="docs/writing-apps.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

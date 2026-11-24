@@ -417,15 +417,52 @@ An app with the `system` scope can do what the dock does through
 
 ## Test your app
 
-The tests in `tests/Venture.OS.Common.Tests` run on ordinary .NET, without
-booting. `NotesAppTests.cs` opens the shipped `Notes.app`, runs its command,
-and checks what it printed. Copy its setup for your app, then run:
+An app's tests are Lua, kept in a Roundhouse Project beside the app, and use
+it the way a person would. A project holds the app's `Contents/` as `App/`,
+and its tests in `Tests/`. In Roundhouse, opening `Dice.app` from outside
+`rootfs/` offers to make one, or File ▸ Open as Project… does; by hand, it's
+this, with the app's files copied into `App/`:
 
-```sh
-dotnet test --project tests/Venture.OS.Common.Tests
+```text
+Dice.rproj/
+├── Project.xml     <Project version="1"><Info name="Dice"/></Project>
+├── App/            what was Dice.app/Contents
+└── Tests/
+    └── roll.lua
 ```
 
-Test the cases a user can get wrong too, such as `roll 0` or `roll -s 1`.
+Save this as `Tests/roll.lua`:
+
+```lua
+test.case("Roll shows a number from 1 to 6", function(app)
+  app:press("roll")
+  local rolled = tonumber(app:text("result"):match("^You rolled (%d+)%.$"))
+  test.expect(rolled and rolled >= 1 and rolled <= 6, app:text("result"))
+end)
+
+test.case("The roll command adds up its dice", function(app)
+  local a, b, c, total = app:command("roll 3")[1]:match("^(%d) %+ (%d) %+ (%d) = (%d+)$")
+  test.expect(a, "roll 3 shows three dice and their total")
+  test.equal(tonumber(total), a + b + c)
+end)
+
+test.case("A count out of range says why", function(app)
+  test.equal(app:command("roll 0")[1], "roll: the count must be a whole number from 1 to 20.")
+end)
+```
+
+Then run them with Run ▸ Test (Ctrl+U) in Roundhouse, which puts each result
+in the Log tab, or from the command line:
+
+```sh
+dotnet run --project src/Venture.Airo -- test Dice.rproj
+```
+
+Each case starts on a fresh VentureOS with the app open, so one case's
+presses and files don't reach the next. Test the cases a user can get wrong,
+such as `roll 0` above. [Testing an app](./airo/testing.md) has every call a
+test can make. When the app's ready, `airo build Dice.rproj --output
+rootfs/user/apps` puts it where VentureOS is built from.
 
 ## Open an app from somewhere else
 

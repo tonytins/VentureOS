@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.105
+
+- The app guide's Test your app step puts an app's tests in a Roundhouse Project, written in Lua, and runs them with Run ▸ Test or `airo test`, in place of copying a C# test from VentureOS's own.
+
 ## 0.8.104
 
 - Roundhouse's Run ▸ Test (Ctrl+U) runs the open project's tests against its app as you've edited it, saved or not, and lists each result in the Log tab, with the counts in the status line. Roundhouse stays usable while they run, and closing the project stops them.

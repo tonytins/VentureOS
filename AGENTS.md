@@ -92,6 +92,7 @@ cosmos check                                        # always before building
 cosmos build -p src/Venture.OS.Kernel               # no new warnings
 ./run.sh                                            # boots x64 in QEMU; --headless for serial only, --vdb for vdb's port
 (cd tools/vdb && swift test)                        # vdb's, when it or the protocol changes
+dotnet run --project src/Venture.Airo -- test projects/<App>.rproj  # a built-in app's own tests
 ```
 
 - To try a change on the running system, `./run.sh --vdb`, open the desktop,  
@@ -108,6 +109,19 @@ cosmos build -p src/Venture.OS.Kernel               # no new warnings
   `cosmos build -a arm64 -p src/Venture.OS.Kernel`.
 - If you change `Venture.OS.Common`, add or update its tests in the same change  
   and check that a new test fails without the fix.
+- VentureOS's tests, in `tests/`, cover the system, not the built-in apps.  
+  They must not open a shipped app or pin what ships: an app's layout,  
+  labels, or text, or the standard look (compare with `DesktopLook.Standard`,  
+  or set a look of the test's own). When a system test needs an app or an  
+  interface, it uses a sample of its own. Rules over everything that ships,  
+  such as every interface reading and keeping its contrast, are fine.  
+  `DockAppTests` is the one exception, until `airo test` has a desktop.
+- A built-in app is tested on its own terms, in its project's `Tests/`  
+  (`projects/<App>.rproj`), with `airo test` or Roundhouse's Run ▸ Test. If  
+  you change an app's behavior, change its tests in the same change and run  
+  them. Work on an app in its project; it reaches `rootfs/` only when built  
+  there with `airo build --replace`, which is the owner's call, so a  
+  project and its shipped `.app` may differ.
 
 ## C# and Cosmos
 
@@ -183,8 +197,9 @@ There is no host process underneath, because VentureOS is the host: an unhandled
 - Apps are `.app` bundles in `rootfs/system/apps/` (apps the system  
   relies on, such as Files) or `rootfs/user/apps/` (the rest). Follow  
   [docs/writing-apps.md](docs/writing-apps.md) to write one, and keep it  
-  accurate: `WritingAppsTutorialTests` builds and runs its Dice example, so  
-  change the guide and the code together.
+  accurate: `WritingAppsTutorialTests` builds and runs its Dice example, and  
+  `WritingAppsTestingTests` runs its tests on it, so change the guide and the  
+  code together.
 - Paths that cross between scripts and the system go through `FileRoot`  
   (`ISystemInfo.Root`): `FileRoot.Host` for a path a script names before it's  
   opened, and `FileRoot.Venture` for a host path a script is shown. The  

@@ -14,7 +14,10 @@ contributor and review practices in [NVIDIA FLARE's contribution guide](https://
   src/Venture.OS.Kernel` when the change or its verification warrants it. For changes
   to boot, storage, networking, or commands, boot it with `./run.sh` (or
   `./run.sh --headless` to read the serial log). Report checks that couldn't be
-  run, such as an ARM64 build or a boot.
+  run, such as an ARM64 build or a boot. For a change to a built-in app, or to
+  airo, run the app's tests with `dotnet run --project src/Venture.Airo --
+  test projects/<App>.rproj`, and `dotnet test --project
+  tests/Venture.Airo.Tests`.
 
 ## Review checklist
 
@@ -41,6 +44,11 @@ contributor and review practices in [NVIDIA FLARE's contribution guide](https://
   called out and kept in a change of their own?
 - **Tests:** Do focused tests cover changed `Venture.OS.Common` behavior, and
   would a new test fail without the fix? Is a boot needed beyond the tests?
+- **App tests:** Does a test in `tests/` open a shipped app, or pin what
+  ships, such as an app's layout or labels or the standard look? It belongs in
+  the app's project, `projects/<App>.rproj/Tests/`, or on a sample of its own.
+  Does a change to an app's behavior change its project's tests with it? Was
+  a shipped `.app` changed only by building its project?
 - **Docs:** Are the changelog (user-visible changes only), architecture,
   scorecard, roadmap, README, and AGENTS.md updated where affected? Do they
   describe only what has been shown to work?
