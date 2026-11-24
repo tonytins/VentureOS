@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.114
+
+- Alerts and Quick Look follow dark mode: their text sits on the window's own background instead of a light box.
+- Quick Look's labels (Folder, 4 items, 3 bytes) and vdb's Trust This Computer? question come from the desktop's table, `_101_desktop.cst`, with the rest of its words.
+
 ## 0.8.113
 
 - The app guide is now [the tutorials](docs/tutorial/README.md): a command-line app, a desktop app that builds on it, and troubleshooting. Roundhouse's new apps and the `venture.cst` and `venture.ui.open` errors point to them.

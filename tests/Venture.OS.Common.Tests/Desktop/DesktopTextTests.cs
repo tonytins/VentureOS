@@ -102,10 +102,13 @@ public sealed class DesktopTextTests : IDisposable
         // A rule over what ships, not its wording: every key the desktop uses is in VentureOS's own table.
         DesktopText text = new(Path.Combine(AppContext.BaseDirectory, "system", "strings"), reports.Add);
         foreach (var key in (string[])["file", "edit", "view", "help", "closeWindow", "undo", "redo", "cut", "copy",
-            "paste", "selectAll", "aboutSystem", "returnToShell", "newWindow", "ok"])
+            "paste", "selectAll", "aboutSystem", "returnToShell", "newWindow", "ok", "quickLookFolder", "quickLookFile",
+            "quickLookApp", "quickLookBrokenApp", "quickLookBrokenInterface", "quickLookNoVersion", "oneItem", "oneByte",
+            "trustTitle", "trust", "deny"])
             _ = text.Get(key);
-        foreach (var key in (string[])["aboutApp", "version", "quitApp"])
+        foreach (var key in (string[])["aboutApp", "version", "quitApp", "quickLookNeeds", "items", "bytes", "kilobytes", "megabytes"])
             Assert.Contains("Name", text.Get(key, "Name"), StringComparison.Ordinal);
+        Assert.Contains("Second", text.Get("quickLookShowingFirst", "First", "Second"), StringComparison.Ordinal);
 
         Assert.Empty(reports);
     }

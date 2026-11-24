@@ -30,3 +30,24 @@ quitApp ^Quit %s^
 
 // Alerts.
 ok ^OK^
+
+// Quick Look: a file's kind, size, and an app's details.
+quickLookFolder ^Folder^
+quickLookFile ^File^
+quickLookApp ^Application^
+quickLookBrokenApp ^Application that can't open^
+quickLookBrokenInterface ^Interface that can't be shown^
+quickLookNoVersion ^not given^
+quickLookNeeds ^Needs %s^
+quickLookShowingFirst ^(Showing the first %s of %s.)^
+oneItem ^1 item^
+items ^%s items^
+oneByte ^1 byte^
+bytes ^%s bytes^
+kilobytes ^%s KB^
+megabytes ^%s MB^
+
+// vdb's question when a computer asks to send apps.
+trustTitle ^Trust This Computer?^
+trust ^Trust^
+deny ^Deny^

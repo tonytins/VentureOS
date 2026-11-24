@@ -20,6 +20,9 @@ internal sealed class VdbListener
     private readonly VdbDeveloperMode developer;
     private readonly WindowManager windows;
     private readonly KernelVdbHost host;
+
+    // The desktop's words, for the Trust question's title and buttons.
+    private readonly DesktopText text;
     private readonly byte[] buffer = new byte[4096];
     private readonly VdbRandom random;
 
@@ -41,6 +44,7 @@ internal sealed class VdbListener
         this.developer = developer;
         this.windows = windows;
         host = new KernelVdbHost(appWindows, apps, appOutput);
+        text = appWindows.Text;
 
         // Cosmos has no random generator, so nonces come from the CPU's timestamp counter, read at every use, and the
         // time of day and that counter at the start, which differ from boot to boot.
@@ -218,11 +222,11 @@ internal sealed class VdbListener
         if (asking && trustAlert is null)
         {
             trustAlert = DesktopAlert.Ask(
-                "Trust This Computer?",
+                text.Get("trustTitle"),
                 $"A computer, {keyId![..8]}, wants to install and open apps over vdb until VentureOS restarts. "
                 + "Trust it only if it's yours.",
-                "Trust",
-                "Deny",
+                text.Get("trust"),
+                text.Get("deny"),
                 trust => developer.Trust.Answer(keyId!, trust));
             windows.Open(trustAlert);
             changed = true;

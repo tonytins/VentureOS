@@ -95,7 +95,7 @@ public static class DesktopAlert
         var document = $"""
             <UIScript version="1">
               <Window width="{Width}" height="{height}"/>
-              <Style name="plain" backgroundColor="#F0F3F7"/>
+              <Style name="plain" backgroundColor="panel"/>
               <FormattedText name="message" x="{Margin}" y="{Margin}" width="{textWidth}" height="{textHeight}" style="plain"/>
             {buttons(buttonY)}
             </UIScript>

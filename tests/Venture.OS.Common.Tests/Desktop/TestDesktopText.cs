@@ -27,6 +27,23 @@ internal static class TestDesktopText
         newWindow ^New Window^
         quitApp ^Quit %s^
         ok ^OK^
+        quickLookFolder ^Folder^
+        quickLookFile ^File^
+        quickLookApp ^Application^
+        quickLookBrokenApp ^Application that can't open^
+        quickLookBrokenInterface ^Interface that can't be shown^
+        quickLookNoVersion ^not given^
+        quickLookNeeds ^Needs %s^
+        quickLookShowingFirst ^(Showing the first %s of %s.)^
+        oneItem ^1 item^
+        items ^%s items^
+        oneByte ^1 byte^
+        bytes ^%s bytes^
+        kilobytes ^%s KB^
+        megabytes ^%s MB^
+        trustTitle ^Trust This Computer?^
+        trust ^Trust^
+        deny ^Deny^
         """;
 
     private static readonly Lazy<string> Folder = new(() =>

@@ -69,13 +69,13 @@ public sealed class QuickLookTests : IDisposable
     [Fact]
     public void ExplainsAMissingFile()
     {
-        Assert.False(QuickLook.TryCreate(Path.Combine(root, "gone.txt"), out _, out var problem));
+        Assert.False(QuickLook.TryCreate(Path.Combine(root, "gone.txt"), TestDesktopText.Create(), out _, out var problem));
         Assert.Contains("there's no file or folder at", problem);
     }
 
     private DesktopWindow Preview(string path)
     {
-        Assert.True(QuickLook.TryCreate(path, out var window, out var problem), problem);
+        Assert.True(QuickLook.TryCreate(path, TestDesktopText.Create(), out var window, out var problem), problem);
         return window;
     }
 

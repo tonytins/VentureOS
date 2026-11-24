@@ -336,7 +336,7 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
             return exception.Message;
         }
 
-        if (!QuickLook.TryCreate(host, out var window, out var problem))
+        if (!QuickLook.TryCreate(host, Text, out var window, out var problem))
             return problem;
 
         Windows.Open(window);

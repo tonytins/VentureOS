@@ -1416,7 +1416,8 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   problems and missing strings go to the
   app's messages. `_101_desktop.cst` holds the desktop's own words: the
   standard menus' titles and items, the VentureOS and app menus, About's
-  window names and version line, and the alerts' OK. `DesktopText` reads
+  window names and version line, the alerts' OK, Quick Look's kinds and
+  sizes, and vdb's Trust question's title and buttons. `DesktopText` reads
   it by named key (`closeWindow`, `quitApp` with `%s` for the app) through
   `StringTables.Shared`, the shared layer alone; `AppWindows.Text` holds the
   system's, which the session and `venture.ui.alert` share, and a session
@@ -1846,6 +1847,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | Desktop text (§9): alerts and Quick Look's summaries draw their text on the `panel` role, not a fixed light box; Quick Look's words and vdb's Trust question come from `_101_desktop.cst`. |
 | 2026-11-24 | patch | Layout (§2): the app guide is split into `docs/tutorial/` (command-line, desktop, troubleshooting); `docs/writing-apps.md` points there. The HIG is in `docs/hig/`. |
 | 2026-11-24 | minor | Desktop text (§9): the desktop's menus, About's names, and the alerts' OK come from `_101_desktop.cst` through `DesktopText`; a missing word shows its key and is reported once. |
 | 2026-11-24 | minor | Title bar (§9): an app's window shows a title only when the app gives one; otherwise the bar is blank, and a subtitle takes the title's line (`DesktopWindow.ShowsTitle`). Alerts and About keep theirs. |

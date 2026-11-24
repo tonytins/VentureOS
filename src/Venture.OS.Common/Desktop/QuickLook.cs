@@ -1,3 +1,4 @@
+using System.Globalization;
 using Venture.OS.Bundles;
 using Venture.OS.Interface;
 
@@ -15,7 +16,8 @@ namespace Venture.OS.Desktop;
 /// holds; anything else, its size.</description></item>
 /// </list>
 /// <para>A file is text unless its start holds a zero byte, as binary files nearly always do. Previews belong to the
-/// desktop, not the app that asked for them, so they close when the desktop does.</para>
+/// desktop, not the app that asked for them, so they close when the desktop does. Their words, such as a file's
+/// kind and size, are the desktop's (<see cref="DesktopText"/>).</para>
 /// </remarks>
 public static class QuickLook
 {
@@ -27,11 +29,13 @@ public static class QuickLook
 
     /// <summary>Makes a preview of a file or folder.</summary>
     /// <param name="path">A full path.</param>
+    /// <param name="text">The desktop's words, for a file's kind and size.</param>
     /// <param name="window">The preview, when it returns <see langword="true"/>.</param>
     /// <param name="problem">Why there's no preview, such as a missing file, when it returns <see langword="false"/>.</param>
-    public static bool TryCreate(string path, out DesktopWindow window, out string problem)
+    public static bool TryCreate(string path, DesktopText text, out DesktopWindow window, out string problem)
     {
         ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(text);
         window = null!;
         problem = "";
         var name = Path.GetFileName(path.TrimEnd('/'));
@@ -43,8 +47,8 @@ public static class QuickLook
             if (Directory.Exists(path))
             {
                 window = path.EndsWith(Bundle.Extension(BundleKind.App), StringComparison.OrdinalIgnoreCase)
-                    ? AppSummary(path, name)
-                    : Summary(name, "Folder", Items(Directory.GetFileSystemEntries(path).Length));
+                    ? AppSummary(path, name, text)
+                    : Summary(name, text.Get("quickLookFolder"), Items(Directory.GetFileSystemEntries(path).Length, text));
                 return true;
             }
 
@@ -56,11 +60,11 @@ public static class QuickLook
 
             if (path.EndsWith(".uix", StringComparison.OrdinalIgnoreCase))
             {
-                window = Interface(path, name);
+                window = Interface(path, name, text);
                 return true;
             }
 
-            window = Contents(path, name);
+            window = Contents(path, name, text);
             return true;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -70,7 +74,7 @@ public static class QuickLook
         }
     }
 
-    private static DesktopWindow Interface(string path, string name)
+    private static DesktopWindow Interface(string path, string name, DesktopText text)
     {
         try
         {
@@ -78,11 +82,11 @@ public static class QuickLook
         }
         catch (UIScriptException exception)
         {
-            return Summary(name, "Interface that can't be shown", exception.Message);
+            return Summary(name, text.Get("quickLookBrokenInterface"), exception.Message);
         }
     }
 
-    private static DesktopWindow Contents(string path, string name)
+    private static DesktopWindow Contents(string path, string name, DesktopText words)
     {
         long length;
         byte[] bytes;
@@ -104,14 +108,14 @@ public static class QuickLook
         }
 
         if (Array.IndexOf(bytes, (byte)0, 0, Math.Min(bytes.Length, SniffBytes)) >= 0)
-            return Summary(name, "File", Size(length));
+            return Summary(name, words.Get("quickLookFile"), Size(length, words));
 
         var text = System.Text.Encoding.UTF8.GetString(bytes);
         List<string> lines = [.. text.Replace("\r\n", "\n").Split('\n')];
         if (lines.Count > 1 && lines[^1].Length == 0)
             lines.RemoveAt(lines.Count - 1);
         if (length > MaximumBytes)
-            lines.Add($"(Showing the first {MaximumBytes / 1024} KB of {Size(length)}.)");
+            lines.Add(words.Get("quickLookShowingFirst", Size(MaximumBytes, words), Size(length, words)));
 
         var view = new UIView(UIScript.Parse("""
             <UIScript version="1">
@@ -123,17 +127,20 @@ public static class QuickLook
         return new DesktopWindow(name, view);
     }
 
-    private static DesktopWindow AppSummary(string path, string name)
+    private static DesktopWindow AppSummary(string path, string name, DesktopText text)
     {
         try
         {
             var app = Bundle.Read(path, BundleKind.App);
-            var details = $"{app.Identifier}\nVersion {app.Version ?? "not given"}\nNeeds {AppManager.DescribeNeeds(app.Needs)}";
-            return Summary(app.Name, "Application", details);
+            var details = string.Join('\n',
+                app.Identifier,
+                text.Get("version", app.Version ?? text.Get("quickLookNoVersion")),
+                text.Get("quickLookNeeds", AppManager.DescribeNeeds(app.Needs)));
+            return Summary(app.Name, text.Get("quickLookApp"), details);
         }
         catch (BundleException exception)
         {
-            return Summary(name, "Application that can't open", exception.Message);
+            return Summary(name, text.Get("quickLookBrokenApp"), exception.Message);
         }
     }
 
@@ -144,7 +151,7 @@ public static class QuickLook
             <UIScript version="1">
               <Window width="340" height="150"/>
               <Style name="kind" fontSize="18"/>
-              <Style name="plain" backgroundColor="#F0F3F7"/>
+              <Style name="plain" backgroundColor="panel"/>
               <Text name="kind" x="16" y="14" width="308" height="26" style="kind"/>
               <FormattedText name="details" x="16" y="46" width="308" height="90" style="plain"/>
             </UIScript>
@@ -154,13 +161,14 @@ public static class QuickLook
         return new DesktopWindow(title, view);
     }
 
-    private static string Items(int count) => count == 1 ? "1 item" : $"{count} items";
+    private static string Items(int count, DesktopText text) =>
+        count == 1 ? text.Get("oneItem") : text.Get("items", count.ToString(CultureInfo.InvariantCulture));
 
-    private static string Size(long bytes) => bytes switch
+    private static string Size(long bytes, DesktopText text) => bytes switch
     {
-        1 => "1 byte",
-        < 1024 => $"{bytes} bytes",
-        < 1024 * 1024 => $"{bytes / 1024.0:0.#} KB",
-        _ => $"{bytes / (1024.0 * 1024.0):0.#} MB",
+        1 => text.Get("oneByte"),
+        < 1024 => text.Get("bytes", bytes.ToString(CultureInfo.InvariantCulture)),
+        < 1024 * 1024 => text.Get("kilobytes", (bytes / 1024.0).ToString("0.#", CultureInfo.InvariantCulture)),
+        _ => text.Get("megabytes", (bytes / (1024.0 * 1024.0)).ToString("0.#", CultureInfo.InvariantCulture)),
     };
 }
