@@ -502,7 +502,7 @@ And when it opens but something's off:
 | `"echo" is a system command, and Dice can't replace it.` | Pick another name. Apps can't take over the system's commands. |
 | `"roll" is already registered by Games.` | Another open app uses the name. Close it, or pick another name. |
 | `close: Dice can't close while its own code is running.` | An app's command tried to close the app. Close it from the prompt. |
-| `Dice crashed: its code failed 3 times within a minute, so VentureOS closed it.` | See [When an app crashes](#when-an-app-crashes). |
+| `Dice crashed: its code failed 3 times within a minute.` | See [When an app crashes](#when-an-app-crashes). |
 
 Ctrl+C or Esc stops a command or a `main.lua` that's running too long.
 

@@ -340,7 +340,7 @@ flowchart TD
         Clock["clock<br/>Bootstrap.LoadClock"]
         Net["network<br/>Bootstrap.ConnectToNetwork"]
         ShellStep["shell<br/>VentureKernel.CreateShell"]
-        Banner["&lt;version&gt; booted successfully!"]
+        Banner["&lt;version&gt; booted successfully."]
         Init["init script<br/>Bootstrap.RunInitScript"]
         Version --> Fs
         Fs -- ok --> SysFiles

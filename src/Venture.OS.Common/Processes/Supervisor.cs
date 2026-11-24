@@ -165,7 +165,7 @@ public sealed class Supervisor(Func<TimeSpan> clock)
         if (faults.Count >= FaultsToCrash)
         {
             process.CrashReason =
-                $"{process.Name} crashed: its code failed {faults.Count} times within a minute, so VentureOS closed it.";
+                $"{process.Name} crashed: its code failed {faults.Count} times within a minute.";
         }
     }
 

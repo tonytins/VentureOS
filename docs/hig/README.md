@@ -268,12 +268,22 @@ to the interface: when something fails, say so, keep going, and leave things as 
 
 ### Voice
 
-VentureOS talks like a helpful person: plainly, briefly, and without blame. It says what happened and what to do.
+VentureOS speaks like an announcer who trusts the people listening. It says what happened, calmly and in as few
+words as the facts need, and leaves the rest to the reader.
 
-- Use common words. "Can't open" rather than "failed to initialize".
-- Use the names the user sees: the app's name, the file's name, the menu's title.
-- Contractions are fine.
-- No exclamation marks, no jokes in errors, no apologies that say nothing.
+- **State what happened, as a fact.** One clause if it fits: `Dice is already open.`
+- **Trust the reader with what follows.** Don't add a consequence they can already see or work out. When an app
+  crashes, its windows close in front of the user; the message doesn't need to say so.
+- **Stay even, whatever the news.** A crash is reported in the same tone as a boot. No exclamation marks, no jokes,
+  no blame, and no apologies that say nothing.
+- **Name things rather than describing them:** the app, the file, the line, what the user typed.
+- **Give a remedy only when the reader couldn't work it out.** `"roll" is already registered by Games.` already tells
+  the reader what to do. The guides give the longer help, so messages don't have to.
+- Use common words: "can't open" rather than "failed to initialize". Contractions are fine.
+
+A "so" clause is fine when it explains something the reader couldn't guess, such as
+`This VentureOS is a test's, so it can't halt, reboot, or shut down.`, and cut when it only restates what follows
+from the first half.
 
 ### Labels
 
@@ -283,11 +293,11 @@ VentureOS talks like a helpful person: plainly, briefly, and without blame. It s
 
 ### Errors
 
-An error says what went wrong, about what, and, where it can, what to do. Some of VentureOS's own:
+An error says what went wrong and with what. Some of VentureOS's own:
 
 - `Dice.app has no Contents/Lua/main.lua to run`
 - `"roll" is already registered by Games.`
-- `Dice crashed: its code failed 3 times within a minute, so VentureOS closed it.`
+- `Dice crashed: its code failed 3 times within a minute.`
 
 Name the thing in the message, quote what the user typed when it's the problem, and give the line when a file is at
 fault. [Writing apps](../writing-apps.md#when-an-app-wont-open) lists the rest.
@@ -365,5 +375,6 @@ These aren't settled yet. Until they are, follow what VentureOS does today, and 
 
 | Date | Change |
 | --- | --- |
+| 2026-11-24 | The voice: calm, factual, and trusting the reader with what follows. Inspired by the System Voice of *ReBoot*, which announced what was happening in Mainframe in a few even words and left its audience to understand. |
 | 2026-11-24 | Title bars are blank unless the app gives a title; a subtitle takes the title's place. |
 | 2026-11-24 | First draft: principles, foundations, structure, behavior, writing, and using it outside VentureOS. |

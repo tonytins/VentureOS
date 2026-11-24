@@ -182,7 +182,7 @@ public sealed class FallbackAppTests : IDisposable
         Frame();
 
         var alert = windows.Windows.Single(window => window.View.Text("message")?.Contains("crashed", StringComparison.Ordinal) == true);
-        Assert.Equal("Shelf crashed: its code failed 3 times within a minute, so VentureOS closed it. It's starting again.",
+        Assert.Equal("Shelf crashed: its code failed 3 times within a minute. It's starting again.",
             alert.View.Text("message"));
         Assert.True(apps.IsOpen("dev.example.shelf"));
         Assert.NotSame(process, apps.Running[0].Process);
@@ -211,7 +211,7 @@ public sealed class FallbackAppTests : IDisposable
 
         // In front of the failures it explains.
         Assert.False(apps.IsOpen("dev.example.crasher"));
-        Assert.Equal("Crasher crashed: its code failed 3 times within a minute, so VentureOS closed it.",
+        Assert.Equal("Crasher crashed: its code failed 3 times within a minute.",
             windows.Windows[^1].View.Text("message"));
         Assert.Equal("Crasher", windows.Windows[^1].Title);
     }

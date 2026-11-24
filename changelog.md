@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.108
+
+- The boot banner no longer ends with an exclamation mark: `VentureOS 0.8.108 (Build …) booted successfully.`
+- A crashed app's message stops at the reason: `Dice crashed: its code failed 3 times within a minute.`
+
 ## 0.8.107
 
 - Windows no longer repeat the app's name in their title bar, since the menu bar already shows it. A window shows a title only when its app gives one, such as TextEdit's document or Files' folder. Calculator, Notes, Terminal, and System Monitor now have blank title bars. A subtitle on a blank bar takes the title's place. Alerts and About windows keep their titles.

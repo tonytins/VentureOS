@@ -59,7 +59,7 @@ public class VentureKernel : Sys.Kernel, IShellHost
 
         Console.Clear();
 
-        KernelLog.WriteLine($"{HostInfo.DisplayVersion} booted successfully!");
+        KernelLog.WriteLine($"{HostInfo.DisplayVersion} booted successfully.");
 
         // After the banner, so the screen clear above doesn't hide what the script prints.
         RunOptionalStep("init script", () => initOwner = Bootstrap.RunInitScript(system, runtimeCommands, RunShellLine));

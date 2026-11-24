@@ -197,7 +197,7 @@ public sealed class SupervisorTests : IDisposable
 
         Assert.True(supervisor.Tick());
         Assert.Equal(ProcessState.Crashed, process.State);
-        Assert.Equal(new ProcessEnding(EndingKind.Crashed, "Dice crashed: its code failed 3 times within a minute, so VentureOS closed it."),
+        Assert.Equal(new ProcessEnding(EndingKind.Crashed, "Dice crashed: its code failed 3 times within a minute."),
             process.Ending);
         Assert.Empty(supervisor.Processes);
     }
