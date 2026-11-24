@@ -186,8 +186,10 @@ A window has a title bar, its content, and, if it has one, a sidebar down its le
   can be resized. Roundhouse shows it dimmed instead, since its windows can't always hide it. An app outside
   VentureOS may use its target system's controls instead; see
   [Window controls](#window-controls).
-- **The title is optional.** A title bar is blank by default. A window shows a title only when it has one worth
-  showing, and the title bar still reads as a title bar without one.
+- **The title is optional.** A title bar is blank by default, since the menu bar already names the app. A window
+  shows a title only when it says something the menu bar doesn't: TextEdit's document, Files' folder, Settings'
+  page. A subtitle on a blank bar moves up into the title's place, in a 30-pixel bar. The desktop's own windows,
+  such as alerts and About, keep their titles, so an alert always says who's asking.
 - **The title bar is the toolbar.** Toolbar items and a title field (`<ToolbarItem>`, `<TitleField>`) sit in the
   title bar, so there's no separate strip of buttons under it. A title bar with toolbar icons or a subtitle grows
   from 30 to 42 pixels.
@@ -363,4 +365,5 @@ These aren't settled yet. Until they are, follow what VentureOS does today, and 
 
 | Date | Change |
 | --- | --- |
+| 2026-11-24 | Title bars are blank unless the app gives a title; a subtitle takes the title's place. |
 | 2026-11-24 | First draft: principles, foundations, structure, behavior, writing, and using it outside VentureOS. |

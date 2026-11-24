@@ -8,7 +8,7 @@ end
 
 test.case("Opens a window that shares the notes with the command", function(app)
   notes(app, "buy milk")
-  test.equal(app:title(), "Notes")
+  test.equal(app:title(), nil)
   test.equal(table.concat(app:rows("notes"), "|"), "buy milk")
   test.expect(app:dimmed("remove"), "remove is dimmed with nothing chosen")
   test.equal(app:focused(), "text")

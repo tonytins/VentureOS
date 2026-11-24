@@ -53,13 +53,19 @@ public enum FramePart
 public sealed class DesktopWindow
 {
     /// <summary>
-    /// The title bar's height: the theme's, or taller when it holds a subtitle or toolbar items with images, as a
-    /// GNOME header bar is.
+    /// The title bar's height: the theme's, or taller when it holds a subtitle under a title or toolbar items with
+    /// images, as a GNOME header bar is. A subtitle without a title takes the title's line, so it needs no more room.
     /// </summary>
     /// <remarks>It's asked many times a frame, so whether the document has toolbar images is worked out once.</remarks>
     public int BarHeight =>
         IsPanel ? 0
-        : View.Subtitle is { Length: > 0 } || HasImageItems ? DesktopTheme.TallTitleBarHeight : DesktopTheme.TitleBarHeight;
+        : HasSubtitleLine || HasImageItems ? DesktopTheme.TallTitleBarHeight : DesktopTheme.TitleBarHeight;
+
+    // Whether the subtitle sits under a title, the window's own or its title field, rather than in the title's place.
+    private bool HasSubtitleLine => View.Subtitle is { Length: > 0 } && HasTitleLine;
+
+    // Whether the bar has a title's line: a title the window shows, or a title field, which always shows.
+    private bool HasTitleLine => ShowsTitle || View.Script.TitleField is not null;
 
     /// <summary>
     /// Whether it's a panel, pinned to an edge of the screen, such as the dock: no title bar or frame, never moved,
@@ -167,8 +173,17 @@ public sealed class DesktopWindow
     /// </summary>
     public int Id { get; internal set; }
 
-    /// <summary>The plain title, and the window's name in the dock when it's minimized.</summary>
+    /// <summary>
+    /// The window's name: in its title bar when <see cref="ShowsTitle"/>, in the dock when it's minimized, and in
+    /// lists of windows, so it's never empty of meaning even when the bar is blank.
+    /// </summary>
     public string Title { get; set; }
+
+    /// <summary>
+    /// Whether the title bar shows <see cref="Title"/>. An app's window shows one only when the app gave it a title,
+    /// since the menu bar already names the app; the desktop's own windows, such as alerts, show theirs.
+    /// </summary>
+    public bool ShowsTitle { get; set; } = true;
 
     public UIView View { get; }
 
@@ -762,12 +777,20 @@ public sealed class DesktopWindow
     /// <summary>
     /// Draws the title as plain text, centred: the window's title, or the title field's text, or its placeholder
     /// dimmed when it's empty, in the accent while the pointer is over it, to show it can be clicked. A title
-    /// field's text keeps its end when it's cut, and remembers where it was drawn.
+    /// field's text keeps its end when it's cut, and remembers where it was drawn. A window that shows no title
+    /// leaves the bar blank, or puts its subtitle on the title's line.
     /// </summary>
     private void DrawTitle(IPainter painter, UITitleField? field, bool hovered)
     {
         const int Size = DesktopTheme.TextSize;
         var (left, right) = TitleRoom();
+        if (!HasTitleLine)
+        {
+            if (View.Subtitle is { Length: > 0 } alone)
+                DrawSubtitle(painter, alone, left, right, Y + ((BarHeight - SubtitleLineHeight) / 2));
+            return;
+        }
+
         var padding = field is null ? 0 : TitlePadding;
         var text = Title;
         var color = DesktopTheme.Text;
@@ -795,6 +818,8 @@ public sealed class DesktopWindow
 
     private static int TitleLineHeight => (int)MathF.Ceiling(DesktopTheme.TextSize * 1.35f);
 
+    private static int SubtitleLineHeight => (int)MathF.Ceiling(SubtitleSize * 1.35f);
+
     /// <summary>
     /// Where the plain title's line starts: centred in the bar, or, with a subtitle, centred with it, the subtitle
     /// under the title.
@@ -803,7 +828,7 @@ public sealed class DesktopWindow
     {
         get
         {
-            var subtitleHeight = View.Subtitle is { Length: > 0 } ? (int)MathF.Ceiling(SubtitleSize * 1.35f) : 0;
+            var subtitleHeight = HasSubtitleLine ? SubtitleLineHeight : 0;
             return Y + ((BarHeight - TitleLineHeight - subtitleHeight) / 2);
         }
     }

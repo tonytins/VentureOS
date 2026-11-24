@@ -358,7 +358,7 @@ public sealed class WindowTimer
 /// </summary>
 /// <remarks>
 /// <code>
-/// local window = venture.ui.open("main.uix", { title = "Notes" })  -- title is optional
+/// local window = venture.ui.open("main.uix", { title = "Notes" })  -- without a title, the bar is blank
 /// window:on("add", function(event) ... end)    -- a control's or menu item's events
 /// window:setText("count", "3 notes")
 /// window:setItems("notes", { "Milk", "Eggs" })
@@ -382,7 +382,7 @@ public sealed class WindowTimer
 /// <c>select(name, index)</c>: a list's items and its selection, counting from 1, or <c>nil</c> for none.</description></item>
 /// <item><description><c>setHidden</c>, <c>setDisabled</c>, <c>setChecked(name, on)</c>: hide, disable, or check a
 /// control or menu item.</description></item>
-/// <item><description><c>focus(name)</c>, <c>setTitle(text)</c>, <c>setSubtitle(text or nil)</c>, <c>close()</c>. Focusing the title field starts an
+/// <item><description><c>focus(name)</c>, <c>setTitle(text or nil)</c>, where <c>nil</c> blanks the bar, <c>setSubtitle(text or nil)</c>, <c>close()</c>. Focusing the title field starts an
 /// edit of it.</description></item>
 /// <item><description><c>every(seconds, fn)</c>: runs <c>fn</c> every so often, at least 0.1 seconds apart, while
 /// the desktop shows, until the returned timer's <c>stop()</c>, the window closing, or the app quitting. Time the
@@ -625,7 +625,9 @@ public static class UiLibrary
             return Fail(lua, $"venture.ui.open needs a path inside Contents/Resources, such as \"main.uix\", not \"{given}\"");
         }
 
-        var title = app.Name;
+        // Without a title the bar is blank, as the menu bar already names the app, and the window goes by the app's
+        // name wherever it's listed.
+        string? title = null;
         if (lua.Type(2) == LuaType.LUA_TTABLE)
         {
             lua.GetField(2, "title");
@@ -660,8 +662,9 @@ public static class UiLibrary
             script, folder, strings, host.LoadImage, problem => host.Output.WriteLine($"{app.Name}: {given}: {problem}"));
 
         Handle handle = new(owner, host, view, Path.GetFileName(path)) { Folder = folder, App = app, Strings = strings };
-        handle.Window = new DesktopWindow(title, handle.View)
+        handle.Window = new DesktopWindow(title is { Length: > 0 } ? title : app.Name, handle.View)
         {
+            ShowsTitle = title is { Length: > 0 },
             App = app.Name,
             OpenedByApp = true,
             EventHandler = (_, uiEvent) => handle.Dispatch(uiEvent),
@@ -786,7 +789,10 @@ public static class UiLibrary
         });
         Method(lua, "setTitle", handle, (state, h) =>
         {
-            h.Window!.Title = LuaText.Decode(state.L_CheckString(2));
+            // nil or an empty string blanks the bar again, and the window goes back to the app's name.
+            var title = state.IsNoneOrNil(2) ? "" : LuaText.Decode(state.L_CheckString(2));
+            h.Window!.Title = title.Length > 0 ? title : h.Window.App ?? h.Window.Title;
+            h.Window.ShowsTitle = title.Length > 0;
             return 0;
         });
         Method(lua, "setImage", handle, SetImage);

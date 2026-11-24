@@ -101,7 +101,7 @@ A menu item or toolbar item is always there while its window is, so only its dim
 
 | Call | Gives |
 |---|---|
-| `app:title()` | The front window's title. |
+| `app:title()` | The front window's title, or `nil` when its title bar is blank. |
 | `app:subtitle()` | The front window's subtitle, such as Files' `"3 items"`, or `nil`. |
 | `app:pane()` | The name of the sidebar pane shown, or `nil`. |
 | `app:focused()` | The name of the control with the keyboard, or `nil`. |

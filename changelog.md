@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.107
+
+- Windows no longer repeat the app's name in their title bar, since the menu bar already shows it. A window shows a title only when its app gives one, such as TextEdit's document or Files' folder. Calculator, Notes, Terminal, and System Monitor now have blank title bars. A subtitle on a blank bar takes the title's place. Alerts and About windows keep their titles.
+- For apps: `window:setTitle(nil)` blanks the title bar again, and in app tests `app:title()` gives `nil` for a blank bar.
+
 ## 0.8.105
 
 - The app guide's Test your app step puts an app's tests in a Roundhouse Project, written in Lua, and runs them with Run ▸ Test or `airo test`, in place of copying a C# test from VentureOS's own.

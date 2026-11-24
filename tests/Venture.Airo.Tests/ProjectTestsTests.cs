@@ -38,7 +38,7 @@ public sealed class ProjectTestsTests : IDisposable
     {
         var result = Assert.Single(Run("""
             test.case("counts and greets", function(app)
-              test.equal(app:title(), "Sample")
+              test.equal(app:title(), nil)
               test.equal(app:text("result"), "Not pressed")
               app:press("count")
               app:press("count")

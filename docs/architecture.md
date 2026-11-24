@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,000 tests, and 278 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,005 tests, and 278 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1313,7 +1313,13 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   It has a red close button, an orange minimize button, and on resizable
   windows a green zoom button on the left, then the document's toolbar items (`<ToolbarItem>`) with
   `placement="start"`, the title, and the rest along the right end, each
-  end in document order; they report `pressed` on release. Items are flat,
+  end in document order. An app's window shows a title only when the app
+  gives one (`venture.ui.open`'s `title`, or `setTitle`, whose `nil` blanks
+  it again), since the menu bar already names the app; without one the bar
+  is blank, `DesktopWindow.Title` keeps the app's name for the dock and
+  lists, and a subtitle takes the title's line in a 30 px bar. The
+  desktop's own windows, alerts and About among them, keep their titles
+  (`ShowsTitle`). Toolbar items report `pressed` on release. Items are flat,
   as GNOME's header bar buttons are, shaded only under the pointer or while
   held. An item with an `image` is a square showing it as a 16-pixel
   symbol: the key cleared, scaled, and drawn as a silhouette in the text
@@ -1830,6 +1836,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | Title bar (§9): an app's window shows a title only when the app gives one; otherwise the bar is blank, and a subtitle takes the title's line (`DesktopWindow.ShowsTitle`). Alerts and About keep theirs. |
 | 2026-11-20 | patch | Shell (§9): `ITextCommand` commands, `lua` among them, get the rest of the line as typed, so quotes in Lua code reach Lua. |
 | 2026-11-20 | minor | Roundhouse (§9): the outline is a tree, indented by depth, with menus and panes folding; Edit ▸ Move Into and Move Out, and Tab and Shift+Tab in the outline, through `FlatXmlEditor.MoveInto` and `MoveOut`, which re-indent what they move. |
 | 2026-11-20 | minor | Interfaces (§9): a `<Pane>` holds its controls, beside the flat form; the shipped apps' menus and Settings' panes nest; Roundhouse adds inside menus and panes by default and restacks among siblings. The Charger wallpaper ships beside Earthset. |

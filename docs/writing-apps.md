@@ -247,6 +247,12 @@ new number. `roll` still works in the shell, since both live in the same app.
   `setChecked`, `focus`, `setTitle`, `setSubtitle` (a line under the title,
   or `nil` for none), and `close`, with readers `text`,
   `value`, `items`, and `selected`. Use a colon: `window:setText(...)`.
+- **The title:** the title bar is blank unless you give it a title, since
+  the menu bar already names your app. Give one when it says something the
+  menu bar doesn't, such as the open file's name:
+  `venture.ui.open("main.uix", { title = "todo.txt" })`, or
+  `window:setTitle("todo.txt")` later, and `window:setTitle(nil)` to blank
+  it again. A subtitle on a blank bar takes the title's place.
 - **The title bar:** `<ToolbarItem name="add" title="Add"/>` puts a button
   in the window's title bar, which reports `pressed` like any button, and
   `<TitleField name="address"/>` makes the title editable, as Files'

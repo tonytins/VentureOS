@@ -60,16 +60,51 @@ public sealed class UiLibraryTests : IDisposable
 
         var window = Assert.Single(windows.Windows);
         Assert.Equal("My Pad", window.Title);
+        Assert.True(window.ShowsTitle);
         Assert.Equal("Pad", window.App);
         Assert.True(window.OpenedByApp);
     }
 
     [Fact]
-    public void TheTitleIsTheAppsNameByDefault()
+    public void WithoutATitleTheBarIsBlankAndTheWindowGoesByTheAppsName()
     {
         Open("""venture.ui.open("main.uix")""");
 
-        Assert.Equal("Pad", Assert.Single(windows.Windows).Title);
+        var window = Assert.Single(windows.Windows);
+        Assert.Equal("Pad", window.Title);
+        Assert.False(window.ShowsTitle);
+    }
+
+    [Fact]
+    public void AnEmptyTitleIsNoTitle()
+    {
+        Open("""venture.ui.open("main.uix", { title = "" })""");
+
+        var window = Assert.Single(windows.Windows);
+        Assert.Equal("Pad", window.Title);
+        Assert.False(window.ShowsTitle);
+    }
+
+    [Fact]
+    public void SetTitleShowsATitleAndNilBlanksTheBarAgain()
+    {
+        Open("""
+            local window = venture.ui.open("main.uix")
+            window:setTitle("todo.txt")
+            window:on("ok", function() window:setTitle(nil) end)
+            window:on("save", function() window:setTitle("") end)
+            """);
+
+        var window = Assert.Single(windows.Windows);
+        Assert.Equal("todo.txt", window.Title);
+        Assert.True(window.ShowsTitle);
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "ok"));
+        Assert.Equal("Pad", window.Title);
+        Assert.False(window.ShowsTitle);
+
+        Send(window, new UIEvent(UIEventKind.Pressed, "save"));
+        Assert.False(window.ShowsTitle);
     }
 
     [Fact]
@@ -334,7 +369,7 @@ public sealed class UiLibraryTests : IDisposable
         windows.IsShowing = true;
         Assert.True(manager.CloseApp("Pad", new RecordingOutput()));
         Open("""venture.ui.alert("Saved.")""");
-        Assert.Contains(windows.Windows, window => window.Title == "Pad" && window.App == "Pad" && window.View.Script.Control("ok") is not null);
+        Assert.Contains(windows.Windows, window => window.Title == "Pad" && window.ShowsTitle && window.App == "Pad" && window.View.Script.Control("ok") is not null);
     }
 
     [Fact]

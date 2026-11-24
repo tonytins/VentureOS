@@ -192,7 +192,7 @@ public static class TestLibrary
             return 1;
         });
         Add(lua, "pane", state => PushText(state, Front(state, app, "pane").View.SelectedPane?.Name));
-        Add(lua, "title", state => PushText(state, Front(state, app, "title").Title));
+        Add(lua, "title", state => PushText(state, Front(state, app, "title") is { ShowsTitle: true } window ? window.Title : null));
         Add(lua, "subtitle", state => PushText(state, Front(state, app, "subtitle").View.Subtitle));
         Add(lua, "focused", state => PushText(state, Front(state, app, "focused").View.FocusedControl));
         Add(lua, "newWindow", state => PushBoolean(state, app.NewWindow()));

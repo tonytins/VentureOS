@@ -402,7 +402,9 @@ A host that draws a title bar:
   the app change it as it runs; VentureOS's apps call `window:setSubtitle`.
 - Draws an item's image as a symbol in the bar's text color, so it follows a light or dark look, and shows the item's
   `title` as hover text. It draws an item whose image it can't supply with its title.
-- Places items at the end they name, with the title between the two groups.
+- Places items at the end they name, with the title, if the window has one, between the two groups. A host may
+  leave a window's title out; VentureOS does unless the app gives one. A subtitle on a bar without a title takes the
+  title's place.
 - For the title field: a click starts an edit. Enter reports `submitted` with the text, and Esc or a click elsewhere
   puts the old text back. A click on one of the same window's toolbar items keeps the edit, so an item such as Go
   acts on what was typed. The host reads and sets it by name, as it does a text field; while an edit is under way,
@@ -691,6 +693,8 @@ reads `.uis` files into the same model.
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-24:** A host may leave a window's title out of its title bar, and a subtitle then takes the title's
+  place. The format is unchanged: the title was never the document's.
 - **2026-11-20:** A `<Pane>` may hold its controls, which then take no `pane`. The flat form, with `pane` on each
   control, still reads the same, and a pane uses one form or the other.
 
