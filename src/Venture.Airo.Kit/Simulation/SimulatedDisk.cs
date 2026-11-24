@@ -32,7 +32,7 @@ public sealed class SimulatedDisk : IDisposable
         foreach (var part in (string[])["system", "user"])
         {
             if (!Directory.Exists(Path.Combine(rootfs, part)))
-                throw new DirectoryNotFoundException($"{rootfs} has no {part} folder, so VentureOS can't run from it.");
+                throw new DirectoryNotFoundException($"{rootfs} has no {part} folder.");
         }
 
         RemoveLeftovers();

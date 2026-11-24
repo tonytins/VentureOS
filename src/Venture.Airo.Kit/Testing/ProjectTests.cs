@@ -106,7 +106,7 @@ public sealed class ProjectTests : IDisposable
         ArgumentNullException.ThrowIfNull(version);
         ArgumentNullException.ThrowIfNull(printed);
         if (!project.HasApp)
-            throw new ProjectException($"{Path.GetFileName(project.Root)} has no app yet, so there's nothing to test.");
+            throw new ProjectException($"{Path.GetFileName(project.Root)} has no app yet.");
 
         return new ProjectTests(project, rootfs, version, printed, edits ?? new Dictionary<string, string>());
     }

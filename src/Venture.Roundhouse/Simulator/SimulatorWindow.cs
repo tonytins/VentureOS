@@ -105,7 +105,7 @@ public sealed class SimulatorWindow : Window
 
         if (SimulatedDisk.FindRootfs() is not { } rootfs)
         {
-            status.Text = "VentureOS's files (rootfs) aren't beside Roundhouse, so it can't run.";
+            status.Text = "VentureOS's files (rootfs/) aren't beside Roundhouse.";
             return;
         }
 

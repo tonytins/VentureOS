@@ -82,7 +82,7 @@ public sealed class RoundhouseProject
 
         var file = Path.Combine(root, FileName);
         if (!File.Exists(file))
-            throw new ProjectException($"{label} has no {FileName}, so it isn't a project.");
+            throw new ProjectException($"{label} has no {FileName}.");
 
         FlatXmlDocument document;
         try
@@ -113,7 +113,7 @@ public sealed class RoundhouseProject
         app = Path.TrimEndingDirectorySeparator(Path.GetFullPath(app));
         var contents = Path.Combine(app, "Contents");
         if (!app.EndsWith(Bundle.Extension(BundleKind.App), StringComparison.OrdinalIgnoreCase) || !Directory.Exists(contents))
-            throw new ProjectException($"{Path.GetFileName(app)} isn't an app with Contents/, so there's nothing to make a project from.");
+            throw new ProjectException($"{Path.GetFileName(app)} isn't an app with Contents/.");
 
         var project = Create(Path.GetFileNameWithoutExtension(app), Path.GetDirectoryName(app)!);
         try
@@ -308,7 +308,7 @@ public sealed class RoundhouseProject
                 throw new ProjectException($"{label}'s {FileName}: version=\"{text}\" isn't a format version, such as 1.");
             if (version > SupportedVersion)
                 throw new ProjectException(
-                    $"{label} is a format version {version} project, and this Roundhouse reads up to {SupportedVersion}; it needs a newer Roundhouse.");
+                    $"{label} is a format version {version} project, and this Roundhouse reads up to {SupportedVersion}.");
         }
 
         string? name = null;

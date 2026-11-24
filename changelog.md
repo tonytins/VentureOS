@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.112
+
+- Roundhouse's and airo's messages stop at what happened. A file that isn't text says `notes.bin isn't text.`, Run and Test without `rootfs/` say just that, and a project without an app says `Counter.rproj has no app yet; add one with New App.`
+- Run on VentureOS, when nothing answers, says what VentureOS needs (`./run.sh --vdb`, the desktop open, developer mode on) rather than asking.
+
 ## 0.8.111
 
 - `open` with an unknown app says `"apps" lists them.`, as the shell does for commands, and a folder without `Contents/Info.xml` says just that.

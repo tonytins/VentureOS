@@ -117,7 +117,7 @@ public sealed class ProjectTestingTests : IDisposable
         WaitForTests(window);
 
         Assert.Null(window.Testing);
-        Assert.StartsWith("Counter.rproj's tests stopped, since it was closed", Status(window));
+        Assert.StartsWith("Counter.rproj's tests stopped: ", Status(window));
     });
 
     private (MainWindow Window, string Project) OpenCounter()

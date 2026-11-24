@@ -491,7 +491,7 @@ public sealed partial class MainWindow : Window
         var bundle = OpenBundle.Find(full);
         if (Directory.Exists(full) && bundle != full)
         {
-            Say($"{file} isn't a bundle, such as an .app; open one, or a file.", NLog.LogLevel.Warn);
+            Say($"{file} isn't a bundle, such as an .app.", NLog.LogLevel.Warn);
             return;
         }
 
@@ -671,7 +671,7 @@ public sealed partial class MainWindow : Window
         }
         catch (InvalidDataException)
         {
-            ShowPlaceholder(file, $"{Path.GetFileName(file)} isn't text, so Roundhouse can't edit it.");
+            ShowPlaceholder(file, $"{Path.GetFileName(file)} isn't text.");
             return;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -1856,7 +1856,7 @@ public sealed partial class MainWindow : Window
         if (Project is not { } project || !project.HasApp)
         {
             Say(Project is { } open
-                ? $"Test runs a project's tests against its app, and {Path.GetFileName(open.Root)} has none yet; add one with New App."
+                ? $"{Path.GetFileName(open.Root)} has no app yet; add one with New App."
                 : "Test runs a project's tests, and what's open isn't a project.", NLog.LogLevel.Warn);
             return false;
         }
@@ -1881,7 +1881,7 @@ public sealed partial class MainWindow : Window
 
         if (SimulatedDisk.FindRootfs() is not { } rootfs)
         {
-            Say("VentureOS's files (rootfs/) aren't beside Roundhouse, so there's nothing to test the app in.", NLog.LogLevel.Error);
+            Say("VentureOS's files (rootfs/) aren't beside Roundhouse.", NLog.LogLevel.Error);
             return false;
         }
 
@@ -1914,7 +1914,7 @@ public sealed partial class MainWindow : Window
         var name = Path.GetFileName(testedProject!.Root);
         if (!ReferenceEquals(Project, testedProject))
         {
-            EndTests($"{name}'s tests stopped, since it was closed: {testsPassed} passed, {testsFailed} failed before then.", NLog.LogLevel.Warn);
+            EndTests($"{name}'s tests stopped: {testsPassed} passed, {testsFailed} failed before then.", NLog.LogLevel.Warn);
             return;
         }
 
@@ -1987,7 +1987,7 @@ public sealed partial class MainWindow : Window
         if (AppToSend() is null)
         {
             Say(Project is { } project
-                ? $"Run on VentureOS sends an app, and {Path.GetFileName(project.Root)} has none yet; add one with New App."
+                ? $"{Path.GetFileName(project.Root)} has no app yet; add one with New App."
                 : "Run on VentureOS sends an app, and the open file isn't in one.", NLog.LogLevel.Warn);
             return false;
         }

@@ -90,7 +90,7 @@ public sealed class UIDocument
         }
         catch (DecoderFallbackException exception)
         {
-            throw new InvalidDataException($"{path} isn't UTF-8 text, so it can't be opened as a document.", exception);
+            throw new InvalidDataException($"{path} isn't UTF-8 text.", exception);
         }
     }
 

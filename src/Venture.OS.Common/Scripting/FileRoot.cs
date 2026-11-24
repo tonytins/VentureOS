@@ -33,7 +33,7 @@ public sealed class FileRoot
     {
         ArgumentException.ThrowIfNullOrEmpty(hostFolder);
         if (!Directory.Exists(hostFolder))
-            throw new DirectoryNotFoundException($"{hostFolder} isn't a folder, so it can't be VentureOS's root.");
+            throw new DirectoryNotFoundException($"{hostFolder} isn't a folder.");
 
         HostFolder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(hostFolder));
         realFolder = RealPath(HostFolder);

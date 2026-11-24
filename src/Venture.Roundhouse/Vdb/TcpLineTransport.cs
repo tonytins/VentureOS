@@ -42,7 +42,7 @@ public sealed class TcpLineTransport : IVdbLineTransport, IDisposable
             client.Dispose();
             stop.ThrowIfCancellationRequested();
             throw new VdbClientException(VdbClientProblem.Connection,
-                $"Nothing answered at {host}:{port}. Is VentureOS running with its port forwarded (./run.sh --vdb), the desktop open, and developer mode on?");
+                $"Nothing answered at {host}:{port}. VentureOS needs to be running with its port forwarded (./run.sh --vdb), the desktop open, and developer mode on.");
         }
     }
 

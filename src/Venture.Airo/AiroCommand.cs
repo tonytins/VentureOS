@@ -99,7 +99,7 @@ public static class AiroCommand
 
                 if (SimulatedDisk.FindRootfs() is not { } rootfs)
                 {
-                    error.WriteLine("airo: VentureOS's files (rootfs/) aren't beside airo or in a repository above it, so there's nothing to run the app in.");
+                    error.WriteLine("airo: VentureOS's files (rootfs/) aren't beside airo or in a repository above it.");
                     return 1;
                 }
 

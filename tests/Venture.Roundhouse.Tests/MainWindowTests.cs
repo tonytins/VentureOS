@@ -1549,7 +1549,7 @@ public sealed class MainWindowTests : IDisposable
         window.Open(newer);
 
         Assert.Equal(project, window.Bundle!.Root);
-        Assert.Contains("needs a newer Roundhouse", window.Status);
+        Assert.Contains("reads up to", window.Status);
         window.Close();
     });
 

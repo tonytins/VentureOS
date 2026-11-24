@@ -128,7 +128,7 @@ public sealed class RoundhouseSettings
 
         var root = document.Root;
         if (root.Name != "Roundhouse")
-            return (new RoundhouseSettings(), $"{path} starts with <{root.Name}>, not <Roundhouse>, so it isn't Roundhouse's settings. Using the defaults.");
+            return (new RoundhouseSettings(), $"{path} starts with <{root.Name}>, not <Roundhouse>. Using the defaults.");
         if (root["version"] is { } version && (!int.TryParse(version, out var number) || number > SupportedVersion || number < 1))
         {
             return (new RoundhouseSettings { CanSave = false },

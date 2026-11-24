@@ -233,7 +233,7 @@ public static class DesignEdits
     {
         ArgumentNullException.ThrowIfNull(document);
         if (Child(document, element).Parent == UIDocument.Root)
-            throw new ArgumentException("The element isn't inside a menu or pane, so it can't move out.", nameof(element));
+            throw new ArgumentException("The element isn't inside a menu or pane.", nameof(element));
         return document.MoveOut(element);
     }
 

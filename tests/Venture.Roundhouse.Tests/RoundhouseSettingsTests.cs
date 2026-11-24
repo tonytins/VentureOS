@@ -72,7 +72,7 @@ public sealed class RoundhouseSettingsTests : IDisposable
 
     [Theory]
     [InlineData("<Roundhouse version=\"1\"><Welcome showAtStartup=", "line 1")]
-    [InlineData("<Settings/>", "isn't Roundhouse's settings")]
+    [InlineData("<Settings/>", "not <Roundhouse>. Using the defaults.")]
     public void AFileItCantReadIsTheDefaultsAndAReason(string text, string message)
     {
         Write(text);
