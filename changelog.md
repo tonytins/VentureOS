@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.113
+
+- The app guide is now [the tutorials](docs/tutorial/README.md): a command-line app, a desktop app that builds on it, and troubleshooting. Roundhouse's new apps and the `venture.cst` and `venture.ui.open` errors point to them.
+
 ## 0.8.112
 
 - Roundhouse's and airo's messages stop at what happened. A file that isn't text says `notes.bin isn't text.`, Run and Test without `rootfs/` say just that, and a project without an app says `Counter.rproj has no app yet; add one with New App.`

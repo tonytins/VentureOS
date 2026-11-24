@@ -61,7 +61,8 @@ cosmos run -p src/Venture.OS.Kernel
 
 VentureOS boots to a shell. Type `help` to list the commands, and `desktop`
 to open the desktop; VentureOS ▸ Return to Shell (Ctrl+Shift+Q) comes back.
-[Writing apps](docs/writing-apps.md) shows how to add your own.
+[The tutorials](docs/tutorial/README.md) show how to add your own, from a shell
+command to a desktop app.
 
 ### Roundhouse
 

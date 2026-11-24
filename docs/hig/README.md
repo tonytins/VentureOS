@@ -305,7 +305,7 @@ An error says what went wrong and with what. Some of VentureOS's own:
 - `Dice crashed: its code failed 3 times within a minute.`
 
 Name the thing in the message, quote what the user typed when it's the problem, and give the line when a file is at
-fault. [Writing apps](../writing-apps.md#when-an-app-wont-open) lists the rest.
+fault. [Troubleshooting](../tutorial/troubleshooting.md) lists the rest.
 
 ## Using it outside VentureOS
 

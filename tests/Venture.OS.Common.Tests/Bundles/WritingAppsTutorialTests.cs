@@ -9,12 +9,14 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Bundles;
 
 /// <summary>
-/// Builds the Dice app from the code in <c>docs/writing-apps.md</c> and runs it, so the tutorial stays true.
+/// Builds the Dice app from the code in <c>docs/tutorial/</c>, the command-line tutorial and the desktop one's window,
+/// and runs it, so the tutorials stay true.
 /// </summary>
 public sealed partial class WritingAppsTutorialTests : IDisposable
 {
-    private static readonly string Guide =
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "writing-apps.md"));
+    private static readonly string CommandLine = Tutorial("command-line.md");
+    private static readonly string Desktop = Tutorial("desktop.md");
+    private static readonly string Troubleshooting = Tutorial("troubleshooting.md");
 
     private readonly string root = Path.Combine(Path.GetTempPath(), $"venture-tutorial-{Guid.NewGuid():N}");
     private readonly string apps;
@@ -50,7 +52,7 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
     [Fact]
     public void TheDiceAppOpensAndRolls()
     {
-        Build(Block("xml", 0), Block("lua", 0));
+        Build(Block(CommandLine, "xml", 0), Block(CommandLine, "lua", 0));
 
         Assert.True(manager.OpenApp("dice", root, output), string.Join('\n', output.Lines));
         shell.Execute("roll 3");
@@ -72,7 +74,7 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
     [InlineData("roll --sides", "roll: --sides needs a value")]
     public void TheDiceAppExplainsMistakes(string line, string message)
     {
-        Build(Block("xml", 0), Block("lua", 0));
+        Build(Block(CommandLine, "xml", 0), Block(CommandLine, "lua", 0));
         manager.OpenApp("dice", root, output);
 
         shell.Execute(line);
@@ -83,12 +85,12 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
     [Fact]
     public void TheHelpMatchesTheGuide()
     {
-        Build(Block("xml", 0), Block("lua", 0));
+        Build(Block(CommandLine, "xml", 0), Block(CommandLine, "lua", 0));
         manager.OpenApp("dice", root, output);
 
         Assert.True(registry.TryGet("roll", out var roll));
 
-        Assert.Contains($"\n{roll.Summary}\nUsage: {roll.Usage}\nFrom: {((IRuntimeCommand)roll).From}\n", Guide);
+        Assert.Contains($"\n{roll.Summary}\nUsage: {roll.Usage}\nFrom: {((IRuntimeCommand)roll).From}\n", CommandLine);
         manager.CloseApp("dice", output);
         Assert.False(registry.TryGet("roll", out _));
     }
@@ -96,11 +98,12 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
     [Fact]
     public void TheFilesStepKeepsEachRoll()
     {
-        // The guide's second XML block replaces the Info line; its second Lua block goes at the end of roll.
-        var info = Block("xml", 0).Replace(InfoLine(Block("xml", 0)), Block("xml", 1).Trim());
-        var main = Block("lua", 0).Replace(
+        // The command-line tutorial's second XML block replaces the Info line; its second Lua block goes at the end
+        // of roll.
+        var info = Block(CommandLine, "xml", 0).Replace(InfoLine(Block(CommandLine, "xml", 0)), Block(CommandLine, "xml", 1).Trim());
+        var main = Block(CommandLine, "lua", 0).Replace(
             "  print(table.concat(rolls, \" + \") .. \" = \" .. total)\n",
-            "  print(table.concat(rolls, \" + \") .. \" = \" .. total)\n" + Block("lua", 1));
+            "  print(table.concat(rolls, \" + \") .. \" = \" .. total)\n" + Block(CommandLine, "lua", 1));
         Build(info, main);
 
         manager.OpenApp("dice", root, output);
@@ -115,23 +118,23 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
     [Fact]
     public void TheShellScopeIsWhatTheGuideSays()
     {
-        Build(Block("xml", 0).Replace("needs=\"shell\"", "needs=\"\""), Block("lua", 0));
+        Build(Block(CommandLine, "xml", 0).Replace("needs=\"shell\"", "needs=\"\""), Block(CommandLine, "lua", 0));
 
         manager.OpenApp("dice", root, output);
 
         Assert.Contains(output.Lines, line => line.Contains("venture.command needs the shell scope: "));
-        Assert.Contains("`venture.command needs the shell scope: ...`", Guide);
+        Assert.Contains("`venture.command needs the shell scope: ...`", Troubleshooting);
     }
 
     [Fact]
     public void TheWindowStepRollsFromAButton()
     {
-        // Windows need no scope, so the Info line stays as it was; the third XML block is main.uix, and the fourth
-        // Lua block goes at the end.
-        Build(Block("xml", 0), Block("lua", 0) + "\n" + Block("lua", 3));
+        // Windows need no scope, so the Info line stays as it was; the desktop tutorial's first XML block is main.uix,
+        // and its first Lua block goes at the end of the command-line tutorial's main.lua.
+        Build(Block(CommandLine, "xml", 0), Block(CommandLine, "lua", 0) + "\n" + Block(Desktop, "lua", 0));
         var resources = Path.Combine(apps, "Dice.app", "Contents", "Resources");
         Directory.CreateDirectory(resources);
-        File.WriteAllText(Path.Combine(resources, "main.uix"), Block("xml", 2));
+        File.WriteAllText(Path.Combine(resources, "main.uix"), Block(Desktop, "xml", 0));
 
         Assert.True(manager.OpenApp("dice", root, output), string.Join('\n', output.Lines));
         var window = Assert.Single(windows.Windows);
@@ -153,11 +156,14 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
         File.WriteAllText(Path.Combine(contents, "Lua", "main.lua"), main);
     }
 
-    /// <summary>The guide's code block in a language, counting from 0 in the order they appear.</summary>
-    private static string Block(string language, int index)
+    private static string Tutorial(string file) =>
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "docs", "tutorial", file));
+
+    /// <summary>A tutorial's code block in a language, counting from 0 in the order they appear.</summary>
+    private static string Block(string tutorial, string language, int index)
     {
-        var blocks = CodeBlock().Matches(Guide).Where(match => match.Groups[1].Value == language).ToList();
-        Assert.True(index < blocks.Count, $"The guide has no {language} block {index}.");
+        var blocks = CodeBlock().Matches(tutorial).Where(match => match.Groups[1].Value == language).ToList();
+        Assert.True(index < blocks.Count, $"The tutorial has no {language} block {index}.");
         return blocks[index].Groups[2].Value;
     }
 

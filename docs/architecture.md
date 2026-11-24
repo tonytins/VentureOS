@@ -210,7 +210,7 @@ VentureOS/
 ├─ projects/                      Roundhouse Projects: the built-in apps, each with its Tests/, and about.rproj
 ├─ tools/vdb/                     vdb, a Swift command-line tool that sends apps to VentureOS (here until it has its own repository)
 ├─ packaging/                     Roundhouse's packages for Linux, Windows, and macOS, after CityLimits'; writes dist/
-├─ docs/                          architecture, roadmap, scorecard, the app guide, the UIScript drafts, and vdb's protocol
+├─ docs/                          architecture, roadmap, scorecard, the tutorials (tutorial/), the HIG (hig/), the UIScript drafts, and vdb's protocol
 ├─ .agents/skills/                C# and Cosmos guidance for agents
 ├─ GitInfo.txt                    the base version, which every commit counts up from
 ├─ global.json                    opts dotnet test into Microsoft.Testing.Platform
@@ -1756,8 +1756,8 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
 `Notes.app` ships as the example: a window with a text field, the list of
 notes, Delete, and a Note menu, plus `note <text>`, `note -l`, `note -d <n>`,
 and `note --clear`, both working on `notes.txt` in the folder it opened
-from. [Writing apps](./writing-apps.md) is the step-by-step guide; a test
-builds and runs its example, so it can't drift from what works.
+from. [The tutorials](./tutorial/README.md) are the step-by-step guide; tests
+build and run their example, so it can't drift from what works.
 
 ---
 
@@ -1846,6 +1846,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | Layout (§2): the app guide is split into `docs/tutorial/` (command-line, desktop, troubleshooting); `docs/writing-apps.md` points there. The HIG is in `docs/hig/`. |
 | 2026-11-24 | minor | Desktop text (§9): the desktop's menus, About's names, and the alerts' OK come from `_101_desktop.cst` through `DesktopText`; a missing word shows its key and is reported once. |
 | 2026-11-24 | minor | Title bar (§9): an app's window shows a title only when the app gives one; otherwise the bar is blank, and a subtitle takes the title's line (`DesktopWindow.ShowsTitle`). Alerts and About keep theirs. |
 | 2026-11-20 | patch | Shell (§9): `ITextCommand` commands, `lua` among them, get the rest of the line as typed, so quotes in Lua code reach Lua. |

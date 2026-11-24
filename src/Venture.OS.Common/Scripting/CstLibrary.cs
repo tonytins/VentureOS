@@ -26,7 +26,7 @@ public static class CstLibrary
 {
     /// <summary>The error for <c>venture.cst</c> in code that isn't an app's.</summary>
     public const string NotAppMessage =
-        "venture.cst only works in apps, whose text is in their bundle's Contents/Resources; see docs/writing-apps.md";
+        "venture.cst only works in apps, whose text is in their bundle's Contents/Resources; see docs/tutorial/desktop.md";
 
     /// <summary>Puts <c>venture.cst</c> in the <c>venture</c> table, for an app whose tables are <paramref name="tables"/>.</summary>
     public static void Open(ILuaState state, StringTables tables)

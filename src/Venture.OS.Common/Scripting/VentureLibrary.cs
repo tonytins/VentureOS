@@ -259,7 +259,7 @@ public static class VentureLibrary
     /// <summary>The error for <c>venture.ui.open</c> in code that isn't an app's.</summary>
     public const string NotAppMessage =
         "venture.ui.open only works in apps, whose windows close when the app quits; other code can use "
-        + "venture.ui.alert, preview, and launch; see docs/writing-apps.md";
+        + "venture.ui.alert, preview, and launch; see docs/tutorial/desktop.md";
 
     /// <summary>
     /// <c>venture.ui.alert(message, title)</c>: shows the message in a window with an OK button, or, without the

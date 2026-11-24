@@ -198,10 +198,14 @@ There is no host process underneath, because VentureOS is the host: an unhandled
   `IShellHost`.
 - Apps are `.app` bundles in `rootfs/system/apps/` (apps the system  
   relies on, such as Files) or `rootfs/user/apps/` (the rest). Follow  
-  [docs/writing-apps.md](docs/writing-apps.md) to write one, and keep it  
-  accurate: `WritingAppsTutorialTests` builds and runs its Dice example, and  
-  `WritingAppsTestingTests` runs its tests on it, so change the guide and the  
-  code together.
+  [the tutorials](docs/tutorial/README.md) to write one: an agent works  
+  from [the command-line tutorial](docs/tutorial/command-line.md), whose  
+  steps need only files and `airo test`, and from what  
+  [the desktop one](docs/tutorial/desktop.md) does by hand; its Roundhouse  
+  steps are for people until Roundhouse can be driven over MCP. Keep them  
+  accurate: `WritingAppsTutorialTests` builds and runs their Dice, and  
+  `WritingAppsTestingTests` runs their tests on it, so change the  
+  tutorials and the code together.
 - Paths that cross between scripts and the system go through `FileRoot`  
   (`ISystemInfo.Root`): `FileRoot.Host` for a path a script names before it's  
   opened, and `FileRoot.Venture` for a host path a script is shown. The  

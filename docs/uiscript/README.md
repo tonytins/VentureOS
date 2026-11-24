@@ -676,7 +676,7 @@ As a host, it also:
   it for the other states.
 - Selects text and uses the clipboard in text areas.
 - Gives a sidebar's rows icons and groups, which apps set through `window:setItems` (see
-  [Writing apps](../writing-apps.md)).
+  [the desktop tutorial](../tutorial/desktop.md#sidebars-and-panes)).
 
 Roundhouse, VentureOS's IDE, edits documents through `UIDocument` and checks attributes against `UIScriptSchema`,
 both in `src/Venture.OS.Interface`; both must match this spec.

@@ -122,7 +122,7 @@ output stays on the console.
 | DOC-2 | Coding guidance for C# and for Cosmos | done | `.agents/skills/dotnet-guidelines`, `.agents/skills/cosmos-gen3` |
 | DOC-3 | Every declaration has a documentation comment where its name isn't enough | partial | `KernelPanic`, `BootRamDisk`, the boot steps, and `BuildNumber` have them; `VentureKernel.OnBoot` doesn't |
 | DOC-4 | An architecture overview in `docs/` | done | `docs/architecture.md`, written 2026-10-15 |
-| DOC-5 | A guide to writing apps, whose examples are tested | done | `docs/writing-apps.md`; `WritingAppsTutorialTests` builds and runs its Dice app from the guide's code blocks (2026-11-11); since 0.8.1xx, `WritingAppsTestingTests` (airo's) builds the guide's Dice as a project and runs the guide's three Lua tests on it, all passing (2026-11-24) |
+| DOC-5 | A guide to writing apps, whose examples are tested | done | `docs/tutorial/` (split from `docs/writing-apps.md` 2026-11-24: command-line, desktop, troubleshooting; both tests read the new files and pass); `WritingAppsTutorialTests` builds and runs its Dice app from the guide's code blocks (2026-11-11); since 0.8.1xx, `WritingAppsTestingTests` (airo's) builds the guide's Dice as a project and runs the guide's three Lua tests on it, all passing (2026-11-24) |
 
 ## Desktop
 

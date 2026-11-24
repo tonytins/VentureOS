@@ -1,5 +1,5 @@
 -- $NAME$: opens its window, and counts presses of its button.
--- See docs/writing-apps.md in VentureOS for what an app can do.
+-- See docs/tutorial/desktop.md in VentureOS for what an app can do.
 
 local window = venture.ui.open("main.uix")
 local presses = 0
