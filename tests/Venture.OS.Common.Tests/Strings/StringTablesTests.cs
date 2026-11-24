@@ -27,6 +27,37 @@ public sealed class StringTablesTests : IDisposable
     }
 
     [Fact]
+    public void SharedTablesAloneFindTheSystemsTextByName()
+    {
+        File.WriteAllText(Path.Combine(root, "_101_desktop.cst"), "closeWindow ^Close Window^\nquit ^Quit %s^\n");
+        var tables = StringTables.Shared(root);
+
+        Assert.True(tables.HasTable(101));
+        Assert.Equal("Close Window", tables.Find(101, "closeWindow"));
+        Assert.Equal("Quit %s", tables.Find(101, "quit"));
+        Assert.Empty(tables.Problems);
+    }
+
+    [Fact]
+    public void SharedTablesAloneSkipAnAppsTableAndSaySo()
+    {
+        File.WriteAllText(Path.Combine(root, "_1_settings.cst"), "1 ^Sky Blue^\n");
+        var tables = StringTables.Shared(root);
+
+        Assert.False(tables.HasTable(1));
+        Assert.Contains(tables.Problems, problem => problem.StartsWith("_1_settings.cst", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void HasTableIsFalseForATableThatIsntThere()
+    {
+        var tables = StringTables.Shared(Path.Combine(root, "missing"));
+
+        Assert.False(tables.HasTable(101));
+        Assert.Null(tables.Find(101, "closeWindow"));
+    }
+
+    [Fact]
     public void MissingTextIsMissing()
     {
         File.WriteAllText(Path.Combine(root, "_1_settings.cst"), "1 ^Sky Blue^\n");

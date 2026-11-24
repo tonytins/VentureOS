@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,005 tests, and 278 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,016 tests, and 278 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -197,7 +197,8 @@ VentureOS/
 │  │  ├─ commands/                 Lua commands: echo, info, net, appearance, ps, kill, ls, cat, write, mkdir, rm, df, pwd
 │  │  ├─ lib/venture/args.lua      the system library: the venture.args argument parser
 │  │  ├─ interfaces/about.uix      the About VentureOS window
-│  │  ├─ strings/                  the shared CST tables, 100 and up: _100_common.cst, the words buttons share
+│  │  ├─ strings/                  the shared CST tables, 100 and up: _100_common.cst, the words buttons share;
+│  │  │                            _101_desktop.cst, the desktop's own words
 │  │  └─ fonts/                    Open Sans and Fira Code, with their licenses
 │  └─ user/                        installed to /mnt/user, which the user may change
 │     ├─ apps/                     Calculator, Notes (the sample app), and TextEdit
@@ -1413,7 +1414,16 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   reported and the text is missing.
   `_100_common.cst` holds the words buttons share (OK, Cancel, Save). Table
   problems and missing strings go to the
-  app's messages. After the pointer rests half a second on a control with
+  app's messages. `_101_desktop.cst` holds the desktop's own words: the
+  standard menus' titles and items, the VentureOS and app menus, About's
+  window names and version line, and the alerts' OK. `DesktopText` reads
+  it by named key (`closeWindow`, `quitApp` with `%s` for the app) through
+  `StringTables.Shared`, the shared layer alone; `AppWindows.Text` holds the
+  system's, which the session and `venture.ui.alert` share, and a session
+  or a test may be given its own. A missing word shows as `101:key` and a
+  missing table as every word's key, each reported once to the shell's
+  output (`Desktop: …`). Messages, developers' errors, and the kernel's log
+  stay in code. After the pointer rests half a second on a control with
   hover text, `WindowManager` shows it in a box below the pointer, drawn
   over everything but the pointer, until the pointer moves or presses.
 - **Sidebars.** A `<Sidebar>` runs down the window's left, its full height,
@@ -1836,6 +1846,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | Desktop text (§9): the desktop's menus, About's names, and the alerts' OK come from `_101_desktop.cst` through `DesktopText`; a missing word shows its key and is reported once. |
 | 2026-11-24 | minor | Title bar (§9): an app's window shows a title only when the app gives one; otherwise the bar is blank, and a subtitle takes the title's line (`DesktopWindow.ShowsTitle`). Alerts and About keep theirs. |
 | 2026-11-20 | patch | Shell (§9): `ITextCommand` commands, `lua` among them, get the rest of the line as typed, so quotes in Lua code reach Lua. |
 | 2026-11-20 | minor | Roundhouse (§9): the outline is a tree, indented by depth, with menus and panes folding; Edit ▸ Move Into and Move Out, and Tab and Shift+Tab in the outline, through `FlatXmlEditor.MoveInto` and `MoveOut`, which re-indent what they move. |

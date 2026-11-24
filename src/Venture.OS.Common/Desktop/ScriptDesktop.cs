@@ -16,7 +16,7 @@ public sealed class ScriptDesktop(AppWindows host, Func<AppManager?> apps) : ISc
 
     /// <inheritdoc/>
     public void Alert(string title, string message, string? app = null) =>
-        host.Windows.Open(DesktopAlert.Create(title, message, app));
+        host.Windows.Open(DesktopAlert.Create(title, message, host.Text.Get("ok"), app));
 
     /// <inheritdoc/>
     public string? Preview(string path) => host.Preview(path);

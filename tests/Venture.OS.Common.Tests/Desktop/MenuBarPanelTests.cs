@@ -35,7 +35,7 @@ public sealed class MenuBarPanelTests : IDisposable
 
         CommandRegistry registry = new();
         apps = new AppManager(
-            $"{root}/apps", new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held),
+            $"{root}/apps", new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held) { Text = TestDesktopText.Create() },
             supervisor: new Supervisor(() => now));
         session = new DesktopSession(1024, 768, apps, root, held, windows)
         {

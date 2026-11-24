@@ -39,6 +39,7 @@ public sealed class DockAppTests : IDisposable
 
         AppWindows host = new(windows, held)
         {
+            Text = TestDesktopText.Create(),
             LoadImage = path => File.Exists(path) ? new DesktopImage(1, 1, [unchecked((int)0xFF3060A0)]) : null,
         };
         CommandRegistry registry = new();

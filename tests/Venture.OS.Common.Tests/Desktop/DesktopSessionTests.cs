@@ -66,7 +66,7 @@ public sealed class DesktopSessionTests : IDisposable
 
         CommandRegistry registry = new();
         runtime = new RuntimeCommands(registry.IsBuiltIn);
-        apps = new AppManager(Path.Combine(root, "apps"), runtime, new FakeSystemInfo(), windows: new AppWindows(windows, held));
+        apps = new AppManager(Path.Combine(root, "apps"), runtime, new FakeSystemInfo(), windows: new AppWindows(windows, held) { Text = TestDesktopText.Create() });
         session = new DesktopSession(800, 600, apps, root, held, windows)
         {
             AboutDocument = () => UIScript.Parse(AboutDocumentText),
@@ -240,7 +240,7 @@ public sealed class DesktopSessionTests : IDisposable
     [Fact]
     public void AnAlertShowsItsMessageAndOkClosesIt()
     {
-        var alert = DesktopAlert.Create("Chatty", "First line\nSecond line", "Chatty");
+        var alert = DesktopAlert.Create("Chatty", "First line\nSecond line", "OK", "Chatty");
         session.Windows.Open(alert);
         Frame(400, 300);
 

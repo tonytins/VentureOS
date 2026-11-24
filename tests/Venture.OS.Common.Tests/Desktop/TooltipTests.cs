@@ -100,7 +100,7 @@ public sealed class TooltipTests
     [Fact]
     public void TheDesktopRedrawsWhenItShows()
     {
-        DesktopSession session = new(800, 600);
+        DesktopSession session = new(800, 600, text: TestDesktopText.Create());
         var shown = new DesktopWindow("Window", new UIView(UIScript.Parse(Document), _ => "Tip"));
         session.Windows.Open(shown);
         var (x, y) = (shown.ContentOrigin.X + 20, shown.ContentOrigin.Y + 20);

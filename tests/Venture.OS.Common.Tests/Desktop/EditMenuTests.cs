@@ -20,7 +20,7 @@ public sealed class EditMenuTests
         </UIScript>
         """;
 
-    private readonly DesktopSession session = new(1024, 768);
+    private readonly DesktopSession session = new(1024, 768, text: TestDesktopText.Create());
     private readonly DesktopWindow window;
     private readonly List<UIEvent> events = [];
 

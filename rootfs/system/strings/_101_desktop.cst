@@ -1,0 +1,32 @@
+// The desktop's own words: its menu items, its windows' names, and its alerts' button.
+// The desktop asks for each by its key, so keep the keys and change the text. A key
+// that's missing shows as 101:key, and the desktop reports it. %s is filled in, such
+// as the app's name in "Quit %s".
+
+// The standard menus' titles.
+file ^File^
+edit ^Edit^
+view ^View^
+help ^Help^
+
+// File and Edit's own items.
+closeWindow ^Close Window^
+undo ^Undo^
+redo ^Redo^
+cut ^Cut^
+copy ^Copy^
+paste ^Paste^
+selectAll ^Select All^
+
+// The VentureOS menu, Help when no app is in front, and About's window.
+aboutSystem ^About VentureOS^
+returnToShell ^Return to Shell^
+aboutApp ^About %s^
+version ^Version %s^
+
+// An app's menu.
+newWindow ^New Window^
+quitApp ^Quit %s^
+
+// Alerts.
+ok ^OK^

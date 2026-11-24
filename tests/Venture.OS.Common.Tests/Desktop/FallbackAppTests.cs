@@ -42,7 +42,7 @@ public sealed class FallbackAppTests : IDisposable
 
         CommandRegistry registry = new();
         apps = new AppManager(
-            Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held),
+            Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held) { Text = TestDesktopText.Create() },
             supervisor: new Venture.OS.Processes.Supervisor(() => now));
         session = new DesktopSession(800, 600, apps, root, held, windows)
         {

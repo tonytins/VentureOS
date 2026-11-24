@@ -42,29 +42,24 @@ public sealed class DesktopSession
 
     private static readonly long Started = Stopwatch.GetTimestamp();
 
-    // The standard File menu's own item, which closes the window in front, whoever's it is.
+    // The standard File menu's own item, which closes the window in front, whoever's it is. Its words, and the
+    // desktop's others, come from the desktop's table (DesktopText) when the desktop opens.
     private static readonly UIShortcut CloseShortcut = new(Control: true, Shift: false, Alt: false, 'W');
-    private static readonly UIMenuEntry CloseWindowEntry = new("closeWindow", "Close Window", 'C', CloseShortcut, 0);
+    private readonly UIMenuEntry CloseWindowEntry;
 
     // The standard Edit menu's own items, for whatever text has focus, in any window.
-    private static readonly UIMenuEntry UndoEntry = new("undo", "Undo", 'U', Control('Z'), 0);
-    private static readonly UIMenuEntry RedoEntry = new("redo", "Redo", 'R', new UIShortcut(Control: true, Shift: true, Alt: false, 'Z'), 0);
-    private static readonly UIMenuEntry CutEntry = new("cut", "Cut", 'T', Control('X'), 0);
-    private static readonly UIMenuEntry CopyEntry = new("copy", "Copy", 'C', Control('C'), 0);
-    private static readonly UIMenuEntry PasteEntry = new("paste", "Paste", 'P', Control('V'), 0);
+    private readonly UIMenuEntry UndoEntry;
+    private readonly UIMenuEntry RedoEntry;
+    private readonly UIMenuEntry CutEntry;
+    private readonly UIMenuEntry CopyEntry;
+    private readonly UIMenuEntry PasteEntry;
     private static readonly UIMenuEntry EditSeparator = new(null, null, null, null, 0);
-    private static readonly UIMenuEntry SelectAllEntry = new("selectAll", "Select All", 'A', Control('A'), 0);
+    private readonly UIMenuEntry SelectAllEntry;
 
     // Help's item when no app is in front, so Help is never empty.
-    private static readonly UIMenuEntry AboutSystemEntry = new("about", "About VentureOS", 'A', null, 0);
+    private readonly UIMenuEntry AboutSystemEntry;
 
-    private static readonly UIMenu SystemMenuItems =
-        new UIMenu("venture", "VentureOS", null,
-        [
-            new UIMenuEntry(AboutItem, "About VentureOS", 'A', null, 0),
-            new UIMenuEntry(null, null, null, null, 0),
-            new UIMenuEntry(ReturnToShellItem, "Return to Shell", 'R', new UIShortcut(Control: true, Shift: true, Alt: false, 'Q'), 0),
-        ], 0);
+    private readonly UIMenu SystemMenuItems;
 
     /// <summary>The VentureOS menu's icon in the bar, in place of its name.</summary>
     public const int SystemIconSize = 16;
@@ -161,6 +156,7 @@ public sealed class DesktopSession
     /// <param name="windows">The system's windows, which last between visits, or <see langword="null"/> for new ones.</param>
     /// <param name="loadImage">Reads a picture file by its full path, such as an app's icon, or gives
     /// <see langword="null"/> when it can't, having said why. Without it, apps show tiles and the desktop the sky.</param>
+    /// <param name="text">The desktop's words, or <see langword="null"/> for the system's (<see cref="AppWindows.Text"/>).</param>
     public DesktopSession(
         int width,
         int height,
@@ -168,7 +164,8 @@ public sealed class DesktopSession
         string workingDirectory = "/",
         HeldOutput? appOutput = null,
         WindowManager? windows = null,
-        Func<string, DesktopImage?>? loadImage = null)
+        Func<string, DesktopImage?>? loadImage = null,
+        DesktopText? text = null)
     {
         ArgumentNullException.ThrowIfNull(workingDirectory);
         ownEnabled = IsOwnEnabled;
@@ -178,6 +175,21 @@ public sealed class DesktopSession
         this.workingDirectory = workingDirectory;
         this.appOutput = appOutput ?? new HeldOutput();
         this.loadImage = loadImage;
+        Text = text ?? apps?.Windows?.Text ?? new DesktopText(null, this.appOutput.WriteLine);
+        CloseWindowEntry = new("closeWindow", Text.Get("closeWindow"), 'C', CloseShortcut, 0);
+        UndoEntry = new("undo", Text.Get("undo"), 'U', Control('Z'), 0);
+        RedoEntry = new("redo", Text.Get("redo"), 'R', new UIShortcut(Control: true, Shift: true, Alt: false, 'Z'), 0);
+        CutEntry = new("cut", Text.Get("cut"), 'T', Control('X'), 0);
+        CopyEntry = new("copy", Text.Get("copy"), 'C', Control('C'), 0);
+        PasteEntry = new("paste", Text.Get("paste"), 'P', Control('V'), 0);
+        SelectAllEntry = new("selectAll", Text.Get("selectAll"), 'A', Control('A'), 0);
+        AboutSystemEntry = new("about", Text.Get("aboutSystem"), 'A', null, 0);
+        SystemMenuItems = new UIMenu("venture", "VentureOS", null,
+        [
+            new UIMenuEntry(AboutItem, Text.Get("aboutSystem"), 'A', null, 0),
+            new UIMenuEntry(null, null, null, null, 0),
+            new UIMenuEntry(ReturnToShellItem, Text.Get("returnToShell"), 'R', new UIShortcut(Control: true, Shift: true, Alt: false, 'Q'), 0),
+        ], 0);
         backgroundPalette = DesktopTheme.Palette;
         last = new DesktopInput(width / 2, height / 2, false);
         Windows = windows ?? new WindowManager(width, height);
@@ -198,6 +210,12 @@ public sealed class DesktopSession
 
     /// <summary>The menu bar along the top.</summary>
     public MenuBar MenuBar { get; } = new();
+
+    /// <summary>
+    /// The desktop's own words, such as its menu items: the system's, shared with the apps' windows, or, for a desktop
+    /// without the system's apps, a table-less one whose every word shows as its key.
+    /// </summary>
+    public DesktopText Text { get; }
 
     /// <summary>
     /// Reads the About window's document, which About VentureOS and every app's About share, or gives
@@ -389,14 +407,14 @@ public sealed class DesktopSession
 
             view.SetText("name", app);
             ShowAboutIcon(view, bundle?.Icon);
-            view.SetText("version", bundle?.Version is { } version ? $"Version {version}" : "");
+            view.SetText("version", bundle?.Version is { } version ? Text.Get("version", version) : "");
             if (bundle?.Description is { } description)
                 view.SetText("blurb", description);
             else
                 view.SetHidden(true, "blurb");
         }
 
-        return new DesktopWindow(app is null ? "About VentureOS" : $"About {app}", view)
+        return new DesktopWindow(app is null ? Text.Get("aboutSystem") : Text.Get("aboutApp", app), view)
         {
             App = app,
             EventHandler = (about, uiEvent) =>
@@ -772,7 +790,7 @@ public sealed class DesktopSession
     private void ShowMessages(string title, string? app)
     {
         if (appOutput.HasLines)
-            Windows.Open(DesktopAlert.Create(title, string.Join('\n', appOutput.Take()), app));
+            Windows.Open(DesktopAlert.Create(title, string.Join('\n', appOutput.Take()), Text.Get("ok"), app));
     }
 
     /// <summary>
@@ -856,7 +874,8 @@ public sealed class DesktopSession
             var reason = process.Ending!.Reason;
             Windows.Open(DesktopAlert.Create(
                 process.Name,
-                process.Policy == RestartPolicy.Always ? $"{reason} It's starting again." : reason));
+                process.Policy == RestartPolicy.Always ? $"{reason} It's starting again." : reason,
+                Text.Get("ok")));
         }
 
         crashed.Clear();
@@ -879,7 +898,8 @@ public sealed class DesktopSession
             var wait = (apps.Supervisor.NextStart(identifier) ?? apps.Supervisor.Now) - apps.Supervisor.Now;
             Windows.Open(DesktopAlert.Create(
                 process.Name,
-                $"{process.Name} didn't start. VentureOS will keep trying, next in {wait.TotalSeconds:0} seconds.\n{problem}".TrimEnd()));
+                $"{process.Name} didn't start. VentureOS will keep trying, next in {wait.TotalSeconds:0} seconds.\n{problem}".TrimEnd(),
+                Text.Get("ok")));
         }
 
         failedToStart.Clear();
@@ -943,16 +963,16 @@ public sealed class DesktopSession
         UIMenuEntry[] closing = Takes(document, CloseShortcut) ? [] : [CloseWindowEntry];
         UIMenuEntry[] helping = [shown is not null ? AboutEntry(shown) : AboutSystemEntry];
 
-        AddStandard(menus, document, view, UIMenuRole.File, "File", 'F', closing);
-        AddStandard(menus, document, view, UIMenuRole.Edit, "Edit", 'E', EditItems(document));
-        AddStandard(menus, document, view, UIMenuRole.View, "View", 'V', []);
+        AddStandard(menus, document, view, UIMenuRole.File, Text.Get("file"), 'F', closing);
+        AddStandard(menus, document, view, UIMenuRole.Edit, Text.Get("edit"), 'E', EditItems(document));
+        AddStandard(menus, document, view, UIMenuRole.View, Text.Get("view"), 'V', []);
         foreach (var menu in document)
         {
             if (RoleOf(menu) is null)
                 menus.Add(new BarMenu(menu, MenuGroup.Window, view));
         }
 
-        AddStandard(menus, document, view, UIMenuRole.Help, "Help", 'H', helping);
+        AddStandard(menus, document, view, UIMenuRole.Help, Text.Get("help"), 'H', helping);
         MenuBar.SetMenus(menus);
     }
 
@@ -1034,7 +1054,7 @@ public sealed class DesktopSession
     /// Edit's own items in their groups (Undo and Redo; Cut, Copy, and Paste; Select All), each left out where the
     /// document has its own shortcut, with a separator between groups that have anything left.
     /// </summary>
-    private static UIMenuEntry[] EditItems(IReadOnlyList<UIMenu> document)
+    private UIMenuEntry[] EditItems(IReadOnlyList<UIMenu> document)
     {
         List<UIMenuEntry> items = [];
         foreach (var group in (UIMenuEntry[][])[[UndoEntry, RedoEntry], [CutEntry, CopyEntry, PasteEntry], [SelectAllEntry]])
@@ -1058,7 +1078,7 @@ public sealed class DesktopSession
     {
         if (!aboutEntries.TryGetValue(app, out var entry))
         {
-            entry = new UIMenuEntry("about", $"About {app}", 'A', null, 0);
+            entry = new UIMenuEntry("about", Text.Get("aboutApp", app), 'A', null, 0);
             aboutEntries[app] = entry;
         }
 
@@ -1078,11 +1098,11 @@ public sealed class DesktopSession
         {
             List<UIMenuEntry> entries = [];
             if (newWindow)
-                entries.Add(new UIMenuEntry(NewWindowItem, "New Window", 'N', new UIShortcut(Control: true, Shift: false, Alt: false, 'N'), 0));
+                entries.Add(new UIMenuEntry(NewWindowItem, Text.Get("newWindow"), 'N', new UIShortcut(Control: true, Shift: false, Alt: false, 'N'), 0));
             if (newWindow && quits)
                 entries.Add(new UIMenuEntry(null, null, null, null, 0));
             if (quits)
-                entries.Add(new UIMenuEntry(QuitItem, $"Quit {app}", 'Q', new UIShortcut(Control: true, Shift: false, Alt: false, 'Q'), 0));
+                entries.Add(new UIMenuEntry(QuitItem, Text.Get("quitApp", app), 'Q', new UIShortcut(Control: true, Shift: false, Alt: false, 'Q'), 0));
 
             menu = new BarMenu(new UIMenu("app", app, null, entries, 0), MenuGroup.App, Emphasized: true);
             appMenus[key] = menu;

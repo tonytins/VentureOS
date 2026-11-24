@@ -53,6 +53,19 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     /// </summary>
     public FileRoot? Root { get; init; }
 
+    private DesktopText? text;
+
+    /// <summary>
+    /// The desktop's own words, such as its menu items and the alerts' OK: by default read from the system's strings
+    /// the first time they're asked for, after <see cref="SystemFolder"/> and <see cref="Root"/> are set, with problems
+    /// reported to <see cref="Output"/>; or words given in their place, such as a test's own.
+    /// </summary>
+    public DesktopText Text
+    {
+        get => text ??= new DesktopText(UiLibrary.SharedStrings(this), problem => Output.WriteLine($"Desktop: {problem}"));
+        init => text = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
     // Icons as shelves show them, by host path and size, read once, so a shelf filled again doesn't read them again.
     private readonly Dictionary<(string Path, int Size), DesktopIcon?> icons = [];
 
@@ -434,7 +447,7 @@ public static class UiLibrary
 
             // Without the desktop on the screen, the window would wait unseen, so the message is printed instead.
             if (desktop.Windows.IsShowing)
-                desktop.Windows.Open(DesktopAlert.Create(title, message, app.Name));
+                desktop.Windows.Open(DesktopAlert.Create(title, message, desktop.Text.Get("ok"), app.Name));
             else
                 desktop.Output.WriteLine($"{title}: {message}");
             lua.PushBoolean(true);

@@ -290,6 +290,8 @@ from the first half.
 - Menu items and buttons use title case: Close Window, Select All, Return to Shell.
 - A menu item that asks for more before it acts ends with an ellipsis: Open…, Go to Folder…
 - A button says what it does. Prefer Install or Delete to OK where the question is about installing or deleting.
+- VentureOS keeps the desktop's own words in one table, `system/strings/_101_desktop.cst`, and the words apps'
+  buttons share in `_100_common.cst`. Change a label there, not in code.
 
 ### Errors
 

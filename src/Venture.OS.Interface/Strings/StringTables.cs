@@ -46,6 +46,37 @@ public sealed class StringTables
     }
 
     /// <summary>
+    /// Finds tables in the shared folder alone, for the system's own text, such as the desktop's menus, which has no
+    /// document folder of its own to look in first.
+    /// </summary>
+    /// <param name="read">Reads a table's text by its path, as for the constructor.</param>
+    public static StringTables Shared(string sharedFolder, Func<string, string>? read = null)
+    {
+        ArgumentNullException.ThrowIfNull(sharedFolder);
+        return new StringTables(sharedFolder, read ?? File.ReadAllText);
+    }
+
+    private StringTables(string sharedFolder, Func<string, string> read)
+    {
+        layers = [new Layer(sharedFolder, shared: true, problems, read)];
+    }
+
+    /// <summary>
+    /// Whether any layer has table <paramref name="table"/> and could read it, so a caller can tell a missing table,
+    /// reported once, from a missing key in a table that's there.
+    /// </summary>
+    public bool HasTable(int table)
+    {
+        foreach (var layer in layers)
+        {
+            if (layer.Table(table) is not null)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// The number a table's file name gives it, such as 1 for <c>_1_settings.cst</c>, or <see langword="null"/> for a
     /// name that isn't a table's, which no document finds.
     /// </summary>

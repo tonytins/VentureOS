@@ -40,7 +40,7 @@ public sealed class StandardMenusTests : IDisposable
         CommandRegistry registry = new();
         apps = new AppManager(
             Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(),
-            windows: new AppWindows(windows, held));
+            windows: new AppWindows(windows, held) { Text = TestDesktopText.Create() });
         var about = Path.Combine(AppContext.BaseDirectory, "system", "interfaces", "about.uix");
         session = new DesktopSession(1024, 768, apps, root, held, windows, LoadImage)
         {

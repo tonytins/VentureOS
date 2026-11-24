@@ -18,15 +18,19 @@ public static class DesktopAlert
     /// <summary>Makes the window, which OK or its close button closes.</summary>
     /// <param name="title">The window's title.</param>
     /// <param name="message">The text, with line breaks where it has them.</param>
+    /// <param name="ok">The button's text, the desktop's word for OK (<see cref="DesktopText"/>).</param>
     /// <param name="app">The app it speaks for, whose menu stays in the bar while it's in front.</param>
-    public static DesktopWindow Create(string title, string message, string? app = null)
+    public static DesktopWindow Create(string title, string message, string ok, string? app = null)
     {
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(ok);
 
+        // The button's text is set on the view, like the message, so nothing in it is read as markup.
         var (view, buttonY) = Layout(message, buttonY => $"""
-              <Button name="ok" x="{Width - Margin - 74}" y="{buttonY}" width="74" height="24" text="OK"/>
+              <Button name="ok" x="{Width - Margin - 74}" y="{buttonY}" width="74" height="24"/>
             """);
+        view.SetText("ok", ok);
         return new DesktopWindow(title, view)
         {
             App = app,

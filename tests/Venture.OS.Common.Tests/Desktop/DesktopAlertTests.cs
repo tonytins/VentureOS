@@ -8,12 +8,20 @@ public sealed class DesktopAlertTests
     [Fact]
     public void OkClosesAnAlert()
     {
-        var alert = DesktopAlert.Create("Note", "Saved.");
+        var alert = DesktopAlert.Create("Note", "Saved.", "Fine");
 
         alert.EventHandler!(alert, new UIEvent(UIEventKind.Pressed, "ok"));
 
         Assert.True(alert.IsCloseRequested);
         Assert.Equal("Saved.", alert.View.Text("message"));
+    }
+
+    [Fact]
+    public void TheButtonSaysWhatItsGivenAsText()
+    {
+        var alert = DesktopAlert.Create("Note", "Saved.", "<Fine>");
+
+        Assert.Equal("<Fine>", alert.View.Text("ok"));
     }
 
     [Fact]

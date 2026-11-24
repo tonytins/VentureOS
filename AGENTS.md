@@ -211,6 +211,11 @@ There is no host process underneath, because VentureOS is the host: an unhandled
 - Anything Lua code sets up that should outlive a single run goes through a  
   `LuaOwner` and registers it's undo with `AddUndo`, so ending the owner  
   removes it.
+- Words the desktop shows a person, such as menu items, window names, and  
+  button labels, go in `rootfs/system/strings/_101_desktop.cst`, read  
+  through `DesktopText` by key, not in C#. Messages, developers' errors,  
+  and the kernel's log stay in code. Write them all in  
+  [the HIG's voice](docs/hig/README.md#voice).
 - Use `KernelLog.WriteLine` for messages a headless boot should be able to  
   check (boot results, the banner, failures). Ordinary command output goes to  
   the console only.

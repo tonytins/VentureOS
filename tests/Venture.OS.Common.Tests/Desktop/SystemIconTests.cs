@@ -97,7 +97,7 @@ public sealed class SystemIconTests
 
     private static DesktopSession Open(string? icon)
     {
-        DesktopSession session = new(800, 600, loadImage: Load)
+        DesktopSession session = new(800, 600, loadImage: Load, text: TestDesktopText.Create())
         {
             SystemIcon = icon,
             AboutDocument = () => UIScript.Parse(About),
