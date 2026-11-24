@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.100
+
+- VentureOS 0.8 begins. It has no code name yet.
+
 ## 0.7.712
 
 - VentureOS 0.7, Seto, is released. See [the release notes](docs/releases/0.7.md).
