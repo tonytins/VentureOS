@@ -31,22 +31,26 @@ public sealed class DesktopLookTests
     [Fact]
     public void LightAndDarkIgnoreTheTimeAndAScheduleWithoutOneIsLight()
     {
-        Assert.False(DesktopLook.Standard.IsDarkAt(TimeSpan.FromHours(23)));
+        Assert.False((DesktopLook.Standard with { Mode = LookMode.Light }).IsDarkAt(TimeSpan.FromHours(23)));
         Assert.True((DesktopLook.Standard with { Mode = LookMode.Dark }).IsDarkAt(TimeSpan.FromHours(12)));
         Assert.False(Evenings.IsDarkAt(null));
     }
 
     [Fact]
-    public void TheStandardLookIsAutoBlueRoundedAndCharger()
+    public void TheStandardLooksWallpaperIsOneTheSystemShipsAndItsAccentIsTheStandardOne()
     {
+        // What the standard look is, the owner's to choose, isn't pinned here: only that it can be shown.
         var look = DesktopLook.Standard;
 
-        Assert.Equal(LookMode.Auto, look.Mode);
+        Assert.True(
+            Directory.Exists(Path.Combine(AppContext.BaseDirectory, "system", "wallpapers", look.Wallpaper + ".wallpaper")),
+            $"{look.Wallpaper} isn't among the system's wallpapers");
         Assert.Equal(DesktopPalette.StandardAccent, look.Accent);
-        Assert.True(look.RoundedCorners);
-        Assert.Equal("Earthset", look.Wallpaper);
-        Assert.Same(DesktopPalette.Light, look.PaletteAt(null));
     }
+
+    [Fact]
+    public void AutoWithoutATimeIsLight() =>
+        Assert.Same(DesktopPalette.Light, (DesktopLook.Standard with { Mode = LookMode.Auto }).PaletteAt(null));
 
     [Theory]
     [InlineData("00:00", 0, 0)]
@@ -93,7 +97,7 @@ public sealed class DesktopLookTests
     [Fact]
     public void ReadsAFileFromBeforeTheLookGrewWithTheRestStandard()
     {
-        var look = DesktopAppearance.Read("""<Appearance version="1" mode="auto" accent="#E8922A"/>""");
+        var look = DesktopAppearance.Read("""<Appearance version="1" mode="dark" accent="#E8922A"/>""");
 
         Assert.Equal(DesktopLook.Standard with { Mode = LookMode.Dark, Accent = new UIColor(232, 146, 42) }, look);
     }

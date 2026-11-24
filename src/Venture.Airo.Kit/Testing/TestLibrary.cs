@@ -109,14 +109,35 @@ public static class TestLibrary
             app.Send(window, new UIEvent(UIEventKind.Submitted, name, text));
             return 0;
         });
+        Add(lua, "type", state =>
+        {
+            var (window, name) = Usable(state, app, "type");
+            var text = LuaText.Decode(state.L_CheckString(3));
+            window.View.SetText(name, text);
+            app.Send(window, new UIEvent(UIEventKind.Changed, name, text));
+            return 0;
+        });
         Add(lua, "choose", state =>
         {
             var (window, name) = Usable(state, app, "choose");
-            var index = state.L_CheckInteger(3);
             if (window.View.List(name) is not { } list)
                 return Fail(state, $"app:choose: \"{name}\" isn't a list");
-            if (index < 1 || index > list.Items.Count)
-                return Fail(state, $"app:choose: \"{name}\" has {list.Items.Count} rows, so there's no row {index}");
+
+            // A row is chosen by its number, from 1, or by its text, as a person reads it.
+            long index;
+            if (state.Type(3) == LuaType.LUA_TSTRING)
+            {
+                var text = LuaText.Decode(state.ToString(3));
+                index = list.Items.IndexOf(text) + 1;
+                if (index == 0)
+                    return Fail(state, $"app:choose: \"{name}\" has no row \"{text}\"; its rows are {string.Join(", ", list.Items)}");
+            }
+            else
+            {
+                index = state.L_CheckInteger(3);
+                if (index < 1 || index > list.Items.Count)
+                    return Fail(state, $"app:choose: \"{name}\" has {list.Items.Count} rows, so there's no row {index}");
+            }
 
             // As a click on a row does: the list selects it, then reports it.
             list.SelectedIndex = (int)index - 1;
@@ -132,6 +153,11 @@ public static class TestLibrary
             return 0;
         });
 
+        Add(lua, "has", state =>
+        {
+            var window = Front(state, app, "has");
+            return PushBoolean(state, Has(window, Name(state)));
+        });
         Add(lua, "text", state => PushText(state, Named(state, app, "text").View.Text(Name(state))));
         Add(lua, "checked", state => PushBoolean(state, Named(state, app, "checked").View.IsSelected(Name(state))));
         Add(lua, "dimmed", state => PushBoolean(state, Named(state, app, "dimmed").View.IsDisabled(Name(state))));
@@ -167,6 +193,30 @@ public static class TestLibrary
         });
         Add(lua, "pane", state => PushText(state, Front(state, app, "pane").View.SelectedPane?.Name));
         Add(lua, "title", state => PushText(state, Front(state, app, "title").Title));
+        Add(lua, "subtitle", state => PushText(state, Front(state, app, "subtitle").View.Subtitle));
+        Add(lua, "focused", state => PushText(state, Front(state, app, "focused").View.FocusedControl));
+        Add(lua, "newWindow", state => PushBoolean(state, app.NewWindow()));
+        Add(lua, "open", state => PushBoolean(state, app.OpenFile(LuaText.Decode(state.L_CheckString(2)))));
+        Add(lua, "wait", state =>
+        {
+            var seconds = state.L_CheckNumber(2);
+            if (!(seconds >= 0 && seconds <= 3600))
+                return Fail(state, $"app:wait takes 0 to 3600 seconds, not {seconds}");
+            app.Wait(TimeSpan.FromSeconds(seconds));
+            return 0;
+        });
+        Add(lua, "command", state =>
+        {
+            var lines = app.Command(LuaText.Decode(state.L_CheckString(2)));
+            state.CreateTable(lines.Count, 0);
+            for (var index = 0; index < lines.Count; index++)
+            {
+                state.PushString(LuaText.Encode(lines[index]));
+                state.RawSetI(-2, index + 1);
+            }
+
+            return 1;
+        });
         Add(lua, "windows", state =>
         {
             state.PushInteger(app.Windows.Count);
@@ -183,18 +233,19 @@ public static class TestLibrary
 
             return 1;
         });
+        Add(lua, "write", state =>
+        {
+            var path = LuaText.Decode(state.L_CheckString(2));
+            var text = LuaText.Decode(state.L_CheckString(3));
+            var host = HostPath(state, app, path, "write");
+            Directory.CreateDirectory(Path.GetDirectoryName(host)!);
+            File.WriteAllText(host, text);
+            return 0;
+        });
         Add(lua, "read", state =>
         {
             var path = LuaText.Decode(state.L_CheckString(2));
-            string host;
-            try
-            {
-                host = app.Disk.HostPath(path);
-            }
-            catch (ArgumentException)
-            {
-                return Fail(state, $"app:read needs an absolute VentureOS path, such as \"/mnt/user/settings/appearance.xml\", not \"{path}\"");
-            }
+            var host = HostPath(state, app, path, "read");
 
             if (!File.Exists(host))
             {
@@ -218,12 +269,54 @@ public static class TestLibrary
     private static DesktopWindow Front(ILuaState state, AppUnderTest app, string function) =>
         app.FrontWindow ?? throw Error(state, $"app:{function}: the app has no window open");
 
+    // Where a VentureOS path is on the test's copy, refusing one that isn't absolute or climbs out.
+    private static string HostPath(ILuaState state, AppUnderTest app, string path, string function)
+    {
+        try
+        {
+            return app.Disk.HostPath(path);
+        }
+        catch (ArgumentException)
+        {
+            throw Error(state, $"app:{function} needs an absolute VentureOS path, such as \"/mnt/user/notes.txt\", not \"{path}\"");
+        }
+    }
+
+    // Whether the window has a control, list, menu item, toolbar item, or title field of that name.
+    private static bool Has(DesktopWindow window, string name) =>
+        window.View.Bounds(name) is not null || window.View.List(name) is not null || InBars(window, name);
+
+    // Whether it's in the menu bar or the title bar, which are always there while the window is, rather than among
+    // the window's controls.
+    private static bool InBars(DesktopWindow window, string name)
+    {
+        var script = window.View.Script;
+        if (script.TitleField?.Name == name)
+            return true;
+        foreach (var item in script.ToolbarItems)
+        {
+            if (item.Name == name)
+                return true;
+        }
+
+        foreach (var menu in script.Menus)
+        {
+            foreach (var entry in menu.AllEntries())
+            {
+                if (entry.Name == name)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     // The front window, once the control named by the call's first argument is in it.
     private static DesktopWindow Named(ILuaState state, AppUnderTest app, string function)
     {
         var window = Front(state, app, function);
         var name = Name(state);
-        if (window.View.Bounds(name) is null && window.View.List(name) is null)
+        if (!Has(window, name))
             throw Error(state, $"app:{function}: there's no \"{name}\" in {window.Title}");
         return window;
     }
@@ -233,7 +326,9 @@ public static class TestLibrary
     {
         var window = Named(state, app, function);
         var name = Name(state);
-        if (!window.View.IsShowing(name))
+
+        // The menu bar and title bar are always there, so only dimming counts for what's in them.
+        if (!InBars(window, name) && !window.View.IsShowing(name))
             throw Error(state, $"app:{function}: \"{name}\" isn't showing, so a person couldn't use it");
         if (window.View.IsDisabled(name))
             throw Error(state, $"app:{function}: \"{name}\" is dimmed, so a person couldn't use it");

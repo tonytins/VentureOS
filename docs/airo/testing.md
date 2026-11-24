@@ -73,15 +73,19 @@ since a person couldn't use it either.
 
 | Call | Does |
 |---|---|
-| `app:press(name)` | Presses a button. |
-| `app:submit(name, text)` | Types `text` into a field and presses Enter. |
-| `app:choose(name, row)` | Clicks a list's or sidebar's row, counting from 1. |
+| `app:press(name)` | Presses a button, toolbar item, or menu item. |
+| `app:submit(name, text)` | Types `text` into a field or the title bar's field and presses Enter. |
+| `app:type(name, text)` | Types `text` into a field or text area, without Enter. |
+| `app:choose(name, row)` | Clicks a list's or sidebar's row: its number, counting from 1, or its text, such as `"Clock"`. |
 | `app:slide(name, value)` | Drags a slider to `value`. |
+
+A menu item or toolbar item is always there while its window is, so only its dimming counts.
 
 **Reading it.** Each fails when the control isn't there.
 
 | Call | Gives |
 |---|---|
+| `app:has(name)` | Whether the front window has a control, menu item, toolbar item, or title field of that name. It doesn't fail. |
 | `app:text(name)` | A label's, button's, or field's text, or `nil`. |
 | `app:checked(name)` | Whether a checkbox, radio button, or toggle is on. |
 | `app:dimmed(name)` | Whether it's dimmed. |
@@ -95,10 +99,25 @@ since a person couldn't use it either.
 | Call | Gives |
 |---|---|
 | `app:title()` | The front window's title. |
+| `app:subtitle()` | The front window's subtitle, such as Files' `"3 items"`, or `nil`. |
 | `app:pane()` | The name of the sidebar pane shown, or `nil`. |
-| `app:windows()` | How many windows are open. |
+| `app:focused()` | The name of the control with the keyboard, or `nil`. |
+| `app:windows()` | How many windows are open, panels included. |
 | `app:printed()` | Everything the app and VentureOS printed so far, as a table of lines. |
-| `app:read(path)` | A file's text on the test's VentureOS, such as `"/mnt/user/settings/appearance.xml"`, or `nil` and why. |
+
+**The rest of VentureOS.** Paths are VentureOS's, such as `/mnt/user/notes.txt`; a test can't reach files outside
+its copy.
+
+| Call | Does |
+|---|---|
+| `app:newWindow()` | Asks the app for a new window, as File ▸ New Window does. Gives whether it opens one. |
+| `app:open(path)` | Hands the app a file, as Files does. Gives whether the app opens files. |
+| `app:command(line)` | Runs `line` in the shell, in `/mnt/user`, such as `"note buy milk"`. Gives what it printed, as a table of lines. |
+| `app:wait(seconds)` | Lets time pass for the app's timers, which run as they would have. Up to an hour. |
+| `app:write(path, text)` | Writes a file, and any folders it needs. |
+| `app:read(path)` | A file's text, or `nil` and why. |
+
+The app opens in `/mnt/user`, so that's where it starts, and where a command it adds keeps its files.
 
 ## When a case fails
 
@@ -114,5 +133,9 @@ and the other files still run.
 
 - Nothing is drawn, so a test reads what a window says, not what it looks like. Pictures are checked for but not
   loaded.
-- There's no desktop around the app: no dock, menu bar, or Files. Timers don't fire, since there are no frames.
+- There's no desktop around the app: no dock, menu bar, or Files. The app's own windows and panels open, and
+  another app it hands a file to opens too, but a person's clicks on the dock, minimizing, and zooming aren't there.
+- Timers run only when a test waits.
+- A test's VentureOS has developer mode, off, as one that just started; it has no network, measured memory, or
+  Cosmos, so the app sees them as missing.
 - The app runs with the system files airo was built with, from the `rootfs/` beside it or in the repository above it.

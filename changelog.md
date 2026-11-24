@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.103
+
+- The built-in apps have Roundhouse Projects, in `projects/`, each with its own tests: `airo test projects/Settings.rproj` runs Settings'. Change an app's design there, and only its own tests have a say. A project ships when it's built into `rootfs/` with `airo build`.
+- App tests can type into text areas, choose a row by its text, press menu and toolbar items, use the title bar's field, open a new window or a file, run shell commands, let timers run with `app:wait`, and write files first. See [Testing an app](docs/airo/testing.md).
+
 ## 0.8.102
 
 - Apps can have tests: Lua files in a Roundhouse Project's `Tests/` folder, which press buttons, type in fields, choose rows, and check what the app's windows say, as a person would. `airo test Settings.rproj` runs each test on a fresh VentureOS with the project's app in it, prints a line a test and the counts, and exits with 1 when any failed. An error in the app fails the test even if nothing checked for it. See [Testing an app](docs/airo/testing.md).

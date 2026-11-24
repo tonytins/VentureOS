@@ -73,8 +73,11 @@ public sealed class SimulatedSystem(SimulatedDisk disk, string version, string c
     /// <summary>The run's copy of VentureOS's files, which scripts' paths are kept within.</summary>
     public FileRoot? Root { get; } = new(disk.Root);
 
-    /// <summary>None: a run has no network to listen on, so Settings' Developer pane says developer mode isn't here.</summary>
-    public Venture.OS.Vdb.VdbDeveloperMode? Developer => null;
+    /// <summary>
+    /// None unless the host gives one: a run has no network to listen on, so Settings' Developer pane says developer
+    /// mode isn't here. A test's VentureOS has one, so the pane can be tested.
+    /// </summary>
+    public Venture.OS.Vdb.VdbDeveloperMode? Developer { get; init; }
 
     /// <summary>The run's apps' processes, which its app manager runs them through.</summary>
     public Venture.OS.Processes.Supervisor Processes { get; } = new(() => global::System.Diagnostics.Stopwatch.GetElapsedTime(Started));

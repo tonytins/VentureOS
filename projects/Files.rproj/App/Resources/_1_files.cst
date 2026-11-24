@@ -1,0 +1,3 @@
+// Files' text, which its Lua fills in with venture.cst.format.
+1 ^%d item^
+2 ^%d items^

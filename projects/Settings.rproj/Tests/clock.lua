@@ -1,0 +1,25 @@
+-- Clock: the offset from UTC, typed with or without "UTC", and refused with a reason when it can't be read.
+
+test.case("An offset sets the clock", function(app)
+  app:choose("panes", "Clock")
+  test.equal(app:title(), "Clock")
+  app:submit("utcOffset", "UTC-05:00")
+  test.expect(app:text("clockShown"):find("UTC%-05:00$"), "the clock shows the offset: " .. app:text("clockShown"))
+  test.equal(app:text("utcOffset"), "")
+end)
+
+test.case("The offset can be typed without UTC", function(app)
+  app:choose("panes", "Clock")
+  app:submit("utcOffset", "5:30")
+  test.expect(app:text("clockShown"):find("UTC%+05:30$"), "the clock shows the offset: " .. app:text("clockShown"))
+end)
+
+test.case("A wrong offset says why and changes nothing", function(app)
+  app:choose("panes", "Clock")
+  local before = app:text("clockShown")
+  app:submit("utcOffset", "EST")
+  test.expect(app:text("clockShown"):find("written like -05:00", 1, true), "it says how to write one")
+  test.equal(app:text("utcOffset"), "EST", "what was typed stays")
+  app:submit("utcOffset", "+00:00")
+  test.expect(app:text("clockShown"):find("UTC$") or app:text("clockShown"):find("UTC%+00:00$"), before)
+end)

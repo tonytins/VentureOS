@@ -149,6 +149,82 @@ public sealed class ProjectTestsTests : IDisposable
     }
 
     [Fact]
+    public void ListsMenusTheTitleBarAndTextAreasAreUsedAsAPersonWould()
+    {
+        var result = Assert.Single(Run("""
+            test.case("parts", function(app)
+              test.equal(table.concat(app:rows("fruits"), "|"), "apple|pear")
+              test.equal(app:chosen("fruits"), nil)
+              app:choose("fruits", "pear")
+              test.equal(app:chosen("fruits"), 2)
+              test.equal(app:text("result"), "Chose row 2")
+              app:choose("fruits", 1)
+              test.equal(app:text("result"), "Chose row 1")
+
+              app:press("add")
+              test.equal(app:text("result"), "Pressed 1")
+              app:press("reset")
+              test.equal(app:text("result"), "Not pressed")
+
+              app:submit("place", "/mnt/user")
+              test.equal(app:text("result"), "Went to /mnt/user")
+              app:type("body", "hello")
+              test.equal(app:text("result"), "Typed hello")
+
+              test.expect(app:has("reset") and app:has("place") and app:has("add") and app:has("fruits"))
+              test.expect(not app:has("nothing"))
+            end)
+            """));
+
+        Assert.True(result.Passed, result.Failure);
+    }
+
+    [Fact]
+    public void ARowThatIsntThereSaysWhichAre()
+    {
+        var result = Assert.Single(Run("""test.case("row", function(app) app:choose("fruits", "plum") end)"""));
+
+        Assert.Equal("Tests/sample.lua:1: app:choose: \"fruits\" has no row \"plum\"; its rows are apple, pear", result.Failure);
+    }
+
+    [Fact]
+    public void NewWindowsFilesTimersAndTheShellReachTheApp()
+    {
+        var result = Assert.Single(Run("""
+            test.case("system", function(app)
+              app:wait(0.5)
+              test.equal(app:text("ticks"), "0")
+              app:wait(1)
+              test.equal(app:text("ticks"), "1")
+
+              test.expect(app:newWindow())
+              test.equal(app:windows(), 2)
+
+              app:write("/mnt/user/folder/note.txt", "hi")
+              test.equal(app:read("/mnt/user/folder/note.txt"), "hi")
+              test.expect(app:open("/mnt/user/folder/note.txt"))
+              test.equal(app:windows(), 3)
+              test.equal(app:text("result"), "Opened /mnt/user/folder/note.txt")
+
+              test.equal(app:command("echo hello")[1], "hello")
+              test.expect(app:command("nothing")[1]:find("is not a command", 1, true))
+            end)
+            """));
+
+        Assert.True(result.Passed, result.Failure);
+    }
+
+    [Theory]
+    [InlineData("app:write(\"notes.txt\", \"x\")")]
+    [InlineData("app:read(\"/mnt/../../etc/passwd\")")]
+    public void PathsStayOnTheTestsVentureOS(string call)
+    {
+        var result = Assert.Single(Run($"test.case(\"path\", function(app) {call} end)"));
+
+        Assert.Contains("needs an absolute VentureOS path", result.Failure);
+    }
+
+    [Fact]
     public void AProjectWithoutAnAppIsRefused()
     {
         var empty = RoundhouseProject.Create("Empty", folder);

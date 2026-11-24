@@ -57,9 +57,23 @@ public sealed class AppearanceTests : IDisposable
         Assert.True(Brightness(painter.At(200, 100)) < Brightness(lightSky));
     }
 
+    // A look these tests set themselves, so what they read doesn't depend on the standard one, which is the owner's
+    // to change.
+    private static readonly DesktopLook Known = DesktopLook.Standard with
+    {
+        Mode = LookMode.Light,
+        Accent = DesktopPalette.StandardAccent,
+        RoundedCorners = true,
+        Wallpaper = DesktopLook.Sky,
+        DarkFrom = new TimeSpan(19, 0, 0),
+        DarkUntil = new TimeSpan(7, 0, 0),
+        Dock = DockMode.Always,
+    };
+
     [Fact]
     public void ScriptsReadTheLook()
     {
+        DesktopAppearance.Use(Known);
         Run("local look = venture.appearance() print(look.mode, look.accent)");
 
         Assert.Equal(["light\t#3584E4"], output.Lines);
@@ -98,12 +112,13 @@ public sealed class AppearanceTests : IDisposable
     [Fact]
     public void ScriptsReadTheWholeLook()
     {
+        DesktopAppearance.Use(Known);
         Run("""
             local look = venture.appearance()
             print(look.mode, look.dark, look.accent, look.corners, look.wallpaper, look.darkFrom, look.darkUntil, look.dock)
             """);
 
-        Assert.Equal(["light\tfalse\t#3584E4\trounded\tEarthset\t19:00\t07:00\talways"], output.Lines);
+        Assert.Equal(["light\tfalse\t#3584E4\trounded\tsky\t19:00\t07:00\talways"], output.Lines);
     }
 
     [Fact]
@@ -234,6 +249,7 @@ public sealed class AppearanceTests : IDisposable
     [Fact]
     public void TheCommandShowsTheLook()
     {
+        DesktopAppearance.Use(Known);
         Command("appearance");
 
         Assert.Equal(["Appearance: light", "Accent:     #3584E4"], output.Lines);

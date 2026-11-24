@@ -55,6 +55,12 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   on the computer making apps, never on VentureOS, so the kernel doesn't  
   reference it. System.CommandLine is approved for airo alone. See  
   [its README](docs/airo/README.md).
+- `projects/` holds the built-in apps' Roundhouse Projects, where they're  
+  designed and tested (`airo test projects/Settings.rproj`), and the  
+  owner's other work in progress, such as `about.rproj`. A project and the  
+  shipped `.app` in `rootfs/` may differ: an app ships when its project is  
+  built into `rootfs/` with `airo build --replace`. See  
+  [its README](projects/README.md).
 - `tools/vdb/` is vdb, a Swift package (`swift build`, `swift test`) that  
   sends apps to a running VentureOS over [vdb/1](docs/vdb/README.md), whose  
   recorded conversations both its tests and Common's replay. Swift Argument  

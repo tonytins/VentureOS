@@ -29,7 +29,6 @@ public sealed class SystemInterfacesTests
         view.SetText("version", "Version 0.3.0 (Build 1)");
 
         Assert.Equal("Version 0.3.0 (Build 1)", view.Text("version"));
-        Assert.Equal(UIControlType.Button, view.Script.Control("ok")?.Type);
         Assert.Empty(view.MissingStrings);
 
         // The desktop supplies the app's icon itself.

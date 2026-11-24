@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (airo test, and apps' tests in their projects) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (the built-in apps' projects, and their tests) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-24)
 
@@ -13,8 +13,9 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,073 tests, and 295 for Roundhouse, including runs of
-  the shipped scripts, library, `Notes.app`, and the tutorial's example). Beside them, `vdb`, a Swift
+  for the library, `Venture.OS.Common.Tests` (2,000 tests, and 272 for Roundhouse, including runs of
+  the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
+  apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
   and `airo`, a C# command-line tool in `src/Venture.Airo` that builds
   Roundhouse Projects into apps and runs their tests, on `Venture.Airo.Kit`,
@@ -115,6 +116,7 @@ grow):
 
 | Concern | Rule | Where |
 |---|---|---|
+| 2026-11-24 | minor | Layout (§2): `projects/`, the built-in apps' projects with their Lua tests, which replace the C# tests that opened the shipped apps (Dock's stay until airo test has a desktop). VentureOS's tests stop pinning the standard look. |
 | 2026-11-24 | minor | Layout (§2): `airo test` and apps' tests (`Venture.Airo.Testing`), run on a fresh simulated disk with no desktop; `SimulatedDisk` and `SimulatedSystem` move from Roundhouse into the kit for it, the system taking its version from whoever runs it. |
 | 2026-11-24 | minor | Layout (§2): airo, the build tool (`src/Venture.Airo`, `airo build`), and `Venture.Airo.Kit`, which `RoundhouseProject` and `FolderNames` move into from Roundhouse so both build an app the same way; `Venture.Airo.Tests`. |
 | **Namespaces** | Cosmos namespaces are imported once, in `GlobalUsings.cs`. A rename is a one-file fix. | `GlobalUsings.cs` |
@@ -202,6 +204,7 @@ VentureOS/
 │  ├─ Venture.OS.Common.Tests/     xUnit v3 tests for Venture.OS.Common and Venture.OS.Interface, with rootfs/ copied in
 │  ├─ Venture.Roundhouse.Tests/    xUnit v3 tests that drive Roundhouse off-screen with Avalonia.Headless
 │  └─ Venture.Airo.Tests/          xUnit v3 tests for airo and Venture.Airo.Kit, on sample projects of their own
+├─ projects/                      Roundhouse Projects: the built-in apps, each with its Tests/, and about.rproj
 ├─ tools/vdb/                     vdb, a Swift command-line tool that sends apps to VentureOS (here until it has its own repository)
 ├─ packaging/                     Roundhouse's packages for Linux, Windows, and macOS, after CityLimits'; writes dist/
 ├─ docs/                          architecture, roadmap, scorecard, the app guide, the UIScript drafts, and vdb's protocol

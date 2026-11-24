@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The dock: a panel along the bottom of the screen, as wide as its shelf of apps. -->
+<UIScript version="1">
+  <Panel width="400" height="72" edge="bottom"/>
+  <Shelf name="apps" x="0" y="0" width="400" height="72"/>
+</UIScript>

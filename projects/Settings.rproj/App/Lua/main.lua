@@ -1,0 +1,219 @@
+-- Settings: panes in a sidebar, as GNOME Settings has them. Appearance holds
+-- the desktop's look, light or dark, and its accent color; Dock, how the dock
+-- behaves; Clock holds the clock's offset from UTC; Developer turns on
+-- developer mode, for vdb. Each look, dock, and clock choice applies at once
+-- and is saved in /mnt/user/settings, as the appearance and clock commands'
+-- are; developer mode isn't saved.
+
+local window = venture.ui.open("main.uix")
+
+-- GNOME's nine accents, in the order of the buttons and their styles in main.uix.
+local SWATCHES = {
+  { name = "Blue", accent = "#3584E4" },
+  { name = "Teal", accent = "#2190A4" },
+  { name = "Green", accent = "#3A944A" },
+  { name = "Yellow", accent = "#C88800" },
+  { name = "Orange", accent = "#ED5B00" },
+  { name = "Red", accent = "#E62D42" },
+  { name = "Pink", accent = "#D56199" },
+  { name = "Purple", accent = "#9141AC" },
+  { name = "Slate", accent = "#6F8396" },
+}
+
+-- The wallpapers in the picker's slots, the sky first, then as many of the
+-- system's as there are slots for.
+local WALLPAPER_SLOTS = 5
+local wallpapers = { { name = "sky", title = "Sky" } }
+for _, wallpaper in ipairs(venture.wallpapers() or {}) do
+  if #wallpapers < WALLPAPER_SLOTS then wallpapers[#wallpapers + 1] = wallpaper end
+end
+
+-- Shows the look in use: which mode is checked, and the accent's name.
+local function show()
+  local look = venture.appearance()
+  window:setChecked("light", look.mode == "light")
+  window:setChecked("dark", look.mode == "dark")
+  window:setChecked("auto", look.mode == "auto")
+  window:setText("darkFrom", look.darkFrom)
+  window:setText("darkUntil", look.darkUntil)
+  -- window:setChecked("rounded", look.corners == "rounded")
+  -- window:setChecked("square", look.corners == "square")
+
+  local shown = look.wallpaper
+  for slot, wallpaper in ipairs(wallpapers) do
+    window:setChecked("wallpaper" .. slot, wallpaper.name == look.wallpaper)
+    if wallpaper.name == look.wallpaper then shown = wallpaper.title end
+  end
+  window:setText("wallpaperName", shown)
+
+  local name = "Custom, " .. look.accent
+  for _, swatch in ipairs(SWATCHES) do
+    if swatch.accent == look.accent then name = swatch.name end
+  end
+  window:setText("accentName", name)
+end
+
+-- Applies a look, and says when it couldn't be used or saved.
+local function choose(mode, accent)
+  local ok, problem = venture.setAppearance(mode, accent)
+  window:setText("status", problem or "")
+  if ok then show() end
+  return ok
+end
+
+-- Rounds or squares every window's corners, keeping the rest of the look.
+local function corners(shape)
+  local ok, problem = venture.setAppearance({ corners = shape })
+  window:setText("status", problem or "")
+  if ok then show() end
+end
+
+-- Each slot shows its wallpaper's thumbnail, and choosing it shows it on the
+-- desktop; a thumbnail that can't be read says so, and the slot stays.
+for slot = 1, WALLPAPER_SLOTS do
+  local wallpaper = wallpapers[slot]
+  if wallpaper then
+    if wallpaper.thumbnail then
+      local ok, problem = window:setImage("thumb" .. slot, wallpaper.thumbnail)
+      if not ok then window:setText("status", problem) end
+    end
+    window:on("wallpaper" .. slot, function()
+      local ok, problem = venture.setAppearance({ wallpaper = wallpaper.name })
+      window:setText("status", problem or "")
+      if ok then show() end
+    end)
+  end
+end
+
+-- window:on("rounded", function() corners("rounded") end)
+-- window:on("square", function() corners("square") end)
+window:on("light", function() choose("light") end)
+window:on("dark", function() choose("dark") end)
+window:on("auto", function() choose("auto") end)
+
+-- Auto's times, typed HH:MM and set with Enter; a wrong one says why and the
+-- field goes back to the time in use.
+local function schedule(field, key)
+  local typed = window:text(field):match("^%s*(.-)%s*$")
+  local ok, problem = venture.setAppearance({ [key] = typed })
+  window:setText("status", problem or "")
+  show()
+end
+
+window:on("darkFrom", function() schedule("darkFrom", "darkFrom") end)
+window:on("darkUntil", function() schedule("darkUntil", "darkUntil") end)
+for number, swatch in ipairs(SWATCHES) do
+  window:on("swatch" .. number, function() choose(venture.appearance().mode, swatch.accent) end)
+end
+window:on("custom", function()
+  local typed = window:text("custom"):match("^%s*(.-)%s*$"):upper()
+  if choose(venture.appearance().mode, typed) then window:setText("custom", "") end
+end)
+
+-- Shows the clock: the time and its offset from UTC, or that the hardware clock isn't set.
+local function showClock(problem)
+  if problem then
+    window:setText("clockShown", problem)
+    return
+  end
+
+  local time = venture.time()
+  if not time then
+    window:setText("clockShown", "This system has no clock.")
+  elseif time.set then
+    window:setText("clockShown", time.text .. ", " .. time.zone)
+  else
+    window:setText("clockShown", "Not set, " .. time.zone)
+  end
+end
+
+window:on("utcOffset", function()
+  local ok, problem = venture.setUtcOffset(window:text("utcOffset"))
+  if ok then window:setText("utcOffset", "") end
+  showClock(problem)
+end)
+
+-- The time shown keeps up, as the menu bar's does.
+window:every(30, function() showClock() end)
+
+-- The dock: always there, keeping windows above it; hiding until the pointer
+-- reaches the bottom of the screen; or hiding while a window would cover it.
+local DOCK_MODES = {
+  { button = "dockAlways", mode = "always",
+    about = "Zoomed and new windows stop above the dock." },
+  { button = "dockAutoHide", mode = "autohide",
+    about = "The dock slides away, and comes back when the pointer reaches the bottom of the screen." },
+  { button = "dockDodge", mode = "dodge",
+    about = "The dock slides away while a window would cover it, and comes back at the bottom of the screen too." },
+}
+
+local function showDock()
+  local current = venture.appearance().dock
+  for _, choice in ipairs(DOCK_MODES) do
+    window:setChecked(choice.button, choice.mode == current)
+    if choice.mode == current then window:setText("dockAbout", choice.about) end
+  end
+end
+
+for _, choice in ipairs(DOCK_MODES) do
+  window:on(choice.button, function()
+    local ok, problem = venture.setAppearance{ dock = choice.mode }
+    if ok then showDock() else window:setText("dockAbout", problem) end
+  end)
+end
+
+-- Developer mode, for vdb: on or off, and what it's doing. It lasts until
+-- VentureOS restarts, like everything else in memory; init.lua can turn it on
+-- at every boot.
+local function showDeveloper()
+  local status = venture.developer.status()
+  if not status then
+    window:setChecked("developerOn", false)
+    window:setChecked("developerOff", false)
+    window:setText("developerStatus", "This system has no developer mode.")
+    return
+  end
+
+  window:setChecked("developerOn", status.enabled)
+  window:setChecked("developerOff", not status.enabled)
+  local text
+  if status.problem then
+    text = "Not listening: " .. status.problem .. "."
+  elseif not status.enabled then
+    text = "Off."
+  elseif status.connected then
+    text = "A computer is connected."
+  else
+    text = "Listening on port " .. status.port .. "."
+  end
+  local trusted = status.trusted == 1 and "1 computer is" or (status.trusted .. " computers are")
+  window:setText("developerStatus", text .. " " .. trusted .. " trusted.")
+end
+
+window:setText("developerAbout",
+  "vdb sends apps to VentureOS from another computer, which you're asked to trust "
+  .. "first. It listens while the desktop runs. Developer mode lasts until VentureOS restarts.")
+window:on("developerOn", function() venture.developer.enable(); showDeveloper() end)
+window:on("developerOff", function() venture.developer.disable(); showDeveloper() end)
+window:every(2, function() showDeveloper() end)
+
+-- The panes are main.uix's: the sidebar shows them, and only the chosen
+-- pane's controls. The window's title follows the pane.
+local function showPane(number)
+  local title = window:items("panes")[number]
+  window:setTitle(title)
+  if title == "Developer" then showDeveloper() end
+end
+
+window:on("panes", function(event)
+  if event.kind == "selected" then showPane(event.index) end
+end)
+
+-- Wallpaper slots past the last wallpaper stay hidden.
+for slot = #wallpapers + 1, WALLPAPER_SLOTS do window:setHidden("wallpaper" .. slot, true) end
+
+show()
+showDock()
+showClock()
+showDeveloper()
+showPane(1)

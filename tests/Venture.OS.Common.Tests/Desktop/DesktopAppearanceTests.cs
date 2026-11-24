@@ -32,7 +32,7 @@ public sealed class DesktopAppearanceTests : IDisposable
         Assert.Null(problem);
         Assert.True(DesktopTheme.Palette.IsDark);
         Assert.Contains(
-            """<Appearance version="1" mode="dark" accent="#E8922A" corners="rounded" wallpaper="Earthset" darkFrom="19:00" darkUntil="07:00" dock="always"/>""",
+            $"""<Appearance version="1" mode="dark" accent="#E8922A" corners="rounded" wallpaper="{DesktopLook.Standard.Wallpaper}" darkFrom="19:00" darkUntil="07:00" dock="always"/>""",
             File.ReadAllText(SettingsFile));
     }
 
@@ -82,8 +82,8 @@ public sealed class DesktopAppearanceTests : IDisposable
         var result = DesktopAppearance.Load();
 
         Assert.Null(result.Problem);
-        Assert.Same(DesktopPalette.Light, DesktopTheme.Palette);
-        Assert.Equal("light, accent #3584E4 (nothing saved)", result.Description);
+        Assert.Equal(DesktopLook.Standard, DesktopAppearance.Current);
+        Assert.Equal($"{DesktopAppearance.Describe(DesktopLook.Standard)} (nothing saved)", result.Description);
     }
 
     [Fact]

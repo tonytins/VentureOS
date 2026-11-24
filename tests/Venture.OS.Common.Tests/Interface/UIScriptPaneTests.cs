@@ -81,15 +81,6 @@ public sealed class UIScriptPaneTests
     }
 
     [Fact]
-    public void TheShippedSettingsDeclaresItsPanes()
-    {
-        var script = UIScript.Load(Path.Combine(AppContext.BaseDirectory, "system", "apps", "Settings.app", "Contents", "Resources", "main.uix"));
-
-        Assert.Equal(["Appearance", "Dock", "Clock", "Developer"], script.Panes.Select(pane => pane.Title));
-        Assert.All(script.Controls, control => Assert.NotNull(control.Pane));
-    }
-
-    [Fact]
     public void APaneHoldsItsControlsWhichAreDrawnInDocumentOrder()
     {
         var script = UIScript.Parse(Head + """

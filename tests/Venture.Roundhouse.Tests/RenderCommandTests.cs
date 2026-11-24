@@ -21,9 +21,11 @@ public sealed class RenderCommandTests : IDisposable
 
         Assert.Equal(0, RenderCommand.Run([about, picture], error));
 
-        // The window is 340 wide and 280 tall with its 30-pixel bar, with 24 pixels of sky all round.
+        // The window as its document sizes it, with its 30-pixel bar and 24 pixels of sky all round. About's own size
+        // is the owner's to change, so it's read from the document rather than pinned.
+        var window = Venture.OS.Interface.UIScript.Load(about).Window;
         using var bitmap = SKBitmap.Decode(picture);
-        Assert.Equal((340 + 48, 250 + 30 + 48), (bitmap.Width, bitmap.Height));
+        Assert.Equal(((int)window.Size.Width + 48, (int)window.Size.Height + 30 + 48), (bitmap.Width, bitmap.Height));
         Assert.NotEqual(bitmap.GetPixel(2, 2), bitmap.GetPixel(bitmap.Width / 2, bitmap.Height / 2));
 
         // About's icon is the desktop's to fill, so its picture isn't beside the document.

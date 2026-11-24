@@ -32,6 +32,10 @@ public sealed class AppUnderTest : IDisposable, IShellHost
     private readonly WindowManager windows = new(ScreenWidth, ScreenHeight);
     private readonly Printed printed = new();
     private readonly AppManager apps;
+    private readonly AppWindows appWindows;
+    private readonly CommandShell shell;
+    private readonly Printed commandOutput = new();
+    private TimeSpan clock;
     private readonly (DesktopLook Look, string? Settings, string? Wallpapers, Func<TimeSpan?> TimeOfDay) before;
     private readonly string appName;
 
@@ -52,7 +56,7 @@ public sealed class AppUnderTest : IDisposable, IShellHost
         RuntimeCommands runtime = new(commands.IsBuiltIn, scripts);
         commands.AddSource(runtime);
         commands.AddSource(scripts);
-        AppWindows appWindows = new(windows, printed, () => ScriptStop.After(EventLimit))
+        appWindows = new(windows, printed, () => ScriptStop.After(EventLimit))
         {
             // Pictures are checked for, not drawn: a test reads what a window says, not what it looks like.
             LoadImage = path => File.Exists(path) ? new DesktopImage(1, 1, [unchecked((int)0xFF808080)]) : null,
@@ -70,6 +74,7 @@ public sealed class AppUnderTest : IDisposable, IShellHost
             openShell: (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false },
             supervisor: system.Processes);
         system.Desktop = new ScriptDesktop(appWindows, () => apps);
+        shell = new CommandShell(new ShellContext(commandOutput, this, commands) { CurrentDirectory = SimulatedDisk.UserFolder, HasConsole = false });
         Opened = apps.OpenApp($"{folder}/{appName}{Bundle.Extension(BundleKind.App)}", SimulatedDisk.UserFolder, printed, explainNeeds: false);
     }
 
@@ -82,8 +87,25 @@ public sealed class AppUnderTest : IDisposable, IShellHost
     /// <summary>Everything the app and VentureOS printed, a line each, errors included.</summary>
     public IReadOnlyList<string> PrintedLines => printed.Lines;
 
-    /// <summary>The window in front, which a person would be using, or <see langword="null"/> when none is open.</summary>
-    public DesktopWindow? FrontWindow => windows.Focused ?? (windows.Windows.Count > 0 ? windows.Windows[^1] : null);
+    /// <summary>
+    /// The window in front, which a person would be using: the focused one, or else the newest that isn't a panel, or
+    /// else the newest panel; <see langword="null"/> when none is open.
+    /// </summary>
+    public DesktopWindow? FrontWindow
+    {
+        get
+        {
+            if (windows.Focused is { } focused)
+                return focused;
+            for (var index = windows.Windows.Count - 1; index >= 0; index--)
+            {
+                if (!windows.Windows[index].IsPanel)
+                    return windows.Windows[index];
+            }
+
+            return windows.Windows.Count > 0 ? windows.Windows[^1] : null;
+        }
+    }
 
     /// <summary>Every open window, back to front.</summary>
     public IReadOnlyList<DesktopWindow> Windows => windows.Windows;
@@ -106,7 +128,7 @@ public sealed class AppUnderTest : IDisposable, IShellHost
             var appName = Path.GetFileNameWithoutExtension(project.AppFolderName());
             var folder = Directory.Exists(disk.HostPath($"/mnt/system/apps/{project.AppFolderName()}")) ? "/mnt/system/apps" : "/mnt/user/apps";
             project.Assemble(disk.HostPath(folder), replace: true);
-            SimulatedSystem system = new(disk, version.Version, version.Commit, version.Host);
+            SimulatedSystem system = new(disk, version.Version, version.Commit, version.Host) { Developer = new() };
             return new AppUnderTest(disk, system, appName, folder);
         }
         catch
@@ -114,6 +136,40 @@ public sealed class AppUnderTest : IDisposable, IShellHost
             disk.Dispose();
             throw;
         }
+    }
+
+    /// <summary>Asks the app for a new window, as File ▸ New Window does.</summary>
+    /// <returns>Whether the app opens new windows.</returns>
+    public bool NewWindow() => appWindows.NewWindow(appName);
+
+    /// <summary>Hands the app a file to open, named as VentureOS names it, as Files does.</summary>
+    /// <returns>Whether the app opens files.</returns>
+    public bool OpenFile(string venturePath) => appWindows.OpenFile(appName, venturePath);
+
+    /// <summary>Lets <paramref name="time"/> pass for the app's timers, which run as they would have in it.</summary>
+    public void Wait(TimeSpan time)
+    {
+        appWindows.Tick(clock);
+        clock += time;
+        appWindows.Tick(clock);
+    }
+
+    /// <summary>Runs a line in the test's shell, in <c>/mnt/user</c>, as typed at the prompt.</summary>
+    /// <returns>What it printed, a line each.</returns>
+    public IReadOnlyList<string> Command(string line)
+    {
+        commandOutput.Lines.Clear();
+        try
+        {
+            shell.Execute(line);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // As the kernel's shell loop reports a command that throws.
+            commandOutput.WriteLine($"{line.Split(' ')[0]}: {exception.GetType().Name}: {exception.Message}");
+        }
+
+        return [.. commandOutput.Lines];
     }
 
     /// <summary>Hands <paramref name="uiEvent"/> to <paramref name="window"/>'s app, as the desktop does after a click or a key.</summary>
