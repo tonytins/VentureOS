@@ -484,7 +484,7 @@ desktop doesn't show this; the scopes are enforced either way.
 | Message | What to do |
 |---|---|
 | `there's no app called dice` | Check the folder is `Dice.app` in `rootfs/system/apps/`, and that you rebuilt. `apps` lists what VentureOS found. |
-| `Dice.app has no Contents/Info.xml, so it isn't a bundle` | Put `Info.xml` inside `Contents/`, not next to it. |
+| `Dice.app has no Contents/Info.xml.` | Put `Info.xml` inside `Contents/`, not next to it. |
 | `Dice.app's Contents/Info.xml, line 3: ...` | The file isn't valid. Text between elements, a missing quote, or a `<!DOCTYPE>` all stop it. Each element holds attributes only. |
 | `"dice" isn't a reverse-DNS identifier` | Use at least two parts separated by dots, such as `dev.example.dice`. |
 | `Dice.app has no Contents/Lua/main.lua to run` | Add `main.lua`, or point `main` at your script. |

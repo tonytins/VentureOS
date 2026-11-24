@@ -494,7 +494,7 @@ public sealed class UIScript
             throw rootReader.Invalid("version", root["version"]!);
         if (version > SupportedVersion)
             throw new UIScriptException(
-                $"This is UIScript version {version}, and this reader reads up to {SupportedVersion}; it needs a newer VentureOS.");
+                $"This is UIScript version {version}, and this reader reads up to {SupportedVersion}.");
 
         var features = (rootReader.String("requires") ?? "").Split([' ', '\t', '\n', '\r'],
             StringSplitOptions.RemoveEmptyEntries);
@@ -502,7 +502,7 @@ public sealed class UIScript
         {
             if (!RetiredFeatures.Contains(feature))
                 throw new UIScriptException(
-                    $"This document requires \"{feature}\", which this reader doesn't support; it needs a newer VentureOS.");
+                    $"This document requires \"{feature}\", which this reader doesn't support.");
         }
 
         List<UIIgnoredAttribute> ignored = [.. rootReader.Unused()];

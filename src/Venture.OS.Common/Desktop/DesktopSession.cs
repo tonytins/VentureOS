@@ -898,7 +898,7 @@ public sealed class DesktopSession
             var wait = (apps.Supervisor.NextStart(identifier) ?? apps.Supervisor.Now) - apps.Supervisor.Now;
             Windows.Open(DesktopAlert.Create(
                 process.Name,
-                $"{process.Name} didn't start. VentureOS will keep trying, next in {wait.TotalSeconds:0} seconds.\n{problem}".TrimEnd(),
+                $"{process.Name} didn't start. Trying again in {wait.TotalSeconds:0} seconds.\n{problem}".TrimEnd(),
                 Text.Get("ok")));
         }
 

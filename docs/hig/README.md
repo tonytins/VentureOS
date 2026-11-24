@@ -281,6 +281,9 @@ words as the facts need, and leaves the rest to the reader.
   the reader what to do. The guides give the longer help, so messages don't have to.
 - Use common words: "can't open" rather than "failed to initialize". Contractions are fine.
 
+When something falls back, say what stands in, since the reader can't see that a default took its place:
+`couldn't read appearance.xml: … Keeping the standard look.`
+
 A "so" clause is fine when it explains something the reader couldn't guess, such as
 `This VentureOS is a test's, so it can't halt, reboot, or shut down.`, and cut when it only restates what follows
 from the first half.

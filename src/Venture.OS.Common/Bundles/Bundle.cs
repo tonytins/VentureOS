@@ -183,7 +183,7 @@ public sealed class Bundle
 
         var infoPath = $"{root}/{InfoPath}";
         if (!File.Exists(infoPath))
-            throw new BundleException($"{label} has no {InfoPath}, so it isn't a bundle.");
+            throw new BundleException($"{label} has no {InfoPath}.");
 
         FlatXmlDocument document;
         try
@@ -294,13 +294,13 @@ public sealed class Bundle
 
         if (root["version"] is { } newer && int.Parse(newer) > SupportedVersion)
             throw Problem(label, root.Line,
-                $"It's format version {newer}, and this VentureOS reads up to {SupportedVersion}; it needs a newer VentureOS.");
+                $"It's format version {newer}, and this VentureOS reads up to {SupportedVersion}.");
 
         // No features are defined yet, so any required one is one this reader doesn't know.
         if (root["requires"] is { } requires
             && requires.Split(' ', StringSplitOptions.RemoveEmptyEntries) is { Length: > 0 } features)
             throw Problem(label, root.Line,
-                $"It requires \"{features[0]}\", which this VentureOS doesn't support; it needs a newer VentureOS.");
+                $"It requires \"{features[0]}\", which this VentureOS doesn't support.");
     }
 
     private static ScriptScopes ReadNeeds(FlatXmlElement info, string label)

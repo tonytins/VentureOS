@@ -100,7 +100,7 @@ public static class ShellLibrary
                 return Fail(state, "use session:run(line), with a colon and a command line, such as session:run(\"ls\")");
 
             if (shellDepth >= MaxShellDepth)
-                return Fail(state, $"session:run is nested more than {MaxShellDepth} deep; is a command running itself?");
+                return Fail(state, $"session:run is nested more than {MaxShellDepth} deep; a command may be running itself.");
 
             var line = LuaText.Decode(state.ToString(2));
             caught.Reset();
@@ -180,7 +180,7 @@ public static class ShellLibrary
             return Fail(lua, "venture.shell needs a command line, such as venture.shell(\"help\")");
 
         if (shellDepth >= MaxShellDepth)
-            return Fail(lua, $"venture.shell is nested more than {MaxShellDepth} deep; is a command running itself?");
+            return Fail(lua, $"venture.shell is nested more than {MaxShellDepth} deep; a command may be running itself.");
 
         var line = LuaText.Decode(lua.ToString(1));
         shellDepth++;

@@ -349,9 +349,9 @@ public sealed class AppManagerTests : IDisposable
 
         Assert.Equal(
             [
-                "open: there's no app called Nothing. Type \"apps\" to see them.",
-                "open: Empty.app has no Contents/Info.xml, so it isn't a bundle.",
-                "open: there's no app called ./missing/Thing.app. Type \"apps\" to see them.",
+                "open: there's no app called Nothing. \"apps\" lists them.",
+                "open: Empty.app has no Contents/Info.xml.",
+                "open: there's no app called ./missing/Thing.app. \"apps\" lists them.",
                 "close: Notes isn't open.",
             ],
             output.Lines);
@@ -368,7 +368,7 @@ public sealed class AppManagerTests : IDisposable
 
         Assert.Equal(["Broken.app", "Notes.app"], listings.Select(listing => listing.Folder));
         Assert.Null(listings[0].Bundle);
-        Assert.Contains("isn't a bundle", listings[0].Problem);
+        Assert.Contains("has no Contents/Info.xml", listings[0].Problem);
         Assert.Equal("Notes", listings[1].Bundle!.Name);
     }
 

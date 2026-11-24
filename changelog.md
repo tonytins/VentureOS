@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.111
+
+- `open` with an unknown app says `"apps" lists them.`, as the shell does for commands, and a folder without `Contents/Info.xml` says just that.
+- A kept app that didn't start says `Trying again in 4 seconds.`
+- An app or interface written for a newer VentureOS says which version or feature it needs, without adding that it needs a newer VentureOS.
+
 ## 0.8.110
 
 - An unknown command says `"nope" isn't a command. "help" lists them.`, and boot's messages stop at what happened: `No network device found.`, without "skipping network setup" or "The shell still works."

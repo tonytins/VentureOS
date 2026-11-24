@@ -119,7 +119,7 @@ public sealed class FallbackAppTests : IDisposable
 
         Frame();
         var alert = Assert.Single(windows.Windows);
-        Assert.StartsWith("Shelf didn't start. VentureOS will keep trying, next in 2 seconds.", alert.View.Text("message"));
+        Assert.StartsWith("Shelf didn't start. Trying again in 2 seconds.", alert.View.Text("message"));
         Assert.Contains("Shelf is broken", alert.View.Text("message"));
 
         // Too soon: no attempt. Then a second failure for the same reason adds no second message.

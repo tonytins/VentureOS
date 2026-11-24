@@ -149,7 +149,7 @@ public sealed class AppManager(
 
         if (Find(target, currentDirectory) is not { } path)
         {
-            output.WriteLine($"open: there's no app called {target}. Type \"apps\" to see them.");
+            output.WriteLine($"open: there's no app called {target}. \"apps\" lists them.");
             return false;
         }
 
