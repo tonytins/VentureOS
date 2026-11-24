@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.104
+
+- Roundhouse's Run ▸ Test (Ctrl+U) runs the open project's tests against its app as you've edited it, saved or not, and lists each result in the Log tab, with the counts in the status line. Roundhouse stays usable while they run, and closing the project stops them.
+
 ## 0.8.103
 
 - The built-in apps have Roundhouse Projects, in `projects/`, each with its own tests: `airo test projects/Settings.rproj` runs Settings'. Change an app's design there, and only its own tests have a say. A project ships when it's built into `rootfs/` with `airo build`.

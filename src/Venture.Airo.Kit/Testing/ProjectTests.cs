@@ -13,6 +13,16 @@ public sealed record AppTestResult(string File, string? Name, string? Failure)
 {
     /// <summary>Whether it passed.</summary>
     public bool Passed => Failure is null;
+
+    /// <summary>
+    /// The result as one line, as airo prints it and Roundhouse logs it: <c>pass</c> or <c>fail</c>, the file, the
+    /// case, and why it failed.
+    /// </summary>
+    public string Describe()
+    {
+        var what = Name is null ? File : $"{File}: {Name}";
+        return Failure is null ? $"pass {what}" : $"fail {what}: {Failure.ReplaceLineEndings(" ")}";
+    }
 }
 
 /// <summary>
@@ -25,8 +35,11 @@ public sealed record AppTestResult(string File, string? Name, string? Failure)
 /// <para>A case fails when a check fails, when it raises an error, when the app doesn't open, or when the app hits a
 /// Lua error while the case runs, even one the case didn't check for, since a person would have seen it. Each case
 /// is bounded by <see cref="CaseLimit"/>.</para>
+/// <para>It runs a case at a time, through <see cref="Next"/>, so a window can run one between frames and stay
+/// responsive; <see cref="Run"/> runs them all. The desktop's look is the whole process's, so cases run on one
+/// thread, the one a window draws on.</para>
 /// </remarks>
-public static class ProjectTests
+public sealed class ProjectTests : IDisposable
 {
     /// <summary>The project's folder its tests are in.</summary>
     public const string FolderName = "Tests";
@@ -34,25 +47,59 @@ public static class ProjectTests
     /// <summary>How long one case may run before it's stopped and fails.</summary>
     public static readonly TimeSpan CaseLimit = TimeSpan.FromSeconds(30);
 
+    private readonly RoundhouseProject project;
+    private readonly string rootfs;
+    private readonly SimulatedVersion version;
+    private readonly IShellOutput printed;
+    private readonly IReadOnlyDictionary<string, string> edits;
+    private readonly Queue<string> files;
+
+    // The file whose cases are running: its interpreter, its name, and the cases still to run.
+    private LuaOwner? owner;
+    private string? file;
+    private readonly Queue<(string Name, int Reference)> cases = new();
+    private Func<string?>? stop;
+
+    private ProjectTests(
+        RoundhouseProject project, string rootfs, SimulatedVersion version, IShellOutput printed, IReadOnlyDictionary<string, string> edits)
+    {
+        this.project = project;
+        this.rootfs = rootfs;
+        this.version = version;
+        this.printed = printed;
+        this.edits = edits;
+        files = new(Files(project, edits));
+    }
+
     /// <summary>The test files in <paramref name="project"/>, in the order they run; empty when it has none.</summary>
-    public static IReadOnlyList<string> Files(RoundhouseProject project)
+    /// <param name="edits">Files' text by full path, such as unsaved ones; a new test file among them counts.</param>
+    public static IReadOnlyList<string> Files(RoundhouseProject project, IReadOnlyDictionary<string, string>? edits = null)
     {
         ArgumentNullException.ThrowIfNull(project);
-        var folder = Path.Combine(project.Root, FolderName);
-        return Directory.Exists(folder)
-            ? [.. Directory.EnumerateFiles(folder, "*.lua").Order(StringComparer.Ordinal)]
-            : [];
+        var folder = Path.GetFullPath(Path.Combine(project.Root, FolderName));
+        SortedSet<string> found = new(StringComparer.Ordinal);
+        if (Directory.Exists(folder))
+            found.UnionWith(Directory.EnumerateFiles(folder, "*.lua").Select(Path.GetFullPath));
+        foreach (var path in edits?.Keys ?? [])
+        {
+            var full = Path.GetFullPath(path);
+            if (string.Equals(Path.GetDirectoryName(full), folder, StringComparison.Ordinal)
+                && full.EndsWith(".lua", StringComparison.OrdinalIgnoreCase))
+                found.Add(full);
+        }
+
+        return [.. found];
     }
 
     /// <summary>
-    /// Runs every test in <paramref name="project"/> against VentureOS's files in <paramref name="rootfs"/>, telling
-    /// <paramref name="report"/> each result as it comes.
+    /// Gets ready to run the tests in <paramref name="project"/> against VentureOS's files in <paramref name="rootfs"/>,
+    /// with <paramref name="edits"/> (text by full path, such as unsaved files) in place of what's saved, in the app
+    /// and the tests alike.
     /// </summary>
     /// <param name="printed">Where the tests' own <c>print</c> goes.</param>
-    /// <returns>Every result, in the order they ran.</returns>
     /// <exception cref="ProjectException">The project has no app, so there's nothing to test.</exception>
-    public static IReadOnlyList<AppTestResult> Run(
-        RoundhouseProject project, string rootfs, SimulatedVersion version, IShellOutput printed, Action<AppTestResult>? report = null)
+    public static ProjectTests Start(
+        RoundhouseProject project, string rootfs, SimulatedVersion version, IShellOutput printed, IReadOnlyDictionary<string, string>? edits = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentException.ThrowIfNullOrEmpty(rootfs);
@@ -61,57 +108,102 @@ public static class ProjectTests
         if (!project.HasApp)
             throw new ProjectException($"{Path.GetFileName(project.Root)} has no app yet, so there's nothing to test.");
 
+        return new ProjectTests(project, rootfs, version, printed, edits ?? new Dictionary<string, string>());
+    }
+
+    /// <summary>Runs every test, telling <paramref name="report"/> each result as it comes.</summary>
+    /// <returns>Every result, in the order they ran.</returns>
+    /// <exception cref="ProjectException">The project has no app, so there's nothing to test.</exception>
+    public static IReadOnlyList<AppTestResult> Run(
+        RoundhouseProject project, string rootfs, SimulatedVersion version, IShellOutput printed, Action<AppTestResult>? report = null,
+        IReadOnlyDictionary<string, string>? edits = null)
+    {
+        using var tests = Start(project, rootfs, version, printed, edits);
         List<AppTestResult> results = [];
-        void Add(AppTestResult result)
+        while (tests.Next() is { } result)
         {
             results.Add(result);
             report?.Invoke(result);
         }
 
-        foreach (var path in Files(project))
-            RunFile(project, rootfs, version, printed, path, Add);
         return results;
     }
 
-    private static void RunFile(
-        RoundhouseProject project, string rootfs, SimulatedVersion version, IShellOutput printed, string path, Action<AppTestResult> add)
+    /// <summary>Runs the next case, or reports the next file that couldn't be run.</summary>
+    /// <returns>Its result, or <see langword="null"/> when every test has run.</returns>
+    public AppTestResult? Next()
     {
-        var file = Path.GetRelativePath(project.Root, path).Replace('\\', '/');
-        Func<string?>? stop = null;
+        while (cases.Count == 0)
+        {
+            EndFile();
+            if (!files.TryDequeue(out var path))
+                return null;
+            if (Load(path) is { } failure)
+                return failure;
+        }
 
-        // The file's own errors, such as a typo that stops it loading, come out of LuaRunner on printed; they're
-        // caught here instead, so they become the file's result.
-        string? loadFailure = null;
-        LuaRunner.Run(printed, Path.GetDirectoryName(path)!, lua =>
+        var (name, reference) = cases.Dequeue();
+        stop = ScriptStop.After(CaseLimit);
+        string? why = null;
+        owner!.Run(lua =>
+        {
+            why = RunCase(lua.State, reference);
+            lua.State.L_Unref(LuaDef.LUA_REGISTRYINDEX, reference);
+        }, () => stop?.Invoke());
+        return new AppTestResult(file!, name, why);
+    }
+
+    /// <summary>Ends the run, with whatever cases were left not run.</summary>
+    public void Dispose()
+    {
+        cases.Clear();
+        files.Clear();
+        EndFile();
+    }
+
+    // Runs a file's own code, which declares its cases: a result when it can't be run, or null when its cases are
+    // queued.
+    private AppTestResult? Load(string path)
+    {
+        file = Path.GetRelativePath(project.Root, path).Replace('\\', '/');
+        string text;
+        try
+        {
+            text = edits.TryGetValue(path, out var edited) ? edited : File.ReadAllText(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return new AppTestResult(file, null, $"it couldn't be read: {exception.Message}");
+        }
+
+        owner = new LuaOwner(file, "the tests end", mayReplaceScripts: false, printed, Path.GetDirectoryName(path)!);
+        stop = ScriptStop.After(CaseLimit);
+        string? failure = null;
+        owner.Run(lua =>
         {
             TestLibrary.Open(lua);
             var state = lua.State;
-            stop = ScriptStop.After(CaseLimit);
-            if (state.L_LoadBufferX(LuaText.Encode(File.ReadAllText(path)), "@" + file, "t") != ThreadStatus.LUA_OK
+            if (state.L_LoadBufferX(LuaText.Encode(text), "@" + file, "t") != ThreadStatus.LUA_OK
                 || state.PCall(0, 0, 0) != ThreadStatus.LUA_OK)
             {
-                loadFailure = Message(state);
+                failure = Message(state);
                 state.Pop(1);
                 return;
             }
 
-            var cases = Cases(state);
+            foreach (var found in Cases(state))
+                cases.Enqueue(found);
             if (cases.Count == 0)
-            {
-                loadFailure = "it has no test.case in it";
-                return;
-            }
+                failure = "it has no test.case in it";
+        }, () => stop?.Invoke());
 
-            foreach (var (name, reference) in cases)
-            {
-                stop = ScriptStop.After(CaseLimit);
-                add(new AppTestResult(file, name, RunCase(state, reference, project, rootfs, version)));
-                state.L_Unref(LuaDef.LUA_REGISTRYINDEX, reference);
-            }
-        }, stop: () => stop?.Invoke());
+        return failure is null ? null : new AppTestResult(file, null, failure);
+    }
 
-        if (loadFailure is not null)
-            add(new AppTestResult(file, null, loadFailure));
+    private void EndFile()
+    {
+        owner?.Dispose();
+        owner = null;
     }
 
     // The cases a file declared, in order, each its name and its function kept in the registry.
@@ -136,12 +228,12 @@ public static class ProjectTests
     }
 
     // Runs one case on a fresh VentureOS: why it failed, or null when it passed.
-    private static string? RunCase(ILuaState state, int reference, RoundhouseProject project, string rootfs, SimulatedVersion version)
+    private string? RunCase(ILuaState state, int reference)
     {
         AppUnderTest app;
         try
         {
-            app = AppUnderTest.Start(project, rootfs, version);
+            app = AppUnderTest.Start(project, rootfs, version, edits);
         }
         catch (Exception exception) when (exception is ProjectException or IOException or UnauthorizedAccessException)
         {

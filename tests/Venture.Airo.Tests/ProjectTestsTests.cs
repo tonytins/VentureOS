@@ -225,6 +225,69 @@ public sealed class ProjectTestsTests : IDisposable
     }
 
     [Fact]
+    public void ItRunsACaseAtATimeUntilThereAreNoneLeft()
+    {
+        SampleProjects.WithTest(project, "a.lua", """
+            test.case("one", function(app) end)
+            test.case("two", function(app) end)
+            """);
+
+        using var tests = ProjectTests.Start(project, SimulatedDisk.FindRootfs()!, Version, printed);
+
+        Assert.Equal("one", tests.Next()?.Name);
+        Assert.Equal("two", tests.Next()?.Name);
+        Assert.Null(tests.Next());
+        Assert.Null(tests.Next());
+    }
+
+    [Fact]
+    public void EndingPartWayLeavesTheRestUnrunAndTheLookAsItWas()
+    {
+        var before = DesktopAppearance.Current;
+        SampleProjects.WithTest(project, "a.lua", """
+            test.case("one", function(app) end)
+            test.case("two", function(app) end)
+            """);
+
+        var tests = ProjectTests.Start(project, SimulatedDisk.FindRootfs()!, Version, printed);
+        Assert.NotNull(tests.Next());
+        tests.Dispose();
+
+        Assert.Null(tests.Next());
+        Assert.Same(before, DesktopAppearance.Current);
+    }
+
+    [Fact]
+    public void EditsRunInPlaceOfWhatsSavedInTheAppAndTheTests()
+    {
+        var saved = Path.Combine(project.Root, "Tests", "saved.lua");
+        SampleProjects.WithTest(project, "saved.lua", """test.case("as saved", function(app) end)""");
+        var main = Path.Combine(project.AppFolder, "Lua", "main.lua");
+        var unsavedTest = Path.Combine(project.Root, "Tests", "unsaved.lua");
+        Dictionary<string, string> edits = new()
+        {
+            [main] = File.ReadAllText(main).Replace("\"Pressed \" .. presses", "\"Clicked \" .. presses", StringComparison.Ordinal),
+            [saved] = """test.case("as edited", function(app) app:press("count") test.equal(app:text("result"), "Clicked 1") end)""",
+            [unsavedTest] = """test.case("new", function(app) end)""",
+        };
+
+        var results = ProjectTests.Run(project, SimulatedDisk.FindRootfs()!, Version, printed, edits: edits);
+
+        Assert.Equal(["as edited", "new"], results.Select(result => result.Name));
+        Assert.All(results, result => Assert.True(result.Passed, result.Failure));
+        Assert.DoesNotContain("Clicked", File.ReadAllText(main), StringComparison.Ordinal);
+        Assert.False(File.Exists(unsavedTest));
+    }
+
+    [Fact]
+    public void AResultDescribesItselfOnOneLine()
+    {
+        Assert.Equal("pass Tests/a.lua: one", new AppTestResult("Tests/a.lua", "one", null).Describe());
+        Assert.Equal("fail Tests/a.lua: one: why it failed", new AppTestResult("Tests/a.lua", "one", "why it\nfailed").Describe());
+        Assert.Equal("fail Tests/a.lua: it has no test.case in it", new AppTestResult("Tests/a.lua", null, "it has no test.case in it").Describe());
+    }
+
+    [Fact]
     public void AProjectWithoutAnAppIsRefused()
     {
         var empty = RoundhouseProject.Create("Empty", folder);

@@ -19,6 +19,9 @@ Settings.rproj/
 airo test Settings.rproj
 ```
 
+In Roundhouse, with the project open, Run ▸ Test (Ctrl+U) runs the same tests against the app as it's edited,
+saved or not, and puts each result in the Log tab.
+
 ```
 pass Tests/appearance.lua: Dark switches the look and saves it
 fail Tests/appearance.lua: A custom accent says its colour: Tests/appearance.lua:12: expected "Custom, #12ABEF", got "Blue"

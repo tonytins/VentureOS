@@ -72,6 +72,8 @@ dotnet run --project src/Venture.Roundhouse -- rootfs/user/apps/Calculator.app/C
 dotnet test --project tests/Venture.Roundhouse.Tests
 ```
 
+Run ▸ Test (Ctrl+U) runs the open project's tests, its `Tests/*.lua`, against its app as you've edited it, saved or not, as [`airo test`](docs/airo/testing.md) does: each result goes to the Log tab, and the counts to the status line.
+
 Run ▸ Run on VentureOS (Ctrl+Alt+R) sends the app you're editing, unsaved edits included, to a VentureOS running under `./run.sh --vdb`, opens it, and shows what it prints, as the [vdb tool](tools/vdb/README.md) does; it's trusted as the same computer.
 
 Roundhouse keeps a log, shown in its Log tab and written to a file a day, kept for a week, in its own folder of your local application data (`~/.local/share/Roundhouse/logs` on Linux): what it opened, saved, and ran, what VentureOS's apps printed in Run, and any error.

@@ -1,3 +1,4 @@
+using Venture.Airo.Testing;
 using Venture.Airo.Simulation;
 using System.Diagnostics;
 using Venture.OS.Bundles;
@@ -112,12 +113,13 @@ public sealed class SimulatedRun : IDisposable, IShellHost
     /// What a run on <paramref name="disk"/> tells its scripts about itself: VentureOS's version and commit, which
     /// Roundhouse shares, as the kernel built from this commit would report them.
     /// </summary>
-    public static SimulatedSystem SystemFor(SimulatedDisk disk) =>
-        new(
-            disk,
-            $"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}",
-            ThisAssembly.Git.Commit,
-            "Roundhouse");
+    public static SimulatedSystem SystemFor(SimulatedDisk disk) => new(disk, Version.Version, Version.Commit, Version.Host);
+
+    /// <summary>What VentureOS in Roundhouse reports as its version: Roundhouse's own, which it shares.</summary>
+    public static SimulatedVersion Version { get; } = new(
+        $"{ThisAssembly.Git.SemVer.Major}.{ThisAssembly.Git.SemVer.Minor}.{ThisAssembly.Git.SemVer.Patch}",
+        ThisAssembly.Git.Commit,
+        "Roundhouse");
 
     /// <summary>The run's copy of VentureOS's files.</summary>
     public SimulatedDisk Disk { get; }

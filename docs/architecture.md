@@ -1,6 +1,6 @@
 # VentureOS architecture
 
-> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (the built-in apps' projects, and their tests) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
+> **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (Roundhouse's Run ▸ Test) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
 ## Current state (2026-11-24)
 
@@ -13,13 +13,13 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,000 tests, and 272 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,000 tests, and 278 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
   and `airo`, a C# command-line tool in `src/Venture.Airo` that builds
   Roundhouse Projects into apps and runs their tests, on `Venture.Airo.Kit`,
-  which Roundhouse shares (`Venture.Airo.Tests`, 43 tests).
+  which Roundhouse shares (`Venture.Airo.Tests`, 52 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -116,6 +116,7 @@ grow):
 
 | Concern | Rule | Where |
 |---|---|---|
+| 2026-11-24 | minor | Roundhouse: Run ▸ Test runs a project's tests a case a turn of the window's loop; `ProjectTests` steps through cases (`Next`) and takes unsaved edits. |
 | 2026-11-24 | minor | Layout (§2): `projects/`, the built-in apps' projects with their Lua tests, which replace the C# tests that opened the shipped apps (Dock's stay until airo test has a desktop). VentureOS's tests stop pinning the standard look. |
 | 2026-11-24 | minor | Layout (§2): `airo test` and apps' tests (`Venture.Airo.Testing`), run on a fresh simulated disk with no desktop; `SimulatedDisk` and `SimulatedSystem` move from Roundhouse into the kit for it, the system taking its version from whoever runs it. |
 | 2026-11-24 | minor | Layout (§2): airo, the build tool (`src/Venture.Airo`, `airo build`), and `Venture.Airo.Kit`, which `RoundhouseProject` and `FolderNames` move into from Roundhouse so both build an app the same way; `Venture.Airo.Tests`. |
@@ -1227,6 +1228,15 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   own (`MainWindow.RunCopies`), deleted when the window closes, opening at
   the window being designed; a loose interface in a project runs as a
   window of its own.
+- **Test** (0.8.1xx, Run ▸ Test, Ctrl+U) runs the open project's tests, as
+  `airo test` does, through the kit's `ProjectTests`, with every unsaved edit,
+  the app's and the tests' alike, in place of what's saved. The desktop's look
+  is the whole process's, so cases run on the window's thread, one a turn of
+  its loop (`Dispatcher.Post` at background priority), and Roundhouse stays
+  usable between them; a case stuck in a loop holds it until the 30-second
+  limit. Each result goes to the Log under `Test`, warnings for failures,
+  what the tests print goes there too, and the counts go in the status line.
+  Closing or changing the project stops the run.
 - **Run on VentureOS** (0.7.4xx, Ctrl+Alt+R) sends the app the open file
   is in, or the open project's, to a running VentureOS over vdb, as `vdb install --launch` does, with
   the editor's unsaved text in place of what's saved, and shows what it

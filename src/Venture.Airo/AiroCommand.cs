@@ -103,7 +103,7 @@ public static class AiroCommand
                     return 1;
                 }
 
-                var results = ProjectTests.Run(opened, rootfs, Version, new WriterOutput(error), result => output.WriteLine(Describe(result)));
+                var results = ProjectTests.Run(opened, rootfs, Version, new WriterOutput(error), result => output.WriteLine(result.Describe()));
                 var failed = results.Count(result => !result.Passed);
                 output.WriteLine($"{results.Count - failed} passed, {failed} failed");
                 return failed == 0 ? 0 : 1;
@@ -120,15 +120,6 @@ public static class AiroCommand
             }
         });
         return command;
-    }
-
-    /// <summary>A result as airo prints it, one line: <c>pass</c> or <c>fail</c>, the file, the case, and why it failed.</summary>
-    public static string Describe(AppTestResult result)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-        var what = result.Name is null ? result.File : $"{result.File}: {result.Name}";
-        var reason = result.Failure?.ReplaceLineEndings(" ");
-        return reason is null ? $"pass {what}" : $"fail {what}: {reason}";
     }
 
     // What the apps under test report as VentureOS's version: airo's own, as the kernel built from this commit would.

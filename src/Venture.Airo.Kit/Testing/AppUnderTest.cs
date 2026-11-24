@@ -116,7 +116,9 @@ public sealed class AppUnderTest : IDisposable, IShellHost
     /// </summary>
     /// <exception cref="ProjectException">The project has no app, or VentureOS wouldn't read it.</exception>
     /// <exception cref="IOException">The files couldn't be copied.</exception>
-    public static AppUnderTest Start(RoundhouseProject project, string rootfs, SimulatedVersion version)
+    /// <param name="edits">Files' text by full path, such as unsaved ones, built into the app in place of what's saved.</param>
+    public static AppUnderTest Start(
+        RoundhouseProject project, string rootfs, SimulatedVersion version, IReadOnlyDictionary<string, string>? edits = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentException.ThrowIfNullOrEmpty(rootfs);
@@ -125,9 +127,10 @@ public sealed class AppUnderTest : IDisposable, IShellHost
         var disk = SimulatedDisk.Create(rootfs);
         try
         {
-            var appName = Path.GetFileNameWithoutExtension(project.AppFolderName());
-            var folder = Directory.Exists(disk.HostPath($"/mnt/system/apps/{project.AppFolderName()}")) ? "/mnt/system/apps" : "/mnt/user/apps";
-            project.Assemble(disk.HostPath(folder), replace: true);
+            var appFolder = project.AppFolderName(edits);
+            var appName = Path.GetFileNameWithoutExtension(appFolder);
+            var folder = Directory.Exists(disk.HostPath($"/mnt/system/apps/{appFolder}")) ? "/mnt/system/apps" : "/mnt/user/apps";
+            project.Assemble(disk.HostPath(folder), edits, replace: true);
             SimulatedSystem system = new(disk, version.Version, version.Commit, version.Host) { Developer = new() };
             return new AppUnderTest(disk, system, appName, folder);
         }

@@ -31,6 +31,8 @@ using Venture.Roundhouse.Highlighting;
 using Venture.Roundhouse.Logging;
 using Venture.Roundhouse.Menus;
 using Venture.Airo.Projects;
+using Venture.Airo.Testing;
+using Venture.OS.Shell;
 using Venture.Roundhouse.Simulator;
 using Venture.Roundhouse.Welcome;
 
@@ -157,6 +159,7 @@ public sealed partial class MainWindow : Window
                      (Key.OemPlus, KeyModifiers.Control, () => ZoomToggle.IsChecked = ZoomToggle.IsChecked != true),
                      (Key.R, KeyModifiers.Control, Run),
                      (Key.R, KeyModifiers.Control | KeyModifiers.Alt, () => RunOnVentureOS()),
+                     (Key.U, KeyModifiers.Control, () => Test()),
                      (Key.R, KeyModifiers.Control | KeyModifiers.Shift, RestartRun),
                      (Key.OemPeriod, KeyModifiers.Control, StopRun),
                  ])
@@ -1762,6 +1765,8 @@ public sealed partial class MainWindow : Window
                 new MenuCommand("Stop", StopRun, Ctrl(Key.OemPeriod), () => Simulator is not null),
                 new MenuSeparator(),
                 new MenuCommand("Run on VentureOS", () => RunOnVentureOS(), Ctrl(Key.R, KeyModifiers.Alt), () => AppToSend() is not null),
+                new MenuSeparator(),
+                new MenuCommand("Test", () => Test(), Ctrl(Key.U), () => Project is { HasApp: true } && Testing is null),
             ]),
         ];
     }
@@ -1821,6 +1826,142 @@ public sealed partial class MainWindow : Window
         };
         simulator.Show();
         log.Info("Run started{Edits}", UnsavedCount() is var count and > 0 ? $", with {count} unsaved {(count == 1 ? "edit" : "edits")}" : "");
+    }
+
+    /// <summary>The project's tests, while they run.</summary>
+    public ProjectTests? Testing { get; private set; }
+
+    /// <summary>Tells a test when the tests that were running have finished; tests use it to wait.</summary>
+    public event EventHandler? TestingFinished;
+
+    private RoundhouseProject? testedProject;
+    private int testsPassed;
+    private int testsFailed;
+    private static readonly NLog.Logger testLog = RoundhouseLog.For("Test");
+
+    /// <summary>
+    /// Runs the open project's tests, its <c>Tests/*.lua</c>, against its app as it's edited, saved or not, as
+    /// <c>airo test</c> does. Each result goes to the Log as it comes, one a turn of the window's loop, so Roundhouse
+    /// stays usable; the counts go in the status line at the end.
+    /// </summary>
+    /// <returns>Whether the tests started; they don't without a project with an app and tests, or while they run.</returns>
+    public bool Test()
+    {
+        if (Testing is not null)
+        {
+            Say("The tests are still running.", NLog.LogLevel.Info);
+            return false;
+        }
+
+        if (Project is not { } project || !project.HasApp)
+        {
+            Say(Project is { } open
+                ? $"Test runs a project's tests against its app, and {Path.GetFileName(open.Root)} has none yet; add one with New App."
+                : "Test runs a project's tests, and what's open isn't a project.", NLog.LogLevel.Warn);
+            return false;
+        }
+
+        KeepEdit();
+        Dictionary<string, string> edits = [];
+        if (Bundle is { } bundle)
+        {
+            foreach (var file in bundle.Unsaved)
+                edits[file] = bundle.Text(file);
+        }
+
+        // The designer's document, as Run takes it.
+        if (path is not null && !edits.ContainsKey(Path.GetFullPath(path)))
+            edits[Path.GetFullPath(path)] = byteOrderMark + Editor.Text;
+
+        if (ProjectTests.Files(project, edits).Count == 0)
+        {
+            Say($"{Path.GetFileName(project.Root)} has no tests: there are no .lua files in its {ProjectTests.FolderName}/ folder.", NLog.LogLevel.Warn);
+            return false;
+        }
+
+        if (SimulatedDisk.FindRootfs() is not { } rootfs)
+        {
+            Say("VentureOS's files (rootfs/) aren't beside Roundhouse, so there's nothing to test the app in.", NLog.LogLevel.Error);
+            return false;
+        }
+
+        try
+        {
+            Testing = ProjectTests.Start(project, rootfs, SimulatedRun.Version, new LoggedOutput(new NoOutput(), testLog), edits);
+        }
+        catch (ProjectException exception)
+        {
+            Say(exception.Message, NLog.LogLevel.Warn);
+            return false;
+        }
+
+        testedProject = project;
+        testsPassed = 0;
+        testsFailed = 0;
+        BottomTabs.SelectedItem = LogTab;
+        Say($"Testing {Path.GetFileName(project.Root)}…", NLog.LogLevel.Info);
+        Dispatcher.UIThread.Post(TestStep, DispatcherPriority.Background);
+        return true;
+    }
+
+    // Runs the next case and logs it, then lets the window draw before the one after; a project closed or changed
+    // in between ends the run.
+    private void TestStep()
+    {
+        if (Testing is not { } tests)
+            return;
+
+        var name = Path.GetFileName(testedProject!.Root);
+        if (!ReferenceEquals(Project, testedProject))
+        {
+            EndTests($"{name}'s tests stopped, since it was closed: {testsPassed} passed, {testsFailed} failed before then.", NLog.LogLevel.Warn);
+            return;
+        }
+
+        AppTestResult? result;
+        try
+        {
+            result = tests.Next();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ProjectException)
+        {
+            EndTests($"{name}'s tests stopped: {exception.Message}", NLog.LogLevel.Error);
+            return;
+        }
+
+        if (result is null)
+        {
+            EndTests($"{name}: {testsPassed} passed, {testsFailed} failed", testsFailed == 0 ? NLog.LogLevel.Info : NLog.LogLevel.Warn);
+            return;
+        }
+
+        if (result.Passed)
+            testsPassed++;
+        else
+            testsFailed++;
+        testLog.Log(result.Passed ? NLog.LogLevel.Info : NLog.LogLevel.Warn, result.Describe());
+        Dispatcher.UIThread.Post(TestStep, DispatcherPriority.Background);
+    }
+
+    private void EndTests(string message, NLog.LogLevel level)
+    {
+        Testing?.Dispose();
+        Testing = null;
+        testedProject = null;
+        Say(message, level);
+        TestingFinished?.Invoke(this, EventArgs.Empty);
+    }
+
+    // The tests' own print goes to the log alone.
+    private sealed class NoOutput : IShellOutput
+    {
+        public void WriteLine(string text)
+        {
+        }
+
+        public void Clear()
+        {
+        }
     }
 
     /// <summary>The window of the run on VentureOS, while one is open.</summary>

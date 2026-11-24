@@ -340,7 +340,7 @@ approved for airo alone.
   [their draft](./airo/testing.md).
 - [x] Projects for the built-in apps, with their tests; VentureOS's tests
   stop opening the shipped apps, except Dock's, which need a desktop.
-- [ ] Roundhouse runs a project's tests.
+- [x] Roundhouse runs a project's tests: Run ▸ Test.
 
 ## Ideas
 
@@ -387,6 +387,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | 0.8.1xx: Roundhouse's Run ▸ Test runs the open project's tests, edits and all, into the Log. |
 | 2026-11-24 | patch | 0.8.1xx: the built-in apps' projects, in `projects/`, with their tests; VentureOS's tests stop opening the shipped apps, Dock's aside, and stop pinning the standard look. |
 | 2026-11-24 | patch | 0.8.1xx: app tests in Lua, run by `airo test`, each on a fresh VentureOS with no desktop. |
 | 2026-11-24 | minor | 0.8.1xx is airo and app tests, by my decision: VentureOS's tests cover the system, and the built-in apps are tested from Roundhouse Projects by airo, in C#. airo and `airo build` are the first item. |
