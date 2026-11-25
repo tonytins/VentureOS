@@ -147,6 +147,7 @@ public sealed class ScrollBarTests
         Assert.Equal(painterWithout(), Drawn().At(94, 20));
 
         view.Update(new UIViewInput(40, 40, false, false, false, 2, [], TimeSpan.FromSeconds(1)), 0, 0);
+        Drawn();
 
         Assert.True(view.TickScrollBars(TimeSpan.FromSeconds(1.5)));
         Assert.NotEqual(painterWithout(), Drawn().At(94, 20));
@@ -157,6 +158,22 @@ public sealed class ScrollBarTests
         Assert.False(view.TickScrollBars(TimeSpan.FromSeconds(2.2)));
 
         int painterWithout() => Drawn().At(50, 10);
+    }
+
+    [Fact]
+    public void AnAutomaticBarShowsWhenItsContentScrollsByAnyMeans()
+    {
+        view.ScrollBars = ScrollBarStyle.Automatic;
+        view.TickScrollBars(TimeSpan.FromSeconds(3));
+        Drawn();
+        Assert.False(view.TickScrollBars(TimeSpan.FromSeconds(3.1)));
+
+        // The app scrolls the list itself, as a log following its newest item does.
+        Picks.FirstVisible = 10;
+        Drawn();
+
+        Assert.True(view.TickScrollBars(TimeSpan.FromSeconds(3.5)));
+        Assert.NotEqual(Drawn().At(50, 10), Drawn().At(94, 70));
     }
 
     [Fact]
@@ -209,6 +226,38 @@ public sealed class ScrollBarTests
         sided.Update(new UIViewInput(95, 300, true, false, false, 0, []), 100, 0);
 
         Assert.True(places.FirstVisible > 0);
+    }
+
+    [Fact]
+    public void TheDesktopGivesEveryWindowTheStyleAndRedrawsWhileABarLingers()
+    {
+        WindowManager manager = new(800, 600);
+        DesktopWindow front = new("Front", new UIView(UIScript.Parse(Document)));
+        DesktopWindow behind = new("Behind", new UIView(UIScript.Parse(Document)));
+        manager.Open(behind);
+        manager.Open(front);
+        manager.ScrollBars = ScrollBarStyle.Automatic;
+        behind.View.List("picks")!.Items.AddRange(Picks.Items);
+
+        manager.Update(new DesktopInput(700, 500, false, Time: TimeSpan.FromSeconds(1)));
+
+        Assert.Equal(ScrollBarStyle.Automatic, front.View.ScrollBars);
+        Assert.Equal(ScrollBarStyle.Automatic, behind.View.ScrollBars);
+        Assert.False(manager.ScrollBarsChanging);
+
+        // The pointer passing over a list that fits shows nothing; over one that scrolls, its bar, so the desktop keeps
+        // drawing until it has hidden again.
+        behind.View.SetHover((250, 40));
+        manager.Update(new DesktopInput(700, 500, false, Time: TimeSpan.FromSeconds(1.2)));
+        Assert.False(manager.ScrollBarsChanging);
+
+        behind.View.SetHover((40, 40));
+        manager.Update(new DesktopInput(700, 500, false, Time: TimeSpan.FromSeconds(1.5)));
+        Assert.True(manager.ScrollBarsChanging);
+        manager.Update(new DesktopInput(700, 500, false, Time: TimeSpan.FromSeconds(2.6)));
+        Assert.True(manager.ScrollBarsChanging);
+        manager.Update(new DesktopInput(700, 500, false, Time: TimeSpan.FromSeconds(2.7)));
+        Assert.False(manager.ScrollBarsChanging);
     }
 
     private IReadOnlyList<UIEvent> Press(int x, int y)

@@ -24,6 +24,9 @@ public sealed class ScriptAppearance : IAppearance
     public string Dock => DesktopLook.FormatDock(DesktopAppearance.Current.Dock);
 
     /// <inheritdoc/>
+    public string ScrollBars => DesktopLook.FormatScrollBars(DesktopAppearance.Current.ScrollBars);
+
+    /// <inheritdoc/>
     public string Wallpaper => DesktopAppearance.Current.Wallpaper;
 
     /// <inheritdoc/>
@@ -76,6 +79,13 @@ public sealed class ScriptAppearance : IAppearance
             if (!DesktopLook.TryParseDock(dock, out var dockMode))
                 return Refuse($"the dock is always, autohide, or dodge, not \"{dock}\"");
             look = look with { Dock = dockMode };
+        }
+
+        if (request.ScrollBars is { } bars)
+        {
+            if (!DesktopLook.TryParseScrollBars(bars, out var style))
+                return Refuse($"scroll bars are classic or automatic, not \"{bars}\"");
+            look = look with { ScrollBars = style };
         }
 
         if (request.Wallpaper is { } wallpaper)

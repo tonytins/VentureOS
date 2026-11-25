@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.304
+
+- `appearance --scrollbars classic` or `automatic` chooses the scroll bars, and `appearance` shows which is chosen. Scripts read and set it as `scrollbars` in `venture.appearance()` and `venture.setAppearance{}`.
+- An automatic scroll bar shows whenever its list or text scrolls, as when Terminal's output moves along, not only with the wheel.
+- Settings' project has a Scroll bars choice in Appearance, Classic or Automatic; it reaches the shipped Settings when the project is built into the system.
+
 ## 0.8.303
 
 - TextEdit and Terminal scroll with their own scroll bars, and their text runs to the window's edge where their sliders were.

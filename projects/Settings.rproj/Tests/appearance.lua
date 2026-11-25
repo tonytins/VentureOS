@@ -1,4 +1,4 @@
--- Appearance: the mode, the accent, the dark schedule, and corners, each changing the look and saving it.
+-- Appearance: the mode, the accent, the dark schedule, corners, and scroll bars, each changing the look and saving it.
 
 local function saved(app)
   return app:read("/mnt/user/settings/appearance.xml")
@@ -59,4 +59,17 @@ test.case("Auto and its times set the schedule", function(app)
   app:submit("darkUntil", "7am")
   test.expect(app:text("status"):find("HH:MM", 1, true), "the status says how to write a time")
   test.equal(app:text("darkUntil"), until_)
+end)
+
+test.case("Scroll bars switch between classic and automatic and are saved", function(app)
+  test.expect(app:checked("scrollClassic"), "classic is checked to begin with")
+  app:press("scrollAutomatic")
+  test.expect(app:checked("scrollAutomatic"))
+  test.expect(not app:checked("scrollClassic"))
+  test.expect(saved(app):find('scrollbars="automatic"', 1, true), "appearance.xml says automatic")
+  test.equal(app:text("status"), "")
+
+  app:press("scrollClassic")
+  test.expect(app:checked("scrollClassic"))
+  test.expect(saved(app):find('scrollbars="classic"', 1, true), "appearance.xml says classic")
 end)

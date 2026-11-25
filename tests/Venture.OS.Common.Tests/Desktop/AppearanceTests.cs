@@ -115,16 +115,17 @@ public sealed class AppearanceTests : IDisposable
         DesktopAppearance.Use(Known);
         Run("""
             local look = venture.appearance()
-            print(look.mode, look.dark, look.accent, look.corners, look.wallpaper, look.darkFrom, look.darkUntil, look.dock)
+            print(look.mode, look.dark, look.accent, look.corners, look.wallpaper, look.darkFrom, look.darkUntil, look.dock,
+              look.scrollbars)
             """);
 
-        Assert.Equal(["light\tfalse\t#3584E4\trounded\tsky\t19:00\t07:00\talways"], output.Lines);
+        Assert.Equal(["light\tfalse\t#3584E4\trounded\tsky\t19:00\t07:00\talways\tclassic"], output.Lines);
     }
 
     [Fact]
     public void ATableChangesOnlyWhatItNames()
     {
-        Run("""print(venture.setAppearance{ mode = "auto", corners = "square", wallpaper = "sky", darkFrom = "20:00", dock = "dodge" })""");
+        Run("""print(venture.setAppearance{ mode = "auto", corners = "square", wallpaper = "sky", darkFrom = "20:00", dock = "dodge", scrollbars = "automatic" })""");
 
         var look = DesktopAppearance.Current;
         Assert.Equal(["true"], output.Lines);
@@ -135,6 +136,7 @@ public sealed class AppearanceTests : IDisposable
         Assert.Equal(TimeSpan.FromHours(7), look.DarkUntil);
         Assert.Equal(DesktopPalette.StandardAccent, look.Accent);
         Assert.Equal(DockMode.Dodge, look.Dock);
+        Assert.Equal(ScrollBarStyle.Automatic, look.ScrollBars);
     }
 
     [Theory]
@@ -144,6 +146,7 @@ public sealed class AppearanceTests : IDisposable
     [InlineData("""print(venture.setAppearance{ darkFrom = "07:00" })""", "never dark")]
     [InlineData("""print(venture.setAppearance{ corners = true })""", "corners must be a string")]
     [InlineData("""print(venture.setAppearance{ dock = "magnify" })""", "the dock is always, autohide, or dodge")]
+    [InlineData("""print(venture.setAppearance{ scrollbars = "overlay" })""", "scroll bars are classic or automatic")]
     public void ATableWithAMistakeChangesNothing(string code, string reason)
     {
         Run(code);
@@ -252,7 +255,7 @@ public sealed class AppearanceTests : IDisposable
         DesktopAppearance.Use(Known);
         Command("appearance");
 
-        Assert.Equal(["Appearance: light", "Accent:     #3584E4"], output.Lines);
+        Assert.Equal(["Appearance: light", "Accent:     #3584E4", "Scrollbars: classic"], output.Lines);
     }
 
     [Fact]
@@ -262,7 +265,7 @@ public sealed class AppearanceTests : IDisposable
 
         Assert.True(DesktopTheme.Palette.IsDark);
         Assert.Equal(new UIColor(232, 146, 42), DesktopTheme.Palette.ChosenAccent);
-        Assert.Equal(["Appearance: dark", "Accent:     #E8922A"], output.Lines);
+        Assert.Equal(["Appearance: dark", "Accent:     #E8922A", "Scrollbars: classic"], output.Lines);
     }
 
     [Fact]
@@ -273,7 +276,18 @@ public sealed class AppearanceTests : IDisposable
         var look = DesktopAppearance.Current;
         Assert.Equal(LookMode.Auto, look.Mode);
         Assert.Equal((new TimeSpan(20, 0, 0), new TimeSpan(6, 30, 0)), (look.DarkFrom, look.DarkUntil));
-        Assert.Equal(["Appearance: auto, dark from 20:00 until 06:30 (light now)", "Accent:     #3584E4"], output.Lines);
+        Assert.Equal(["Appearance: auto, dark from 20:00 until 06:30 (light now)", "Accent:     #3584E4", "Scrollbars: classic"], output.Lines);
+    }
+
+    [Fact]
+    public void TheCommandChoosesTheScrollBars()
+    {
+        DesktopAppearance.Use(Known);
+
+        Command("appearance", "--scrollbars", "automatic");
+
+        Assert.Equal(Known with { ScrollBars = ScrollBarStyle.Automatic }, DesktopAppearance.Current);
+        Assert.Equal("Scrollbars: automatic", output.Lines[^1]);
     }
 
     [Fact]

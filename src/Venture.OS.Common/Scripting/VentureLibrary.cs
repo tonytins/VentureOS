@@ -354,7 +354,7 @@ public static class VentureLibrary
 
     /// <summary>
     /// <c>venture.appearance()</c>: the desktop's look as chosen, <c>mode</c> (<c>"light"</c>, <c>"dark"</c>, or
-    /// <c>"auto"</c>), <c>accent</c>, <c>corners</c>, <c>wallpaper</c>, <c>darkFrom</c>, and <c>darkUntil</c>, and
+    /// <c>"auto"</c>), <c>accent</c>, <c>corners</c>, <c>dock</c>, <c>scrollbars</c>, <c>wallpaper</c>, <c>darkFrom</c>, and <c>darkUntil</c>, and
     /// whether it's <c>dark</c> now; or <c>nil</c> on a system without one.
     /// </summary>
     private static int PushAppearance(ILuaState lua, IAppearance? appearance)
@@ -371,6 +371,7 @@ public static class VentureLibrary
         SetString(lua, "accent", appearance.Accent);
         SetString(lua, "corners", appearance.RoundedCorners ? "rounded" : "square");
         SetString(lua, "dock", appearance.Dock);
+        SetString(lua, "scrollbars", appearance.ScrollBars);
         SetString(lua, "wallpaper", appearance.Wallpaper);
         SetString(lua, "darkFrom", appearance.DarkFrom);
         SetString(lua, "darkUntil", appearance.DarkUntil);
@@ -407,7 +408,7 @@ public static class VentureLibrary
 
     /// <summary>
     /// <c>venture.setAppearance(mode, accent)</c>, or <c>venture.setAppearance{ mode, accent, corners, wallpaper,
-    /// darkFrom, darkUntil, dock }</c>: changes what's given, keeps the rest, and saves the look. Returns
+    /// darkFrom, darkUntil, dock, scrollbars }</c>: changes what's given, keeps the rest, and saves the look. Returns
     /// <see langword="true"/>, with why it couldn't be saved when that failed, or <see langword="nil"/> and why,
     /// changing nothing, when anything is wrong. The desktop shows it on its next frame.
     /// </summary>
@@ -429,7 +430,7 @@ public static class VentureLibrary
             {
                 request = new AppearanceRequest(
                     Field("mode"), Field("accent"), Field("corners"), Field("wallpaper"), Field("darkFrom"), Field("darkUntil"),
-                    Field("dock"));
+                    Field("dock"), Field("scrollbars"));
             }
             catch (ArgumentException exception)
             {

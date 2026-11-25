@@ -1860,6 +1860,9 @@ public sealed partial class UIView
         public bool BarShown { get; set; }
         public TimeSpan BarUntil { get; set; }
 
+        // The first row or line a bar last showed, so a scroll by any means is noticed when it's drawn.
+        public int BarFirst { get; set; }
+
         // The painter a text area was last drawn with, which measures text for clicks between draws.
         public IPainter? Measurer { get; set; }
     }

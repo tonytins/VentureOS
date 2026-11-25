@@ -1,5 +1,5 @@
 -- Settings: panes in a sidebar, as GNOME Settings has them. Appearance holds
--- the desktop's look, light or dark, and its accent color; Dock, how the dock
+-- the desktop's look, light or dark, its accent color, and its scroll bars; Dock, how the dock
 -- behaves; Clock holds the clock's offset from UTC; Developer turns on
 -- developer mode, for vdb. Each look, dock, and clock choice applies at once
 -- and is saved in /mnt/user/settings, as the appearance and clock commands'
@@ -34,6 +34,8 @@ local function show()
   window:setChecked("light", look.mode == "light")
   window:setChecked("dark", look.mode == "dark")
   window:setChecked("auto", look.mode == "auto")
+  window:setChecked("scrollClassic", look.scrollbars == "classic")
+  window:setChecked("scrollAutomatic", look.scrollbars == "automatic")
   window:setText("darkFrom", look.darkFrom)
   window:setText("darkUntil", look.darkUntil)
   -- window:setChecked("rounded", look.corners == "rounded")
@@ -84,6 +86,15 @@ for slot = 1, WALLPAPER_SLOTS do
     end)
   end
 end
+
+-- Classic or automatic scroll bars, everywhere at once, keeping the rest of the look.
+local function scrollBars(style)
+  local ok, problem = venture.setAppearance({ scrollbars = style })
+  window:setText("status", problem or "")
+  if ok then show() end
+end
+window:on("scrollClassic", function() scrollBars("classic") end)
+window:on("scrollAutomatic", function() scrollBars("automatic") end)
 
 -- window:on("rounded", function() corners("rounded") end)
 -- window:on("square", function() corners("square") end)

@@ -10,7 +10,7 @@ namespace Venture.OS.Desktop;
 /// <para>A classic bar, as Aqua's, takes room from the content: a track with a thumb in the accent, an up arrow at
 /// its top and a down arrow at its bottom. An arrow scrolls a row, the track a page, and both repeat while held;
 /// the thumb drags. An automatic bar, as GNOME's and modern macOS's, is a thin thumb over the content, shown while the
-/// content scrolls or the pointer moves over it, and for <see cref="ScrollBarLinger"/> after.</para>
+/// content scrolls, however it scrolls, or the pointer moves over it, and for <see cref="ScrollBarLinger"/> after.</para>
 /// <para>The sidebar's rows always have an automatic bar, whatever the style, so the sidebar keeps its width for its
 /// rows, as GNOME's and Finder's do.</para>
 /// </remarks>
@@ -229,7 +229,8 @@ public sealed partial class UIView
     /// <summary>Keeps an automatic bar showing for a while, after its content scrolled or the pointer moved over it.</summary>
     private void ShowScrollBar(UIControl control)
     {
-        if (StyleOf(control) == ScrollBarStyle.Automatic)
+        // One whose content fits draws no bar, so it needn't keep the desktop drawing.
+        if (StyleOf(control) == ScrollBarStyle.Automatic && ScrollPosition(control).Last > 0)
             states[control.Name].BarUntil = Now + ScrollBarLinger;
     }
 
@@ -256,6 +257,14 @@ public sealed partial class UIView
     {
         if (!TryScrollBar(control, bounds, out var bar))
             return;
+
+        // However it scrolled, by the caret, by following new text, or by the app, an automatic bar shows for a moment,
+        // as macOS's and GNOME's do.
+        if (bar.First != state.BarFirst)
+        {
+            state.BarFirst = bar.First;
+            ShowScrollBar(control);
+        }
 
         if (StyleOf(control) == ScrollBarStyle.Classic)
         {
