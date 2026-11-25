@@ -145,7 +145,8 @@ VentureOS uses few layers, and keeps them subtle.
 
 - Windows cast a short drop shadow, 4 pixels.
 - A window that isn't in front fades a little, so the one in front stands out.
-- The menu bar and the window buttons have a soft gloss, after Mac OS X Tiger. Nothing else does.
+- The menu bar, the window buttons, and the filled part of a slider's or progress bar's rail have a soft gloss, after
+  Mac OS X Tiger: a bright band over the top half and a sheen along the top edge. Nothing else does.
 - The dock's shelf is translucent, and so are toasts and the notification history in the dark palette, with the
   shelf's bright edge. Their body is nearly opaque, so their words read over any wallpaper; in the light palette it's
   opaque white, since the light secondary text needs it.
@@ -242,6 +243,20 @@ An alert is a small window, 380 pixels wide, with a message and its buttons in t
 
 An alert is for something that needs an answer, such as whether to trust a computer. A heads-up that needs none, such
 as an app that crashed and is starting again, is a notification.
+
+### Sliders and progress bars
+
+A slider chooses a value, such as a volume or a tax rate; a progress bar shows one. They share a rail: thin and
+round-ended, its empty part sunk into the window, its filled part the accent, glossed. A slider's knob is round and
+white, 18 pixels, with a thin edge so it stands out on a light window.
+
+- Use a slider for a value somewhere in a range, where seeing roughly how much matters more than typing an exact
+  number. Give it a `step` when only whole values make sense, such as whole percents.
+- A slider runs along its longer side. Lay it out across, as it reads most naturally, unless the window's shape asks
+  for it upright.
+- It reports `changed` as it moves and `committed` when let go. Follow it live when the person should feel it, such as
+  a volume; do slow work, such as recomputing a budget, on `committed`.
+- Arrow keys move a focused slider a step, and Home and End to its ends.
 
 ### Notifications
 
@@ -408,6 +423,7 @@ These aren't settled yet. Until they are, follow what VentureOS does today, and 
 
 | Date | Change |
 | --- | --- |
+| 2026-11-25 | Sliders and progress bars: the shared, glossed rail, the knob, and when to use a slider; Depth's gloss rule takes in the rail's fill, by the owner's choice. |
 | 2026-11-25 | Notifications: toasts, the history, and the bell; when to post one rather than an alert; their translucency under Depth. |
 | 2026-11-24 | The voice: calm, factual, and trusting the reader with what follows. Inspired by the System Voice of *ReBoot*, which announced what was happening in Mainframe in a few even words and left its audience to understand. |
 | 2026-11-24 | Title bars are blank unless the app gives a title; a subtitle takes the title's place. |

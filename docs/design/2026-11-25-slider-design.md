@@ -100,11 +100,13 @@ The owner chose the first.
   sunken, a gradient darker at the top with an inner shadow line; its filled part, from the minimum to the thumb, is
   the accent with Tiger's gloss: the bright band over its top half and the sheen along its top edge, from the
   palette's `MenuBarGloss` and `MenuBarSheen`.
-- The knob is 18 pixels, round, white, with a soft shadow; focused, it gets the focus ring other controls get. Dimmed,
-  the slider is drawn at the disabled opacity and takes no input.
+- The knob is 18 pixels, round, white, with a soft shadow and a thin edge (`KnobEdge`); focused, a ring in the accent.
+  Dimmed, its fill is the disabled color without gloss, its knob the input background, and it takes no input.
 - `<ProgressBar>` draws the same rail and fill, without a knob.
-- New color roles, if the existing ones don't serve, for the sunken rail in light and dark; they join the contrast
-  checks for parts (3 to 1 for the knob against the rail).
+- New color roles for the sunken rail (`RailTop`, `RailBottom`) and the knob's edge (`KnobEdge`). The contrast check
+  is the knob against the window, 3 to 1, by its edge on a light window and its white on a dark one: a white knob
+  can't reach 3 to 1 against a light rail, and most of its edge is against the window anyway (found while building
+  phase 2).
 
 ### Tests, agents, and Roundhouse
 

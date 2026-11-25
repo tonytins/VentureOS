@@ -408,7 +408,8 @@ public sealed class WindowTimer
 /// shows at once instead of silently doing nothing. They need the colon: <c>window:setText(...)</c>.</para>
 /// <list type="bullet">
 /// <item><description><c>text(name)</c>, <c>setText(name, text)</c>: a control's text.</description></item>
-/// <item><description><c>value(name)</c>, <c>setValue(name, number)</c>: a progress bar's value.</description></item>
+/// <item><description><c>value(name)</c>, <c>setValue(name, number)</c>: a progress bar's or slider's value; setting
+/// keeps it in the range and, for a slider with a step, on a step, and reports nothing.</description></item>
 /// <item><description><c>items(name)</c>, <c>setItems(name, list)</c>, <c>selected(name)</c>,
 /// <c>select(name, index)</c>: a list's or grid's items and its selection, counting from 1, or <c>nil</c> for none.</description></item>
 /// <item><description><c>setHidden</c>, <c>setDisabled</c>, <c>setChecked(name, on)</c>: hide, disable, or check a

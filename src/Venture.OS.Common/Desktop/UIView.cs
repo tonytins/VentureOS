@@ -500,18 +500,19 @@ public sealed partial class UIView
             state.Cursor.SelectAll(state.Text.Length);
     }
 
-    /// <summary>A progress bar's value, or <see langword="null"/>.</summary>
+    /// <summary>A progress bar's or slider's value, or <see langword="null"/>.</summary>
     public float? Value(string name) =>
-        script.Control(name) is { Type: UIControlType.ProgressBar } ? Find(name)!.Value : null;
+        script.Control(name) is { Type: UIControlType.ProgressBar or UIControlType.Slider } ? Find(name)!.Value : null;
 
-    /// <summary>Sets a progress bar's value, kept within its range. Reports no event.</summary>
+    /// <summary>
+    /// Sets a progress bar's or slider's value, kept within its range and, for a slider with a step, on a step.
+    /// Reports no event, as setting a field's text doesn't.
+    /// </summary>
     public void SetValue(string name, float value)
     {
-        if (script.Control(name) is { } control && Find(name) is { } state)
-        {
-            var (minimum, maximum) = Range(control);
-            state.Value = Math.Clamp(value, minimum, maximum);
-        }
+        if (script.Control(name) is { Type: UIControlType.ProgressBar or UIControlType.Slider } control && Find(name) is { } state
+            && float.IsFinite(value))
+            state.Value = Snap(control, value);
     }
 
     /// <summary>The list with this name, or <see langword="null"/>.</summary>
@@ -627,9 +628,15 @@ public sealed partial class UIView
 
     private bool Showing(State state) => !state.Hidden && (state.Pane is null || state.Pane == SelectedPane?.Name);
 
-    /// <summary>Gives a text field keyboard focus, with the caret at the end.</summary>
+    /// <summary>Gives a text field keyboard focus, with the caret at the end, or a slider, for its keys.</summary>
     public void Focus(string name)
     {
+        if (script.Control(name) is { Type: UIControlType.Slider } && Find(name) is { Disabled: false } slider && Showing(slider))
+        {
+            focused = name;
+            return;
+        }
+
         if (script.Control(name) is { Type: UIControlType.TextField or UIControlType.TextArea, IsReadOnly: false }
             && Find(name) is { Disabled: false } state && Showing(state))
         {
@@ -718,6 +725,9 @@ public sealed partial class UIView
         if (input.PointerDown)
             HoldScrollBar(x, y, input.Time);
 
+        if (sliding is not null && input.PointerDown && !input.PointerPressed && script.Control(sliding) is { } slider)
+            SlideTo(slider, x, y, events);
+
         // Dragging from a press in text selects up to the pointer.
         if (selecting is not null && input.PointerDown && !input.PointerPressed && script.Control(selecting) is { } text)
             states[selecting].Cursor.MoveTo(CaretAt(text, states[selecting], x, y), extend: true);
@@ -733,6 +743,7 @@ public sealed partial class UIView
                 events.Add(new UIEvent(UIEventKind.Pressed, press.Shelf, shelf.Items[press.Index].Title, Index: press.Index));
 
             shelfPress = null;
+            ReleaseSlider(events);
             ReleaseScrollBar();
             armed = null;
             selecting = null;
@@ -828,6 +839,9 @@ public sealed partial class UIView
                 case UIControlType.ProgressBar:
                     DrawProgress(painter, control, state, bounds);
                     break;
+                case UIControlType.Slider:
+                    DrawSlider(painter, control, state, bounds);
+                    break;
                 case UIControlType.Region:
                     drawRegion?.Invoke(control.Name, bounds);
                     break;
@@ -854,7 +868,7 @@ public sealed partial class UIView
         if (hit is not null && PressScrollBar(hit, x, y, time))
             return;
 
-        if (hit is null || hit.Type is not (UIControlType.TextField or UIControlType.TextArea))
+        if (hit is null || hit.Type is not (UIControlType.TextField or UIControlType.TextArea or UIControlType.Slider))
             focused = null;
         if (hit is null)
             return;
@@ -878,6 +892,13 @@ public sealed partial class UIView
 
             case UIControlType.Grid:
                 PressGrid(hit, state.Grid!, x, y, time, events);
+                break;
+
+            // A press on the track jumps the knob there, and the drag goes on from it; the slider takes the keyboard.
+            case UIControlType.Slider:
+                focused = hit.Name;
+                sliding = hit.Name;
+                SlideTo(hit, x, y, events);
                 break;
 
             case UIControlType.List when hit.IsSelectable:
@@ -967,6 +988,12 @@ public sealed partial class UIView
         if (field.Type == UIControlType.TextArea)
         {
             TypeArea(field, state, key, events);
+            return;
+        }
+
+        if (field.Type == UIControlType.Slider)
+        {
+            TypeSlider(field, state, key, events);
             return;
         }
 
@@ -1610,17 +1637,6 @@ public sealed partial class UIView
         var symbol = DesktopIcon.Symbol(source, SidebarIconSize).Silhouette(color.Red, color.Green, color.Blue);
         sidebarSymbols[(name, color)] = (source, symbol);
         return symbol;
-    }
-
-    private void DrawProgress(IPainter painter, UIControl control, State state, UIRect bounds)
-    {
-        var (x, y, width, height) = Ints(bounds);
-        var style = Style(control);
-        painter.FillRectangle(x, y, width, height, style?.BackgroundColor ?? DesktopTheme.InputBackground);
-        var (minimum, maximum) = Range(control);
-        var filled = (int)((width - 2) * ((state.Value - minimum) / (maximum - minimum)));
-        painter.FillRectangle(x + 1, y + 1, filled, height - 2, style?.FillColor ?? DesktopTheme.Accent);
-        DesktopTheme.Outline(painter, x, y, width, height, style?.BorderColor ?? DesktopTheme.Border);
     }
 
     // ---- Layout and helpers ----

@@ -107,6 +107,15 @@ public sealed record DesktopPalette
 
     /// <summary>The bright edge around a toast or a card, the dock's.</summary>
     public UIColor NotificationEdge { get; private init; }
+
+    /// <summary>The top of a slider's or progress bar's empty rail, darker, as a channel sunk into the window.</summary>
+    public UIColor RailTop { get; private init; }
+
+    /// <summary>The bottom of the empty rail, lighter.</summary>
+    public UIColor RailBottom { get; private init; }
+
+    /// <summary>A slider's knob's edge, which keeps the white knob seen on a light window.</summary>
+    public UIColor KnobEdge { get; private init; }
     public UIColor IconPressed { get; private init; }
 
     /// <summary>The top of the desktop's sky.</summary>
@@ -177,6 +186,9 @@ public sealed record DesktopPalette
                 DockShelf = new UIColor(255, 255, 255, 40),
                 DockEdge = new UIColor(255, 255, 255, 90),
                 NotificationBackground = new UIColor(34, 34, 38, 215),
+                RailTop = new UIColor(24, 24, 27),
+                RailBottom = new UIColor(58, 58, 62),
+                KnobEdge = new UIColor(0, 0, 0, 90),
                 NotificationEdge = new UIColor(255, 255, 255, 90),
                 DockLabel = new UIColor(0, 0, 0, 170),
                 SkyTop = Tint(0.85f, 0.18f),
@@ -210,6 +222,9 @@ public sealed record DesktopPalette
                 DockEdge = new UIColor(255, 255, 255, 150),
                 // Opaque white: the light palette's secondary text reaches 3 to 1 on white, and only just.
                 NotificationBackground = new UIColor(255, 255, 255, 255),
+                RailTop = new UIColor(207, 207, 211),
+                RailBottom = new UIColor(233, 233, 236),
+                KnobEdge = new UIColor(143, 143, 146),
                 NotificationEdge = new UIColor(255, 255, 255, 150),
                 DockLabel = new UIColor(0, 0, 0, 150),
                 SkyTop = Tint(0.893f, 0.549f),

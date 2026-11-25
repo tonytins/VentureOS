@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.414
+
+- `<Slider>` is back, for choosing a value: drag its knob, click its track, or, once it's clicked, use the arrow keys, Home, and End. With `step`, it only lands on whole steps. Apps hear `changed` as it moves and `committed` when it's let go, and read and set it with `value` and `setValue`.
+- Sliders and progress bars share a new rail: thin and round-ended, sunk into the window, filled in the accent with Tiger's gloss.
+
 ## 0.8.410
 
 - vdb says so in a toast when it installs an app, and when a computer connects for the first time since VentureOS started.

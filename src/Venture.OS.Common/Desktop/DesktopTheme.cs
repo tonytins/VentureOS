@@ -125,6 +125,15 @@ public static class DesktopTheme
     /// <summary>The bright edge around a toast or a card.</summary>
     public static UIColor NotificationEdge => Palette.NotificationEdge;
 
+    /// <summary>The top of a slider's or progress bar's empty rail.</summary>
+    public static UIColor RailTop => Palette.RailTop;
+
+    /// <summary>The bottom of the empty rail.</summary>
+    public static UIColor RailBottom => Palette.RailBottom;
+
+    /// <summary>A slider's knob's edge.</summary>
+    public static UIColor KnobEdge => Palette.KnobEdge;
+
     /// <summary>The dot under an open app's icon.</summary>
     public static UIColor OpenAppDot => Palette.OpenAppDot;
 
