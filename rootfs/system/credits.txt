@@ -1,0 +1,11 @@
+VentureOS
+by Tony Bark
+
+Written in C# on Cosmos, booted by Limine, and extended in Lua.
+
+Fonts
+Open Sans, under the Apache License 2.0
+Fira Code, under the SIL Open Font License 1.1
+
+Wallpapers
+Charger: Amtrak 315 at New Orleans, a photo by Tony Bark, under CC0

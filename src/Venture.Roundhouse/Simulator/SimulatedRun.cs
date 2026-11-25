@@ -99,6 +99,8 @@ public sealed class SimulatedRun : IDisposable, IShellHost
                 SimulatorWindow.ScreenWidth, SimulatorWindow.ScreenHeight, Apps, SimulatedDisk.UserFolder, heldOutput, windows, loadImage)
             {
                 AboutDocument = () => LoadDocument(disk.HostPath("/mnt/system/interfaces/about.uix")),
+                AboutSystemDocument = () => LoadDocument(disk.HostPath("/mnt/system/interfaces/about_system.uix")),
+                Credits = () => LoadText(disk.HostPath("/mnt/system/credits.txt")),
                 SystemIcon = disk.HostPath("/mnt/system/icons/VentureOS.png"),
                 WallClock = System.WallClock,
                 SystemVersion = $"Version {System.Version} (Build {System.BuildNumber})",
@@ -289,6 +291,19 @@ public sealed class SimulatedRun : IDisposable, IShellHost
             return text is null ? UIScript.Load(path) : UIScript.Parse(text);
         }
         catch (Exception exception) when (exception is UIScriptException or IOException or UnauthorizedAccessException)
+        {
+            Messages.Add($"{Path.GetFileName(path)}: {exception.Message}");
+            return null;
+        }
+    }
+
+    private string? LoadText(string path)
+    {
+        try
+        {
+            return File.ReadAllText(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             Messages.Add($"{Path.GetFileName(path)}: {exception.Message}");
             return null;

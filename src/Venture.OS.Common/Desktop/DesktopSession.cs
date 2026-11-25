@@ -31,6 +31,9 @@ public sealed class DesktopSession
     /// <summary>The About document's visual, and its image, that show the app's icon.</summary>
     public const string AboutIcon = "icon";
 
+    /// <summary>About VentureOS's text area that shows <see cref="Credits"/>.</summary>
+    public const string AboutCredits = "creditsArea";
+
     /// <summary>The item that closes the desktop.</summary>
     public const string ReturnToShellItem = "returnToShell";
 
@@ -218,11 +221,25 @@ public sealed class DesktopSession
     public DesktopText Text { get; }
 
     /// <summary>
-    /// Reads the About window's document, which About VentureOS and every app's About share, or gives
-    /// <see langword="null"/> when it can't, having said why. It has a <c>name</c>, a <c>version</c>, a <c>blurb</c>,
-    /// and an <c>ok</c> button.
+    /// Reads every app's About window's document, or gives <see langword="null"/> when it can't, having said why. It
+    /// has a <c>name</c>, a <c>version</c>, a <c>blurb</c>, an <c>icon</c> visual, and an <c>ok</c> button. About
+    /// VentureOS uses it too when <see cref="AboutSystemDocument"/> gives nothing.
     /// </summary>
     public Func<UIScript?>? AboutDocument { get; init; }
+
+    /// <summary>
+    /// Reads About VentureOS's own document, the system's window rather than an app's, or gives
+    /// <see langword="null"/> when it can't, having said why; About VentureOS then opens
+    /// <see cref="AboutDocument"/>'s, plainer but working. It fills the same controls, and <see cref="AboutCredits"/>
+    /// when it has one.
+    /// </summary>
+    public Func<UIScript?>? AboutSystemDocument { get; init; }
+
+    /// <summary>
+    /// Reads the credits About VentureOS shows, or gives <see langword="null"/> when it can't, having said why; the
+    /// credits area is then left empty.
+    /// </summary>
+    public Func<string?>? Credits { get; init; }
 
     /// <summary>
     /// The text Cut and Copy last took, which Paste puts in, shared by every window and app; <see langword="null"/>
@@ -387,7 +404,8 @@ public sealed class DesktopSession
 
     private DesktopWindow? MakeAbout(string? app)
     {
-        if (AboutDocument?.Invoke() is not { } script)
+        var script = app is null ? AboutSystemDocument?.Invoke() ?? AboutDocument?.Invoke() : AboutDocument?.Invoke();
+        if (script is null)
             return null;
 
         UIView view = new(script);
@@ -395,6 +413,8 @@ public sealed class DesktopSession
         {
             view.SetText("version", SystemVersion ?? "");
             ShowAboutIcon(view, systemIcon);
+            if (script.Control(AboutCredits) is not null && Credits?.Invoke() is { } credits)
+                view.SetText(AboutCredits, credits);
         }
         else
         {

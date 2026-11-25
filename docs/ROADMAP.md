@@ -363,8 +363,8 @@ UIScript can hold, and the apps' and About's changes ship.
   the list of rows it is today.
 - [ ] The desktop draws both, and Roundhouse's designer places them, adding
   a picture's `<Image>` at the root itself.
-- [ ] The About window, from `projects/about.rproj`, ships with its icon and
-  credits.
+- [x] About VentureOS, a window of its own from `projects/about.rproj`,
+  ships with its icon and credits; every app's About stays as it was.
 
 ## Ideas
 
@@ -411,6 +411,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | 0.8.2xx: About VentureOS ships as a window of its own, `about_system.uix`, with About and Credits panes; apps' About windows keep `about.uix`, by my decision, since the redesign was always About VentureOS's. |
 | 2026-11-24 | patch | 0.8.2xx: a `<Visual>` may sit in a pane, which shows and hides it; the desktop draws it with its pane, and Roundhouse's Insert ▸ Picture adds one, its `<Image>` among the resources. |
 | 2026-11-24 | patch | 0.8.2xx: the window behind gets its focused field back when the one in front closes or minimizes, and System Monitor ships as `System Monitor.app`, the first space in a built-in path, by my decision over renaming airo's bundles. |
 | 2026-11-24 | minor | 0.8 is Hokutosei, about making apps, by my decision. 0.8.2xx begins: richer interfaces, with pictures in panes, sidebars that hold controls on either edge, the focus fix, and shipping the About window. |

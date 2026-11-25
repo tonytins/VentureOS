@@ -87,7 +87,9 @@ internal sealed class DesktopCommand(
             var opening = Stopwatch.GetTimestamp();
             session = new(canvas.Width, canvas.Height, apps(), context.CurrentDirectory, appOutput, windows, PngLoader.Load)
             {
-                AboutDocument = LoadAbout,
+                AboutDocument = () => LoadInterface(Bootstrap.AboutInterfacePath, "The About window"),
+                AboutSystemDocument = () => LoadInterface(Bootstrap.AboutSystemInterfacePath, "About VentureOS"),
+                Credits = LoadCredits,
                 SystemIcon = Bootstrap.SystemIconPath,
                 WallClock = Bootstrap.WallClock,
                 SystemVersion = $"Version {HostInfo.Version} (Build {HostInfo.BuildNumber})",
@@ -156,18 +158,31 @@ internal sealed class DesktopCommand(
         appOutput.PassTo = output;
     }
 
-    /// <summary>Makes About VentureOS, with the version filled in; its OK button closes it.</summary>
-    /// <summary>Reads the About window's document, which About VentureOS and every app's About share.</summary>
-    private static UIScript? LoadAbout()
+    /// <summary>Reads one of the system's interfaces, such as an About window's, or says on serial why it can't.</summary>
+    private static UIScript? LoadInterface(string path, string label)
     {
         try
         {
-            return UIScript.Load(Bootstrap.AboutInterfacePath);
+            return UIScript.Load(path);
         }
-        catch (Exception exception) when (exception is UIScriptException or IOException)
+        catch (Exception exception) when (exception is UIScriptException or IOException or UnauthorizedAccessException)
         {
             // The desktop works without it; say why it's missing on serial, since the screen is in graphics.
-            KernelLog.WriteSerialLine($"The About window couldn't open: {exception.Message}");
+            KernelLog.WriteSerialLine($"{label} couldn't be read: {exception.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>Reads About VentureOS's credits, or says on serial why it can't.</summary>
+    private static string? LoadCredits()
+    {
+        try
+        {
+            return File.ReadAllText(Bootstrap.CreditsPath, System.Text.Encoding.UTF8);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            KernelLog.WriteSerialLine($"The credits couldn't be read: {exception.Message}");
             return null;
         }
     }

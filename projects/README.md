@@ -8,7 +8,7 @@ folders in `rootfs/`, built from these.
 |---|---|
 | `Dock.rproj`, `Files.rproj`, `Settings.rproj`, `SystemMonitor.rproj`, `Terminal.rproj` | `rootfs/system/apps/` |
 | `Calculator.rproj`, `Notes.rproj`, `TextEdit.rproj` | `rootfs/user/apps/` |
-| `about.rproj` | Not yet: a redesigned About window, in its `Interfaces/` |
+| `about.rproj` | `rootfs/system/interfaces/about_system.uix`, About VentureOS, copied there by hand, since it isn't an app |
 
 ## Test an app
 

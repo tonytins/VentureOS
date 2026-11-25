@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.205
+
+- About VentureOS has a window of its own, after Mojave's About This Mac: a sidebar with About, which shows what it always did, and Credits. The credits are in `/mnt/system/credits.txt`. Every app's About is unchanged.
+
 ## 0.8.204
 
 - A pane can hold pictures: a `<Visual>` inside a `<Pane>` shows only while that pane is selected. Its `<Image>` stays at the top of the document with the other resources. See [the spec](docs/uiscript/README.md#panes).

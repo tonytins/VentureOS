@@ -43,8 +43,14 @@ internal static class Bootstrap
     /// <summary>The desktop's saved look, which Settings and the <c>appearance</c> command write.</summary>
     public const string AppearancePath = UserDirectoryPath + "/settings/appearance.xml";
 
-    /// <summary>The About VentureOS window's interface.</summary>
+    /// <summary>Every app's About window's interface, which About VentureOS falls back to.</summary>
     public const string AboutInterfacePath = SystemDirectoryPath + "/interfaces/about.uix";
+
+    /// <summary>About VentureOS's own interface, with its credits.</summary>
+    public const string AboutSystemInterfacePath = SystemDirectoryPath + "/interfaces/about_system.uix";
+
+    /// <summary>The credits About VentureOS shows, as plain text.</summary>
+    public const string CreditsPath = SystemDirectoryPath + "/credits.txt";
 
     /// <summary>VentureOS's own icon, for the menu bar and About VentureOS.</summary>
     public const string SystemIconPath = SystemDirectoryPath + "/icons/VentureOS.png";

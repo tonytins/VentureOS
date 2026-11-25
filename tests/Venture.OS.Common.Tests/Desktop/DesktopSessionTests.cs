@@ -128,6 +128,79 @@ public sealed class DesktopSessionTests : IDisposable
         Assert.Equal("About VentureOS", session.Windows.Focused?.Title);
     }
 
+    private const string AboutSystemText = """
+        <UIScript>
+          <Window width="200" height="100"/>
+          <Sidebar name="sidebar" width="80"/>
+          <Pane name="about" title="About">
+            <Text name="name" x="0" y="0" width="100" height="10" text="VentureOS"/>
+            <Text name="version" x="0" y="10" width="100" height="10"/>
+          </Pane>
+          <Pane name="credits" title="Credits">
+            <TextArea name="creditsArea" x="0" y="0" width="200" height="100" readOnly="true"/>
+          </Pane>
+        </UIScript>
+        """;
+
+    private DesktopSession WithSystemAbout(Func<UIScript?> system, Func<string?> credits) =>
+        new(800, 600, apps, root, held, windows)
+        {
+            AboutDocument = () => UIScript.Parse(AboutDocumentText),
+            AboutSystemDocument = system,
+            Credits = credits,
+            SystemVersion = "Version 0.8.204 (Build 1)",
+        };
+
+    [Fact]
+    public void AboutVentureOSOpensItsOwnDocumentWithTheCredits()
+    {
+        var withCredits = WithSystemAbout(() => UIScript.Parse(AboutSystemText), () => "VentureOS\nby its makers");
+
+        withCredits.ShowAbout();
+
+        var about = withCredits.Windows.Focused!;
+        Assert.Equal("About VentureOS", about.Title);
+        Assert.Equal("sidebar", about.View.SidebarName);
+        Assert.Equal("Version 0.8.204 (Build 1)", about.View.Text("version"));
+        Assert.Equal("VentureOS\nby its makers", about.View.Text(DesktopSession.AboutCredits));
+    }
+
+    [Fact]
+    public void AboutVentureOSFallsBackToTheAppsAboutWhenItsOwnCantBeRead()
+    {
+        var plain = WithSystemAbout(() => null, () => throw new InvalidOperationException("A plain About has no credits to read."));
+
+        plain.ShowAbout();
+
+        var about = plain.Windows.Focused!;
+        Assert.Equal("About VentureOS", about.Title);
+        Assert.Null(about.View.SidebarName);
+        Assert.Equal("Version 0.8.204 (Build 1)", about.View.Text("version"));
+    }
+
+    [Fact]
+    public void AnAppsAboutNeverOpensTheSystemsDocument()
+    {
+        var both = WithSystemAbout(() => UIScript.Parse(AboutSystemText), () => "Credits");
+
+        both.ShowAbout("Chatty");
+
+        var about = both.Windows.Focused!;
+        Assert.Equal("About Chatty", about.Title);
+        Assert.Null(about.View.SidebarName);
+        Assert.Equal("Chatty", about.View.Text("name"));
+    }
+
+    [Fact]
+    public void CreditsThatCantBeReadLeaveTheAreaEmpty()
+    {
+        var unread = WithSystemAbout(() => UIScript.Parse(AboutSystemText), () => null);
+
+        unread.ShowAbout();
+
+        Assert.Equal("", unread.Windows.Focused!.View.Text(DesktopSession.AboutCredits));
+    }
+
     [Fact]
     public void TheFocusedWindowsMenusFollowTheSystemMenuAndReportChoices()
     {

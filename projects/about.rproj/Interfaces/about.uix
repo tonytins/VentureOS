@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The About window: About VentureOS, and every app's About, whose icon, name, version, and description the desktop fills in. -->
+<!-- About VentureOS: the system's own About, after Mojave's About This Mac, with its credits beside it. The desktop
+     fills in the icon and version, as for every app's About, and the credits from /mnt/system/credits.txt. -->
 <UIScript version="1">
   <Window width="340" height="202"/>
   <Sidebar name="sidebar" width="108"/>
   <Style name="heading" fontSize="largeTitle"/>
   <Style name="plain" backgroundColor="panel"/>
+
+  <!-- The desktop supplies the icon itself, scaled to the visual, and hides the visual when there's none. -->
+  <Image name="icon" path="AppIcon.png"/>
+
   <Pane name="about" title="About">
-   <!-- The desktop supplies the app's icon itself, scaled to the visual, and hides the visual when there's none. -->
-
-
-  <Text name="name" x="20" y="88" width="300" height="30" style="heading" alignment="center" text="VentureOS"/>
-  <Text name="version" x="20" y="120" width="300" height="20" alignment="center" text="Version"/>
-  <FormattedText name="blurb" x="20" y="146" width="300" height="48" style="plain" alignment="center"
-                 text="A hobby operating system written in C# on Cosmos, extended in Lua."/>
+    <Visual name="icon" image="icon" x="138" y="16" width="64" height="64"/>
+    <Text name="name" x="20" y="88" width="300" height="30" style="heading" alignment="center" text="VentureOS"/>
+    <Text name="version" x="20" y="120" width="300" height="20" alignment="center" text="Version"/>
+    <FormattedText name="blurb" x="20" y="146" width="300" height="48" style="plain" alignment="center"
+                   text="A hobby operating system written in C# on Cosmos, extended in Lua."/>
   </Pane>
   <Pane name="credits" title="Credits">
     <TextArea name="creditsArea" x="9" y="7" width="319" height="182" alignment="center" readOnly="true"/>
   </Pane>
-  
 </UIScript>

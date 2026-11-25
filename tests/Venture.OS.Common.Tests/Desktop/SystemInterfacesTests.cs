@@ -35,4 +35,22 @@ public sealed class SystemInterfacesTests
         Assert.Equal([DesktopSession.AboutIcon], view.MissingImages);
         Assert.NotNull(view.Bounds(DesktopSession.AboutIcon));
     }
+
+    [Fact]
+    public void AboutVentureOSHasTheControlsTheDesktopUses()
+    {
+        UIView view = new(UIScript.Load(Path.Combine(Interfaces, "about_system.uix")));
+
+        view.SetText("version", "Version 0.8.204 (Build 1)");
+        view.SetText(DesktopSession.AboutCredits, "Credits");
+
+        Assert.Equal("Version 0.8.204 (Build 1)", view.Text("version"));
+        Assert.Equal("Credits", view.Text(DesktopSession.AboutCredits));
+        Assert.Equal([DesktopSession.AboutIcon], view.MissingImages);
+        Assert.NotNull(view.Bounds(DesktopSession.AboutIcon));
+    }
+
+    [Fact]
+    public void TheCreditsShip() =>
+        Assert.False(string.IsNullOrWhiteSpace(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "system", "credits.txt"))));
 }

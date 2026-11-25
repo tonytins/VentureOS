@@ -54,6 +54,20 @@ public sealed class SimulatedRunTests : IDisposable
     }
 
     [Fact]
+    public void AboutVentureOSOpensTheSystemsOwnWindowWithTheRunsCredits()
+    {
+        using var run = SimulatedRun.Start(rootfs, fonts);
+        File.WriteAllText(run.Disk.HostPath("/mnt/system/credits.txt"), "Credits for this run");
+
+        run.Session.ShowAbout();
+
+        var about = run.Session.Windows.Focused!;
+        Assert.NotNull(about.View.SidebarName);
+        Assert.Equal("Credits for this run", about.View.Text(DesktopSession.AboutCredits));
+        Assert.Empty(run.Messages);
+    }
+
+    [Fact]
     public void TextVentureOSRefusesIsReportedAndTheRunStillStarts()
     {
         var about = Path.Combine(rootfs, "system", "interfaces", "about.uix");

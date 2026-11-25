@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The About window: About VentureOS, and every app's About, whose icon, name, version, and description the desktop fills in. -->
+<!-- Every app's About, whose icon, name, version, and description the desktop fills in. About VentureOS has its own,
+     about_system.uix, and opens this one when that can't be read. -->
 <UIScript version="1">
   <Window width="340" height="202"/>
 
