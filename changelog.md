@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.302
+
+- The sidebar's scroll bar is always the thin one that shows while it scrolls, whichever style is chosen, so the sidebar's rows keep its full width.
+
 ## 0.8.301
 
 - Lists, text areas, and the sidebar's rows show a scroll bar once what they hold doesn't fit, as Aqua's did: a thumb in the accent to drag, the track to page, and an up arrow at the top and a down arrow at the bottom, which repeat while held. Text wraps short of the bar. A list or text area an app scrolls with its own slider keeps it, for now.

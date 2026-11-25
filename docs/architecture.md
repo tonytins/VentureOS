@@ -1758,7 +1758,8 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
 - **Scroll bars** (`UIView.ScrollBars.cs`, `ScrollBarStyle`, `scrollbars`
   in `appearance.xml`). Lists, text areas, and the sidebar's rows draw their
   own bar down their right edge once their content doesn't fit; a control a
-  slider or button scrolls (`scrolls`) keeps that and draws none. A classic
+  slider or button scrolls (`scrolls`) keeps that and draws none. The
+  sidebar's bar is always automatic, so it never narrows the rows. A classic
   bar, the default, is Aqua's: 15 pixels taken from the content, a track,
   an up arrow at the top and a down arrow at the bottom, and a glossy thumb
   in the accent. An arrow scrolls a row and the track a page, both
@@ -1883,6 +1884,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | Desktop (§9): the sidebar's scroll bar is always automatic, whatever the style, so it takes no room from the rows. |
 | 2026-11-24 | minor | Desktop (§9): lists, text areas, and the sidebar's rows draw their own scroll bars, classic (Aqua's, in the accent, arrows at each end) or automatic (a thin thumb over the content); `scrollbars` in `appearance.xml`. |
 | 2026-11-24 | patch | Desktop (§9): text fields align their text by `alignment` while it fits, with the caret, selection, clicks, and placeholder; a right sidebar's window keeps its grip in the corner. |
 | 2026-11-24 | patch | Desktop (§9): text areas align each line by `alignment`, the caret, selection, and clicks with them; Earthset's source is recorded. |

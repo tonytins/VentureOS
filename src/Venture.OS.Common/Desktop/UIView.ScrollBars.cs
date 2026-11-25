@@ -11,6 +11,8 @@ namespace Venture.OS.Desktop;
 /// its top and a down arrow at its bottom. An arrow scrolls a row, the track a page, and both repeat while held;
 /// the thumb drags. An automatic bar, as GNOME's and modern macOS's, is a thin thumb over the content, shown while the
 /// content scrolls or the pointer moves over it, and for <see cref="ScrollBarLinger"/> after.</para>
+/// <para>The sidebar's rows always have an automatic bar, whatever the style, so the sidebar keeps its width for its
+/// rows, as GNOME's and Finder's do.</para>
 /// <para>A control a slider or button already scrolls (<c>scrolls</c>) keeps that and draws no bar of its own.</para>
 /// </remarks>
 public sealed partial class UIView
@@ -39,7 +41,7 @@ public sealed partial class UIView
     // Whether an automatic bar showed when the scroll bars were last checked, so the frame after one hides is drawn.
     private bool barsLingered;
 
-    /// <summary>How the view's scroll bars look and behave; the desktop sets it from the look.</summary>
+    /// <summary>How the view's scroll bars look and behave, the sidebar's aside; the desktop sets it from the look.</summary>
     public ScrollBarStyle ScrollBars { get; set; } = ScrollBarStyle.Classic;
 
     /// <summary>
@@ -71,15 +73,12 @@ public sealed partial class UIView
     {
         Now = now;
         var showing = false;
-        if (ScrollBars == ScrollBarStyle.Automatic)
+        foreach (var state in states.Values)
         {
-            foreach (var state in states.Values)
+            if (state.BarUntil > now)
             {
-                if (state.BarUntil > now)
-                {
-                    showing = true;
-                    break;
-                }
+                showing = true;
+                break;
             }
         }
 
@@ -92,13 +91,17 @@ public sealed partial class UIView
     private UIRect PlaceOf(UIControl control) =>
         ReferenceEquals(control, sidebar) ? Place(control.Frame, false) : Place(control.Frame, control.InSidebar, control.Image is not null);
 
+    /// <summary>A control's bar style: the sidebar's rows are always automatic, and the rest follow <see cref="ScrollBars"/>.</summary>
+    private ScrollBarStyle StyleOf(UIControl control) =>
+        ReferenceEquals(control, sidebar) ? ScrollBarStyle.Automatic : ScrollBars;
+
     /// <summary>Whether a control scrolls with a bar of its own: a list, text area, or the sidebar's rows.</summary>
     private bool HasOwnScrollBar(UIControl control) =>
         control.Type is UIControlType.List or UIControlType.TextArea && !scrollBound.Contains(control.Name);
 
     /// <summary>How much room a classic bar takes from a control's content: its width while it shows, else nothing.</summary>
     private int ClassicBarRoom(UIControl control) =>
-        ScrollBars == ScrollBarStyle.Classic && HasOwnScrollBar(control) && ScrollPosition(control).Last > 0 ? ClassicScrollBarWidth : 0;
+        StyleOf(control) == ScrollBarStyle.Classic && HasOwnScrollBar(control) && ScrollPosition(control).Last > 0 ? ClassicScrollBarWidth : 0;
 
     /// <summary>
     /// A control's bar placed in a rectangle, the control's place in the view or on the screen; <see langword="false"/>
@@ -119,11 +122,12 @@ public sealed partial class UIView
 
         // Inside a list's or text area's outline; the sidebar has none.
         var edge = ReferenceEquals(control, sidebar) ? 0 : 1;
-        var width = ScrollBars == ScrollBarStyle.Classic ? ClassicScrollBarWidth : AutomaticScrollBarWidth;
+        var style = StyleOf(control);
+        var width = style == ScrollBarStyle.Classic ? ClassicScrollBarWidth : AutomaticScrollBarWidth;
         UIRect bar = new(place.X + place.Width - edge - width, place.Y + edge, width, place.Height - (2 * edge));
 
         UIRect up = default, down = default, track;
-        if (ScrollBars == ScrollBarStyle.Classic)
+        if (style == ScrollBarStyle.Classic)
         {
             var arrow = Math.Min(ClassicScrollBarWidth, bar.Height / 3);
             up = bar with { Height = arrow };
@@ -227,19 +231,23 @@ public sealed partial class UIView
     }
 
     /// <summary>Keeps an automatic bar showing for a while, after its content scrolled or the pointer moved over it.</summary>
-    private void ShowScrollBar(UIControl control) => states[control.Name].BarUntil = Now + ScrollBarLinger;
+    private void ShowScrollBar(UIControl control)
+    {
+        if (StyleOf(control) == ScrollBarStyle.Automatic)
+            states[control.Name].BarUntil = Now + ScrollBarLinger;
+    }
 
     /// <summary>Shows the automatic bar of whatever scrolls under the pointer, as it moves.</summary>
     private void ShowScrollBarsUnder((int X, int Y)? from, (int X, int Y)? to)
     {
-        if (ScrollBars != ScrollBarStyle.Automatic || to is not { } point || from == to)
+        if (to is not { } point || from == to)
             return;
 
         var controls = script.Controls;
         for (var index = 0; index < controls.Count; index++)
         {
             var control = controls[index];
-            if (HasOwnScrollBar(control) && Showing(states[control.Name]) && PlaceOf(control).Contains(point.X, point.Y))
+            if (StyleOf(control) == ScrollBarStyle.Automatic && HasOwnScrollBar(control) && Showing(states[control.Name]) && PlaceOf(control).Contains(point.X, point.Y))
                 ShowScrollBar(control);
         }
 
@@ -253,7 +261,7 @@ public sealed partial class UIView
         if (!TryScrollBar(control, bounds, out var bar))
             return;
 
-        if (ScrollBars == ScrollBarStyle.Classic)
+        if (StyleOf(control) == ScrollBarStyle.Classic)
         {
             DrawClassicScrollBar(painter, bar, state.Disabled);
             return;

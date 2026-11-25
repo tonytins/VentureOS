@@ -378,7 +378,7 @@ being five slots by hand.
 - [x] Lists, text areas, and the sidebar's rows draw their own bar when their
   content doesn't fit: classic, a thumb in the accent on a track with an arrow
   at each end, or automatic, a thin bar over the content shown while it
-  scrolls.
+  scrolls. The sidebar's is always automatic, taking no room from its rows.
 - [ ] `<Slider>`, and `scrolls` and `direction` on `<Button>`, leave UIScript,
   the reader, and Roundhouse; TextEdit and Terminal drop theirs, and
   VentureOS's copies of Hudini's examples follow.
@@ -435,6 +435,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | 0.8.3xx: the sidebar's scroll bar is always automatic, by my decision, so it never takes room from the rows. |
 | 2026-11-24 | patch | 0.8.3xx: lists, text areas, and the sidebar's rows draw their own scroll bars, classic or automatic; nothing chooses automatic until Settings does, later in the band. |
 | 2026-11-24 | minor | 0.8.3xx begins, by my decision: scroll bars and grids. Lists and text areas draw their own bars, classic or automatic, and `<Slider>` leaves the draft spec with no new `version`; `<Grid>` replaces Settings' wallpaper slots. The scroll bar style joins the look. |
 | 2026-11-24 | patch | 0.8.2xx: text fields honour `alignment` as text areas do; a window with a right sidebar keeps the usual grip in its corner, by my decision, since a VentureOS sidebar isn't dragged wider. |

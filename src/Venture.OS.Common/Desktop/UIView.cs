@@ -1139,7 +1139,7 @@ public sealed partial class UIView
         var textChanged = !ReferenceEquals(state.LinesText, state.Text);
         // A classic bar takes room once the text doesn't fit, and the text wraps again in what's left. Wrapping shorter
         // only adds lines, so the choice holds until the text changes.
-        var reserve = ScrollBars == ScrollBarStyle.Classic && HasOwnScrollBar(control);
+        var reserve = StyleOf(control) == ScrollBarStyle.Classic && HasOwnScrollBar(control);
         var lines = Layout(painter, control, state, TextRoom(control, state));
         if ((reserve && lines.Count > visible) != state.BarShown)
         {

@@ -206,7 +206,7 @@ public sealed class ScrollBarTests
     }
 
     [Fact]
-    public void TheSidebarsRowsScrollWithABar()
+    public void TheSidebarsRowsScrollWithAnAutomaticBarThatTakesNoRoom()
     {
         UIView sided = new(UIScript.Parse("""
             <UIScript>
@@ -217,12 +217,19 @@ public sealed class ScrollBarTests
         var places = sided.List("places")!;
         for (var item = 0; item < 20; item++)
             places.Items.Add($"Place {item}");
+        places.SelectedIndex = 0;
 
-        // The sidebar sits left of the view's corner, so with the corner at 100 it runs from 0 to 100; its bar's down
-        // arrow is at its bottom right.
-        sided.Update(new UIViewInput(95, 110, true, true, false, 0, []), 100, 0);
+        // Classic everywhere else, but the selection still runs to the sidebar's inset, past where a classic bar would
+        // start. The sidebar sits left of the view's corner, so with the corner at 100 it runs from 0 to 100.
+        RecordingPainter painter = new(300, 120);
+        sided.Draw(painter, 100, 0);
+        Assert.Equal(painter.At(20, 15), painter.At(90, 15));
 
-        Assert.Equal(1, places.FirstVisible);
+        // Its thumb, at the top of the strip down its right edge, drags.
+        sided.Update(new UIViewInput(95, 12, true, true, false, 0, []), 100, 0);
+        sided.Update(new UIViewInput(95, 300, true, false, false, 0, []), 100, 0);
+
+        Assert.True(places.FirstVisible > 0);
     }
 
     private IReadOnlyList<UIEvent> Press(int x, int y)
