@@ -1941,6 +1941,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | UIScript: `<Slider>` reads again, a value only, with `step` (`UIControl.Step`); `UIEvent` regains `Value` and gains `Committed`, and the Lua event `value`. The desktop doesn't draw sliders yet. |
 | 2026-11-25 | patch | Current state and Lua's windows: toasts, the history, and `venture.ui.toast` described for anyone reading in; 0.8.4xx's toasts are done. |
 | 2026-11-25 | patch | vdb (§8.1): a session with a desktop posts a toast on install and on a computer's first connection since boot (`VdbTrust.FirstConnection`); `ui` gains `notifications`, and `vdb mcp` a ninth tool over it. |
 | 2026-11-25 | minor | Desktop: `NotificationHistory`, the column of cards the bar's bell (`MenuBar.ShowsBell`, drawn in pixels, with an unseen dot) and VentureOS ▸ Notifications (Ctrl+Shift+N) open; `NotificationCard` draws toasts and cards alike. A press the desktop takes itself (a toast, the bell, the history, or outside it) is `PointerOwner.Desktop`, and goes no further. |

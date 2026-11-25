@@ -1375,6 +1375,7 @@ public static class UiLibrary
                 UIEventKind.Pressed => "pressed",
                 UIEventKind.Submitted => "submitted",
                 UIEventKind.Changed => "changed",
+                UIEventKind.Committed => "committed",
                 _ => "selected",
             });
             lua.SetField(-2, "kind");
@@ -1397,6 +1398,12 @@ public static class UiLibrary
             {
                 lua.PushString(LuaText.Encode(item));
                 lua.SetField(-2, "item");
+            }
+
+            if (uiEvent.Value is { } value)
+            {
+                lua.PushNumber(value);
+                lua.SetField(-2, "value");
             }
 
             return 1;

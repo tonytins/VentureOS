@@ -236,6 +236,7 @@ public static class UIScriptSchema
         ["TextArea"] = [.. Control, .. TextEntry, new("follows", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean)],
         ["List"] = [.. Control, new("selectable", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean)],
         ["ProgressBar"] = [.. Control, .. Range],
+        ["Slider"] = [.. Control, .. Range, new("step", UIAttributeGroup.Behaviour, UIAttributeKind.Number)],
         ["Grid"] =
         [
             .. Control,
@@ -260,7 +261,7 @@ public static class UIScriptSchema
 
     /// <summary>The controls: the elements drawn in the window, which take a frame, text, and a style.</summary>
     public static IReadOnlyList<string> Controls { get; } =
-        ["Text", "FormattedText", "Button", "TextField", "TextArea", "List", "ProgressBar", "Region", "Shelf", "Grid"];
+        ["Text", "FormattedText", "Button", "TextField", "TextArea", "List", "ProgressBar", "Slider", "Region", "Shelf", "Grid"];
 
     /// <summary>The attributes <paramref name="element"/> takes, in the order an inspector shows them; none for an element UIScript doesn't read.</summary>
     public static IReadOnlyList<UIAttributeInfo> For(string element)

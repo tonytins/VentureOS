@@ -15,6 +15,12 @@ public enum UIControlType
     TextArea,
     List,
     ProgressBar,
+
+    /// <summary>
+    /// A track and a thumb for choosing a number from its range, snapping to its <see cref="UIControl.Step"/> when it
+    /// has one. It runs along its longer side. It chooses a value only; nothing scrolls by a slider.
+    /// </summary>
+    Slider,
     Region,
 
     /// <summary>
@@ -273,6 +279,7 @@ public sealed record UIControl(
     bool IsSelectable = false,
     UITextAlignment Alignment = UITextAlignment.Left,
     (float Minimum, float Maximum)? ValueRange = null,
+    float? Step = null,
     bool Follows = false,
     string? Pane = null,
     bool InSidebar = false,
@@ -407,8 +414,9 @@ public sealed class UIScriptException(string message, int? line = null)
 /// </summary>
 /// <remarks>
 /// <para>This reads the UIScript spec VentureOS keeps (docs/uiscript/, Draft, version 1). Hudini reads a subset of
-/// it, so a document Hudini reads reads the same here, except a slider or a hand-made scroll button, which the spec
-/// dropped on 2026-11-24 and this reader refuses, saying why. A document reads completely and validly, or throws
+/// it, so a document Hudini reads reads the same here, except a slider or a button that scrolls a list by hand
+/// (<c>scrolls</c> or <c>direction</c>), which the spec dropped on 2026-11-24 and this reader refuses, saying why. A
+/// plain slider, choosing a value, came back on 2026-11-25. A document reads completely and validly, or throws
 /// <see cref="UIScriptException"/>.</para>
 /// <list type="bullet">
 /// <item><description>A newer <c>version</c> or an unknown <c>requires</c> name refuses the document, before
@@ -738,8 +746,6 @@ public sealed class UIScript
                 }
 
                 default:
-                    if (element.Name == "Slider")
-                        throw new UIScriptException(SliderRemoved, element.Line);
                     if (ControlType(element.Name) is not { } type)
                         throw new UIScriptException($"<{element.Name}> isn't a UIScript element.", element.Line);
 
@@ -830,6 +836,7 @@ public sealed class UIScript
         "TextArea" => UIControlType.TextArea,
         "List" => UIControlType.List,
         "ProgressBar" => UIControlType.ProgressBar,
+        "Slider" => UIControlType.Slider,
         "Region" => UIControlType.Region,
         "Shelf" => UIControlType.Shelf,
         "Grid" => UIControlType.Grid,
@@ -924,6 +931,7 @@ public sealed class UIScript
             IsSelectable: reader.Boolean("selectable") ?? false,
             Alignment: reader.Enum("alignment", ParseAlignment) ?? UITextAlignment.Left,
             ValueRange: range,
+            Step: reader.Number("step"),
             Follows: reader.Boolean("follows") ?? false,
             Pane: reader.String("pane"),
             Grid: type == UIControlType.Grid ? ReadGrid(reader, name, line) : null);
@@ -1148,8 +1156,16 @@ public sealed class UIScript
         if (control.Follows && type != UIControlType.TextArea)
             throw OnlyFor(name, "follows", "a TextArea", line);
 
-        if (control.ValueRange is not null && type != UIControlType.ProgressBar)
+        if (control.ValueRange is not null && type is not (UIControlType.ProgressBar or UIControlType.Slider))
             throw RangeProblem(name, line);
+        if (control.Step is { } step)
+        {
+            if (type != UIControlType.Slider)
+                throw OnlyFor(name, "step", "a Slider", line);
+            var (lowest, highest) = control.ValueRange ?? (0, 1);
+            if (!(step > 0) || step > highest - lowest)
+                throw new UIScriptException($"\"{name}\" has a step of {step}: a step is above 0, and no more than the slider's range, {highest - lowest}.", line);
+        }
         if (control.Style is { } style && !Styles.ContainsKey(style))
             throw Unknown(name, "style", style, line);
 
@@ -1245,12 +1261,8 @@ public sealed class UIScript
     private const string ScrollingRemoved =
         "Lists and text areas show their own scroll bars, so nothing scrolls them by hand any more; remove it.";
 
-    /// <summary>Why a slider is refused, and what to do instead.</summary>
-    private const string SliderRemoved =
-        "<Slider> isn't part of UIScript any more. " + ScrollingRemoved + " A level to show is a <ProgressBar>.";
-
     private static UIScriptException RangeProblem(string owner, int line) =>
-        new($"\"{owner}\" has a minValue and maxValue that don't fit: only a ProgressBar takes them, and minValue must be below maxValue.", line);
+        new($"\"{owner}\" has a minValue and maxValue that don't fit: only a ProgressBar or a Slider takes them, and minValue must be below maxValue.", line);
 
     // A style's colors, each attribute's name after the prefix: textColor, or with "dark", darkTextColor.
     private static UIStyleColors ReadColors(Attributes reader, string prefix)

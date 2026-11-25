@@ -289,6 +289,7 @@ Every control takes `name` and the position and size attributes. All of these ar
 | `<TextArea>` | A multi-line text entry | `text` or `string`, `placeholder` or `placeholderString`, `maximumLength`, `readOnly`, `follows`, `alignment` |
 | `<List>` | A scrollable list the host fills | `text` or `string`, shown as its first item, `selectable` |
 | `<ProgressBar>` | A bar filled in proportion to a value | `minValue`, `maxValue` |
+| `<Slider>` | A track and a thumb for choosing a value | `minValue`, `maxValue`, `step` |
 | `<Region>` | A rectangle the host draws into | None |
 | `<Shelf>` | A row of icons the host fills, such as a dock's | None. See [Shelf](#shelf). |
 | `<Grid>` | Items of one size in rows that wrap and scroll, one of them chosen | `itemWidth`, `itemHeight`, `spacing`, `titles`. See [Grid](#grid). |
@@ -314,12 +315,37 @@ Every control takes `name` and the position and size attributes. All of these ar
 - **`follows`:** `true` or `false`, which defaults to `false`, and only on a `<TextArea>`. When its text changes
   while it's scrolled to its last line, it stays at the last line, as a log list does. Scrolled back, it stays put. A
   terminal uses it.
-- **`minValue` and `maxValue`:** the values a progress bar covers, which default to `0` and `1`. It starts at the
-  lowest.
+- **`minValue` and `maxValue`:** the values a progress bar or slider covers, which default to `0` and `1`. It starts
+  at the lowest. `minValue` must be below `maxValue`.
+- **`step`:** a positive number, no more than the range, only on a `<Slider>`. The thumb snaps to `minValue` plus
+  whole steps, so the host only ever gets those values, such as whole percents. Without it, a slider takes any value
+  in its range.
 
-A `<List>` and a `<TextArea>` scroll by themselves, with the wheel and a scroll bar the host draws, so a document
-places nothing beside them to scroll them. Before 2026-11-24 a `<Slider>`, or a `<Button>` with `scrolls` and
-`direction`, did; a reader refuses either, saying so, rather than draw a control that does nothing.
+### Sliders
+
+A `<Slider>` chooses a value from its range, such as a volume or a tax rate:
+
+```xml
+<Slider name="volume" x="16" y="40" width="200" height="20" minValue="0" maxValue="100"/>
+<Slider name="taxes" x="16" y="70" width="200" height="20" minValue="0" maxValue="20" step="1"/>
+```
+
+- It runs along its longer side: wider than tall, left to right; taller than wide, bottom to top; square, left to
+  right. It takes no `orientation`, which a reader ignores and lists.
+- Dragging the thumb, or a click on the track, moves it, and reports `changed` with each new value; letting go reports
+  `committed` once, with the value it ended on. A value that doesn't change reports nothing.
+- With the keyboard, once it has focus, the arrow keys move it by a step, or a tenth of its range without one, and
+  Home and End move it to its ends. Each key reports `changed`, then `committed`.
+- The host reads and sets its value by name. Setting it keeps it in the range and on a step, and reports nothing.
+
+A slider chooses a value only. A `<List>` and a `<TextArea>` scroll by themselves, with the wheel and a scroll bar
+the host draws, so a document places nothing beside them to scroll them. Before 2026-11-24 a `<Slider>`, or a
+`<Button>` with `scrolls` and `direction`, did; a reader refuses either one with `scrolls` or `direction`, saying so,
+rather than draw a control that does nothing.
+
+A reader from before `step` ignores it and lists it, giving a slider that doesn't snap: plainer, but still correct,
+since the values stay in the range. A reader from before `committed` never sends it, so a host that must work there
+listens for `changed`.
 
 ### Text areas
 
@@ -706,7 +732,8 @@ Controls report what the person does as events carrying the control's name.
 | --- | --- |
 | `pressed` | A button, toolbar item, menu item, or shelf item is chosen. Opening a menu or submenu reports nothing. |
 | `submitted` | Enter is pressed in a text field or title field, with its text, or an item in a selectable list or a grid is double-clicked, with the item's text, and a grid item's name. |
-| `changed` | A text area's text changes by typing or an edit, with its text, where the reader reports it. |
+| `changed` | A text area's text changes by typing or an edit, with its text, where the reader reports it; or a slider moves, with its value. |
+| `committed` | A slider is let go, or a key moves it, with the value it ended on. |
 | `selected` | A click on a selectable list or sidebar picks a different row, with its index, or on a grid a different item, with its index and name. |
 
 A handler checks the kind, so `submitted` from a list and from a field are told apart by name.
@@ -795,13 +822,18 @@ refuses menus, sidebars, shelves, grids, and panes as unknown elements, and skip
 [UISCRIPT.md](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) says how a Swift host uses it, and how it
 reads `.uis` files into the same model.
 
-Hudini hasn't followed the 2026-11-24 change yet: it still reads `<Slider>` and scroll buttons, which VentureOS
-refuses, so a document using them reads in Hudini and not here until it does.
+Hudini hasn't followed the 2026-11-24 change yet: it still reads scroll sliders and scroll buttons, which VentureOS
+refuses, so a document using them reads in Hudini and not here until it does. A plain `<Slider>` reads the same in
+both; Hudini doesn't know `step` or `committed` yet.
 
 ## Change log
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-25:** `<Slider>` is back with one job, choosing a value from `minValue` to `maxValue`, as Hudini reads it,
+  with an optional `step` it snaps to, and `committed` when it's let go beside `changed` as it moves. It runs along
+  its longer side. One with `scrolls` or `direction` is still refused. A reader from before `step` ignores it and
+  gives a slider that doesn't snap; `version` stays `1`.
 - **2026-11-24:** `<Grid>`, items of one size, pictures, colors, or plain tiles, in rows that wrap and scroll, one of
   them chosen, and `<Item>`, which a grid holds. `selected` and `submitted` carry a grid item's name. A reader from
   before refuses a grid as an unknown element.

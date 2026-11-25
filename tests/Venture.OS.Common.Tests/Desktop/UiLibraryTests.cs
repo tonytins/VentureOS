@@ -144,6 +144,7 @@ public sealed class UiLibraryTests : IDisposable
             window:on("field", show)
             window:on("items", show)
             window:on("save", show)
+            window:on("volume", show)
             """);
         var window = Assert.Single(windows.Windows);
 
@@ -152,6 +153,8 @@ public sealed class UiLibraryTests : IDisposable
         Send(window, new UIEvent(UIEventKind.Selected, "items", Text: "two", Index: 1));
         Send(window, new UIEvent(UIEventKind.Pressed, "save"));
         Send(window, new UIEvent(UIEventKind.Pressed, "ok"));
+        Send(window, new UIEvent(UIEventKind.Changed, "volume", Value: 0.5f));
+        Send(window, new UIEvent(UIEventKind.Committed, "volume", Value: 0.75f));
 
         Assert.Equal(
             [
@@ -159,6 +162,8 @@ public sealed class UiLibraryTests : IDisposable
                 "changed\tfield\ttyped!\tnil\tnil",
                 "selected\titems\ttwo\tnil\t2",
                 "pressed\tsave\tnil\tnil\tnil",
+                "changed\tvolume\tnil\t0.5\tnil",
+                "committed\tvolume\tnil\t0.75\tnil",
             ],
             events.Lines);
     }

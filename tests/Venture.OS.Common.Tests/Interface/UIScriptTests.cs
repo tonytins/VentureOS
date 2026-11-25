@@ -181,21 +181,64 @@ public sealed class UIScriptTests
         Assert.Contains(message, Assert.Throws<UIScriptException>(() => UIScript.Parse(text)).Message);
 
     /// <summary>
-    /// The spec dropped sliders and hand-made scroll buttons on 2026-11-24, since lists and text areas show their own
-    /// scroll bars. A document that still has one is refused, saying what to do, rather than read with a button that
-    /// does nothing.
+    /// The spec dropped hand-made scrolling on 2026-11-24, since lists and text areas show their own scroll bars: a
+    /// slider or button that scrolls a list is refused, saying what to do, rather than read as one that does nothing.
     /// </summary>
     [Theory]
-    [InlineData("<Slider name='s' x='0' y='0' width='1' height='1'/>", "<Slider> isn't part of UIScript any more")]
+    [InlineData("<List name='l' x='0' y='0' width='1' height='1'/><Slider name='s' x='0' y='0' width='1' height='1' scrolls='l'/>", "\"s\" has scrolls or direction")]
     [InlineData("<List name='l' x='0' y='0' width='1' height='1'/><Button name='b' x='0' y='0' width='1' height='1' scrolls='l' direction='up'/>", "\"b\" has scrolls or direction")]
     [InlineData("<Button name='b' x='0' y='0' width='1' height='1' direction='down'/>", "\"b\" has scrolls or direction")]
-    public void RefusesASliderAndHandMadeScrolling(string controls, string message)
+    public void RefusesHandMadeScrolling(string controls, string message)
     {
         var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse($"<UIScript><Window width='1' height='1'/>{controls}</UIScript>"));
 
         Assert.Contains(message, problem.Message);
         Assert.Contains("show their own scroll bars", problem.Message);
         Assert.Equal(1, problem.Line);
+    }
+
+    /// <summary>
+    /// A slider chooses a value from its range, as Hudini's reads one, snapping to its step when it has one, which a
+    /// reader from before steps ignores and lists.
+    /// </summary>
+    [Fact]
+    public void ReadsAValueSliderWithItsRangeAndStep()
+    {
+        var script = UIScript.Parse("""
+            <UIScript><Window width="300" height="200"/>
+              <Slider name="volume" x="0" y="0" width="200" height="20"/>
+              <Slider name="taxes" x="0" y="30" width="200" height="20" minValue="0" maxValue="20" step="1"/>
+            </UIScript>
+            """);
+
+        Assert.Equal(UIControlType.Slider, script.Control("volume")!.Type);
+        Assert.Null(script.Control("volume")!.ValueRange);
+        Assert.Null(script.Control("volume")!.Step);
+        Assert.Equal((0f, 20f), script.Control("taxes")!.ValueRange);
+        Assert.Equal(1f, script.Control("taxes")!.Step);
+        Assert.Empty(script.IgnoredAttributes);
+    }
+
+    [Theory]
+    [InlineData("step='0'", "a step is above 0")]
+    [InlineData("step='-1'", "a step is above 0")]
+    [InlineData("maxValue='10' step='11'", "no more than the slider's range, 10")]
+    [InlineData("minValue='5' maxValue='5'", "minValue must be below maxValue")]
+    public void RefusesAStepOrRangeThatDoesntFit(string attributes, string message)
+    {
+        var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse(
+            $"<UIScript><Window width='1' height='1'/><Slider name='s' x='0' y='0' width='1' height='1' {attributes}/></UIScript>"));
+
+        Assert.Contains(message, problem.Message);
+    }
+
+    [Fact]
+    public void OnlyASliderHasAStep()
+    {
+        var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse(
+            "<UIScript><Window width='1' height='1'/><ProgressBar name='p' x='0' y='0' width='1' height='1' step='1'/></UIScript>"));
+
+        Assert.Contains("only a Slider takes it", problem.Message);
     }
 
     [Fact]

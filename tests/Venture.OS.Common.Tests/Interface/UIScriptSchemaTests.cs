@@ -29,6 +29,9 @@ public sealed class UIScriptSchemaTests
         ["minWidth"] = """ minHeight="1" """,
         ["minHeight"] = """ minWidth="1" """,
         ["minValue"] = "",
+
+        // A step fits within the slider's range, which is 0 to 1 without one.
+        ["step"] = """ maxValue="10" """,
     };
 
     private static readonly Dictionary<string, string> Samples = new(StringComparer.Ordinal)
@@ -96,7 +99,7 @@ public sealed class UIScriptSchemaTests
     {
         Assert.Equal(
             ["Button", "FormattedText", "Grid", "Image", "Item", "List", "Menu", "MenuItem", "MenuSeparator", "Pane", "Panel", "ProgressBar", "Region", "Shelf",
-                "Sidebar", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript",
+                "Sidebar", "Slider", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript",
                 "Visual", "Window"],
             UIScriptSchema.Elements.Order(StringComparer.Ordinal));
         Assert.All(UIScriptSchema.Controls, control => Assert.NotNull(UIScriptSchema.Find(control, "x")));

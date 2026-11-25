@@ -11,16 +11,25 @@ public enum UIEventKind
     /// <summary>A text field submitted its text, with Enter.</summary>
     Submitted,
 
-    /// <summary>Typing, or an edit such as Paste or Undo, changed a text area's text.</summary>
+    /// <summary>Typing, or an edit such as Paste or Undo, changed a text area's text; or a slider moved, with its value.</summary>
     Changed,
 
     /// <summary>A click on a selectable list changed its selected item.</summary>
     Selected,
+
+    /// <summary>
+    /// A slider was let go, or a key moved it, with its value: the one place an app that wants only the final value
+    /// listens. A reader from before it never sends it, so an app that must work there listens for
+    /// <see cref="Changed"/>.
+    /// </summary>
+    Committed,
 }
 
-/// <summary>An event, with the control's name and, depending on the kind, its text or index.</summary>
+/// <summary>An event, with the control's name and, depending on the kind, its text, index, or value.</summary>
 /// <param name="Item">The name of a grid's item that was chosen or opened, when it has one.</param>
-public readonly record struct UIEvent(UIEventKind Kind, string Control, string? Text = null, int Index = -1, string? Item = null);
+/// <param name="Value">A slider's value, for <see cref="UIEventKind.Changed"/> and <see cref="UIEventKind.Committed"/>.</param>
+public readonly record struct UIEvent(
+    UIEventKind Kind, string Control, string? Text = null, int Index = -1, string? Item = null, float? Value = null);
 
 /// <summary>A rectangle in pixels.</summary>
 public readonly record struct UIRect(float X, float Y, float Width, float Height)
