@@ -44,6 +44,28 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     /// </summary>
     public DockMode DockMode { get; set; }
 
+    /// <summary>How every window's lists and text areas show that they scroll; the desktop sets it from the look.</summary>
+    public ScrollBarStyle ScrollBars { get; set; }
+
+    /// <summary>
+    /// Whether a window's scroll bar is changing on its own, an automatic one showing or just hidden, or an arrow
+    /// held and repeating, so the desktop draws again.
+    /// </summary>
+    public bool ScrollBarsChanging { get; private set; }
+
+    /// <summary>Gives every window's view the style and the frame's time, front or not, since all of them draw.</summary>
+    private void TickScrollBars(TimeSpan now)
+    {
+        var changing = false;
+        foreach (var window in windows)
+        {
+            window.View.ScrollBars = ScrollBars;
+            changing |= window.View.TickScrollBars(now);
+        }
+
+        ScrollBarsChanging = changing;
+    }
+
     /// <summary>Whether a panel is sliding, so the desktop draws again.</summary>
     public bool IsSliding { get; private set; }
 
@@ -339,6 +361,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var pressed = input.PointerDown && !wasDown;
         Slide(x, y, input.Time);
         Arrange();
+        TickScrollBars(input.Time);
 
         // Hover text waits for the pointer to rest, and goes as soon as it moves or presses.
         if ((x, y) != restingAt || input.PointerDown || !ShowsHover)

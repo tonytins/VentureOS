@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,074 tests, and 296 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,092 tests, and 296 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1755,6 +1755,23 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   the view draws through a painter that uses Fira Code. A `<TextArea>` with
   `follows="true"` jumps to its newest line when its text changes while it
   was scrolled to the end, as a log list does.
+- **Scroll bars** (`UIView.ScrollBars.cs`, `ScrollBarStyle`, `scrollbars`
+  in `appearance.xml`). Lists, text areas, and the sidebar's rows draw their
+  own bar down their right edge once their content doesn't fit; a control a
+  slider or button scrolls (`scrolls`) keeps that and draws none. A classic
+  bar, the default, is Aqua's: 15 pixels taken from the content, a track,
+  an up arrow at the top and a down arrow at the bottom, and a glossy thumb
+  in the accent. An arrow scrolls a row and the track a page, both
+  repeating every 50 ms after 350 ms held, the track stopping when the
+  thumb reaches the pointer; the thumb drags. A text area wraps short of
+  the bar only once its text doesn't fit at full width. An automatic bar
+  takes no room: a thin thumb over the content while it scrolls or the
+  pointer moves over it, and for a second after, wider while the pointer
+  can grab it. A press on a bar never reaches the row or text under it, and
+  leaves the keyboard where it was. The desktop draws only when something
+  changes, so `WindowManager` gives every window's view the style and the
+  frame's time (`TickScrollBars`), and draws while a bar is showing on its
+  own, the frame after it hides, and while an arrow repeats.
 - **Focus comes back.** A window that leaves the front remembers its focused
   field, and gets it back when it comes forward again (`UIView.RestoreFocus`),
   unless the click that brought it forward landed elsewhere in it.
@@ -1866,6 +1883,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | Desktop (§9): lists, text areas, and the sidebar's rows draw their own scroll bars, classic (Aqua's, in the accent, arrows at each end) or automatic (a thin thumb over the content); `scrollbars` in `appearance.xml`. |
 | 2026-11-24 | patch | Desktop (§9): text fields align their text by `alignment` while it fits, with the caret, selection, clicks, and placeholder; a right sidebar's window keeps its grip in the corner. |
 | 2026-11-24 | patch | Desktop (§9): text areas align each line by `alignment`, the caret, selection, and clicks with them; Earthset's source is recorded. |
 | 2026-11-24 | patch | Roundhouse (§9): the designer adds controls and pictures to a sidebar, moves them in and out of it, and resizes a right sidebar from its left edge. |

@@ -732,6 +732,9 @@ As a host, it also:
 - Draws a button's `image`, ringed in the accent while checked, and shows a four-state image's first slice, shading
   it for the other states.
 - Selects text and uses the clipboard in text areas.
+- Draws a scroll bar in lists, text areas, and a sidebar's rows once their content doesn't fit, in the style the
+  person chose: classic, with arrows and a thumb in the accent, or automatic, a thin thumb shown while it scrolls. A
+  control a slider or button scrolls keeps that and has no bar of its own.
 - Gives a sidebar's rows icons and groups, which apps set through `window:setItems` (see
   [the desktop tutorial](../tutorial/desktop.md#sidebars-and-panes)).
 

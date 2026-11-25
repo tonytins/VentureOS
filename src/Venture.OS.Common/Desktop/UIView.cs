@@ -88,7 +88,7 @@ public sealed class UIListState
 /// in <see cref="MissingImages"/>. A button with an image shows it the same way, ringed in the accent when it's
 /// checked.</para>
 /// </remarks>
-public sealed class UIView
+public sealed partial class UIView
 {
     private const int FallbackImageSize = 24;
 
@@ -184,6 +184,8 @@ public sealed class UIView
             }
 
             states[control.Name] = state;
+            if (control.Scrolls is { } binding)
+                scrollBound.Add(binding.List);
         }
 
         foreach (var visual in script.Visuals)
@@ -673,7 +675,11 @@ public sealed class UIView
     /// such as over another window, so drawing shows what it rests on. The desktop sets it for every window, since
     /// only the front one gets input.
     /// </summary>
-    public void SetHover((int X, int Y)? point) => hover = point;
+    public void SetHover((int X, int Y)? point)
+    {
+        ShowScrollBarsUnder(hover, point);
+        hover = point;
+    }
 
     /// <summary>
     /// Handles a frame's input with the view's corner at (<paramref name="originX"/>, <paramref name="originY"/>).
@@ -689,6 +695,8 @@ public sealed class UIView
         events.Clear();
         var (x, y) = (input.PointerX - originX, input.PointerY - originY);
         pointer = (x, y);
+        if (input.Time > Now)
+            Now = input.Time;
 
         FollowLists();
 
@@ -701,6 +709,9 @@ public sealed class UIView
 
         if (dragging is not null && input.PointerDown)
             Drag(dragging, x, y, events);
+
+        if (input.PointerDown)
+            HoldScrollBar(x, y, input.Time);
 
         // Dragging from a press in text selects up to the pointer.
         if (selecting is not null && input.PointerDown && !input.PointerPressed && script.Control(selecting) is { } text)
@@ -717,6 +728,7 @@ public sealed class UIView
                 events.Add(new UIEvent(UIEventKind.Pressed, press.Shelf, shelf.Items[press.Index].Title, Index: press.Index));
 
             shelfPress = null;
+            ReleaseScrollBar();
             armed = null;
             dragging = null;
             selecting = null;
@@ -833,6 +845,11 @@ public sealed class UIView
     private void Press(int x, int y, TimeSpan time, List<UIEvent> events, int originX = 0, int originY = 0)
     {
         var hit = Hit(x, y);
+
+        // A press on a bar is the bar's, and leaves the keyboard where it was.
+        if (hit is not null && PressScrollBar(hit, x, y, time))
+            return;
+
         if (hit is null || hit.Type is not (UIControlType.TextField or UIControlType.TextArea))
             focused = null;
         if (hit is null)
@@ -942,7 +959,10 @@ public sealed class UIView
             : control.Scrolls is { } binding ? script.Control(binding.List)
             : null;
         if (target is not null)
+        {
             ScrollBy(target, scroll);
+            ShowScrollBar(target);
+        }
     }
 
     /// <summary>Where a list or text area is scrolled to, and the furthest it can go, in rows.</summary>
@@ -1117,7 +1137,16 @@ public sealed class UIView
         var visible = VisibleLines(control);
         var wasAtEnd = state.Lines is null || state.FirstLine >= Math.Max(0, state.Lines.Count - visible);
         var textChanged = !ReferenceEquals(state.LinesText, state.Text);
-        var lines = Layout(painter, control, state, width - (2 * Inset));
+        // A classic bar takes room once the text doesn't fit, and the text wraps again in what's left. Wrapping shorter
+        // only adds lines, so the choice holds until the text changes.
+        var reserve = ScrollBars == ScrollBarStyle.Classic && HasOwnScrollBar(control);
+        var lines = Layout(painter, control, state, TextRoom(control, state));
+        if ((reserve && lines.Count > visible) != state.BarShown)
+        {
+            state.BarShown = !state.BarShown;
+            lines = Layout(painter, control, state, TextRoom(control, state));
+        }
+
         if (control.Follows && textChanged && wasAtEnd)
             state.FirstLine = Math.Max(0, lines.Count - visible);
 
@@ -1134,7 +1163,7 @@ public sealed class UIView
         state.FirstLine = Math.Clamp(state.FirstLine, 0, Math.Max(0, lines.Count - visible));
         var color = state.Disabled ? DesktopTheme.DisabledText : TextColor(control);
         var (from, selected) = state.Cursor.Selection;
-        var room = width - (2 * Inset);
+        var room = TextRoom(control, state);
         for (var row = 0; row < visible && state.FirstLine + row < lines.Count; row++)
         {
             var (start, length) = lines[state.FirstLine + row];
@@ -1160,7 +1189,13 @@ public sealed class UIView
             var caretX = lineX + painter.MeasureText(state.Text[start..state.Caret], size) + 1;
             painter.FillRectangle(caretX, y + Inset + ((caretLine - state.FirstLine) * lineHeight), 1, lineHeight, TextColor(control));
         }
+
+        DrawScrollBar(painter, control, state, bounds);
     }
+
+    /// <summary>How wide a text area's lines may be: inside its insets, and short of a classic bar while one shows.</summary>
+    private int TextRoom(UIControl area, State state) =>
+        (int)Place(area.Frame, area.InSidebar, false).Width - (2 * Inset) - (state.BarShown ? ClassicScrollBarWidth : 0);
 
     private void TypeArea(UIControl area, State state, KeyPress key, List<UIEvent> events)
     {
@@ -1265,7 +1300,7 @@ public sealed class UIView
         var line = Math.Clamp(state.FirstLine + (int)((y - bounds.Y - Inset) / LineHeight(size)), 0, lines.Count - 1);
         var (start, length) = lines[line];
         var along = x - bounds.X - Inset
-            - LineShift(painter, area, state.Text.Substring(start, length), size, (int)bounds.Width - (2 * Inset));
+            - LineShift(painter, area, state.Text.Substring(start, length), size, TextRoom(area, state));
         for (var count = 0; count < length; count++)
         {
             var before = painter.MeasureText(state.Text.Substring(start, count), size);
@@ -1501,16 +1536,19 @@ public sealed class UIView
         var size = TextSize(control);
         var rowHeight = RowHeight(control);
         var rows = VisibleRows(control);
+        var barRoom = ClassicBarRoom(control);
         for (var row = 0; row < rows && list.FirstVisible + row < list.Items.Count; row++)
         {
             var index = list.FirstVisible + row;
             var rowY = y + 1 + (row * rowHeight);
             if (index == list.SelectedIndex)
-                painter.FillRectangle(x + 1, rowY, width - 2, rowHeight, DesktopTheme.Selection);
+                painter.FillRectangle(x + 1, rowY, width - 2 - barRoom, rowHeight, DesktopTheme.Selection);
 
-            var text = Fit(painter, list.Items[index], size, width - (2 * Inset));
+            var text = Fit(painter, list.Items[index], size, width - (2 * Inset) - barRoom);
             painter.DrawText(text, x + Inset, rowY + ((rowHeight - LineHeight(size)) / 2), TextColor(control), size);
         }
+
+        DrawScrollBar(painter, control, state, bounds);
     }
 
     /// <summary>
@@ -1529,7 +1567,8 @@ public sealed class UIView
         // Every row's text lines up, after an icon's room when any row shows one.
         var iconRoom = AnySidebarIcon(list) ? SidebarIconSize + SidebarIconGap : 0;
         var textX = x + (2 * SidebarSelectionInset) + iconRoom;
-        var room = width - (4 * SidebarSelectionInset) - iconRoom;
+        var barRoom = ClassicBarRoom(control);
+        var room = width - (4 * SidebarSelectionInset) - iconRoom - barRoom;
 
         // The row under the pointer, by the same arithmetic a click uses.
         var hovered = -1;
@@ -1556,7 +1595,7 @@ public sealed class UIView
             if (index == list.SelectedIndex || index == hovered)
             {
                 var shade = index == list.SelectedIndex ? DesktopTheme.SidebarSelection : DesktopTheme.SidebarHover;
-                DesktopTheme.FillRoundedGradient(painter, x + SidebarSelectionInset, rowY, width - (2 * SidebarSelectionInset),
+                DesktopTheme.FillRoundedGradient(painter, x + SidebarSelectionInset, rowY, width - (2 * SidebarSelectionInset) - barRoom,
                     rowHeight, SidebarSelectionRadius, shade, shade);
             }
 
@@ -1567,6 +1606,8 @@ public sealed class UIView
             painter.DrawText(text, textX, rowY + ((rowHeight - LineHeight(size)) / 2), ink, size);
             top += rowHeight;
         }
+
+        DrawScrollBar(painter, control, state, bounds);
     }
 
     /// <summary>Whether any of a list's rows shows an icon: one named, and supplied.</summary>
@@ -1902,6 +1943,10 @@ public sealed class UIView
         public int LinesWidth { get; set; }
         public int FirstLine { get; set; }
         public bool RevealCaret { get; set; }
+
+        // Whether a text area's lines were last wrapped short of a classic bar, and when an automatic bar hides.
+        public bool BarShown { get; set; }
+        public TimeSpan BarUntil { get; set; }
 
         // The painter a text area was last drawn with, which measures text for clicks between draws.
         public IPainter? Measurer { get; set; }
