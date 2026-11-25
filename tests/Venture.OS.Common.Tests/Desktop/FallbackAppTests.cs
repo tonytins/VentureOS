@@ -118,16 +118,19 @@ public sealed class FallbackAppTests : IDisposable
         File.WriteAllText(Path.Combine(root, "broken"), "");
 
         Frame();
-        var alert = Assert.Single(windows.Windows);
-        Assert.StartsWith("Shelf didn't start. Trying again in 2 seconds.", alert.View.Text("message"));
-        Assert.Contains("Shelf is broken", alert.View.Text("message"));
+        // A heads-up, so a toast rather than an alert to dismiss.
+        Assert.Empty(windows.Windows);
+        var toast = Assert.Single(windows.Notifications.History);
+        Assert.Equal("Shelf", toast.Title);
+        Assert.StartsWith("Shelf didn't start. Trying again in 2 seconds.", toast.Text);
+        Assert.Contains("Shelf is broken", toast.Text);
 
         // Too soon: no attempt. Then a second failure for the same reason adds no second message.
         now = TimeSpan.FromSeconds(1);
         Frame();
         now = TimeSpan.FromSeconds(2);
         Frame();
-        Assert.Single(windows.Windows);
+        Assert.Single(windows.Notifications.History);
         Assert.False(apps.IsOpen("dev.example.shelf"));
 
         File.Delete(Path.Combine(root, "broken"));
@@ -181,9 +184,9 @@ public sealed class FallbackAppTests : IDisposable
 
         Frame();
 
-        var alert = windows.Windows.Single(window => window.View.Text("message")?.Contains("crashed", StringComparison.Ordinal) == true);
-        Assert.Equal("Shelf crashed: its code failed 3 times within a minute. It's starting again.",
-            alert.View.Text("message"));
+        var toast = windows.Notifications.History.Single(notification => notification.Text.Contains("crashed", StringComparison.Ordinal));
+        Assert.Equal("Shelf crashed: its code failed 3 times within a minute. It's starting again.", toast.Text);
+        Assert.Equal("Shelf", toast.Title);
         Assert.True(apps.IsOpen("dev.example.shelf"));
         Assert.NotSame(process, apps.Running[0].Process);
     }
@@ -209,11 +212,10 @@ public sealed class FallbackAppTests : IDisposable
             Frame();
         }
 
-        // In front of the failures it explains.
         Assert.False(apps.IsOpen("dev.example.crasher"));
-        Assert.Equal("Crasher crashed: its code failed 3 times within a minute.",
-            windows.Windows[^1].View.Text("message"));
-        Assert.Equal("Crasher", windows.Windows[^1].Title);
+        var toast = windows.Notifications.History[0];
+        Assert.Equal("Crasher crashed: its code failed 3 times within a minute.", toast.Text);
+        Assert.Equal("Crasher", toast.Title);
     }
 
     [Fact]

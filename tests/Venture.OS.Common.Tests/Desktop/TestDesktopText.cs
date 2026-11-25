@@ -44,6 +44,13 @@ internal static class TestDesktopText
         trustTitle ^Trust This Computer?^
         trust ^Trust^
         deny ^Deny^
+        notifications ^Notifications^
+        clearAll ^Clear All^
+        noNotifications ^No notifications^
+        moreFrom ^%s more from %s^
+        justNow ^now^
+        minutesAgo ^%s min^
+        hoursAgo ^%s hr^
         """;
 
     private static readonly Lazy<string> Folder = new(() =>

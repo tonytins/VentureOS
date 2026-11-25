@@ -148,6 +148,9 @@ public sealed class DesktopSession
         None,
         Bar,
         Windows,
+
+        /// <summary>A toast, which a press dismisses; the windows under it never see it.</summary>
+        Toast,
     }
 
     /// <summary>Opens the desktop on a screen of this size.</summary>
@@ -386,6 +389,21 @@ public sealed class DesktopSession
     /// An app's icon at a size, read and made the first time and kept after, or <see langword="null"/> when it has
     /// none or it couldn't be read.
     /// </summary>
+    /// <summary>Posts the system's own notification about an app, titled with its name and showing its icon.</summary>
+    private void Post(string title, string text, string? icon)
+    {
+        // The system's words are never empty; were they, there'd be nothing to say, and nothing is posted.
+        _ = Windows.Notifications.TryPost(title, text, null, icon, show: true, out _, out _);
+    }
+
+    /// <summary>The toasts showing in the top-right corner, from <see cref="WindowManager.Notifications"/>.</summary>
+    public Toasts Toasts => toasts ??= new Toasts(Windows.Notifications);
+
+    private Toasts? toasts;
+
+    // A toast's icon: the app's, or VentureOS's for the system's own, at the toast's size.
+    private DesktopImage? ToastIcon(string? path) => Icon(path ?? systemIcon, Toasts.IconSize)?.Image;
+
     private DesktopIcon? Icon(string? path, int size, bool shadow = true)
     {
         if (path is null || loadImage is null)
@@ -531,7 +549,9 @@ public sealed class DesktopSession
         // The pointer: a press belongs to what it lands on until it's released.
         if (pressed)
         {
-            owner = MenuBar.IsOpen || (BarShows && MenuBar.Contains(x, y)) ? PointerOwner.Bar : PointerOwner.Windows;
+            owner = MenuBar.IsOpen || (BarShows && MenuBar.Contains(x, y)) ? PointerOwner.Bar
+                : Toasts.Press(x, y, Clock()) ? PointerOwner.Toast
+                : PointerOwner.Windows;
         }
 
         if (owner == PointerOwner.Bar || MenuBar.IsOpen)
@@ -541,7 +561,7 @@ public sealed class DesktopSession
                 Choose(chosen, happened);
         }
 
-        var overWindows = !MenuBar.IsOpen && !(BarShows && MenuBar.Contains(x, y));
+        var overWindows = !MenuBar.IsOpen && !(BarShows && MenuBar.Contains(x, y)) && owner != PointerOwner.Toast;
         Windows.ShowsHover = overWindows;
         DesktopInput windowInput = new(
             x,
@@ -589,7 +609,8 @@ public sealed class DesktopSession
 
         // The clock is brought up to date every frame, even when something else already calls for a redraw.
         var clockChanged = UpdateClock();
-        var changed = !drawn || clockChanged || input.HasEvents || redrawRequested || Windows.IsSliding || Windows.ScrollBarsChanging
+        var toastsChanged = Toasts.Update(Clock());
+        var changed = !drawn || clockChanged || toastsChanged || input.HasEvents || redrawRequested || Windows.IsSliding || Windows.ScrollBarsChanging
             || !string.Equals(DesktopAppearance.Current.Wallpaper, backgroundWallpaper, StringComparison.Ordinal) || happened.Count > 0 || restarted || ticked
             || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
             || !ReferenceEquals(Windows.Tooltip, drawnTooltip)
@@ -639,6 +660,9 @@ public sealed class DesktopSession
 
         painter.DrawPixels(background, 0, 0, Width, Height);
         Windows.Draw(painter);
+
+        // Over every window and panel, and under the bar's open menus.
+        Toasts.Draw(painter, MenuBar.Height, Clock(), ToastIcon, Text);
         if (BarShows)
             MenuBar.Draw(painter);
         Windows.DrawTooltip(painter);
@@ -889,13 +913,11 @@ public sealed class DesktopSession
         if (crashed.Count == 0)
             return;
 
+        // A heads-up, not a question, so a toast: it needs no app, so it shows even for the app that drew toasts.
         foreach (var process in crashed)
         {
             var reason = process.Ending!.Reason;
-            Windows.Open(DesktopAlert.Create(
-                process.Name,
-                process.Policy == RestartPolicy.Always ? $"{reason} It's starting again." : reason,
-                Text.Get("ok")));
+            Post(process.Name, process.Policy == RestartPolicy.Always ? $"{reason} It's starting again." : reason, process.Bundle.Icon);
         }
 
         crashed.Clear();
@@ -916,10 +938,8 @@ public sealed class DesktopSession
 
             startProblems[identifier] = problem;
             var wait = (apps.Supervisor.NextStart(identifier) ?? apps.Supervisor.Now) - apps.Supervisor.Now;
-            Windows.Open(DesktopAlert.Create(
-                process.Name,
-                $"{process.Name} didn't start. Trying again in {wait.TotalSeconds:0} seconds.\n{problem}".TrimEnd(),
-                Text.Get("ok")));
+            Post(process.Name, $"{process.Name} didn't start. Trying again in {wait.TotalSeconds:0} seconds.\n{problem}".TrimEnd(),
+                process.Bundle.Icon);
         }
 
         failedToStart.Clear();

@@ -1784,7 +1784,7 @@ public sealed partial class UIView
         };
 
     /// <summary>The text, cut short with an ellipsis if it's wider than the room.</summary>
-    private static string Fit(IPainter painter, string text, int size, float room)
+    internal static string Fit(IPainter painter, string text, int size, float room)
     {
         if (painter.MeasureText(text, size) <= room)
             return text;
@@ -1796,7 +1796,7 @@ public sealed partial class UIView
     }
 
     /// <summary>Breaks text into lines that fit, at spaces, and at line breaks it already has.</summary>
-    private static List<string> Wrap(IPainter painter, string text, int size, int room)
+    internal static List<string> Wrap(IPainter painter, string text, int size, int room)
     {
         List<string> lines = [];
         foreach (var paragraph in text.Split('\n'))

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.407
+
+- Toasts: notifications slide into the top-right corner, under the menu bar, three at most, newest on top, and slide out after 5 seconds; a click dismisses one. Each shows its app's icon and name, how long ago it came, and up to three lines of text.
+- An app that crashed, or didn't start, says so in a toast rather than an alert to dismiss.
+
 ## 0.8.406
 
 - `venture.ui.toast(text)` posts a notification: from an app, with its name and icon; from any other script, from VentureOS. They're kept in a history until restart, and printed while the desktop is hidden. They don't show on the desktop yet; toasts and the history arrive in the next builds.

@@ -119,6 +119,12 @@ public static class DesktopTheme
     /// <summary>The dock shelf's bright edge.</summary>
     public static UIColor DockEdge => Palette.DockEdge;
 
+    /// <summary>A toast's and a history card's body; see <see cref="DesktopPalette.NotificationBackground"/>.</summary>
+    public static UIColor NotificationBackground => Palette.NotificationBackground;
+
+    /// <summary>The bright edge around a toast or a card.</summary>
+    public static UIColor NotificationEdge => Palette.NotificationEdge;
+
     /// <summary>The dot under an open app's icon.</summary>
     public static UIColor OpenAppDot => Palette.OpenAppDot;
 
