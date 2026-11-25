@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.208
+
+- Roundhouse designs inside a sidebar: with the sidebar, or something in it, selected, Insert adds a control or picture there, centred in it. Move Into (Tab in the outline) takes a control into the sidebar before it, and Move Out takes it back. The outline nests what the sidebar holds, and a sidebar on the right resizes from its left edge, where it meets the content.
+
 ## 0.8.207
 
 - A sidebar can hold controls and pictures of its own in place of rows, such as a radio's cover, title, Stop button, and volume beside its stations. They're placed from the sidebar's corner, on either edge, and stay with it when the window resizes. See [the spec](docs/uiscript/README.md#a-sidebar-that-holds-controls).

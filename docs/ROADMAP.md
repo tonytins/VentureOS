@@ -361,7 +361,7 @@ UIScript can hold, and the apps' and About's changes ship.
 - [x] UIScript: a `<Sidebar>` may hold controls and visuals, positioned in
   the sidebar, and sit on either edge (`edge`). One that holds nothing is
   the list of rows it is today.
-- [ ] The desktop draws both, and Roundhouse's designer places them, adding
+- [x] The desktop draws both, and Roundhouse's designer places them, adding
   a picture's `<Image>` at the root itself.
 - [x] About VentureOS, a window of its own from `projects/about.rproj`,
   ships with its icon and credits; every app's About stays as it was.
@@ -411,6 +411,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | 0.8.2xx is complete: Roundhouse's designer adds controls and pictures to a sidebar, moves them in and out, and resizes a right sidebar from its left edge. The next band is the owner's to plan. |
 | 2026-11-24 | patch | 0.8.2xx: a sidebar may hold controls and visuals in place of rows, on either edge; the desktop draws them. Roundhouse's designer placing them is the band's last item. |
 | 2026-11-24 | patch | 0.8.2xx: a sidebar may run down the window's right (`edge="right"`); holding controls, the rest of that item, is next. |
 | 2026-11-24 | patch | 0.8.2xx: About VentureOS ships as a window of its own, `about_system.uix`, with About and Credits panes; apps' About windows keep `about.uix`, by my decision, since the redesign was always About VentureOS's. |

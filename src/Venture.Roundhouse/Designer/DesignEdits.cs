@@ -64,8 +64,10 @@ public static class DesignEdits
     /// Adds a control (see <see cref="Add(UIDocument, string)"/>) or one of the window's other <see cref="Parts"/>. A
     /// menu item or separator joins the <paramref name="selected"/> menu, or the menu of the selected item, or else
     /// the last menu, after its last entry. A pane needs a sidebar, and goes after the last pane, so it's the
-    /// sidebar's last row. A control goes in <paramref name="pane"/>, the pane on show, when there is one, and so does
-    /// a picture: a <c>&lt;Visual&gt;</c> there, with the <c>&lt;Image&gt;</c> it shows among the resources.
+    /// sidebar's last row. A control goes in the sidebar, centred there, when the sidebar or something in it is
+    /// <paramref name="selected"/> and it has no panes; otherwise in <paramref name="pane"/>, the pane on show, when
+    /// there is one. A picture goes where a control would: a <c>&lt;Visual&gt;</c> there, with the
+    /// <c>&lt;Image&gt;</c> it shows among the resources.
     /// </summary>
     /// <exception cref="ArgumentException">The library has no such element, or a menu item has no menu to join.</exception>
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a second title field.</exception>
@@ -100,7 +102,7 @@ public static class DesignEdits
             }
 
             case "Visual":
-                return AddPicture(document, pane);
+                return AddPicture(document, pane, SidebarFor(document, selected));
 
             case "Pane":
             {
@@ -124,8 +126,8 @@ public static class DesignEdits
 
         var script = document.Script ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
 
-        var x = (int)MathF.Max(0, MathF.Round((script.Window.Size.Width - control.Width) / 2));
-        var y = (int)MathF.Max(0, MathF.Round((script.Window.Size.Height - control.Height) / 2));
+        var sidebar = SidebarFor(document, selected);
+        var (x, y) = Centred(script, sidebar is not null, control.Width, control.Height);
         (x, y) = FreePlace(document, x, y);
 
         List<KeyValuePair<string, string>> attributes =
@@ -136,6 +138,12 @@ public static class DesignEdits
         ];
         if (control.Text is { } text)
             attributes.Add(new("text", text));
+
+        if (sidebar is { } side)
+        {
+            var inside = document.Xml!.End(side);
+            return (document.InsertElement(inside, element, attributes, side), inside);
+        }
 
         // In a pane, a control goes inside it, unless its controls name it from outside, the form it then keeps.
         if (pane is not null && PaneElement(document, pane) is { } holder)
@@ -201,8 +209,8 @@ public static class DesignEdits
     public static (UIDocument Document, int Element) SendBackward(UIDocument document, int element) => Restack(document, element, -1);
 
     /// <summary>
-    /// The menu or pane an element would move into: the one just before it among its siblings, or
-    /// <see langword="null"/> when what's before it isn't a menu or a pane.
+    /// The menu, pane, or sidebar an element would move into: the one just before it among its siblings, or
+    /// <see langword="null"/> when what's before it isn't one.
     /// </summary>
     public static int? MoveIntoTarget(UIDocument document, int element)
     {
@@ -213,12 +221,12 @@ public static class DesignEdits
 
         var siblings = xml.ChildrenOf(xml.Children[element].Parent);
         var place = Array.IndexOf(siblings, element);
-        return place > 0 && xml.Children[siblings[place - 1]].Name is "Menu" or "Pane" ? siblings[place - 1] : null;
+        return place > 0 && xml.Children[siblings[place - 1]].Name is "Menu" or "Pane" or "Sidebar" ? siblings[place - 1] : null;
     }
 
     /// <summary>
-    /// Moves an element into the menu or pane just before it, after what's there: an item into a menu, a menu into
-    /// another as a submenu, or a control into a pane.
+    /// Moves an element into the menu, pane, or sidebar just before it, after what's there: an item into a menu, a
+    /// menu into another as a submenu, or a control into a pane or the sidebar.
     /// </summary>
     /// <exception cref="ArgumentException">There's no menu or pane just before it.</exception>
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a pane in a pane.</exception>
@@ -227,18 +235,18 @@ public static class DesignEdits
         ArgumentNullException.ThrowIfNull(document);
         Child(document, element);
         var target = MoveIntoTarget(document, element)
-            ?? throw new ArgumentException("Move Into needs a menu or pane just before the element.", nameof(element));
+            ?? throw new ArgumentException("Move Into needs a menu, pane, or sidebar just before the element.", nameof(element));
         return document.MoveInto(element, target);
     }
 
-    /// <summary>Moves an element out of its menu or pane, to just after it.</summary>
+    /// <summary>Moves an element out of its menu, pane, or sidebar, to just after it.</summary>
     /// <exception cref="ArgumentException">The element isn't inside anything.</exception>
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a menu item outside any menu.</exception>
     public static (UIDocument Document, int Element) MoveOut(UIDocument document, int element)
     {
         ArgumentNullException.ThrowIfNull(document);
         if (Child(document, element).Parent == UIDocument.Root)
-            throw new ArgumentException("The element isn't inside a menu or pane.", nameof(element));
+            throw new ArgumentException("The element isn't inside a menu, pane, or sidebar.", nameof(element));
         return document.MoveOut(element);
     }
 
@@ -300,15 +308,15 @@ public static class DesignEdits
     /// <c>&lt;Visual&gt;</c> showing it, of the same name, in the pane on show or else the window. Its path is a
     /// placeholder the person changes in the inspector; until then the visual is outlined.
     /// </summary>
-    private static (UIDocument, int) AddPicture(UIDocument document, string? pane)
+    private static (UIDocument, int) AddPicture(UIDocument document, string? pane, int? sidebar)
     {
         var script = document.Script ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
         var xml = document.Xml!;
 
         // A pane whose controls name it from outside can't also hold a picture, and a picture outside it would show
         // on every pane, so it's refused rather than put somewhere else.
-        var holder = pane is not null ? PaneElement(document, pane) : null;
-        if (holder is { } paneIndex && xml.ChildrenOf(paneIndex).Length == 0
+        var holder = sidebar ?? (pane is not null ? PaneElement(document, pane) : null);
+        if (sidebar is null && holder is { } paneIndex && xml.ChildrenOf(paneIndex).Length == 0
             && xml.ChildrenOf(UIDocument.Root).Any(child => xml.Children[child]["pane"] == pane))
         {
             throw new UIScriptException($"The pane \"{pane}\" has controls that name it from outside, so a picture can't go in it. Move its controls into it first.");
@@ -326,8 +334,7 @@ public static class DesignEdits
         var imageAt = after < 0 ? 0 : xml.End(after);
         var withImage = document.InsertElement(imageAt, "Image", [new("name", name), new("path", name + ".png")]);
 
-        var x = (int)MathF.Max(0, MathF.Round((script.Window.Size.Width - PictureSize) / 2));
-        var y = (int)MathF.Max(0, MathF.Round((script.Window.Size.Height - PictureSize) / 2));
+        var (x, y) = Centred(script, sidebar is not null, PictureSize, PictureSize);
         (x, y) = FreePlace(withImage, x, y);
         List<KeyValuePair<string, string>> attributes =
         [
@@ -345,6 +352,30 @@ public static class DesignEdits
 
         var index = withImage.Xml!.Children.Count;
         return (withImage.InsertElement(index, "Visual", attributes), index);
+    }
+
+    /// <summary>
+    /// The sidebar a new control goes in: the selected one, or the one holding the selected element, when it has no
+    /// panes, whose rows a sidebar of controls can't have. <see langword="null"/> otherwise.
+    /// </summary>
+    private static int? SidebarFor(UIDocument document, int? selected)
+    {
+        var xml = document.Xml!;
+        if (selected is not { } index || index < 0 || index >= xml.Children.Count || document.Script?.Panes.Count > 0)
+            return null;
+
+        var element = xml.Children[index];
+        if (element.Name == "Sidebar")
+            return index;
+        return element.Parent >= 0 && xml.Children[element.Parent].Name == "Sidebar" ? element.Parent : null;
+    }
+
+    /// <summary>Where something of a size is centred: in the window's content, or in the sidebar, from its corner.</summary>
+    private static (int X, int Y) Centred(UIScript script, bool inSidebar, int width, int height)
+    {
+        var across = inSidebar && script.Sidebar is { } side ? side.Width : script.Window.Size.Width;
+        return ((int)MathF.Max(0, MathF.Round((across - width) / 2)),
+                (int)MathF.Max(0, MathF.Round((script.Window.Size.Height - height) / 2)));
     }
 
     /// <summary>The index of the pane named <paramref name="name"/>, or <see langword="null"/>.</summary>

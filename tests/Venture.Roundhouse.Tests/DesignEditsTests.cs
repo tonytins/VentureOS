@@ -248,6 +248,110 @@ public sealed class DesignEditsTests
         Assert.Equal("about", Assert.Single(moved.Script!.Visuals).Pane);
     }
 
+    private const string Player = """
+        <UIScript>
+          <Window width="300" height="200"/>
+          <Sidebar name="player" width="160" edge="right">
+            <Button name="stop" x="10" y="10" width="80" height="24" text="Stop"/>
+          </Sidebar>
+          <List name="stations" x="10" y="10" width="280" height="180"/>
+        </UIScript>
+        """;
+
+    [Fact]
+    public void AControlGoesInTheSidebarWhenItsSelectedCentredThere()
+    {
+        var (edited, element) = DesignEdits.Add(UIDocument.Read(Player), "Button", 1);
+
+        var xml = edited.Xml!;
+        Assert.Equal(1, xml.Children[element].Parent);
+        var button = edited.Script!.Control("button")!;
+        Assert.True(button.InSidebar);
+        Assert.Equal((40, 88), ((int)button.Frame.X, (int)button.Frame.Y));
+    }
+
+    [Fact]
+    public void AControlGoesInTheSidebarWhenSomethingInItIsSelected()
+    {
+        var (edited, element) = DesignEdits.Add(UIDocument.Read(Player), "Text", 2);
+
+        Assert.Equal(1, edited.Xml!.Children[element].Parent);
+        Assert.Equal(["stop", "text"], edited.Script!.Controls.Where(control => control.InSidebar).Select(control => control.Name));
+    }
+
+    [Fact]
+    public void AControlGoesInTheContentWhenTheContentIsSelected()
+    {
+        var (edited, _) = DesignEdits.Add(UIDocument.Read(Player), "Button", 3);
+
+        Assert.False(edited.Script!.Control("button")!.InSidebar);
+    }
+
+    [Fact]
+    public void APictureGoesInTheSidebarWithItsImageAtTheRoot()
+    {
+        var (edited, element) = DesignEdits.Add(UIDocument.Read(Player), "Visual", 1);
+
+        var xml = edited.Xml!;
+        Assert.Equal("Sidebar", xml.Children[xml.Children[element].Parent].Name);
+        Assert.True(Assert.Single(edited.Script!.Visuals).InSidebar);
+        Assert.Equal(UIDocument.Root, xml.Children.Single(child => child.Name == "Image").Parent);
+        Assert.Equal((48, 68), ((int)edited.Script.Visuals[0].Frame.X, (int)edited.Script.Visuals[0].Frame.Y));
+    }
+
+    [Fact]
+    public void ASidebarWithPanesLeavesNewControlsToThePaneOnShow()
+    {
+        var withPanes = UIDocument.Read("""
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Sidebar name="side" width="100"/>
+              <Pane name="general" title="General"/>
+            </UIScript>
+            """);
+
+        var (edited, _) = DesignEdits.Add(withPanes, "Button", 1, "general");
+
+        Assert.Equal("general", edited.Script!.Controls.Single().Pane);
+        Assert.False(edited.Script.Sidebar!.HoldsContent);
+    }
+
+    [Fact]
+    public void AControlMovesIntoTheSidebarBeforeItAndOutAgain()
+    {
+        var plain = UIDocument.Read("""
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Sidebar name="player" width="160"/>
+              <Button name="stop" x="10" y="10" width="80" height="24" text="Stop"/>
+            </UIScript>
+            """);
+
+        Assert.Equal(1, DesignEdits.MoveIntoTarget(plain, 2));
+        var (moved, element) = DesignEdits.MoveInto(plain, 2);
+        Assert.True(moved.Script!.Control("stop")!.InSidebar);
+        Assert.True(moved.Script.Sidebar!.HoldsContent);
+
+        var (back, _) = DesignEdits.MoveOut(moved, element);
+        Assert.False(back.Script!.Control("stop")!.InSidebar);
+        Assert.False(back.Script.Sidebar!.HoldsContent);
+    }
+
+    [Fact]
+    public void ADuplicateOfAControlInTheSidebarStaysInIt()
+    {
+        var (edited, element) = DesignEdits.Duplicate(UIDocument.Read(Player), 2);
+
+        Assert.Equal(1, edited.Xml!.Children[element].Parent);
+        Assert.Equal(2, edited.Script!.Controls.Count(control => control.InSidebar));
+    }
+
+    [Theory]
+    [InlineData(false, Handle.Right)]
+    [InlineData(true, Handle.Left)]
+    public void ASidebarResizesFromTheEdgeThatMeetsTheContent(bool onRight, Handle handle) =>
+        Assert.Equal([handle], FrameEdit.HandlesFor("Sidebar", onRight));
+
     private const string NestedPanes = """
         <UIScript>
           <Window width="300" height="200"/>

@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,066 tests, and 285 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,066 tests, and 296 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1034,14 +1034,19 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   pixels is two of the screen's, drawn without smoothing. Focusing the
   canvas doesn't scroll it, which would slide it under the pointer.
 - **The outline** lists every element in file order as a tree, each
-  indented by its depth, and shares the canvas's selection. A menu or pane
-  that holds anything shows ▾, or ▸ when folded, which hides what it holds;
+  indented by its depth, and shares the canvas's selection. A menu, pane, or
+  sidebar that holds anything shows ▾, or ▸ when folded, which hides what it holds;
   `OutlineRows` maps rows to elements. Folds are kept by name, so edits keep
   them, and cleared when another document opens; selecting inside a folded
   one unfolds it. Left folds or goes up to the holder, Right unfolds,
   double-click toggles, and Tab and Shift+Tab are Edit ▸ Move Into (the
-  menu or pane just before the selection, as its last child) and Move Out
-  (to just after its holder). The outline keeps the keyboard across those
+  menu, pane, or sidebar just before the selection, as its last child) and
+  Move Out (to just after its holder). Insert adds a control or picture
+  (Insert ▸ Picture, a `<Visual>` with its `<Image>` among the resources)
+  to the sidebar, centred there, when the sidebar or something in it is
+  selected and it has no panes, and otherwise to the pane on show or the
+  window. A sidebar resizes from the edge that meets the content, its left
+  when `edge="right"`. The outline keeps the keyboard across those
   edits and folds, as its rows are rebuilt. **The inspector** (`InspectorPanel`) builds its
   fields from `UIScriptSchema`, by group, with a check box for flags and a
   list for choices, plus an Other group for attributes VentureOS skips. A
@@ -1860,6 +1865,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | Roundhouse (§9): the designer adds controls and pictures to a sidebar, moves them in and out of it, and resizes a right sidebar from its left edge. |
 | 2026-11-24 | patch | Sidebars (§9): a sidebar may hold controls and visuals in place of rows, placed from its own corner on either edge. |
 | 2026-11-24 | patch | Sidebars (§9): `edge="right"` puts a sidebar down the window's right, with the content at the left and the bar ending short of it. |
 | 2026-11-24 | patch | About VentureOS (§2, §9): its own interface, `about_system.uix`, with About and Credits panes and the credits from `credits.txt`, falling back to the apps' `about.uix`. |

@@ -12,13 +12,14 @@ public static class FrameEdit
 
     /// <summary>
     /// The handles an element can be resized by: every one for a control or visual; the right and bottom edges and
-    /// their corner for the window, whose top left stays where the title bar puts it; the right edge for the
-    /// sidebar, which sets its width; none for anything else.
+    /// their corner for the window, whose top left stays where the title bar puts it; the edge that meets the content
+    /// for the sidebar, its right or, <paramref name="sidebarOnRight"/>, its left, which sets its width; none for
+    /// anything else.
     /// </summary>
-    public static IReadOnlyList<Handle> HandlesFor(string element) => element switch
+    public static IReadOnlyList<Handle> HandlesFor(string element, bool sidebarOnRight = false) => element switch
     {
         "Window" or "Panel" => [Handle.Right, Handle.BottomRight, Handle.Bottom],
-        "Sidebar" => [Handle.Right],
+        "Sidebar" => [sidebarOnRight ? Handle.Left : Handle.Right],
         _ when IsFramed(element) => FrameDrag.Handles,
         _ => [],
     };

@@ -165,6 +165,42 @@ public sealed class PaneDesignTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void ControlsAreAddedToAndDraggedInsideTheSidebar() => TestApp.Run(() =>
+    {
+        File.WriteAllText(document, """
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Sidebar name="player" width="160" edge="right">
+                <Button name="stop" x="40" y="40" width="80" height="24" text="Stop"/>
+              </Sidebar>
+              <List name="stations" x="10" y="10" width="280" height="180"/>
+            </UIScript>
+            """);
+        var window = Open();
+
+        // A click on the sidebar's own shade selects it, and Insert then adds there.
+        var sidebar = window.Map!.BoundsOf(Index(window, "player"))!.Value;
+        Click(window, sidebar.X + 5, sidebar.Y + sidebar.Height - 5);
+        Assert.Equal(Index(window, "player"), window.Selection);
+        Assert.True(window.AddControl("Text"));
+        Assert.True(window.Document!.Script!.Control("text")!.InSidebar);
+
+        // A drag moves a control by as much in the sidebar's own positions.
+        var stop = window.Map!.BoundsOf(Index(window, "stop"))!.Value;
+        var at = window.FindControl<Avalonia.Controls.Image>("PreviewImage")!;
+        Avalonia.Point Screen(float x, float y) => at.TranslatePoint(new Avalonia.Point(x, y), window)!.Value;
+        window.MouseDown(Screen(stop.X + 10, stop.Y + 10), MouseButton.Left);
+        window.MouseMove(Screen(stop.X + 15, stop.Y + 12));
+        window.MouseMove(Screen(stop.X + 20, stop.Y + 15));
+        window.MouseUp(Screen(stop.X + 20, stop.Y + 15), MouseButton.Left);
+
+        var moved = window.Document!.Script!.Control("stop")!;
+        Assert.True(moved.InSidebar);
+        Assert.Equal((50, 45), ((int)moved.Frame.X, (int)moved.Frame.Y));
+        window.Close();
+    });
+
     private MainWindow Open()
     {
         MainWindow window = new() { AskToLeave = _ => Task.FromResult(Bundles.LeaveChoice.DontSave) };

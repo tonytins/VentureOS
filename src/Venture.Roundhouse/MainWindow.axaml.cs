@@ -1512,7 +1512,8 @@ public sealed partial class MainWindow : Window
     private bool CanEdit(int element) => Kind(element) is { } kind && FrameEdit.IsFramed(kind);
 
     /// <summary>The handles the selected element can be resized by on the canvas: none when it can't be.</summary>
-    private IReadOnlyList<Handle> HandlesOf(int element) => Kind(element) is { } kind ? FrameEdit.HandlesFor(kind) : [];
+    private IReadOnlyList<Handle> HandlesOf(int element) =>
+        Kind(element) is { } kind ? FrameEdit.HandlesFor(kind, Document?.Script?.Sidebar?.Edge == UIEdge.Right) : [];
 
     /// <summary>Whether an element can move in front of or behind others: a control, a visual, or a toolbar item.</summary>
     private bool CanRestack(int element) => Kind(element) is { } kind && (FrameEdit.IsFramed(kind) || kind == "ToolbarItem");

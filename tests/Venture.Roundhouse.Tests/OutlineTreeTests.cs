@@ -202,6 +202,32 @@ public sealed class OutlineTreeTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void ASidebarsControlsAreIndentedUnderItAndTabMovesOneIn() => TestApp.Run(() =>
+    {
+        File.WriteAllText(document, """
+            <UIScript version="1">
+              <Window width="300" height="200"/>
+              <Sidebar name="player" width="160">
+                <Button name="stop" x="10" y="10" width="80" height="24" text="Stop"/>
+              </Sidebar>
+              <Button name="play" x="10" y="40" width="80" height="24" text="Play"/>
+            </UIScript>
+            """);
+        var window = Open();
+        var labels = Labels(window);
+
+        Assert.Equal("▾ Sidebar  player", labels[Index(window, "player")]);
+        Assert.Equal("    Button  stop", labels[Index(window, "stop")]);
+
+        window.Select(Index(window, "play"));
+        FocusOutline(window);
+        window.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, null);
+
+        Assert.True(window.Document!.Script!.Control("play")!.InSidebar);
+        window.Close();
+    });
+
     private MainWindow Open()
     {
         MainWindow window = new() { AskToLeave = _ => Task.FromResult(Bundles.LeaveChoice.DontSave) };
