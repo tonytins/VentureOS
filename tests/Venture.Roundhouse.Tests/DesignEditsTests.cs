@@ -338,6 +338,64 @@ public sealed class DesignEditsTests
     }
 
     [Fact]
+    public void ANewGridHasCellsToBeReadWith()
+    {
+        var (edited, element) = DesignEdits.Add(Document, "Grid");
+
+        var grid = edited.Script!.Control(edited.Xml!.Children[element]["name"]!)!;
+        Assert.Equal(UIControlType.Grid, grid.Type);
+        Assert.Equal((48f, 48f), (grid.Grid!.ItemWidth, grid.Grid.ItemHeight));
+    }
+
+    [Fact]
+    public void AnItemJoinsTheSelectedGridOrTheLastOne()
+    {
+        var two = UIDocument.Read("""
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Grid name="first" x="0" y="0" width="100" height="100" itemWidth="20" itemHeight="20">
+                <Item name="a" title="A"/>
+              </Grid>
+              <Grid name="second" x="0" y="100" width="100" height="100" itemWidth="20" itemHeight="20"/>
+            </UIScript>
+            """);
+
+        var (intoLast, _) = DesignEdits.Add(two, "Item", null);
+        Assert.Equal(["item"], intoLast.Script!.Control("second")!.Grid!.Items.Select(item => item.Name));
+
+        // With an item selected, the new one goes after the items of the grid it's in.
+        var (intoFirst, element) = DesignEdits.Add(two, "Item", 2);
+        Assert.Equal(["a", "item"], intoFirst.Script!.Control("first")!.Grid!.Items.Select(item => item.Name));
+        Assert.Equal(1, intoFirst.Xml!.Children[element].Parent);
+    }
+
+    [Fact]
+    public void AnItemNeedsAGrid()
+    {
+        var plain = UIDocument.Read("""<UIScript><Window width="300" height="200"/></UIScript>""");
+
+        Assert.Contains("add a grid first", Assert.Throws<UIScriptException>(() => DesignEdits.Add(plain, "Item", null)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OnlyAnItemMovesIntoAGridAndNoItemMovesOutOfOne()
+    {
+        var plain = UIDocument.Read("""
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Grid name="g" x="0" y="0" width="100" height="100" itemWidth="20" itemHeight="20">
+                <Item name="a" title="A"/>
+              </Grid>
+              <Button name="b" x="0" y="100" width="80" height="24" text="B"/>
+            </UIScript>
+            """);
+
+        Assert.Null(DesignEdits.MoveIntoTarget(plain, 3));
+        Assert.False(DesignEdits.CanMoveOut(plain, 2));
+        Assert.False(DesignEdits.CanMoveOut(plain, 3));
+    }
+
+    [Fact]
     public void ADuplicateOfAControlInTheSidebarStaysInIt()
     {
         var (edited, element) = DesignEdits.Duplicate(UIDocument.Read(Player), 2);

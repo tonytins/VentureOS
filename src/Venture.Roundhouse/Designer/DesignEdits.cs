@@ -33,7 +33,11 @@ public static class DesignEdits
         new("ProgressBar", 140, 12, null),
         new("Region", 100, 60, null),
         new("Shelf", 200, 72, null),
+        new("Grid", 200, 120, null),
     ];
+
+    /// <summary>A new grid's cells, which it can't be read without.</summary>
+    private const string GridCell = "48";
 
     /// <summary>
     /// Adds a control in front of everything else, centred in the window, or set off down and right from one already
@@ -57,6 +61,7 @@ public static class DesignEdits
         ("MenuSeparator", "Menu Separator"),
         ("Sidebar", "Sidebar"),
         ("Pane", "Pane"),
+        ("Item", "Grid Item"),
     ];
 
     /// <summary>
@@ -66,7 +71,8 @@ public static class DesignEdits
     /// sidebar's last row. A control goes in the sidebar, centred there, when the sidebar or something in it is
     /// <paramref name="selected"/> and it has no panes; otherwise in <paramref name="pane"/>, the pane on show, when
     /// there is one. A picture goes where a control would: a <c>&lt;Visual&gt;</c> there, with the
-    /// <c>&lt;Image&gt;</c> it shows among the resources.
+    /// <c>&lt;Image&gt;</c> it shows among the resources. A grid item joins the <paramref name="selected"/> grid, or the
+    /// grid of the selected item, or else the last grid, after its last item.
     /// </summary>
     /// <exception cref="ArgumentException">The library has no such element, or a menu item has no menu to join.</exception>
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a second title field.</exception>
@@ -103,6 +109,15 @@ public static class DesignEdits
             case "Visual":
                 return AddPicture(document, pane, SidebarFor(document, selected));
 
+            case "Item":
+            {
+                var grid = GridFor(document, selected)
+                    ?? throw new UIScriptException("An item goes in a grid; add a grid first.");
+                var inside = document.Xml.End(grid);
+                List<KeyValuePair<string, string>> item = [new("name", UniqueName(document, "item")), new("title", "Item")];
+                return (document.InsertElement(inside, element, item, grid), inside);
+            }
+
             case "Pane":
             {
                 if (document.Script?.Sidebar is null)
@@ -137,6 +152,8 @@ public static class DesignEdits
         ];
         if (control.Text is { } text)
             attributes.Add(new("text", text));
+        if (element == "Grid")
+            attributes.AddRange([new("itemWidth", GridCell), new("itemHeight", GridCell)]);
 
         if (sidebar is { } side)
         {
@@ -218,9 +235,27 @@ public static class DesignEdits
         if (xml is null || element < 0 || element >= xml.Children.Count)
             return null;
 
+        // An item goes only into a grid, and a grid holds only items.
         var siblings = xml.ChildrenOf(xml.Children[element].Parent);
         var place = Array.IndexOf(siblings, element);
-        return place > 0 && xml.Children[siblings[place - 1]].Name is "Menu" or "Pane" or "Sidebar" ? siblings[place - 1] : null;
+        if (place <= 0)
+            return null;
+        var before = xml.Children[siblings[place - 1]].Name;
+        var fits = xml.Children[element].Name == "Item" ? before == "Grid" : before is "Menu" or "Pane" or "Sidebar";
+        return fits ? siblings[place - 1] : null;
+    }
+
+    /// <summary>
+    /// Whether an element can move out of what holds it: anything inside a menu, pane, or sidebar, but not a grid's
+    /// item, which belongs only in a grid.
+    /// </summary>
+    public static bool CanMoveOut(UIDocument document, int element)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        var xml = document.Xml;
+        if (xml is null || element < 0 || element >= xml.Children.Count || xml.Children[element].Parent < 0)
+            return false;
+        return xml.Children[xml.Children[element].Parent].Name != "Grid";
     }
 
     /// <summary>
@@ -357,6 +392,32 @@ public static class DesignEdits
     /// The sidebar a new control goes in: the selected one, or the one holding the selected element, when it has no
     /// panes, whose rows a sidebar of controls can't have. <see langword="null"/> otherwise.
     /// </summary>
+    /// <summary>
+    /// The grid a new item joins: the selected one, or the one the selected item is in, or else the last grid; or
+    /// <see langword="null"/> when there's none.
+    /// </summary>
+    private static int? GridFor(UIDocument document, int? selected)
+    {
+        var xml = document.Xml!;
+        if (selected is { } index && index >= 0 && index < xml.Children.Count)
+        {
+            var chosen = xml.Children[index];
+            if (chosen.Name == "Grid")
+                return index;
+            if (chosen.Name == "Item" && chosen.Parent >= 0)
+                return chosen.Parent;
+        }
+
+        int? last = null;
+        for (var at = 0; at < xml.Children.Count; at++)
+        {
+            if (xml.Children[at].Name == "Grid")
+                last = at;
+        }
+
+        return last;
+    }
+
     private static int? SidebarFor(UIDocument document, int? selected)
     {
         var xml = document.Xml!;

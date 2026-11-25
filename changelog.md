@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.306
+
+- Roundhouse designs grids: Insert ▸ Grid adds one, Insert ▸ Grid Item adds an item to the selected grid, and the outline shows each grid's items inside it. Move Into and Move Out only offer what VentureOS reads: an item into a grid, and never out of one.
+
 ## 0.8.305
 
 - Interfaces can hold a `<Grid>`: pictures, colors, or plain tiles of one size, in rows that wrap and scroll, one of them chosen. A grid lists its `<Item>`s, or an app fills it with `window:setItems`, pictures by path included, and a click reports the item's index and name (`event.item`). See [the spec](docs/uiscript/README.md#grid).

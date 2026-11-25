@@ -17,7 +17,7 @@ change. Statuses are `done`, `partial`, and `missing`.
 | [Network](#network) | 5 | 0 | 0 | DHCP lease 10.0.2.15 under QEMU; `resolve` and `ping`; vdb on port 28455 |
 | [Shell](#shell) | 18 | 0 | 0 | 11 built-in commands, plus 16 Lua script commands; `Notes.app` ships |
 | [Platform](#platform) | 4 | 0 | 1 | Cosmos 3.0.99, .NET 10; x64 debug ISO 18.7 MB |
-| [Reliability](#reliability) | 3 | 1 | 1 | 2,127 tests, 296 for Roundhouse, 53 for airo, 68 in the apps' projects, and 29 for vdb, all passing |
+| [Reliability](#reliability) | 3 | 1 | 1 | 2,127 tests, 300 for Roundhouse, 53 for airo, 68 in the apps' projects, and 29 for vdb, all passing |
 | [Documentation](#documentation) | 4 | 1 | 0 | Includes a tested guide to writing apps |
 | [Desktop](#desktop) | 7 | 0 | 0 | Version 0.5; opens in 177 ms at 1024x768, over the Earthset wallpaper |
 | [Desktop apps](#desktop-apps) | 8 | 0 | 0 | Keystone complete; Files, Dock, Settings, System Monitor, Terminal, Notes, Calculator, and TextEdit; apps run as supervised processes, and are tested from their projects |

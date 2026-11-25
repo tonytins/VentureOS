@@ -1310,7 +1310,8 @@ public sealed partial class MainWindow : Window
     /// <summary>Moves the selection out of its menu or pane, to just after it, and keeps it selected.</summary>
     /// <returns>Whether it moved; when it didn't, the status line says why.</returns>
     public bool MoveOutSelection() =>
-        Selection is { } element && Edit(document => DesignEdits.MoveOut(document, element));
+        Selection is { } element && Document is { } current && DesignEdits.CanMoveOut(current, element)
+        && Edit(document => DesignEdits.MoveOut(document, element));
 
     /// <summary>Moves the selected control or visual in front of the next one.</summary>
     /// <returns>Whether it moved.</returns>
@@ -1734,8 +1735,7 @@ public sealed partial class MainWindow : Window
                 new MenuCommand("Move Into", () => MoveIntoSelection(), IsEnabled: () =>
                     Editable() && Selection is { } element && DesignEdits.MoveIntoTarget(Document!, element) is not null),
                 new MenuCommand("Move Out", () => MoveOutSelection(), IsEnabled: () =>
-                    Editable() && Selection is { } element && element < Document!.Xml!.Children.Count
-                    && Document.Xml.Children[element].Parent >= 0),
+                    Editable() && Selection is { } element && DesignEdits.CanMoveOut(Document!, element)),
             ]),
             new("Insert",
             [

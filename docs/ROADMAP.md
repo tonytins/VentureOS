@@ -386,9 +386,9 @@ being five slots by hand.
 - [x] UIScript: `<Grid>` and `<Item>`: pictures, colors, or plain tiles of one
   size, listed in the document or filled by the app, that the desktop wraps
   into rows, one chosen.
-- [ ] Roundhouse designs grids: the library, the canvas, the outline, and
-  Insert ▸ Item.
-- [ ] Wallpapers as plain pictures in `/mnt/system/wallpapers`, without
+- [x] Roundhouse designs grids: the library, the canvas, the outline, and
+  Insert ▸ Grid Item.
+- [ ] Wallpapers as plain pictures in `/mnt/system/wallpaper`, without
   bundles, thumbnails, or variants.
 - [ ] Settings redesigned around grids: the style, accent, and scroll bars as
   rendered previews and colors, every wallpaper, and a larger, resizable
@@ -442,6 +442,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | 0.8.3xx: Roundhouse designs grids. Wallpapers will be plain pictures in `/mnt/system/wallpaper`, singular, by my correction. |
 | 2026-11-24 | minor | 0.8.3xx: `<Grid>` and `<Item>`: pictures, colors as circles, and plain tiles, of one size, wrapping and scrolling, one chosen, with titles below, under the chosen one, or none; listed in the document or filled by the app. Roundhouse designs them next. Settings will be redesigned around grids afterwards, its wallpapers becoming plain pictures, by my decision. |
 | 2026-11-24 | patch | 0.8.3xx: Settings' project chooses the scroll bars, as `appearance --scrollbars` does; Settings ships when I build it into `rootfs/`. A boot showed both styles drawn. A phase after `<Grid>` will redesign Settings around it, to be discussed first. |
 | 2026-11-24 | minor | 0.8.3xx: `<Slider>` leaves UIScript, with `scrolls`, `direction`, and `orientation`, and `version` stays `1`, by my decision; the reader refuses a slider or scroll button. TextEdit and Terminal drop theirs, in their projects and in `rootfs/`, since they'd be refused at boot otherwise. VentureOS's copies of Hudini's examples are upgraded ahead of Hudini. UIScript has no control for choosing a value now. |
