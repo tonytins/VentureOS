@@ -126,7 +126,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         {
             for (var index = windows.Count - 1; index >= 0; index--)
             {
-                if (!windows[index].IsMinimized && !windows[index].IsPanel)
+                if (!windows[index].IsMinimized && !windows[index].IsPanel && !windows[index].IsStatusItem)
                     return windows[index];
             }
 
@@ -253,7 +253,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     {
         foreach (var window in windows)
         {
-            if (!window.IsPanel && !window.IsMinimized
+            if (!window.IsPanel && !window.IsStatusItem && !window.IsMinimized
                 && window.X < area.X + area.Width && area.X < window.X + window.Width
                 && window.Y < area.Y + area.Height && area.Y < window.Y + window.Height)
                 return true;
@@ -272,6 +272,15 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         window.ClearCloseRequest();
         if (window.Id == 0)
             window.Id = ++lastId;
+        // A status item lives in the bar, which draws it; it's kept here so it ends with its app, and never comes to
+        // the front, so the window in front keeps the keyboard.
+        if (window.IsStatusItem)
+        {
+            if (!windows.Contains(window))
+                windows.Add(window);
+            return;
+        }
+
         if (windows.Contains(window))
         {
             window.IsMinimized = false;
@@ -325,7 +334,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     /// <returns>Whether it was open and not already minimized.</returns>
     public bool Minimize(DesktopWindow window)
     {
-        if (!windows.Contains(window) || window.IsMinimized || window.IsPanel)
+        if (!windows.Contains(window) || window.IsMinimized || window.IsPanel || window.IsStatusItem)
             return false;
 
         var wasFront = Focused == window;
@@ -519,7 +528,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         var under = ShowsHover && !wasDown ? WindowAt(pointerAt.X, pointerAt.Y) : null;
         foreach (var window in windows)
         {
-            if (window.IsMinimized || window.IsPanel)
+            if (window.IsMinimized || window.IsPanel || window.IsStatusItem)
                 continue;
 
             var held = armed is { Part: FramePart.ToolbarItem } item && item.Window == window ? item.Index : -1;
@@ -546,7 +555,7 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
 
         for (var index = windows.Count - 1; index >= 0; index--)
         {
-            if (!windows[index].IsMinimized && !windows[index].IsPanel && windows[index].Bounds.Contains(x, y))
+            if (!windows[index].IsMinimized && !windows[index].IsPanel && !windows[index].IsStatusItem && windows[index].Bounds.Contains(x, y))
                 return windows[index];
         }
 

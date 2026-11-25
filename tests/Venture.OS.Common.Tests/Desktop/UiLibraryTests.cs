@@ -401,6 +401,32 @@ public sealed class UiLibraryTests : IDisposable
     }
 
     [Fact]
+    public void AnAppOpensAStatusItemThatsItsOwnAndRetitlesIt()
+    {
+        Write("""
+            local item = venture.ui.open("status.uix")
+            item:on("ping", function(event) print("pinged", event.kind) end)
+            item:setTitle("72°")
+            """);
+        File.WriteAllText(Path.Combine(root, "apps", "Pad.app", "Contents", "Resources", "status.uix"),
+            """<UIScript><StatusItem name="ping" title="Ping"/></UIScript>""");
+        Assert.True(manager.OpenApp("Pad", root, output), string.Join('\n', output.Lines));
+
+        var item = Assert.Single(windows.Windows);
+        Assert.True(item.IsStatusItem);
+        Assert.Equal(("72°", "Pad"), (item.Title, item.App));
+        Assert.Null(windows.Focused);
+
+        Send(item, new UIEvent(UIEventKind.Pressed, "ping"));
+        Assert.Equal("pinged\tpressed", events.Lines[^1]);
+
+        // The app has a status item and no window, and runs on; when it ends, the item goes with it.
+        Assert.True(manager.IsOpen("dev.example.pad"));
+        Assert.True(manager.CloseApp("Pad", new RecordingOutput()));
+        Assert.Empty(windows.Windows);
+    }
+
+    [Fact]
     public void AnAppAsksToOpenAtStartupAndOnlyThePersonsYesAddsIt()
     {
         windows.IsShowing = true;

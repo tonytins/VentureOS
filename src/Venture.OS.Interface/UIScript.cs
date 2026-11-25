@@ -78,7 +78,22 @@ public enum UIWindowRole
     /// kept above ordinary windows, which the desktop keeps clear of it.
     /// </summary>
     Panel,
+
+    /// <summary>
+    /// An item in the menu bar, as a menu extra is: its title or image in the bar, opening its menus, or a panel of
+    /// its controls, or pressed as a button. See <see cref="UIStatusItem"/>.
+    /// </summary>
+    StatusItem,
 }
+
+/// <summary>
+/// A status item: an app's item in the menu bar, after the sidebar's logic. One that holds nothing is a button; one
+/// that holds menus drops them down; one that holds controls and visuals opens a panel of them, its
+/// <see cref="UIWindow.Size"/>.
+/// </summary>
+/// <param name="Title">The text the bar shows, or <see langword="null"/> for its image alone.</param>
+/// <param name="Image">An <c>&lt;Image&gt;</c> by name, a symbol the bar draws in its text color, or <see langword="null"/>.</param>
+public sealed record UIStatusItem(string Name, string? Title, string? Image, int Line);
 
 /// <summary>The edge of the screen a panel is pinned to (top or bottom), or of the window a sidebar sits on (left or right).</summary>
 public enum UIEdge
@@ -476,6 +491,9 @@ public sealed class UIScript
     /// <summary>The sidebar's panes, in document order, which is the sidebar's.</summary>
     public IReadOnlyList<UIPane> Panes { get; private init; } = [];
 
+    /// <summary>The status item, for a document whose root is <c>&lt;StatusItem&gt;</c>, or <see langword="null"/>.</summary>
+    public UIStatusItem? StatusItem { get; private init; }
+
     /// <summary>Attributes the reader didn't know and skipped. Log them while developing, to catch typos.</summary>
     public IReadOnlyList<UIIgnoredAttribute> IgnoredAttributes { get; private init; } = [];
 
@@ -546,6 +564,7 @@ public sealed class UIScript
         List<UIIgnoredAttribute> ignored = [.. rootReader.Unused()];
 
         UIWindow? window = null;
+        UIStatusItem? statusItem = null;
         Dictionary<string, UIImageResource> images = [];
         Dictionary<string, UIStringResource> strings = [];
         Dictionary<string, UIStyle> styles = [];
@@ -611,9 +630,13 @@ public sealed class UIScript
             {
                 case "Window":
                 case "Panel":
+                case "StatusItem":
                     if (window is not null)
-                        throw new UIScriptException("There's more than one <Window> or <Panel>.", element.Line);
-                    window = element.Name == "Panel" ? ReadPanel(reader, element.Line) : ReadWindow(reader);
+                        throw new UIScriptException("There's more than one <Window>, <Panel>, or <StatusItem>.", element.Line);
+                    if (element.Name == "StatusItem")
+                        (window, statusItem) = ReadStatusItem(reader, element.Line);
+                    else
+                        window = element.Name == "Panel" ? ReadPanel(reader, element.Line) : ReadWindow(reader);
                     break;
 
                 case "Image":
@@ -790,7 +813,7 @@ public sealed class UIScript
         }
 
         if (window is null)
-            throw new UIScriptException("A UIScript document needs a <Window> or a <Panel>.");
+            throw new UIScriptException("A UIScript document needs a <Window>, a <Panel>, or a <StatusItem>.");
 
         UIScript script = new()
         {
@@ -807,6 +830,7 @@ public sealed class UIScript
             TitleField = titleField,
             Sidebar = sidebar,
             Panes = panes,
+            StatusItem = statusItem,
             IgnoredAttributes = ignored,
         };
         script.Validate();
@@ -817,6 +841,31 @@ public sealed class UIScript
     /// A panel has no title bar, so nothing that lives in one. Its own element can't say <c>resizable</c> or
     /// <c>subtitle</c>, but the parts of a title bar are separate elements, so they're checked here.
     /// </summary>
+    /// <summary>
+    /// A status item has no title bar or sidebar, and holds menus or controls and visuals, not both, after the sidebar's
+    /// logic; a panel of controls needs a size to open at.
+    /// </summary>
+    private void ValidateStatusItem(UIStatusItem status)
+    {
+        if (ToolbarItems.Count > 0)
+            throw new UIScriptException("A status item has no title bar, so no toolbar items.", ToolbarItems[0].Line);
+        if (TitleField is { } field)
+            throw new UIScriptException("A status item has no title bar, so no title field.", field.Line);
+        if (Sidebar is { } side)
+            throw new UIScriptException("A status item can't have a sidebar.", side.Line);
+        if (status.Image is { } image && !Images.ContainsKey(image))
+            throw new UIScriptException($"The status item \"{status.Name}\" shows the image \"{image}\", which isn't an <Image>.", status.Line);
+
+        var holdsContent = Controls.Count > 0 || Visuals.Count > 0;
+        if (holdsContent && Menus.Count > 0)
+            throw new UIScriptException(
+                $"The status item \"{status.Name}\" holds menus and controls; it opens one or the other, so a document has menus or controls, not both.",
+                status.Line);
+        if (holdsContent && (Window.Size.Width <= 0 || Window.Size.Height <= 0))
+            throw new UIScriptException(
+                $"The status item \"{status.Name}\" holds controls, so it needs a width and height for the panel they open in.", status.Line);
+    }
+
     private void ValidatePanel()
     {
         if (ToolbarItems.Count > 0)
@@ -842,6 +891,21 @@ public sealed class UIScript
         "Grid" => UIControlType.Grid,
         _ => null,
     };
+
+    /// <summary>A status item: its name, its title or image or both, and a panel's size, when it has controls.</summary>
+    private static (UIWindow Window, UIStatusItem Item) ReadStatusItem(Attributes reader, int line)
+    {
+        var name = reader.RequiredString("name");
+        var title = reader.String("title");
+        var image = reader.String("image");
+        if (string.IsNullOrEmpty(title) && image is null)
+            throw new UIScriptException($"The status item \"{name}\" needs a title, an image, or both, to show in the bar.", line);
+
+        UISize size = new(reader.Number("width") ?? 0, reader.Number("height") ?? 0);
+        if (size.Width < 0 || size.Height < 0)
+            throw new UIScriptException($"The status item \"{name}\" has a size below 0.", line);
+        return (new UIWindow(size, null, Role: UIWindowRole.StatusItem), new UIStatusItem(name, title, image, line));
+    }
 
     private static UIWindow ReadWindow(Attributes reader)
     {
@@ -1039,7 +1103,8 @@ public sealed class UIScript
 
     private void Validate()
     {
-        if (Window.Size.Width <= 0 || Window.Size.Height <= 0)
+        // A status item's size is its panel's, which only one holding controls has; ValidateStatusItem checks it.
+        if (Window.Role != UIWindowRole.StatusItem && (Window.Size.Width <= 0 || Window.Size.Height <= 0))
             throw new UIScriptException("The window's width and height must be positive.");
         if (Window.MinimumSize is { } minimum
             && (minimum.Width <= 0 || minimum.Height <= 0
@@ -1063,6 +1128,8 @@ public sealed class UIScript
 
         if (Window.Role == UIWindowRole.Panel)
             ValidatePanel();
+        if (StatusItem is { } status)
+            ValidateStatusItem(status);
 
         if (Sidebar is { Width: <= 0 } narrow)
             throw new UIScriptException($"The sidebar \"{narrow.Name}\" needs a positive width.", narrow.Line);
@@ -1070,6 +1137,8 @@ public sealed class UIScript
         // Controls, visuals, menu items, toolbar items, the title field, and the sidebar share names, since events
         // and the host refer to them by name.
         HashSet<string> names = [];
+        if (StatusItem is { } statusItem)
+            Unique(names, statusItem.Name, statusItem.Line);
         if (Sidebar is { } side)
             Unique(names, side.Name, side.Line);
         foreach (var item in ToolbarItems)

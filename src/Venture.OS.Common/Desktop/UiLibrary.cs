@@ -780,7 +780,10 @@ public static class UiLibrary
             script, folder, strings, host.LoadImage, problem => host.Output.WriteLine($"{app.Name}: {given}: {problem}"));
 
         Handle handle = new(owner, host, view, Path.GetFileName(path)) { Folder = folder, App = app, Strings = strings };
-        handle.Window = new DesktopWindow(title is { Length: > 0 } ? title : app.Name, handle.View)
+        // A status item's title is what the bar shows, the document's own unless the app gives one; setTitle changes it.
+        if (script.StatusItem is { } status && title is null)
+            title = status.Title ?? "";
+        handle.Window = new DesktopWindow(title is { Length: > 0 } || script.StatusItem is not null ? title! : app.Name, handle.View)
         {
             ShowsTitle = title is { Length: > 0 },
             App = app.Name,
@@ -925,7 +928,15 @@ public static class UiLibrary
         {
             // nil or an empty string blanks the bar again, and the window goes back to the app's name.
             var title = state.IsNoneOrNil(2) ? "" : LuaText.Decode(state.L_CheckString(2));
-            h.Window!.Title = title.Length > 0 ? title : h.Window.App ?? h.Window.Title;
+
+            // A status item's title is the text in the bar, which may be none, leaving its image.
+            if (h.Window!.IsStatusItem)
+            {
+                h.Window.Title = title;
+                return 0;
+            }
+
+            h.Window.Title = title.Length > 0 ? title : h.Window.App ?? h.Window.Title;
             h.Window.ShowsTitle = title.Length > 0;
             return 0;
         });
@@ -1360,6 +1371,10 @@ public static class UiLibrary
                 Names.Add(title.Name);
             if (view.Script.Sidebar is { } sidebar)
                 Names.Add(sidebar.Name);
+
+            // A status item that's a button is pressed by its own name.
+            if (view.Script.StatusItem is { } status)
+                Names.Add(status.Name);
             foreach (var menu in view.Script.Menus)
             {
                 foreach (var entry in menu.AllEntries())

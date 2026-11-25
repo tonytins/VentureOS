@@ -75,6 +75,12 @@ public sealed class DesktopWindow
     public bool IsPanel => View.Script.Window.Role == UIWindowRole.Panel;
 
     /// <summary>
+    /// Whether it's an app's status item: kept with the app's windows, so it ends with the app, but drawn and used in
+    /// the menu bar, never as a window.
+    /// </summary>
+    public bool IsStatusItem => View.Script.Window.Role == UIWindowRole.StatusItem;
+
+    /// <summary>
     /// How much of a bottom panel shows, from 0, slid away below the screen, to 1, all of it, as the dock hides and
     /// comes back; see <see cref="WindowManager.DockMode"/>.
     /// </summary>

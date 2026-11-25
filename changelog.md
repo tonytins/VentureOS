@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.502
+
+- Apps can put status items in the menu bar, left of the bell: open a `.uix` whose root is `<StatusItem>`. One that holds nothing is a button; one with menus drops them down; one with controls opens a panel of them under it, which Escape, a click outside, or the item again closes. It belongs to its app, leaving the bar when the app ends, and `setTitle` changes its text.
+
 ## 0.8.501
 
 - Apps can open with the desktop, after Files and the Dock, from the list in `/mnt/user/settings/startup.xml`. One that quits, is closed, or crashes stays ended; one that's missing or won't open is told in a toast. `venture.startupItems()` and `venture.setStartupItem(app, on)` read and change the list.

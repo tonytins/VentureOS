@@ -19,6 +19,12 @@ public enum MenuGroup
     /// focused window's items of the same role, which the window's owner handles.
     /// </summary>
     Standard,
+
+    /// <summary>
+    /// An app's status item, on the bar's right, left of the bell: its menus drop down from it, their items going to
+    /// the item's owner, or, with <see cref="BarMenu.Pressed"/>, a press acts at once.
+    /// </summary>
+    Status,
 }
 
 /// <summary>A menu in the bar: the menu, who it belongs to, and the view whose state its items follow.</summary>
@@ -33,13 +39,16 @@ public enum MenuGroup
 /// In a standard menu, the desktop's own items, told apart by reference so an app's item of the same name is never
 /// mistaken for one; whether they're on is <paramref name="OwnEnabled"/>'s to say, whatever the view says.
 /// </param>
+/// <param name="Pressed">
+/// For a status item that's a button or opens a panel, what a press on it does, in place of dropping a menu down.
+/// </param>
 /// <param name="OwnEnabled">
 /// Whether one of the desktop's own items can act now, such as Copy with text selected, asked each time the menu is
 /// drawn or chosen; without one, they're always on.
 /// </param>
 public sealed record BarMenu(
     UIMenu Menu, MenuGroup Group, UIView? View = null, bool Emphasized = false, IReadOnlyList<UIMenuEntry>? Own = null,
-    Func<UIMenuEntry, bool>? OwnEnabled = null, DesktopImage? Icon = null)
+    Func<UIMenuEntry, bool>? OwnEnabled = null, DesktopImage? Icon = null, Action? Pressed = null)
 {
     /// <summary>
     /// Whether an entry can be chosen, or, for a submenu's entry, opened: one that isn't disabled. A disabled
@@ -216,13 +225,16 @@ public sealed class MenuBar
             : null;
     }
 
+    /// <summary>Whether a point is on a status item that acts when pressed, a button or a panel's, rather than a menu.</summary>
+    public bool PressesAt(int x, int y) => TitleAt(x, y) is >= 0 and var index && menus[index].Pressed is not null;
+
     /// <summary>Whether a point is on the bar or in an open menu.</summary>
     public bool Contains(int x, int y) => y < Height || LevelAt(x, y) >= 0;
 
     /// <summary>Opens a menu by its position in the bar, with its first item that can be chosen highlighted.</summary>
     public void OpenAt(int index)
     {
-        if (index < 0 || index >= menus.Count)
+        if (index < 0 || index >= menus.Count || menus[index].Pressed is not null)
             return;
 
         if (open != index || levels.Count == 0)
@@ -252,6 +264,13 @@ public sealed class MenuBar
         if (pressed)
         {
             openedByThisPress = false;
+            if (title >= 0 && menus[title].Pressed is { } press)
+            {
+                Close();
+                press();
+                return null;
+            }
+
             if (title >= 0)
             {
                 if (title == open)
@@ -279,8 +298,9 @@ public sealed class MenuBar
         if (open < 0)
             return null;
 
-        // While a menu is open, the pointer moves between menus and picks out entries.
-        if (title >= 0 && title != open)
+        // While a menu is open, the pointer moves between menus and picks out entries; a status item that's a
+        // button or a panel has no menu to move to.
+        if (title >= 0 && title != open && menus[title].Pressed is null)
         {
             OpenAt(title);
             levels[0].Highlighted = -1;
@@ -436,6 +456,9 @@ public sealed class MenuBar
         for (var index = 0; index < menus.Count; index++)
         {
             var menu = menus[index];
+            if (menu.Group == MenuGroup.Status)
+                break;
+
             var width = (menu.Icon?.Width ?? painter.MeasureText(menu.Menu.Title, Size)) + (2 * TitlePadding) + (menu.Emphasized ? 1 : 0);
             titles.Add((x, width));
 
@@ -466,15 +489,62 @@ public sealed class MenuBar
             painter.DrawText(status, statusX, textY, DesktopTheme.Text, Size);
         }
 
+        var right = statusX;
         if (ShowsBell)
-            DrawBell(painter, statusX - StatusMargin);
+            right = DrawBell(painter, statusX - StatusMargin);
+        DrawStatusItems(painter, x, right - StatusMargin, textY);
 
         for (var level = 0; level < levels.Count; level++)
             DrawMenu(painter, level);
     }
 
-    // The bell and its dot, ending at right; on, it's drawn as an open title is, in the accent.
-    private void DrawBell(IPainter painter, int right)
+    /// <summary>
+    /// Apps' status items, right to left from <paramref name="right"/>, in the order they're listed, each its symbol and
+    /// title; one that would run into the menus at <paramref name="left"/> isn't shown, nor those after it.
+    /// </summary>
+    private void DrawStatusItems(IPainter painter, int left, int right, int textY)
+    {
+        const int Size = DesktopTheme.TextSize;
+        const int Gap = 4;
+        var first = titles.Count;
+        for (var index = first; index < menus.Count; index++)
+            titles.Add((0, 0));
+
+        var x = right;
+        for (var index = first; index < menus.Count; index++)
+        {
+            var menu = menus[index];
+            var title = menu.Menu.Title;
+            var titleWidth = title.Length > 0 ? painter.MeasureText(title, Size) : 0;
+            var iconWidth = menu.Icon?.Width ?? 0;
+            var width = iconWidth + titleWidth + (iconWidth > 0 && titleWidth > 0 ? Gap : 0) + (2 * TitlePadding);
+            if (x - width < left + StatusMargin)
+                break;
+
+            x -= width;
+            titles[index] = (x, width);
+            var color = DesktopTheme.Text;
+            if (index == open)
+            {
+                painter.FillRectangle(x, 0, width, Height - 1, DesktopTheme.Accent);
+                color = DesktopTheme.HighlightedText;
+            }
+
+            var at = x + TitlePadding;
+            if (menu.Icon is { } icon)
+            {
+                // A symbol, drawn in the bar's text color, as toolbar items' are.
+                painter.DrawImage(Silhouette(icon, color), at, (Height - 1 - icon.Height) / 2);
+                at += iconWidth + Gap;
+            }
+
+            if (titleWidth > 0)
+                painter.DrawText(title, at, textY, color, Size);
+        }
+    }
+
+    // The bell and its dot, ending at right; on, it's drawn as an open title is, in the accent. Gives its left edge.
+    private int DrawBell(IPainter painter, int right)
     {
         const int BellWidth = 12;
         const int DotSize = 6;
@@ -497,6 +567,8 @@ public sealed class MenuBar
             DesktopTheme.FillRoundedGradient(painter, centerX + (BellWidth / 2) + 2, (Height - 1 - DotSize) / 2, DotSize, DotSize,
                 DotSize / 2, DesktopTheme.Accent, DesktopTheme.Accent);
         }
+
+        return (int)bell.X;
     }
 
     private DesktopImage Silhouette(DesktopImage icon, UIColor color)

@@ -54,7 +54,7 @@ public sealed class UIScriptPanelTests
     {
         var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse($"<UIScript>{elements}</UIScript>"));
 
-        Assert.Contains("more than one <Window> or <Panel>", problem.Message, StringComparison.Ordinal);
+        Assert.Contains("more than one <Window>, <Panel>, or <StatusItem>", problem.Message, StringComparison.Ordinal);
     }
 
     [Fact]

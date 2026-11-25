@@ -155,6 +155,14 @@ public static class UIScriptSchema
             new("minHeight", UIAttributeGroup.Frame, UIAttributeKind.Number),
             new("edge", UIAttributeGroup.Frame, UIAttributeKind.Choice, IsRequired: true, Choices: ["top", "bottom"]),
         ],
+        ["StatusItem"] =
+        [
+            new("name", UIAttributeGroup.Identity, UIAttributeKind.Name, IsRequired: true),
+            new("title", UIAttributeGroup.Text, UIAttributeKind.Text),
+            new("image", UIAttributeGroup.Appearance, UIAttributeKind.Reference, RefersTo: "Image"),
+            new("width", UIAttributeGroup.Frame, UIAttributeKind.Number),
+            new("height", UIAttributeGroup.Frame, UIAttributeKind.Number),
+        ],
         ["Image"] =
         [
             new("name", UIAttributeGroup.Identity, UIAttributeKind.Name, IsRequired: true),

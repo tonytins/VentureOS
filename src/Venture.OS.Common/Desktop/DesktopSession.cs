@@ -23,7 +23,7 @@ namespace Venture.OS.Desktop;
 /// the shell shows its window the next time the desktop does. An app quits when the last window it opened closes.
 /// What apps write while the desktop shows appears in a message window.</para>
 /// </remarks>
-public sealed class DesktopSession
+public sealed partial class DesktopSession
 {
     /// <summary>The VentureOS menu's items, by name.</summary>
     public const string AboutItem = "about";
@@ -119,10 +119,13 @@ public sealed class DesktopSession
     private readonly List<WindowEvent> happened = [];
     private readonly List<KeyPress> forWindows = [];
 
+    // Keys for an open status item's panel, this frame.
+    private readonly List<KeyPress> forPanel = [];
+
     // What the bar's menus were built from, so they're rebuilt only when one of these changes: the app shown, its
     // window in front, and whether the app opens new windows. Whether the standard items can act is asked as the bar
     // draws, so selecting text, for one, needs no rebuild.
-    private (string? App, DesktopWindow? Window, bool NewWindow, bool Built) menuSource;
+    private (string? App, DesktopWindow? Window, bool NewWindow, bool Built, int Status) menuSource;
     private DesktopInput last;
     private bool drawn;
 
@@ -405,6 +408,23 @@ public sealed class DesktopSession
     /// </summary>
     private PointerOwner PressOwner(int x, int y)
     {
+        // A press outside an open status item's panel closes it and goes no further, unless it's on the bar, where it
+        // may open another; inside, it's the panel's.
+        if (statusPanel is not null)
+        {
+            if (OverStatusPanel(x, y))
+                return PointerOwner.Desktop;
+            if (!(BarShows && MenuBar.Contains(x, y)))
+            {
+                CloseStatusPanel();
+                return PointerOwner.Desktop;
+            }
+
+            // On a status item, the item decides: its own closes, another's opens in its place.
+            if (!MenuBar.PressesAt(x, y))
+                CloseStatusPanel();
+        }
+
         if (BarShows && !MenuBar.IsOpen && MenuBar.OnBell(x, y))
         {
             History.Toggle();
@@ -562,6 +582,7 @@ public sealed class DesktopSession
         var released = !input.PointerDown && last.PointerDown;
         happened.Clear();
         forWindows.Clear();
+        forPanel.Clear();
 
         // Apps and windows may have changed since the last frame, such as the fallback app starting.
         RefreshMenus();
@@ -582,6 +603,14 @@ public sealed class DesktopSession
             {
                 History.Close();
                 historyChanged = true;
+            }
+            else if (statusPanel is not null && !MenuBar.IsOpen)
+            {
+                // An open status item's panel takes the keys, as a window in front would; Escape closes it.
+                if (key.Key == DesktopKey.Escape)
+                    CloseStatusPanel();
+                else
+                    forPanel.Add(key);
             }
             else if (MenuBar.IsOpen)
             {
@@ -607,6 +636,8 @@ public sealed class DesktopSession
             owner = PressOwner(x, y);
         }
 
+        UpdateStatusPanel(x, y, input, pressed, released, happened);
+
         if (owner == PointerOwner.Bar || MenuBar.IsOpen)
         {
             var mine = owner == PointerOwner.Bar;
@@ -617,7 +648,8 @@ public sealed class DesktopSession
         var overHistory = History.Contains(x, y);
         if (overHistory && input.Scroll != 0)
             historyChanged |= History.Scroll(input.Scroll);
-        var overWindows = !MenuBar.IsOpen && !(BarShows && MenuBar.Contains(x, y)) && owner != PointerOwner.Desktop && !overHistory;
+        var overWindows = !MenuBar.IsOpen && !(BarShows && MenuBar.Contains(x, y)) && owner != PointerOwner.Desktop && !overHistory
+            && !OverStatusPanel(x, y);
         Windows.ShowsHover = overWindows;
         DesktopInput windowInput = new(
             x,
@@ -728,6 +760,7 @@ public sealed class DesktopSession
         // Over every window and panel, and under the bar's open menus.
         Toasts.Draw(painter, MenuBar.Height, Clock(), ToastIcon, Text);
         History.Draw(painter, Windows.WorkArea, Windows.Notifications.Now, ToastIcon, Text);
+        DrawStatusPanel(painter);
         drawnNotifications = Windows.Notifications.Version;
         if (BarShows)
             MenuBar.Draw(painter);
@@ -797,7 +830,7 @@ public sealed class DesktopSession
                 // Help's About item, for the app the bar shows.
                 ShowAbout(menuSource.App);
                 break;
-            case MenuGroup.Window or MenuGroup.Standard:
+            case MenuGroup.Window or MenuGroup.Standard or MenuGroup.Status:
                 ReportToWindow(choice.Menu.View, item, happened);
                 break;
         }
@@ -1120,10 +1153,11 @@ public sealed class DesktopSession
         var front = Windows.Focused;
         var focused = front is not null && front.App == ActiveApp ? front : null;
         var newWindow = shown is not null && (apps?.Windows?.HasNewWindow(shown) ?? false);
-        if (menuSource == (shown, focused, newWindow, true))
+        var status = StatusKey();
+        if (menuSource == (shown, focused, newWindow, true, status))
             return;
 
-        menuSource = (shown, focused, newWindow, true);
+        menuSource = (shown, focused, newWindow, true, status);
         List<BarMenu> menus = [SystemMenu];
         if (shown is not null)
             menus.Add(AppMenu(shown));
@@ -1146,6 +1180,7 @@ public sealed class DesktopSession
         }
 
         AddStandard(menus, document, view, UIMenuRole.Help, Text.Get("help"), 'H', helping);
+        AddStatusMenus(menus);
         MenuBar.SetMenus(menus);
     }
 

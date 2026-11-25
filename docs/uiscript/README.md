@@ -77,7 +77,8 @@ demo documents.
 
 ## Window
 
-Exactly one `<Window>` is required, unless the document describes a [panel](#panel) instead. It gives the
+Exactly one `<Window>` is required, unless the document describes a [panel](#panel) or a
+[status item](#status-items) instead. It gives the
 interface's size in pixels, not counting its title bar or its [sidebar](#sidebar).
 
 | Attribute | Required | Value |
@@ -141,6 +142,44 @@ A host that shows panels:
 
 A panel is where a document's interface goes on the screen. The views a host draws inside it, or inside each other,
 are up to the host.
+
+## Status items
+
+A document can describe a status item in place of a window: an app's item in a desktop's menu bar, as macOS's menu
+extras are, such as a weather reading or a timer. What it holds decides what a click does, after the
+[sidebar](#sidebar)'s logic:
+
+- **Nothing**: a button. A click reports `pressed`, with the status item's name.
+- **Menus**: they drop down from it, as an app's menus do from the bar, one menu as it is, several as submenus.
+- **Controls and visuals**: a panel of them opens under it, placed from the panel's corner, at the item's `width`
+  and `height`, which such an item needs.
+
+```xml
+<UIScript version="1">
+  <Image name="cloud" path="cloud.png"/>
+  <StatusItem name="weather" title="72°" image="cloud" width="220" height="90"/>
+  <Text name="summary" x="12" y="12" width="196" height="20" text="Cloudy"/>
+  <Button name="refresh" x="12" y="54" width="80" height="24" text="Refresh"/>
+</UIScript>
+```
+
+| Attribute | Required | Value |
+| --- | --- | --- |
+| `name` | Yes | The name it's pressed by, shared with the document's other names. |
+| `title` | No | The text the bar shows. The host can change it. |
+| `image` | No | An `<Image>`, a symbol the bar draws in its text color. A status item needs a title, an image, or both. |
+| `width`, `height` | For a panel | The panel's size; a status item holding controls or visuals needs both. |
+
+A status item has no title bar or sidebar, so a toolbar item, a title field, or a sidebar refuses the document, as
+do menus and controls together. A host that shows status items:
+
+- Draws them on the bar's right, before whatever it keeps there itself, such as a clock, and leaves out those past
+  its room.
+- Belongs each to the app that opened it, and takes it away when the app ends.
+- Closes an open panel on Escape, on a click outside it, or on its item again.
+
+A reader without status items refuses the unknown element, rather than showing one as a window. Hudini, whose games
+have no menu bar, does.
 
 ## Resources
 
@@ -818,7 +857,7 @@ both in `src/Venture.OS.Interface`; both must match this spec.
 
 Hudini reads a subset, the parts a raylib game needs: the root, `<Window>` and `<Panel>`, resources, styles,
 visuals, every control but `<Shelf>` and `<Grid>`, and the title bar's `<ToolbarItem>` and `<TitleField>`. It
-refuses menus, sidebars, shelves, grids, and panes as unknown elements, and skips `subtitle` and toolbar items' `image` and `placement`. Its
+refuses menus, sidebars, shelves, grids, panes, and status items as unknown elements, and skips `subtitle` and toolbar items' `image` and `placement`. Its
 [UISCRIPT.md](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) says how a Swift host uses it, and how it
 reads `.uis` files into the same model.
 
@@ -830,6 +869,9 @@ both; Hudini doesn't know `step` or `committed` yet.
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-25:** `<StatusItem>`, a root in place of `<Window>` or `<Panel>`: an app's item in a menu bar, a button,
+  a drop-down of its menus, or a panel of its controls, after the sidebar's logic. A reader from before refuses it as
+  an unknown element; `version` stays `1`.
 - **2026-11-25:** `<Slider>` is back with one job, choosing a value from `minValue` to `maxValue`, as Hudini reads it,
   with an optional `step` it snaps to, and `committed` when it's let go beside `changed` as it moves. It runs along
   its longer side. One with `scrolls` or `direction` is still refused. A reader from before `step` ignores it and
