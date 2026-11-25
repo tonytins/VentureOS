@@ -1,25 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- The Settings window: a sidebar of panes, as GNOME Settings has, each pane's controls in one place, of which the
-     sidebar shows one pane at a time. main.lua applies and saves each choice. -->
+     sidebar shows one pane at a time. Choices among pictures and colors are grids, after macOS's Appearance.
+     main.lua applies and saves each choice. -->
 <UIScript version="1">
-  <Window width="380" height="324"/>
+  <Window width="430" height="492" minWidth="430" minHeight="492" resizable="true"/>
   <Sidebar name="panes" width="130"/>
 
   <Style name="heading" fontSize="title"/>
   <Style name="quiet" textColor="secondaryText"/>
 
-  <!-- The accent swatches, GNOME's nine, in DesktopPalette.Swatches' order. A test keeps them in step. -->
-  <Style name="swatch1" backgroundColor="#3584E4"/>
-  <Style name="swatch2" backgroundColor="#2190A4"/>
-  <Style name="swatch3" backgroundColor="#3A944A"/>
-  <Style name="swatch4" backgroundColor="#C88800"/>
-  <Style name="swatch5" backgroundColor="#ED5B00"/>
-  <Style name="swatch6" backgroundColor="#E62D42"/>
-  <Style name="swatch7" backgroundColor="#D56199"/>
-  <Style name="swatch8" backgroundColor="#9141AC"/>
-  <Style name="swatch9" backgroundColor="#6F8396"/>
-
-  <!-- The swatches' names, from _1_settings.cst beside this file. -->
+  <!-- The swatches' names, from _1_settings.cst; the last is the custom color's hover text. -->
   <String name="swatch1Name" table="1" index="1"/>
   <String name="swatch2Name" table="1" index="2"/>
   <String name="swatch3Name" table="1" index="3"/>
@@ -30,61 +20,71 @@
   <String name="swatch8Name" table="1" index="8"/>
   <String name="swatch9Name" table="1" index="9"/>
   <String name="utcOffsetHint" table="1" index="10"/>
+  <String name="customName" table="1" index="11"/>
 
-  <!-- The wallpapers, the sky first, as thumbnails; main.lua puts each wallpaper's in its slot and hides the slots
-       it doesn't use. Every slot starts with the sky's, which ships beside this file. -->
-  <Image name="thumb1" path="Sky.png"/>
-  <Image name="thumb2" path="Sky.png"/>
-  <Image name="thumb3" path="Sky.png"/>
-  <Image name="thumb4" path="Sky.png"/>
-  <Image name="thumb5" path="Sky.png"/>
+  <!-- Pictures of each style and kind of scroll bar, drawn by Previews/previews.sh, and the sky's, for the wallpapers. -->
+  <Image name="styleAuto" path="StyleAuto.png"/>
+  <Image name="styleLight" path="StyleLight.png"/>
+  <Image name="styleDark" path="StyleDark.png"/>
+  <Image name="scrollClassic" path="ScrollClassic.png"/>
+  <Image name="scrollAutomatic" path="ScrollAutomatic.png"/>
+  <Image name="sky" path="Sky.png"/>
 
   <Pane name="appearance" title="Appearance">
-    <Text name="styleHeading" x="12" y="10" width="356" height="24" style="heading" text="Style"/>
-    <Button name="light" x="12" y="40" width="84" height="26" text="Light"/>
-    <Button name="dark" x="102" y="40" width="84" height="26" text="Dark"/>
-    <Button name="auto" x="192" y="40" width="84" height="26" text="Auto"/>
+    <Text name="styleHeading" x="12" y="10" width="406" height="24" style="heading" text="Style"/>
+    <Grid name="styles" x="12" y="38" width="406" height="116" itemWidth="112" itemHeight="72" spacing="16"
+          edgeOffsetLeft="12" edgeOffsetRight="12">
+      <Item name="auto" image="styleAuto" title="Auto"/>
+      <Item name="light" image="styleLight" title="Light"/>
+      <Item name="dark" image="styleDark" title="Dark"/>
+    </Grid>
 
-    <!-- When Auto is dark, by the clock; dark runs overnight when it starts later than it ends. -->
-    <Text name="darkFromLabel" x="12" y="77" width="70" height="20" text="Dark from"/>
-    <TextField name="darkFrom" x="84" y="74" width="60" height="26" placeholder="19:00"/>
-    <Text name="darkUntilLabel" x="152" y="77" width="36" height="20" text="until"/>
-    <TextField name="darkUntil" x="190" y="74" width="60" height="26" placeholder="07:00"/>
+    <!-- When Auto is dark, by the clock, shown while Auto is chosen; dark runs overnight when it starts later than it
+         ends. -->
+    <Text name="darkFromLabel" x="12" y="163" width="70" height="20" text="Dark from"/>
+    <TextField name="darkFrom" x="84" y="160" width="60" height="26" placeholder="19:00"/>
+    <Text name="darkUntilLabel" x="152" y="163" width="36" height="20" text="until"/>
+    <TextField name="darkUntil" x="190" y="160" width="60" height="26" placeholder="07:00"/>
 
-    <Text name="accentHeading" x="12" y="114" width="356" height="24" style="heading" text="Accent color"/>
-    <Button name="swatch1" x="12" y="144" width="32" height="36" style="swatch1" tooltip="swatch1Name"/>
-    <Button name="swatch2" x="52" y="144" width="32" height="36" style="swatch2" tooltip="swatch2Name"/>
-    <Button name="swatch3" x="92" y="144" width="32" height="36" style="swatch3" tooltip="swatch3Name"/>
-    <Button name="swatch4" x="132" y="144" width="32" height="36" style="swatch4" tooltip="swatch4Name"/>
-    <Button name="swatch5" x="172" y="144" width="32" height="36" style="swatch5" tooltip="swatch5Name"/>
-    <Button name="swatch6" x="212" y="144" width="32" height="36" style="swatch6" tooltip="swatch6Name"/>
-    <Button name="swatch7" x="252" y="144" width="32" height="36" style="swatch7" tooltip="swatch7Name"/>
-    <Button name="swatch8" x="292" y="144" width="32" height="36" style="swatch8" tooltip="swatch8Name"/>
-    <Button name="swatch9" x="332" y="144" width="32" height="36" style="swatch9" tooltip="swatch9Name"/>
+    <!-- GNOME's nine accents, in DesktopPalette.Swatches' order, which main.lua's table and a test keep in step, and a
+         custom color, typed in the field it shows. -->
+    <Text name="accentHeading" x="12" y="198" width="406" height="24" style="heading" text="Accent color"/>
+    <Grid name="accents" x="12" y="226" width="406" height="68" itemWidth="28" itemHeight="28" spacing="10"
+          titles="selected" edgeOffsetLeft="12" edgeOffsetRight="12">
+      <Item name="blue" color="#3584E4" string="swatch1Name"/>
+      <Item name="teal" color="#2190A4" string="swatch2Name"/>
+      <Item name="green" color="#3A944A" string="swatch3Name"/>
+      <Item name="yellow" color="#C88800" string="swatch4Name"/>
+      <Item name="orange" color="#ED5B00" string="swatch5Name"/>
+      <Item name="red" color="#E62D42" string="swatch6Name"/>
+      <Item name="pink" color="#D56199" string="swatch7Name"/>
+      <Item name="purple" color="#9141AC" string="swatch8Name"/>
+      <Item name="slate" color="#6F8396" string="swatch9Name"/>
+      <Item name="custom" title="+" tooltip="customName"/>
+    </Grid>
+    <TextField name="customAccent" x="12" y="298" width="120" height="26" placeholder="#RRGGBB"/>
+    <Text name="status" x="142" y="301" width="276" height="20" style="quiet"/>
 
-    <Text name="accentName" x="12" y="186" width="356" height="20" style="quiet"/>
-    <TextField name="custom" x="12" y="216" width="120" height="26" placeholder="#RRGGBB"/>
-    <Text name="status" x="142" y="219" width="226" height="20" style="quiet"/>
-
-    <!-- Scroll bars: classic, always shown with arrows, or automatic, shown while a list or text scrolls. -->
-    <Text name="scrollBarsHeading" x="12" y="256" width="356" height="24" style="heading" text="Scroll bars"/>
-    <Button name="scrollClassic" x="12" y="286" width="84" height="26" text="Classic"/>
-    <Button name="scrollAutomatic" x="102" y="286" width="96" height="26" text="Automatic"/>
+    <Text name="scrollBarsHeading" x="12" y="336" width="406" height="24" style="heading" text="Scroll bars"/>
+    <Grid name="scrollBars" x="12" y="364" width="406" height="116" itemWidth="112" itemHeight="72" spacing="16"
+          edgeOffsetLeft="12" edgeOffsetRight="12">
+      <Item name="classic" image="scrollClassic" title="Classic"/>
+      <Item name="automatic" image="scrollAutomatic" title="Automatic"/>
+    </Grid>
 <!-- Turning these back on needs the window taller.
-    <Text name="cornersHeading" x="12" y="322" width="356" height="24" style="heading" text="Window corners"/>
-    <Button name="rounded" x="12" y="352" width="84" height="26" text="Rounded"/>
-    <Button name="square" x="102" y="352" width="84" height="26" text="Square"/>
+    <Text name="cornersHeading" x="12" y="492" width="356" height="24" style="heading" text="Window corners"/>
+    <Button name="rounded" x="12" y="522" width="84" height="26" text="Rounded"/>
+    <Button name="square" x="102" y="522" width="84" height="26" text="Square"/>
 -->
   </Pane>
-  
+
   <Pane name="wallpaper" title="Wallpaper">
-     <Text name="wallpaperHeading" x="12" y="24" width="356" height="24" style="heading" text="Wallpaper"/>
-    <Button name="wallpaper1" x="12" y="56" width="64" height="48" image="thumb1"/>
-    <Button name="wallpaper2" x="84" y="56" width="64" height="48" image="thumb2"/>
-    <Button name="wallpaper3" x="156" y="56" width="64" height="48" image="thumb3"/>
-    <Button name="wallpaper4" x="228" y="56" width="64" height="48" image="thumb4"/>
-    <Button name="wallpaper5" x="300" y="56" width="64" height="48" image="thumb5"/>
-    <Text name="wallpaperName" x="12" y="120" width="356" height="20" style="quiet"/>
+    <!-- Every wallpaper, the sky first; main.lua fills them, and the grid scales each picture down. -->
+    <Text name="wallpaperHeading" x="12" y="10" width="406" height="24" style="heading" text="Wallpaper"/>
+    <Grid name="wallpapers" x="12" y="38" width="406" height="442" itemWidth="128" itemHeight="96" spacing="12"
+          edgeOffsetLeft="12" edgeOffsetRight="12" edgeOffsetTop="38" edgeOffsetBottom="34"/>
+    <Text name="wallpaperStatus" x="12" y="464" width="406" height="20" style="quiet"
+          edgeOffsetLeft="12" edgeOffsetRight="12" edgeOffsetBottom="8"/>
   </Pane>
 
   <Pane name="dock" title="Dock">

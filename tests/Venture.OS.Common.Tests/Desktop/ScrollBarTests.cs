@@ -177,6 +177,26 @@ public sealed class ScrollBarTests
     }
 
     [Fact]
+    public void FlashingShowsEveryAutomaticBarForAMoment_EvenTextNotYetWrapped()
+    {
+        view.ScrollBars = ScrollBarStyle.Automatic;
+        view.SetText("notes", Words + " " + Words);
+        view.TickScrollBars(TimeSpan.FromSeconds(4));
+
+        view.FlashScrollBars();
+
+        // The list's thumb, and the text area's, over the content at their right edges.
+        var painter = Drawn();
+        Assert.NotEqual(painter.At(50, 10), painter.At(94, 10));
+        Assert.NotEqual(painter.At(150, 10), painter.At(214, 10));
+        Assert.True(view.TickScrollBars(TimeSpan.FromSeconds(4.5)));
+
+        // A second later, they've gone.
+        view.TickScrollBars(TimeSpan.FromSeconds(5.1));
+        Assert.Equal(Drawn().At(50, 10), Drawn().At(94, 10));
+    }
+
+    [Fact]
     public void AnAutomaticBarShowsAsThePointerMovesOverItsList()
     {
         view.ScrollBars = ScrollBarStyle.Automatic;

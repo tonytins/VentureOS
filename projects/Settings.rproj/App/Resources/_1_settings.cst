@@ -1,6 +1,7 @@
-// Settings' text: the accent swatches' names, shown as hover text, in the
-// order of DesktopPalette.Swatches (a Lua table in main.lua shows the same
-// names), then the clock's offset field's hover text.
+// Settings' text: the accent swatches' names, shown under the chosen one, in
+// the order of DesktopPalette.Swatches (a Lua table in main.lua keeps their
+// colors), then the clock's offset field's hover text, then the custom
+// color's.
 1 ^Blue^
 2 ^Teal^
 3 ^Green^
@@ -11,3 +12,4 @@
 8 ^Purple^
 9 ^Slate^
 10 ^Your offset from UTC, such as -05:00, 5:30, or 0. Press Enter to set it.^
+11 ^Custom color: type it as #RRGGBB^

@@ -70,7 +70,7 @@ public static class VentureLibrary
             Gated("ping", ScriptScopes.Network, scopes, lua => Ping(lua, system.NetworkTools)),
             Gated("appearance", ScriptScopes.System, scopes, lua => PushAppearance(lua, system.Appearance)),
             Gated("setAppearance", ScriptScopes.System, scopes, lua => SetAppearance(lua, system.Appearance)),
-            Gated("wallpapers", ScriptScopes.System, scopes, lua => PushWallpapers(lua, system.Appearance)),
+            Gated("wallpapers", ScriptScopes.System, scopes, lua => PushWallpapers(lua, system.Appearance, system.Root)),
             Gated("time", ScriptScopes.System, scopes, lua => PushTime(lua, system.WallClock)),
             Gated("setUtcOffset", ScriptScopes.System, scopes, lua => SetUtcOffset(lua, system.WallClock)),
             Gated("processes", ScriptScopes.System, scopes, lua => PushProcesses(lua, system.Processes)),
@@ -382,7 +382,11 @@ public static class VentureLibrary
     /// <c>venture.wallpapers()</c>: the wallpapers to choose from, each <c>{ name, title, path }</c>, the path its picture's,
     /// sorted by name, without the sky; <c>nil</c> on a system without an appearance.
     /// </summary>
-    private static int PushWallpapers(ILuaState lua, IAppearance? appearance)
+    /// <remarks>
+    /// A path is as the script sees it (<see cref="FileRoot.Venture"/>), since Roundhouse's Run and airo keep the
+    /// system's files in a folder of their own; a wallpaper outside the files a script can reach is left out.
+    /// </remarks>
+    private static int PushWallpapers(ILuaState lua, IAppearance? appearance, FileRoot? root)
     {
         if (appearance is null)
         {
@@ -392,14 +396,24 @@ public static class VentureLibrary
 
         var wallpapers = appearance.Wallpapers();
         lua.CreateTable(wallpapers.Count, 0);
-        for (var index = 0; index < wallpapers.Count; index++)
+        var listed = 0;
+        foreach (var wallpaper in wallpapers)
         {
-            var wallpaper = wallpapers[index];
+            string path;
+            try
+            {
+                path = FileRoot.Venture(root, wallpaper.Path);
+            }
+            catch (ArgumentException)
+            {
+                continue;
+            }
+
             lua.NewTable();
             SetString(lua, "name", wallpaper.Name);
             SetString(lua, "title", wallpaper.Title);
-            SetString(lua, "path", wallpaper.Path);
-            lua.RawSetI(-2, index + 1);
+            SetString(lua, "path", path);
+            lua.RawSetI(-2, ++listed);
         }
 
         return 1;

@@ -442,6 +442,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | 0.8.3xx: Settings' project is redesigned around grids, with previews Roundhouse renders; it ships next. |
 | 2026-11-24 | minor | 0.8.3xx: wallpapers are plain pictures in `/mnt/system/wallpaper`, by my decision; the `.wallpaper` bundle, its thumbnail, and light and dark variants, which nothing used, are gone. |
 | 2026-11-24 | patch | 0.8.3xx: Roundhouse designs grids. Wallpapers will be plain pictures in `/mnt/system/wallpaper`, singular, by my correction. |
 | 2026-11-24 | minor | 0.8.3xx: `<Grid>` and `<Item>`: pictures, colors as circles, and plain tiles, of one size, wrapping and scrolling, one chosen, with titles below, under the chosen one, or none; listed in the document or filled by the app. Roundhouse designs them next. Settings will be redesigned around grids afterwards, its wallpapers becoming plain pictures, by my decision. |

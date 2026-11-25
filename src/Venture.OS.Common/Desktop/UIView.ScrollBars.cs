@@ -37,6 +37,9 @@ public sealed partial class UIView
     // Whether an automatic bar showed when the scroll bars were last checked, so the frame after one hides is drawn.
     private bool barsLingered;
 
+    // Until when every automatic bar shows; see FlashScrollBars.
+    private TimeSpan flashUntil = TimeSpan.MinValue;
+
     /// <summary>How the view's scroll bars look and behave, the sidebar's aside; the desktop sets it from the look.</summary>
     public ScrollBarStyle ScrollBars { get; set; } = ScrollBarStyle.Classic;
 
@@ -68,7 +71,7 @@ public sealed partial class UIView
     public bool TickScrollBars(TimeSpan now)
     {
         Now = now;
-        var showing = false;
+        var showing = flashUntil > now;
         foreach (var state in states.Values)
         {
             if (state.BarUntil > now)
@@ -228,6 +231,13 @@ public sealed partial class UIView
         });
     }
 
+    /// <summary>
+    /// Shows every automatic bar for <see cref="ScrollBarLinger"/> from <see cref="Now"/>, as just after its content
+    /// scrolled, so a picture of the view shows where its bars are. Classic bars always show.
+    /// </summary>
+    /// <remarks>It holds for whatever turns out to scroll when drawn, such as text not yet wrapped.</remarks>
+    public void FlashScrollBars() => flashUntil = Now + ScrollBarLinger;
+
     /// <summary>Keeps an automatic bar showing for a while, after its content scrolled or the pointer moved over it.</summary>
     private void ShowScrollBar(UIControl control)
     {
@@ -276,7 +286,7 @@ public sealed partial class UIView
 
         var held = barDrag?.Control == control.Name || barHold?.Control == control.Name;
         var grabbable = hover is { } at && TryScrollBar(control, PlaceOf(control), out var placed) && placed.Bar.Contains(at.X, at.Y);
-        if (!held && !grabbable && state.BarUntil <= Now)
+        if (!held && !grabbable && state.BarUntil <= Now && flashUntil <= Now)
             return;
 
         // Wider while the pointer can grab it, as GTK's widens.

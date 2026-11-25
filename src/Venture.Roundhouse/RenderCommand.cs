@@ -16,7 +16,8 @@ public static class RenderCommand
     public const string Flag = "--render";
 
     /// <summary>What it takes.</summary>
-    public const string Usage = "Usage: Roundhouse --render <document.uix> <picture.png> [--dark] [--accent #RRGGBB]";
+    public const string Usage =
+        "Usage: Roundhouse --render <document.uix> <picture.png> [--dark] [--accent #RRGGBB] [--scrollbars classic|automatic]";
 
     // Room around the window for its shadow and a little of the sky.
     private const int Margin = 24;
@@ -32,6 +33,7 @@ public static class RenderCommand
         List<string> paths = [];
         var dark = false;
         var accent = DesktopPalette.StandardAccent;
+        var bars = ScrollBarStyle.Classic;
         for (var index = 0; index < arguments.Count; index++)
         {
             switch (arguments[index])
@@ -45,6 +47,14 @@ public static class RenderCommand
                     break;
                 case "--accent":
                     error.WriteLine("Roundhouse: --accent needs a color written #RRGGBB, such as #3584E4.");
+                    error.WriteLine(Usage);
+                    return 2;
+                case "--scrollbars" when index + 1 < arguments.Count && DesktopLook.TryParseScrollBars(arguments[index + 1], out var style):
+                    bars = style;
+                    index++;
+                    break;
+                case "--scrollbars":
+                    error.WriteLine("Roundhouse: --scrollbars is classic or automatic.");
                     error.WriteLine(Usage);
                     return 2;
                 case var word when word.StartsWith("--", StringComparison.Ordinal):
@@ -64,7 +74,7 @@ public static class RenderCommand
         }
 
         var (document, picture) = (paths[0], paths[1]);
-        DesktopAppearance.Use(DesktopLook.Standard with { Mode = dark ? LookMode.Dark : LookMode.Light, Accent = accent });
+        DesktopAppearance.Use(DesktopLook.Standard with { Mode = dark ? LookMode.Dark : LookMode.Light, Accent = accent, ScrollBars = bars });
 
         UIView view;
         try
@@ -78,6 +88,10 @@ public static class RenderCommand
             error.WriteLine($"Roundhouse: {document}: {exception.Message}");
             return 1;
         }
+
+        // A picture can't scroll, so automatic bars show as they do just after scrolling, rather than not at all.
+        view.ScrollBars = bars;
+        view.FlashScrollBars();
 
         try
         {

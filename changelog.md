@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.308
+
+- `venture.wallpapers()` gives each picture's path as the script sees it, so an app run in Roundhouse or tested by airo can show the wallpapers.
+- `Roundhouse --render` takes `--scrollbars classic` or `automatic`, showing automatic bars as they look just after scrolling.
+- Settings' project is redesigned around grids: pictures of each style and kind of scroll bar, the accent colors as circles with a custom one, and every wallpaper. It reaches the system in the next build.
+
 ## 0.8.307
 
 - Wallpapers are plain pictures: `Earthset.png` and `Charger.png` in `/mnt/system/wallpaper`, each named by its file. A chosen wallpaper keeps its name, so a saved look still shows it. The `.wallpaper` bundle, its thumbnail, and its light and dark pictures are gone, and Roundhouse no longer opens one.

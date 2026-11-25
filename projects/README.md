@@ -20,6 +20,18 @@ Each app's tests are in its `Tests/` folder, written in Lua. [Testing an app](..
 write them. VentureOS's own tests, in `tests/`, cover the system rather than these apps, so a change to an app's
 design is checked by its own tests alone.
 
+## Settings' previews
+
+Settings shows a picture of each style and each kind of scroll bar. They're drawn by Roundhouse from
+`Settings.rproj/Previews/preview.uix`, as VentureOS draws, so after a change to the look, draw them again and commit
+the pictures it writes to `App/Resources`:
+
+```
+projects/Settings.rproj/Previews/previews.sh
+```
+
+It needs the .NET SDK and ImageMagick.
+
 ## Ship an app
 
 A project and its shipped app may differ while it's being worked on. When it's ready, build it into `rootfs/`,

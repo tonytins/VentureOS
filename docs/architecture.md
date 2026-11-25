@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,125 tests, and 300 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,127 tests, and 302 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1903,6 +1903,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | Scripting: `venture.wallpapers()` gives paths as the script sees them (`FileRoot.Venture`), so Roundhouse's Run and airo can show them; Roundhouse's `--render` takes `--scrollbars`, flashing automatic bars (`UIView.FlashScrollBars`) so a picture shows them. |
 | 2026-11-24 | minor | Desktop (§9): wallpapers are plain PNGs in `/mnt/system/wallpaper`, named by their files; the `.wallpaper` bundle kind, its thumbnails, and light and dark variants are gone; `venture.wallpapers()` gives `{ name, title, path }`. |
 | 2026-11-24 | patch | Roundhouse designs grids: the library's Grid, Insert ▸ Grid Item, and Move Into and Move Out kept to what the reader takes. |
 | 2026-11-24 | minor | Desktop (§9), interfaces: `<Grid>` and `<Item>` in UIScript, the reader, the schema, and `UIView`; `setItems`, `items`, `selected`, and `select` on grids, `event.item`; airo chooses grid items. Roundhouse doesn't design grids yet. |

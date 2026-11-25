@@ -160,10 +160,47 @@ public sealed class RootedScriptTests : IDisposable
         manager.CloseApp("Probe", output);
     }
 
-    private List<string> Run(string code)
+    [Fact]
+    public void WallpapersArePathsAsTheScriptSeesThem_AndOnesOutsideAreLeftOut()
+    {
+        var inside = Path.Combine(root, "mnt", "system", "wallpaper", "Charger.png");
+        var host = Path.Combine(outside, "Elsewhere.png");
+        FakeSystemInfo shown = new()
+        {
+            Root = new FileRoot(root),
+            SystemDirectory = "/mnt/system",
+            Appearance = new WallpapersOnly([new("Charger", "Charger", inside), new("Elsewhere", "Elsewhere", host)]),
+        };
+
+        var lines = Run("""
+            for _, wallpaper in ipairs(venture.wallpapers()) do print(wallpaper.name, wallpaper.path) end
+            """, shown);
+
+        Assert.Equal(["Charger\t/mnt/system/wallpaper/Charger.png"], lines);
+    }
+
+    /// <summary>An appearance with only wallpapers to give, at the host paths it's told.</summary>
+    private sealed class WallpapersOnly(IReadOnlyList<WallpaperChoice> choices) : IAppearance
+    {
+        public bool IsDark => false;
+        public string Mode => "light";
+        public string Accent => "#3584E4";
+        public bool RoundedCorners => true;
+        public string Dock => "always";
+        public string ScrollBars => "classic";
+        public string Wallpaper => "sky";
+        public string DarkFrom => "19:00";
+        public string DarkUntil => "07:00";
+
+        public IReadOnlyList<WallpaperChoice> Wallpapers() => choices;
+
+        public AppearanceChange Set(AppearanceRequest request) => new("not here", null);
+    }
+
+    private List<string> Run(string code, FakeSystemInfo? on = null)
     {
         RecordingOutput output = new();
-        LuaRunner.Run(output, "/mnt/user", lua => lua.DoString(code), system, scopes: ScriptScopes.All,
+        LuaRunner.Run(output, "/mnt/user", lua => lua.DoString(code), on ?? system, scopes: ScriptScopes.All,
             libraryDirectory: Path.Combine(root, "mnt", "system", "lib"));
         return output.Lines;
     }

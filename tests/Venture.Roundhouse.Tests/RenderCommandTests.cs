@@ -54,11 +54,34 @@ public sealed class RenderCommandTests : IDisposable
     [InlineData(new[] { "only-one.uix" }, 2, "Usage:")]
     [InlineData(new[] { "a.uix", "b.png", "--glow" }, 2, "--glow isn't an option")]
     [InlineData(new[] { "a.uix", "b.png", "--accent", "orange" }, 2, "#RRGGBB")]
+    [InlineData(new[] { "a.uix", "b.png", "--scrollbars", "overlay" }, 2, "classic or automatic")]
     [InlineData(new[] { "missing.uix", "b.png" }, 1, "missing.uix")]
     public void SaysWhatsWrong(string[] arguments, int exit, string reason)
     {
         Assert.Equal(exit, RenderCommand.Run(arguments, error));
         Assert.Contains(reason, error.ToString());
+    }
+
+    [Fact]
+    public void AutomaticScrollBarsShowInThePicture()
+    {
+        var document = Path.Combine(folder, "long.uix");
+        File.WriteAllText(document, $"""<UIScript><Window width="200" height="100"/><TextArea name="t" x="0" y="0" width="200" height="100" text="{string.Join("&#10;", Enumerable.Range(1, 20))}"/></UIScript>""");
+        var (classic, automatic, none) = (Path.Combine(folder, "classic.png"), Path.Combine(folder, "automatic.png"), Path.Combine(folder, "none.png"));
+        File.WriteAllText(Path.Combine(folder, "short.uix"), """<UIScript><Window width="200" height="100"/><TextArea name="t" x="0" y="0" width="200" height="100" text="1"/></UIScript>""");
+
+        Assert.Equal(0, RenderCommand.Run([document, classic], error));
+        Assert.Equal(0, RenderCommand.Run([document, automatic, "--scrollbars", "automatic"], error));
+        Assert.Equal(0, RenderCommand.Run([Path.Combine(folder, "short.uix"), none, "--scrollbars", "automatic"], error));
+
+        // Near the text area's right edge, halfway down: a classic track, a thin thumb at the top, and plain text area
+        // where nothing scrolls.
+        using var withClassic = SKBitmap.Decode(classic);
+        using var withAutomatic = SKBitmap.Decode(automatic);
+        using var withNone = SKBitmap.Decode(none);
+        var (x, y) = (24 + 200 - 5, 24 + 30 + 10);
+        Assert.NotEqual(withNone.GetPixel(x, y), withAutomatic.GetPixel(x, y));
+        Assert.NotEqual(withNone.GetPixel(x, y), withClassic.GetPixel(x, y));
     }
 
     [Fact]

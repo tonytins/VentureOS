@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A small window, drawn by previews.sh as Settings' pictures of each style and each kind of scroll bar: a sidebar,
+     a heading, a button, and text long enough to scroll. -->
+<UIScript version="1">
+  <Window width="200" height="150"/>
+  <Sidebar name="places" width="70"/>
+  <Pane name="home" title="Home"/>
+  <Pane name="work" title="Work"/>
+  <Pane name="trips" title="Trips"/>
+  <Style name="heading" fontSize="title"/>
+  <Text name="heading" x="10" y="8" width="180" height="24" style="heading" text="Notes" pane="home"/>
+  <TextArea name="notes" x="10" y="38" width="120" height="104" pane="home"
+            text="Milk&#10;Eggs&#10;Bread&#10;Tea&#10;Apples&#10;Rice&#10;Beans&#10;Soap&#10;Stamps&#10;Batteries"/>
+  <Button name="add" x="138" y="38" width="54" height="24" text="Add" pane="home"/>
+</UIScript>

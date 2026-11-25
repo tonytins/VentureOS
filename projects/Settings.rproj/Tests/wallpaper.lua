@@ -1,45 +1,26 @@
--- Wallpaper: the sky, then each of the system's wallpapers, the chosen one checked, named, and saved.
+-- Wallpaper: the sky, then every one of the system's wallpapers, in a grid; the chosen one is saved.
 
-test.case("Choosing the sky saves it", function(app)
+test.case("The sky comes first, then every wallpaper", function(app)
   app:choose("panes", "Wallpaper")
-  app:press("wallpaper1")
-  test.expect(app:checked("wallpaper1"))
-  test.equal(app:text("wallpaperName"), "Sky")
+  local rows = app:rows("wallpapers")
+  test.equal(rows[1], "Sky")
+  test.expect(#rows > 2, "the sky and the system's wallpapers")
+  test.equal(app:text("wallpaperStatus"), "", "every picture was read")
+end)
+
+test.case("Choosing a wallpaper saves it, and the grid shows it chosen", function(app)
+  app:choose("panes", "Wallpaper")
+  for index, title in ipairs(app:rows("wallpapers")) do
+    app:choose("wallpapers", index)
+    test.equal(app:chosen("wallpapers"), index, title .. " is chosen")
+  end
+
+  app:choose("wallpapers", "sky")
   test.expect(app:read("/mnt/user/settings/appearance.xml"):find('wallpaper="sky"', 1, true))
 end)
 
-test.case("Exactly one wallpaper is checked, and choosing another moves the check", function(app)
+test.case("The wallpaper in use is chosen when Settings opens", function(app)
+  local name = app:read("/mnt/user/settings/appearance.xml"):match('wallpaper="([^"]+)"') or "Charger"
   app:choose("panes", "Wallpaper")
-  local slots = {}
-  local slot = 1
-  while app:has("wallpaper" .. slot) do
-    if app:showing("wallpaper" .. slot) then
-      slots[#slots + 1] = "wallpaper" .. slot
-    end
-    slot = slot + 1
-  end
-  test.expect(#slots > 1, "the sky and at least one wallpaper show")
-
-  for _, chosen in ipairs(slots) do
-    app:press(chosen)
-    for _, other in ipairs(slots) do
-      test.equal(app:checked(other), other == chosen, other .. " after choosing " .. chosen)
-    end
-    test.expect(app:text("wallpaperName") ~= "", chosen .. " is named")
-  end
-end)
-
-test.case("Unused slots stay hidden after visiting another pane", function(app)
-  app:choose("panes", "Wallpaper")
-  local shown = {}
-  local slot = 1
-  while app:has("wallpaper" .. slot) do
-    shown[slot] = app:showing("wallpaper" .. slot)
-    slot = slot + 1
-  end
-  app:choose("panes", "Clock")
-  app:choose("panes", "Wallpaper")
-  for index, was in ipairs(shown) do
-    test.equal(app:showing("wallpaper" .. index), was, "wallpaper" .. index)
-  end
+  test.equal(app:rows("wallpapers")[app:chosen("wallpapers")], name)
 end)
