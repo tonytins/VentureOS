@@ -278,6 +278,21 @@ struct MCPTests {
         #expect(transports.allSatisfy { $0.mismatches.isEmpty && $0.unplayed.isEmpty })
     }
 
+    @Test func saysGoodbyeWhenTheAgentGoes() throws {
+        let transport = ScriptedTransport(Self.welcomed + [.sent("windows"), .answered("ok"), .sent("bye"), .answered("ok")])
+        let tools = VdbAgentTools(connect: { output in
+            let client = VdbClient(transport: transport, output: output, nonce: { ClientTests.nonce })
+            client.answerTimeout = 0
+            try client.hello(identity: ClientTests.identity)
+            return client
+        })
+        _ = tools.call("windows", arguments: [:])
+
+        tools.close()
+
+        #expect(transport.mismatches.isEmpty && transport.unplayed.isEmpty)
+    }
+
     @Test func saysWhenVentureOSIsTooOldForIt() throws {
         let (server, _) = server([ClientTests.hello, ClientTests.welcome, .answered("ok vdb/1 install launch"), .sent("bye"), .answered("ok")])
 

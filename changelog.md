@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.408
+
+- `vdb mcp` says goodbye when its agent goes, so VentureOS takes the next computer at once rather than calling itself busy for up to 30 seconds.
+
 ## 0.8.407
 
 - Toasts: notifications slide into the top-right corner, under the menu bar, three at most, newest on top, and slide out after 5 seconds; a click dismisses one. Each shows its app's icon and name, how long ago it came, and up to three lines of text.

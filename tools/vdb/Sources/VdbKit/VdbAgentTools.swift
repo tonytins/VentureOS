@@ -48,6 +48,13 @@ public final class VdbAgentTools {
         self.now = now
     }
 
+    /// Says goodbye on the connection, if there is one, as the agent goes, so VentureOS is free for the next
+    /// computer at once rather than after its idle limit.
+    public func close() {
+        try? client?.bye()
+        client = nil
+    }
+
     /// Runs a tool, turning anything that goes wrong into a failed result with the reason.
     func call(_ name: String, arguments: [String: JSONValue]) -> ToolResult {
         do {

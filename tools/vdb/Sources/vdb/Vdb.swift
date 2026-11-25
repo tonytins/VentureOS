@@ -141,6 +141,7 @@ struct Mcp: ParsableCommand {
         MCPServer(tools: tools, version: GitVersion.version).run(
             input: { readLine(strippingNewline: true) },
             output: { line in FileHandle.standardOutput.write(Data((line + "\n").utf8)) })
+        tools.close()
     }
 }
 
