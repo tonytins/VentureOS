@@ -40,7 +40,7 @@ public sealed class PaneDesignTests : IDisposable
         var window = Open();
 
         Assert.Null(window.ShownPane);
-        Assert.NotNull(window.Map!.BoundsOf(Index(window, "light")));
+        Assert.NotNull(window.Map!.BoundsOf(Index(window, "styles")));
         Assert.Null(window.Map.BoundsOf(Index(window, "utcOffset")));
         Assert.Null(window.Map.BoundsOf(Index(window, "developerOn")));
         window.Close();
@@ -71,7 +71,7 @@ public sealed class PaneDesignTests : IDisposable
         Assert.Equal(Index(window, "clock"), window.Selection);
         Assert.Equal("clock", window.ShownPane);
         Assert.NotNull(window.Map!.BoundsOf(Index(window, "utcOffset")));
-        Assert.Null(window.Map.BoundsOf(Index(window, "light")));
+        Assert.Null(window.Map.BoundsOf(Index(window, "styles")));
         window.Close();
     });
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.309
+
+- Settings is redesigned around grids, after macOS's Appearance. Style shows pictures of Auto, Light, and Dark, with Auto's times only while it's chosen; the accent colors are circles, the chosen one named under it, with a custom color that opens the `#RRGGBB` field; Scroll bars shows pictures of Classic and Automatic. Wallpaper shows every wallpaper, the sky first, not only five. The window is larger, and resizable.
+
 ## 0.8.308
 
 - `venture.wallpapers()` gives each picture's path as the script sees it, so an app run in Roundhouse or tested by airo can show the wallpapers.

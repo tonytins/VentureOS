@@ -390,7 +390,7 @@ being five slots by hand.
   Insert ▸ Grid Item.
 - [x] Wallpapers as plain pictures in `/mnt/system/wallpaper`, without
   bundles, thumbnails, or variants.
-- [ ] Settings redesigned around grids: the style, accent, and scroll bars as
+- [x] Settings redesigned around grids: the style, accent, and scroll bars as
   rendered previews and colors, every wallpaper, and a larger, resizable
   window; it ships.
 
@@ -442,6 +442,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | 0.8.3xx is complete: Settings ships with grids, built from its project by my word, and a boot showed it. The next band is the owner's to plan. |
 | 2026-11-25 | patch | 0.8.3xx: Settings' project is redesigned around grids, with previews Roundhouse renders; it ships next. |
 | 2026-11-24 | minor | 0.8.3xx: wallpapers are plain pictures in `/mnt/system/wallpaper`, by my decision; the `.wallpaper` bundle, its thumbnail, and light and dark variants, which nothing used, are gone. |
 | 2026-11-24 | patch | 0.8.3xx: Roundhouse designs grids. Wallpapers will be plain pictures in `/mnt/system/wallpaper`, singular, by my correction. |

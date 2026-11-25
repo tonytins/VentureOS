@@ -1462,14 +1462,20 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   first, and shows a control or visual in a pane only while that pane's row is
   selected (`IsShowing`), apart from what the app hides (`IsHidden`); a
   field whose pane goes away loses the keyboard. `window:setItems` refuses
-  a sidebar of panes. Settings declares Appearance, Dock, Clock, and
-  Developer in its `.uix`; its Lua only titles the window after the pane.
+  a sidebar of panes. Settings declares Appearance, Wallpaper, Dock, Clock,
+  and Developer in its `.uix`; its Lua only titles the window after the
+  pane. Its choices among pictures and colors are grids (since 0.8.3xx):
+  Appearance's style, with pictures Roundhouse renders
+  (`projects/Settings.rproj/Previews`), its accent colors and a custom one
+  that shows the `#RRGGBB` field, and its scroll bars; and every wallpaper,
+  the sky first.
 - **Rounded corners.** With `corners="rounded"` in the look, the
   standard, a window's four corners are rounded to a 10-pixel radius, its
   shadow too. Before a window draws, it reads back (`IPainter.ReadPixels`)
   what's under each corner; after, outside the curve that shows again, and
   along it the outline, blended by how much of each pixel the curve
-  covers. Settings' Appearance pane switches them.
+  covers. Settings has no switch for them while its Appearance pane is
+  full; `appearance` and `venture.setAppearance{ corners = ... }` still do.
 - **Zoom.** A resizable window has a green third button, which zooms it
   to fill the work area, between the menu bar and the dock, and a
   second click puts it back where it was, at its old
@@ -1903,6 +1909,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | Settings (§9): built from its project, Settings ships with grids for the style, accent, scroll bars, and every wallpaper, in a larger, resizable window. |
 | 2026-11-25 | patch | Scripting: `venture.wallpapers()` gives paths as the script sees them (`FileRoot.Venture`), so Roundhouse's Run and airo can show them; Roundhouse's `--render` takes `--scrollbars`, flashing automatic bars (`UIView.FlashScrollBars`) so a picture shows them. |
 | 2026-11-24 | minor | Desktop (§9): wallpapers are plain PNGs in `/mnt/system/wallpaper`, named by their files; the `.wallpaper` bundle kind, its thumbnails, and light and dark variants are gone; `venture.wallpapers()` gives `{ name, title, path }`. |
 | 2026-11-24 | patch | Roundhouse designs grids: the library's Grid, Insert ▸ Grid Item, and Move Into and Move Out kept to what the reader takes. |

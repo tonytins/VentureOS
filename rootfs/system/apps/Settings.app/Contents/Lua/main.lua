@@ -1,5 +1,6 @@
 -- Settings: panes in a sidebar, as GNOME Settings has them. Appearance holds
--- the desktop's look, light or dark, and its accent color; Dock, how the dock
+-- the desktop's look, light, dark, or auto, its accent color, and its scroll
+-- bars, each a grid of choices; Wallpaper, every wallpaper; Dock, how the dock
 -- behaves; Clock holds the clock's offset from UTC; Developer turns on
 -- developer mode, for vdb. Each look, dock, and clock choice applies at once
 -- and is saved in /mnt/user/settings, as the appearance and clock commands'
@@ -7,108 +8,113 @@
 
 local window = venture.ui.open("main.uix")
 
--- GNOME's nine accents, in the order of the buttons and their styles in main.uix.
+-- GNOME's nine accents, by their items' names in main.uix, in the order of
+-- DesktopPalette.Swatches; the items draw the same colors.
 local SWATCHES = {
-  { name = "Blue", accent = "#3584E4" },
-  { name = "Teal", accent = "#2190A4" },
-  { name = "Green", accent = "#3A944A" },
-  { name = "Yellow", accent = "#C88800" },
-  { name = "Orange", accent = "#ED5B00" },
-  { name = "Red", accent = "#E62D42" },
-  { name = "Pink", accent = "#D56199" },
-  { name = "Purple", accent = "#9141AC" },
-  { name = "Slate", accent = "#6F8396" },
+  blue = "#3584E4", teal = "#2190A4", green = "#3A944A", yellow = "#C88800", orange = "#ED5B00",
+  red = "#E62D42", pink = "#D56199", purple = "#9141AC", slate = "#6F8396",
 }
 
--- The wallpapers in the picker's slots, the sky first, then as many of the
--- system's as there are slots for.
-local WALLPAPER_SLOTS = 5
-local wallpapers = { { name = "sky", title = "Sky" } }
-for _, wallpaper in ipairs(venture.wallpapers() or {}) do
-  if #wallpapers < WALLPAPER_SLOTS then wallpapers[#wallpapers + 1] = wallpaper end
+-- Where each choice sits in its grid, by its item's name.
+local function indexOf(grid, name)
+  local items = { styles = { "auto", "light", "dark" }, scrollBars = { "classic", "automatic" } }
+  for index, item in ipairs(items[grid]) do
+    if item == name then return index end
+  end
 end
 
--- Shows the look in use: which mode is checked, and the accent's name.
+-- The wallpapers, the sky first, each its picture, which the grid scales down.
+local wallpapers = { { name = "sky", title = "Sky", image = "sky" } }
+for _, wallpaper in ipairs(venture.wallpapers() or {}) do
+  wallpapers[#wallpapers + 1] = { name = wallpaper.name, title = wallpaper.title, image = wallpaper.path }
+end
+local filled, problem = pcall(window.setItems, window, "wallpapers", wallpapers)
+if not filled then
+  -- A picture that can't be read leaves the sky alone to choose, and says why.
+  window:setItems("wallpapers", { wallpapers[1] })
+  window:setText("wallpaperStatus", tostring(problem):gsub("^.-window:setItems: ", ""))
+  wallpapers = { wallpapers[1] }
+end
+
+-- Whether the custom field shows: while the custom color is chosen.
+local customChosen = false
+
+-- Shows the look in use in every grid, and Auto's times while Auto is chosen.
 local function show()
   local look = venture.appearance()
-  window:setChecked("light", look.mode == "light")
-  window:setChecked("dark", look.mode == "dark")
-  window:setChecked("auto", look.mode == "auto")
+  window:select("styles", indexOf("styles", look.mode))
+  window:select("scrollBars", indexOf("scrollBars", look.scrollbars))
   window:setText("darkFrom", look.darkFrom)
   window:setText("darkUntil", look.darkUntil)
-  -- window:setChecked("rounded", look.corners == "rounded")
-  -- window:setChecked("square", look.corners == "square")
-
-  local shown = look.wallpaper
-  for slot, wallpaper in ipairs(wallpapers) do
-    window:setChecked("wallpaper" .. slot, wallpaper.name == look.wallpaper)
-    if wallpaper.name == look.wallpaper then shown = wallpaper.title end
+  for _, name in ipairs({ "darkFromLabel", "darkFrom", "darkUntilLabel", "darkUntil" }) do
+    window:setHidden(name, look.mode ~= "auto")
   end
-  window:setText("wallpaperName", shown)
 
-  local name = "Custom, " .. look.accent
-  for _, swatch in ipairs(SWATCHES) do
-    if swatch.accent == look.accent then name = swatch.name end
+  -- The swatch whose color is the accent, or else the custom color, which shows its field.
+  local accent = 10
+  for index, name in ipairs({ "blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate" }) do
+    if SWATCHES[name] == look.accent then accent = index end
   end
-  window:setText("accentName", name)
+  window:select("accents", accent)
+  customChosen = customChosen or accent == 10
+  window:setHidden("customAccent", not customChosen)
+
+  for index, wallpaper in ipairs(wallpapers) do
+    if wallpaper.name == look.wallpaper then window:select("wallpapers", index) end
+  end
 end
 
--- Applies a look, and says when it couldn't be used or saved.
-local function choose(mode, accent)
-  local ok, problem = venture.setAppearance(mode, accent)
-  window:setText("status", problem or "")
-  if ok then show() end
+-- Applies a change to the look, and says when it couldn't be used or saved.
+local function apply(change, status)
+  local ok, problem = venture.setAppearance(change)
+  window:setText(status or "status", problem or "")
+  show()
   return ok
 end
 
--- Rounds or squares every window's corners, keeping the rest of the look.
-local function corners(shape)
-  local ok, problem = venture.setAppearance({ corners = shape })
-  window:setText("status", problem or "")
-  if ok then show() end
-end
+window:on("styles", function(event)
+  if event.kind == "selected" then apply({ mode = event.item }) end
+end)
 
--- Each slot shows its wallpaper's picture, scaled down, and choosing it shows it on the
--- desktop; a picture that can't be read says so, and the slot stays.
-for slot = 1, WALLPAPER_SLOTS do
-  local wallpaper = wallpapers[slot]
-  if wallpaper then
-    if wallpaper.path then
-      local ok, problem = window:setImage("thumb" .. slot, wallpaper.path)
-      if not ok then window:setText("status", problem) end
-    end
-    window:on("wallpaper" .. slot, function()
-      local ok, problem = venture.setAppearance({ wallpaper = wallpaper.name })
-      window:setText("status", problem or "")
-      if ok then show() end
-    end)
+window:on("accents", function(event)
+  if event.kind ~= "selected" then return end
+  if event.item == "custom" then
+    -- The field shows, to type a color in; the accent stays until one's typed.
+    customChosen = true
+    window:setHidden("customAccent", false)
+    window:focus("customAccent")
+    return
   end
-end
+  customChosen = false
+  apply({ accent = SWATCHES[event.item] })
+end)
 
--- window:on("rounded", function() corners("rounded") end)
--- window:on("square", function() corners("square") end)
-window:on("light", function() choose("light") end)
-window:on("dark", function() choose("dark") end)
-window:on("auto", function() choose("auto") end)
+window:on("customAccent", function()
+  local typed = window:text("customAccent"):match("^%s*(.-)%s*$"):upper()
+  if apply({ accent = typed }) then window:setText("customAccent", "") end
+end)
+
+window:on("scrollBars", function(event)
+  if event.kind == "selected" then apply({ scrollbars = event.item }) end
+end)
+
+window:on("wallpapers", function(event)
+  if event.kind == "selected" then apply({ wallpaper = event.item }, "wallpaperStatus") end
+end)
+
+-- Rounds or squares every window's corners, keeping the rest of the look.
+-- window:on("rounded", function() apply({ corners = "rounded" }) end)
+-- window:on("square", function() apply({ corners = "square" }) end)
 
 -- Auto's times, typed HH:MM and set with Enter; a wrong one says why and the
 -- field goes back to the time in use.
 local function schedule(field, key)
   local typed = window:text(field):match("^%s*(.-)%s*$")
-  local ok, problem = venture.setAppearance({ [key] = typed })
-  window:setText("status", problem or "")
-  show()
+  apply({ [key] = typed })
 end
 
 window:on("darkFrom", function() schedule("darkFrom", "darkFrom") end)
 window:on("darkUntil", function() schedule("darkUntil", "darkUntil") end)
-for number, swatch in ipairs(SWATCHES) do
-  window:on("swatch" .. number, function() choose(venture.appearance().mode, swatch.accent) end)
-end
-window:on("custom", function()
-  local typed = window:text("custom"):match("^%s*(.-)%s*$"):upper()
-  if choose(venture.appearance().mode, typed) then window:setText("custom", "") end
-end)
 
 -- Shows the clock: the time and its offset from UTC, or that the hardware clock isn't set.
 local function showClock(problem)
@@ -208,9 +214,6 @@ end
 window:on("panes", function(event)
   if event.kind == "selected" then showPane(event.index) end
 end)
-
--- Wallpaper slots past the last wallpaper stay hidden.
-for slot = #wallpapers + 1, WALLPAPER_SLOTS do window:setHidden("wallpaper" .. slot, true) end
 
 show()
 showDock()
