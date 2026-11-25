@@ -93,7 +93,7 @@ public sealed partial class UIView
 
     /// <summary>Whether a control scrolls with a bar of its own: a list, text area, or the sidebar's rows.</summary>
     private bool HasOwnScrollBar(UIControl control) =>
-        control.Type is UIControlType.List or UIControlType.TextArea;
+        control.Type is UIControlType.List or UIControlType.TextArea or UIControlType.Grid;
 
     /// <summary>How much room a classic bar takes from a control's content: its width while it shows, else nothing.</summary>
     private int ClassicBarRoom(UIControl control) =>
@@ -114,7 +114,9 @@ public sealed partial class UIView
             return false;
 
         var state = states[control.Name];
-        var shown = state.List is { } list ? Math.Max(1, list.Items.Count - last) : VisibleLines(control);
+        var shown = state.List is { } list ? Math.Max(1, list.Items.Count - last)
+            : state.Grid is not null ? GridVisibleRows(control)
+            : VisibleLines(control);
 
         // Inside a list's or text area's outline; the sidebar has none.
         var edge = ReferenceEquals(control, sidebar) ? 0 : 1;

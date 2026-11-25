@@ -82,7 +82,7 @@ public sealed class ProjectTestsTests : IDisposable
     [Theory]
     [InlineData("app:press(\"nothing\")", "Tests/sample.lua:1: app:press: there's no \"nothing\" in Sample")]
     [InlineData("app:press(\"off\")", "Tests/sample.lua:1: app:press: \"off\" is dimmed, so a person couldn't use it")]
-    [InlineData("app:choose(\"count\", 1)", "Tests/sample.lua:1: app:choose: \"count\" isn't a list")]
+    [InlineData("app:choose(\"count\", 1)", "Tests/sample.lua:1: app:choose: \"count\" isn't a list or a grid")]
     public void UsingWhatAPersonCouldntFails(string call, string failure)
     {
         var result = Assert.Single(Run($"test.case(\"use\", function(app) {call} end)"));
@@ -170,6 +170,13 @@ public sealed class ProjectTestsTests : IDisposable
               test.equal(app:text("result"), "Went to /mnt/user")
               app:type("body", "hello")
               test.equal(app:text("result"), "Typed hello")
+
+              test.equal(table.concat(app:rows("looks"), "|"), "Light|Dark")
+              app:choose("looks", "dark")
+              test.equal(app:chosen("looks"), 2)
+              test.equal(app:text("result"), "Chose dark")
+              app:choose("looks", "Light")
+              test.equal(app:text("result"), "Chose light")
 
               test.expect(app:has("reset") and app:has("place") and app:has("add") and app:has("fruits"))
               test.expect(not app:has("nothing"))

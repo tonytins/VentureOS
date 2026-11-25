@@ -19,7 +19,8 @@ public enum UIEventKind
 }
 
 /// <summary>An event, with the control's name and, depending on the kind, its text or index.</summary>
-public readonly record struct UIEvent(UIEventKind Kind, string Control, string? Text = null, int Index = -1);
+/// <param name="Item">The name of a grid's item that was chosen or opened, when it has one.</param>
+public readonly record struct UIEvent(UIEventKind Kind, string Control, string? Text = null, int Index = -1, string? Item = null);
 
 /// <summary>A rectangle in pixels.</summary>
 public readonly record struct UIRect(float X, float Y, float Width, float Height)
@@ -172,6 +173,7 @@ public sealed partial class UIView
                 Value = control.ValueRange?.Minimum ?? 0,
                 List = control.Type == UIControlType.List ? new UIListState() : null,
                 Shelf = control.Type == UIControlType.Shelf ? new Shelf() : null,
+                Grid = control.Grid is { } layout ? NewGrid(layout, resolveString) : null,
                 Pane = control.Pane,
             };
 
@@ -661,7 +663,7 @@ public sealed partial class UIView
             var control = script.Controls[index];
             var state = states[control.Name];
             if (Showing(state) && Place(control.Frame, control.InSidebar, control.Image is not null).Contains(x, y))
-                return state.Tooltip;
+                return (state.Grid is not null ? GridTooltipAt(control, x, y) : null) ?? state.Tooltip;
         }
 
         return null;
@@ -823,6 +825,9 @@ public sealed partial class UIView
                 case UIControlType.Shelf:
                     DrawShelf(painter, control, state.Shelf!, bounds, originX, originY);
                     break;
+                case UIControlType.Grid:
+                    DrawGrid(target, control, state, bounds);
+                    break;
             }
         }
 
@@ -860,6 +865,10 @@ public sealed partial class UIView
 
             case UIControlType.TextArea:
                 focused = null;
+                break;
+
+            case UIControlType.Grid:
+                PressGrid(hit, state.Grid!, x, y, time, events);
                 break;
 
             case UIControlType.List when hit.IsSelectable:
@@ -906,7 +915,7 @@ public sealed partial class UIView
 
     private void ScrollOver(UIControl control, int scroll)
     {
-        if (control.Type is UIControlType.List or UIControlType.TextArea)
+        if (control.Type is UIControlType.List or UIControlType.TextArea or UIControlType.Grid)
         {
             ScrollBy(control, scroll);
             ShowScrollBar(control);
@@ -919,6 +928,8 @@ public sealed partial class UIView
         var state = states[control.Name];
         if (state.List is { } list)
             return (list.FirstVisible, LastFirstRow(control, list));
+        if (state.Grid is { } grid)
+            return (grid.FirstRow, Math.Max(0, GridShape(control).Rows - GridVisibleRows(control)));
 
         var lines = state.Lines?.Count ?? 1;
         return (state.FirstLine, Math.Max(0, lines - VisibleLines(control)));
@@ -930,6 +941,8 @@ public sealed partial class UIView
         var (_, last) = ScrollPosition(control);
         if (state.List is { } list)
             list.FirstVisible = Math.Clamp(first, 0, last);
+        else if (state.Grid is { } grid)
+            grid.FirstRow = Math.Clamp(first, 0, last);
         else
             state.FirstLine = Math.Clamp(first, 0, last);
     }
@@ -1307,8 +1320,11 @@ public sealed partial class UIView
         var controls = script.Controls;
         for (var index = 0; index < controls.Count; index++)
         {
-            if (states[controls[index].Name].List is { } list)
+            var state = states[controls[index].Name];
+            if (state.List is { } list)
                 FollowList(controls[index], list);
+            else if (state.Grid is { } grid)
+                FollowGrid(controls[index], grid);
         }
 
         if (sidebar is not null)
@@ -1845,6 +1861,9 @@ public sealed partial class UIView
 
         // A shelf control's icons, which its owner fills.
         public Shelf? Shelf { get; init; }
+
+        // A grid's items, which the document lists and its owner may replace.
+        public UIGridState? Grid { get; init; }
 
         // The pane a control is in, which shows it only while that pane's row is selected.
         public string? Pane { get; init; }

@@ -8,7 +8,7 @@ internal static class SampleProjects
     /// <summary>
     /// A project in <paramref name="folder"/> whose app is a window that counts presses of <c>count</c> (or the
     /// <c>add</c> toolbar item) in <c>result</c>, which the <c>reset</c> menu item sets back; greets whoever's
-    /// submitted in <c>name</c>; says which <c>fruits</c> row was chosen; says when <c>body</c> was typed in or
+    /// submitted in <c>name</c>; says which <c>fruits</c> row, or <c>looks</c> grid item, was chosen; says when <c>body</c> was typed in or
     /// <c>place</c>, its title field, was submitted; counts its timer's ticks in <c>ticks</c>; hits an error on
     /// <c>boom</c>; keeps <c>off</c> dimmed; and opens a window for New Window and for a file.
     /// </summary>
@@ -40,6 +40,9 @@ internal static class SampleProjects
             end)
             window:on("fruits", function()
               window:setText("result", "Chose row " .. window:selected("fruits"))
+            end)
+            window:on("looks", function(event)
+              window:setText("result", "Chose " .. event.item)
             end)
             window:on("body", function(event)
               if event.kind == "changed" then
@@ -83,6 +86,10 @@ internal static class SampleProjects
               <List name="fruits" x="12" y="108" width="276" height="60" selectable="true"/>
               <TextArea name="body" x="12" y="176" width="276" height="60"/>
               <Text name="ticks" x="12" y="244" width="276" height="20" text="0"/>
+              <Grid name="looks" x="12" y="268" width="276" height="28" itemWidth="20" itemHeight="20" titles="none">
+                <Item name="light" title="Light" color="#FFFFFF"/>
+                <Item name="dark" title="Dark" color="#000000"/>
+              </Grid>
             </UIScript>
 
             """);

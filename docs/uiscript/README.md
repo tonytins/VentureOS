@@ -58,7 +58,7 @@ demo documents.
 - `DOCTYPE` declarations are not allowed, which also rules out custom entities. The five standard entities, such as
   `&lt;`, work as usual.
 - Every element is a direct child of `<UIScript>`, in any order, and holds no children, except where its section
-  says it may hold others, as a [`<Menu>`](#menus), a [`<Pane>`](#panes), and a [`<Sidebar>`](#sidebar) do. An element anywhere else refuses the
+  says it may hold others, as a [`<Menu>`](#menus), a [`<Pane>`](#panes), a [`<Sidebar>`](#sidebar), and a [`<Grid>`](#grid) do. An element anywhere else refuses the
   document.
 - No element holds text. Text goes in attributes.
 - Controls draw in document order, with later controls on top, whether they sit in `<UIScript>` or in a pane.
@@ -291,6 +291,7 @@ Every control takes `name` and the position and size attributes. All of these ar
 | `<ProgressBar>` | A bar filled in proportion to a value | `minValue`, `maxValue` |
 | `<Region>` | A rectangle the host draws into | None |
 | `<Shelf>` | A row of icons the host fills, such as a dock's | None. See [Shelf](#shelf). |
+| `<Grid>` | Items of one size in rows that wrap and scroll, one of them chosen | `itemWidth`, `itemHeight`, `spacing`, `titles`. See [Grid](#grid). |
 
 - **`text` and `string`:** `text` is literal, and `string` names a `<String>`. A control takes one or the other, and
   `placeholder` and `placeholderString` work the same way.
@@ -352,6 +353,52 @@ and a group, with a divider between items whose groups differ. A click on an ite
 In VentureOS, apps give them through `window:setItems(name, items)`.
 
 A reader without shelves refuses the document as it does any unknown element, by design.
+
+### Grid
+
+A **grid** holds items of one size, a picture, a color, or a plain tile with its title, in rows that wrap to its
+width, as wallpapers or accent colors are chosen from. One item is chosen at a time.
+
+```xml
+<String name="blueName" table="1" index="1"/>
+<Image name="earthset" path="earthset.png"/>
+<Grid name="accents" x="12" y="40" width="356" height="60" itemWidth="28" itemHeight="28" spacing="12"
+      titles="selected">
+  <Item name="blue" color="#3584E4" string="blueName"/>
+  <Item name="teal" color="#2190A4" title="Teal"/>
+</Grid>
+<Grid name="wallpapers" x="12" y="120" width="356" height="200" itemWidth="96" itemHeight="72">
+  <Item name="earthset" image="earthset" title="Earthset"/>
+</Grid>
+```
+
+`<Grid>` is a control, and follows the rules for controls. It also takes:
+
+- **`itemWidth` and `itemHeight`:** required, above 0. Every item's cell is this size, and a picture is scaled to
+  fill it. A title, when one shows, sits under the cell.
+- **`spacing`:** the room between cells, across and down, 0 or more, which defaults to `8`.
+- **`titles`:** `below`, the default, shows every item's title under it; `selected` shows only the chosen item's, as
+  a row of colors names the one in use; `none` shows none. Any other value refuses the document.
+
+A grid holds only `<Item>`s, and an `<Item>` belongs only in a grid. An item takes:
+
+| Attribute | Value |
+| --- | --- |
+| `name` | What the grid reports when the item is chosen. Optional, and unique in the document like any name. |
+| `title` or `string` | What the item's called, literal or a `<String>`. |
+| `image` | An `<Image>` to show. |
+| `color` | A color to show, `#RRGGBB` or `#RRGGBBAA`. |
+| `tooltip` | A `<String>` shown while the pointer rests on the item. |
+
+An item shows an image or a color, never both, or with neither, a plain tile with its title inside it. One with
+nothing to show refuses the document.
+
+The host may replace a grid's items with its own, as it fills a list, and they keep the same rules. It lays the
+items out in as many columns as fit, from the left, row after row, and scrolls by rows once they don't all fit,
+with a scroll bar of its own, as a list does. A click on an item chooses it and reports `selected`, with its index
+and name; a second click on it soon after reports `submitted`, as a list's double-click does.
+
+A reader without grids refuses the document, as it does any unknown element, by design.
 
 ## Title bar
 
@@ -658,9 +705,9 @@ Controls report what the person does as events carrying the control's name.
 | Event | Reported when |
 | --- | --- |
 | `pressed` | A button, toolbar item, menu item, or shelf item is chosen. Opening a menu or submenu reports nothing. |
-| `submitted` | Enter is pressed in a text field or title field, with its text, or an item in a selectable list is double-clicked, with the item's text. |
+| `submitted` | Enter is pressed in a text field or title field, with its text, or an item in a selectable list or a grid is double-clicked, with the item's text, and a grid item's name. |
 | `changed` | A text area's text changes by typing or an edit, with its text, where the reader reports it. |
-| `selected` | A click on a selectable list or sidebar picks a different row, with its index. |
+| `selected` | A click on a selectable list or sidebar picks a different row, with its index, or on a grid a different item, with its index and name. |
 
 A handler checks the kind, so `submitted` from a list and from a field are told apart by name.
 
@@ -707,7 +754,7 @@ The format leaves to the host everything about live data and drawing. A host:
 
 - Supplies images and strings, and reports which it couldn't. A missing string shows its table and index instead.
 - Shows and hides controls, disables buttons and items, and marks toggles or choices, by name.
-- Sets text at runtime, the value of a progress bar, and a list's items and selection. A host's own items
+- Sets text at runtime, the value of a progress bar, and a list's or grid's items and selection. A host's own items
   are the source of what a selection's index means, and setting a selection reports no event.
 - Gives the view a new size when the space around anchored controls changes, and never below the document's
   minimum on either axis.
@@ -743,8 +790,8 @@ both in `src/Venture.OS.Interface`; both must match this spec.
 ### Hudini
 
 Hudini reads a subset, the parts a raylib game needs: the root, `<Window>` and `<Panel>`, resources, styles,
-visuals, every control but `<Shelf>`, and the title bar's `<ToolbarItem>` and `<TitleField>`. It refuses menus,
-sidebars, shelves, and panes as unknown elements, and skips `subtitle` and toolbar items' `image` and `placement`. Its
+visuals, every control but `<Shelf>` and `<Grid>`, and the title bar's `<ToolbarItem>` and `<TitleField>`. It
+refuses menus, sidebars, shelves, grids, and panes as unknown elements, and skips `subtitle` and toolbar items' `image` and `placement`. Its
 [UISCRIPT.md](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) says how a Swift host uses it, and how it
 reads `.uis` files into the same model.
 
@@ -755,6 +802,9 @@ refuses, so a document using them reads in Hudini and not here until it does.
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-24:** `<Grid>`, items of one size, pictures, colors, or plain tiles, in rows that wrap and scroll, one of
+  them chosen, and `<Item>`, which a grid holds. `selected` and `submitted` carry a grid item's name. A reader from
+  before refuses a grid as an unknown element.
 - **2026-11-24:** `<Slider>` is gone, with `scrolls` and `direction` on `<Button>` and `orientation`: lists and text
   areas scroll by themselves, with a bar the host draws. `changed` is a text area's alone. `version` stays `1`, since
   the spec is a draft; a reader refuses a document that still has a slider or a scroll button, with what to do, and

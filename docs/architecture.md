@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,067 tests, and 296 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,127 tests, and 296 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1776,6 +1776,19 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   changes, so `WindowManager` gives every window's view the style and the
   frame's time (`TickScrollBars`), and draws while a bar is showing on its
   own, the frame after it hides, and while an arrow repeats.
+- **Grids** (`<Grid>` and `<Item>`, `UIView.Grid.cs`, `UIGridState`).
+  Items of one size, a picture scaled to its cell and kept, a color as a
+  circle, or a plain tile with its title, in as many columns as fit,
+  scrolling by rows with a bar of their own; a classic bar takes its room
+  only once the rows don't fit, and the items wrap again in what's left.
+  The chosen item is ringed in the accent, and titles show under every
+  item, only the chosen one, or none, when the item's title is its hover
+  text. A click reports `selected` with the index and the item's name
+  (`UIEvent.Item`, `event.item` in Lua), and a second soon after
+  `submitted`. The document lists items, and `window:setItems` replaces
+  them, reading a picture by its `<Image>` name or its path, as `setImage`
+  does; `items`, `selected`, and `select` work as on a list, and airo's
+  `choose`, `rows`, and `chosen` too, choosing an item by its title or name.
 - **Focus comes back.** A window that leaves the front remembers its focused
   field, and gets it back when it comes forward again (`UIView.RestoreFocus`),
   unless the click that brought it forward landed elsewhere in it.
@@ -1887,6 +1900,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | Desktop (§9), interfaces: `<Grid>` and `<Item>` in UIScript, the reader, the schema, and `UIView`; `setItems`, `items`, `selected`, and `select` on grids, `event.item`; airo chooses grid items. Roundhouse doesn't design grids yet. |
 | 2026-11-24 | patch | Desktop (§9): the scroll bar style is chosen in Settings, with `appearance --scrollbars`, and through `venture.appearance` and `setAppearance`; an automatic bar shows however its content scrolls, and only for content that scrolls. |
 | 2026-11-24 | minor | Desktop (§9), interfaces: `<Slider>`, `scrolls`, `direction`, and `orientation` leave UIScript and `UIView`; the reader refuses a slider or scroll button; TextEdit and Terminal drop theirs; airo's `app:slide` goes. |
 | 2026-11-24 | patch | Desktop (§9): the sidebar's scroll bar is always automatic, whatever the style, so it takes no room from the rows. |

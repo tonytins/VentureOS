@@ -1,5 +1,6 @@
 using Venture.OS.Bundles;
 using Venture.OS.Desktop;
+using Venture.OS.Interface;
 using Venture.OS.Scripting;
 using Venture.OS.Shell;
 using Venture.OS.Tests.Scripting;
@@ -485,6 +486,68 @@ public sealed class UiLibraryTests : IDisposable
         Assert.StartsWith("false", output.Lines[4]);
         Assert.Contains("isn't an <Image>", output.Lines[4]);
         Assert.Empty(Assert.Single(windows.Windows).View.MissingImages);
+        apps.CloseApp("Pad", new RecordingOutput());
+    }
+
+    [Fact]
+    public void AGridsItemsAreSetChosenAndReportedFromLua()
+    {
+        var system = Path.Combine(root, "system");
+        Directory.CreateDirectory(system);
+        File.WriteAllText(Path.Combine(system, "pic.png"), "a picture");
+        DesktopImage picture = new(1, 1, [unchecked((int)0xFF000000)]);
+        AppWindows withImages = new(windows, events)
+        {
+            SystemFolder = system,
+            LoadImage = path => File.Exists(path) ? picture : null,
+        };
+        CommandRegistry registry = new();
+        AppManager apps = new(Path.Combine(root, "apps"), new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: withImages);
+        Write($$"""
+            local window = venture.ui.open("main.uix")
+            window:on("g", function(event) print(event.kind, event.index, event.item, event.text) end)
+            print(window:setItems("g", { "Plain", { title = "Red", name = "red", color = "#FF0000" },
+              { title = "Sky", image = "sky", tooltip = "Blue" }, { title = "File", image = "{{system}}/pic.png" } }))
+            local items = window:items("g")
+            print(#items, items[1], items[4])
+            window:select("g", 2)
+            print(window:selected("g"))
+            print(pcall(window.setItems, window, "g", { { title = "x", image = "sky", color = "#000000" } }))
+            print(pcall(window.setItems, window, "g", { { color = "blue" } }))
+            print(pcall(window.setItems, window, "g", { { tooltip = "t" } }))
+            print(pcall(window.setItems, window, "g", { { title = "x", image = "nowhere.png" } }))
+            print(pcall(window.select, window, "g", 9))
+            print(#window:items("g"), window:selected("g"))
+            """);
+        var resources = Path.Combine(root, "apps", "Pad.app", "Contents", "Resources");
+        File.WriteAllText(Path.Combine(resources, "main.uix"), """
+            <UIScript version="1">
+              <Window width="200" height="120"/>
+              <Image name="sky" path="sky.png"/>
+              <Grid name="g" x="10" y="10" width="180" height="100" itemWidth="30" itemHeight="30">
+                <Item name="first" title="First"/>
+              </Grid>
+            </UIScript>
+            """);
+
+        Assert.True(apps.OpenApp("Pad", root, output), string.Join('\n', output.Lines));
+        var window = Assert.Single(windows.Windows);
+        var grid = window.View.Grid("g")!;
+        Send(window, new UIEvent(UIEventKind.Selected, "g", Index: 1, Item: "red"));
+
+        Assert.Equal("", output.Lines[0]);
+        Assert.Equal("4\tPlain\tFile", output.Lines[1]);
+        Assert.Equal("2", output.Lines[2]);
+        Assert.Contains("an item shows one", output.Lines[3]);
+        Assert.Contains("written #RRGGBB, not \"blue\"", output.Lines[4]);
+        Assert.Contains("needs a title, an image, or a color", output.Lines[5]);
+        Assert.Contains("couldn't be read as a picture", output.Lines[6]);
+        Assert.Contains("there's no item 9 in a grid of 4", output.Lines[7]);
+        Assert.Equal("4\t2", output.Lines[8]);
+        Assert.Contains("selected\t2\tred\tnil", events.Lines);
+        Assert.Equal(new UIColor(255, 0, 0), grid.Items[1].Color);
+        Assert.Equal(("sky", null as DesktopImage, "Blue"), (grid.Items[2].Image, grid.Items[2].Picture, grid.Items[2].Tooltip));
+        Assert.Same(picture, grid.Items[3].Picture);
         apps.CloseApp("Pad", new RecordingOutput());
     }
 

@@ -63,6 +63,8 @@ public sealed class UIScriptSchemaTests
             "UIScript" => $"""<UIScript {(attribute == "requires" ? "" : """requires="menus sidebar shelf panes" """)}{probe}><Window width="300" height="200"/>{Declarations}</UIScript>""",
             "Window" => $"""<UIScript requires="menus sidebar shelf panes"><Window width="300" height="200" {(attribute is "width" or "height" ? "" : probe)}/>{Declarations}</UIScript>""",
             "Panel" => $"""<UIScript requires="menus shelf"><Panel {(attribute is "width" ? "" : "width=\"300\" ")}{(attribute is "height" ? "" : "height=\"72\" ")}{(attribute is "edge" ? "" : "edge=\"top\" ")}{probe}/></UIScript>""",
+            // An item reads inside a grid, and shows a title when the probe gives it nothing else to show.
+            "Item" => $"""<UIScript><Window width="300" height="200"/>{Declarations}<Grid name="g" x="0" y="0" width="100" height="100" itemWidth="20" itemHeight="20"><Item {(attribute is "title" or "string" or "image" or "color" ? "" : """title="t" """)}{probe}/></Grid></UIScript>""",
             // A probed sidebar stands in for the declared one, which panes still need.
             _ => $"""<UIScript requires="menus sidebar shelf panes"><Window width="300" height="200"/>{(element == "Sidebar" ? Declarations.Replace(DeclaredSidebar, "", StringComparison.Ordinal) : Declarations)}<{element} {Required(element, attribute)}{probe}/></UIScript>""",
         };
@@ -93,7 +95,7 @@ public sealed class UIScriptSchemaTests
     public void EveryElementTheReaderKnowsIsListed()
     {
         Assert.Equal(
-            ["Button", "FormattedText", "Image", "List", "Menu", "MenuItem", "MenuSeparator", "Pane", "Panel", "ProgressBar", "Region", "Shelf",
+            ["Button", "FormattedText", "Grid", "Image", "Item", "List", "Menu", "MenuItem", "MenuSeparator", "Pane", "Panel", "ProgressBar", "Region", "Shelf",
                 "Sidebar", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript",
                 "Visual", "Window"],
             UIScriptSchema.Elements.Order(StringComparer.Ordinal));

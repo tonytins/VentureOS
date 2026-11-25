@@ -385,14 +385,14 @@ public sealed class WindowTimer
 /// <para>A relative path is in the app's <c>Contents/Resources/</c>. The window belongs to the app: quitting the
 /// app closes it, and closing the app's last window quits the app. Event handlers get a table with
 /// <c>kind</c> (<c>pressed</c>, <c>submitted</c>, <c>changed</c>, or <c>selected</c>), <c>control</c>, and, when they
-/// apply, <c>text</c> and <c>index</c> (counting from 1). A chosen menu item is <c>pressed</c>.</para>
+/// apply, <c>text</c>, <c>index</c> (counting from 1), and a grid item's <c>item</c>, its name. A chosen menu item is <c>pressed</c>.</para>
 /// <para>Methods take a control by name and raise a Lua error for a name the document doesn't have, so a typo
 /// shows at once instead of silently doing nothing. They need the colon: <c>window:setText(...)</c>.</para>
 /// <list type="bullet">
 /// <item><description><c>text(name)</c>, <c>setText(name, text)</c>: a control's text.</description></item>
 /// <item><description><c>value(name)</c>, <c>setValue(name, number)</c>: a progress bar's value.</description></item>
 /// <item><description><c>items(name)</c>, <c>setItems(name, list)</c>, <c>selected(name)</c>,
-/// <c>select(name, index)</c>: a list's items and its selection, counting from 1, or <c>nil</c> for none.</description></item>
+/// <c>select(name, index)</c>: a list's or grid's items and its selection, counting from 1, or <c>nil</c> for none.</description></item>
 /// <item><description><c>setHidden</c>, <c>setDisabled</c>, <c>setChecked(name, on)</c>: hide, disable, or check a
 /// control or menu item.</description></item>
 /// <item><description><c>focus(name)</c>, <c>setTitle(text or nil)</c>, where <c>nil</c> blanks the bar, <c>setSubtitle(text or nil)</c>, <c>close()</c>. Focusing the title field starts an
@@ -740,6 +740,18 @@ public static class UiLibrary
         });
         Method(lua, "items", handle, (state, h) =>
         {
+            if (GridNamed(state, h) is { } grid)
+            {
+                state.CreateTable(grid.Items.Count, 0);
+                for (var index = 0; index < grid.Items.Count; index++)
+                {
+                    state.PushString(LuaText.Encode(grid.Items[index].Title));
+                    state.RawSetI(-2, index + 1);
+                }
+
+                return 1;
+            }
+
             var list = List(state, h, "items");
             state.CreateTable(list.Items.Count, 0);
             for (var index = 0; index < list.Items.Count; index++)
@@ -753,27 +765,31 @@ public static class UiLibrary
         Method(lua, "setItems", handle, SetItems);
         Method(lua, "selected", handle, (state, h) =>
         {
-            var list = List(state, h, "selected");
-            if (list.SelectedIndex >= 0)
-                state.PushInteger(list.SelectedIndex + 1);
+            var selected = GridNamed(state, h) is { } grid ? grid.SelectedIndex : List(state, h, "selected").SelectedIndex;
+            if (selected >= 0)
+                state.PushInteger(selected + 1);
             else
                 state.PushNil();
             return 1;
         });
         Method(lua, "select", handle, (state, h) =>
         {
-            var list = List(state, h, "select");
-            if (state.IsNoneOrNil(3))
+            var grid = GridNamed(state, h);
+            var list = grid is null ? List(state, h, "select") : null;
+            var count = grid?.Items.Count ?? list!.Items.Count;
+            var chosen = -1;
+            if (!state.IsNoneOrNil(3))
             {
-                list.SelectedIndex = -1;
-                return 0;
+                var index = state.L_CheckInteger(3);
+                if (index < 1 || index > count)
+                    return Fail(state, $"window:select: there's no item {index} in a {(grid is null ? "list" : "grid")} of {count}");
+                chosen = (int)index - 1;
             }
 
-            var index = state.L_CheckInteger(3);
-            if (index < 1 || index > list.Items.Count)
-                return Fail(state, $"window:select: there's no item {index} in a list of {list.Items.Count}");
-
-            list.SelectedIndex = (int)index - 1;
+            if (grid is not null)
+                grid.SelectedIndex = chosen;
+            else
+                list!.SelectedIndex = chosen;
             return 0;
         });
         Method(lua, "setHidden", handle, (state, h) =>
@@ -859,6 +875,8 @@ public static class UiLibrary
         var name = Name(lua, handle, "setItems");
         if (handle.View.Shelf(name) is { } shelf)
             return SetShelfItems(lua, handle, name, shelf);
+        if (handle.View.Grid(name) is { } grid)
+            return SetGridItems(lua, handle, grid);
 
         var list = List(lua, handle, "setItems");
         if (lua.Type(3) != LuaType.LUA_TTABLE)
@@ -933,6 +951,89 @@ public static class UiLibrary
         list.GroupStarts.AddRange(groupStarts);
         if (list.SelectedIndex >= items.Count)
             list.SelectedIndex = -1;
+        return 0;
+    }
+
+    /// <summary>
+    /// <c>window:setItems(name, items)</c> on a grid: its items in place of the document's, each a string, its title,
+    /// or a table with <c>title</c>, and an optional <c>name</c>, reported when it's chosen; <c>image</c>, an
+    /// <c>&lt;Image&gt;</c>'s name or a picture's path, as <c>setImage</c> takes; <c>color</c>, <c>#RRGGBB</c>; and
+    /// <c>tooltip</c>. An item shows a picture or a color, not both. Nothing changes when an entry is wrong, or a
+    /// picture can't be read, which says so.
+    /// </summary>
+    private static int SetGridItems(ILuaState lua, Handle handle, UIGridState grid)
+    {
+        if (lua.Type(3) != LuaType.LUA_TTABLE)
+            return Fail(lua, "window:setItems needs a list of items, such as { { title = \"Sky\", image = \"sky.png\" } }");
+
+        List<UIGridEntry> items = [];
+        var count = lua.RawLen(3);
+        for (var index = 1; index <= count; index++)
+        {
+            lua.RawGetI(3, index);
+            if (lua.Type(-1) != LuaType.LUA_TTABLE)
+            {
+                var title = lua.L_ToString(-1);
+                lua.Pop(2); // L_ToString pushes its result on top of the value.
+                items.Add(new UIGridEntry(LuaText.Decode(title)));
+                continue;
+            }
+
+            string? Field(string field)
+            {
+                lua.GetField(-1, field);
+                var value = lua.Type(-1) == LuaType.LUA_TSTRING ? LuaText.Decode(lua.ToString(-1)) : null;
+                var given = !lua.IsNoneOrNil(-1);
+                lua.Pop(1);
+                return given && value is null ? throw new ArgumentException($"item {index}'s {field} must be a string") : value;
+            }
+
+            string? itemTitle, name, image, written, tooltip;
+            try
+            {
+                (itemTitle, name, image, written, tooltip) = (Field("title"), Field("name"), Field("image"), Field("color"), Field("tooltip"));
+            }
+            catch (ArgumentException exception)
+            {
+                lua.Pop(1);
+                return Fail(lua, $"window:setItems: {exception.Message}");
+            }
+
+            lua.Pop(1);
+            if (image is not null && written is not null)
+                return Fail(lua, $"window:setItems: item {index} has an image and a color; an item shows one");
+            if (itemTitle is null && image is null && written is null)
+                return Fail(lua, $"window:setItems: item {index} needs a title, an image, or a color, such as {{ title = \"Sky\", image = \"sky.png\" }}");
+
+            UIColor? color = null;
+            if (written is not null)
+            {
+                if (!DesktopPalette.TryParseColor(written, out var parsed))
+                    return Fail(lua, $"window:setItems: item {index}'s color is written #RRGGBB, not \"{written}\"");
+                color = parsed;
+            }
+
+            // An <Image> in the document by its name; anything else is a picture's path, read now.
+            DesktopImage? picture = null;
+            if (image is not null && !handle.View.Script.Images.ContainsKey(image))
+            {
+                if (PicturePath(handle, image, fromAnyApp: false, out var path) is { } problem)
+                    return Fail(lua, $"window:setItems: item {index}'s image: {problem}");
+                if (handle.Host.LoadImage is not { } load)
+                    return Fail(lua, "window:setItems: this desktop can't show pictures");
+                picture = load(path);
+                if (picture is null)
+                    return Fail(lua, $"window:setItems: item {index}'s image, {image}, couldn't be read as a picture");
+                image = null;
+            }
+
+            items.Add(new UIGridEntry(itemTitle ?? "", name, image, picture, color, tooltip));
+        }
+
+        grid.Items.Clear();
+        grid.Items.AddRange(items);
+        if (grid.SelectedIndex >= items.Count)
+            grid.SelectedIndex = -1;
         return 0;
     }
 
@@ -1104,6 +1205,10 @@ public static class UiLibrary
         return name;
     }
 
+    /// <summary>The grid the call's name gives, or <see langword="null"/> when it names something else.</summary>
+    private static UIGridState? GridNamed(ILuaState lua, Handle handle) =>
+        lua.Type(2) == LuaType.LUA_TSTRING ? handle.View.Grid(LuaText.Decode(lua.ToString(2))) : null;
+
     private static UIListState List(ILuaState lua, Handle handle, string method)
     {
         var name = Name(lua, handle, method);
@@ -1256,6 +1361,12 @@ public static class UiLibrary
             {
                 lua.PushInteger(uiEvent.Index + 1);
                 lua.SetField(-2, "index");
+            }
+
+            if (uiEvent.Item is { } item)
+            {
+                lua.PushString(LuaText.Encode(item));
+                lua.SetField(-2, "item");
             }
 
             return 1;

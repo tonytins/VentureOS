@@ -120,28 +120,29 @@ public static class TestLibrary
         Add(lua, "choose", state =>
         {
             var (window, name) = Usable(state, app, "choose");
-            if (window.View.List(name) is not { } list)
-                return Fail(state, $"app:choose: \"{name}\" isn't a list");
+            if (ChoicesOf(window.View, name) is not { } choices)
+                return Fail(state, $"app:choose: \"{name}\" isn't a list or a grid");
 
-            // A row is chosen by its number, from 1, or by its text, as a person reads it.
+            // A row or item is chosen by its number, from 1, by its text, as a person reads it, or by a grid item's name.
             long index;
             if (state.Type(3) == LuaType.LUA_TSTRING)
             {
                 var text = LuaText.Decode(state.ToString(3));
-                index = list.Items.IndexOf(text) + 1;
+                index = choices.IndexOf(text) + 1;
                 if (index == 0)
-                    return Fail(state, $"app:choose: \"{name}\" has no row \"{text}\"; its rows are {string.Join(", ", list.Items)}");
+                    return Fail(state, $"app:choose: \"{name}\" has no row \"{text}\"; its rows are {string.Join(", ", choices.Rows)}");
             }
             else
             {
                 index = state.L_CheckInteger(3);
-                if (index < 1 || index > list.Items.Count)
-                    return Fail(state, $"app:choose: \"{name}\" has {list.Items.Count} rows, so there's no row {index}");
+                if (index < 1 || index > choices.Rows.Count)
+                    return Fail(state, $"app:choose: \"{name}\" has {choices.Rows.Count} rows, so there's no row {index}");
             }
 
-            // As a click on a row does: the list selects it, then reports it.
-            list.SelectedIndex = (int)index - 1;
-            app.Send(window, new UIEvent(UIEventKind.Selected, name, Index: (int)index - 1));
+            // As a click does: the list or grid selects it, then reports it.
+            var chosen = (int)index - 1;
+            choices.Select(chosen);
+            app.Send(window, new UIEvent(UIEventKind.Selected, name, Index: chosen, Item: choices.ItemName(chosen)));
             return 0;
         });
 
@@ -164,11 +165,11 @@ public static class TestLibrary
         });
         Add(lua, "rows", state =>
         {
-            var list = List(state, app, "rows");
-            state.CreateTable(list.Items.Count, 0);
-            for (var index = 0; index < list.Items.Count; index++)
+            var rows = ChoicesNamed(state, app, "rows").Rows;
+            state.CreateTable(rows.Count, 0);
+            for (var index = 0; index < rows.Count; index++)
             {
-                state.PushString(LuaText.Encode(list.Items[index]));
+                state.PushString(LuaText.Encode(rows[index]));
                 state.RawSetI(-2, index + 1);
             }
 
@@ -176,9 +177,9 @@ public static class TestLibrary
         });
         Add(lua, "chosen", state =>
         {
-            var list = List(state, app, "chosen");
-            if (list.SelectedIndex >= 0)
-                state.PushInteger(list.SelectedIndex + 1);
+            var selected = ChoicesNamed(state, app, "chosen").Selected;
+            if (selected >= 0)
+                state.PushInteger(selected + 1);
             else
                 state.PushNil();
             return 1;
@@ -327,8 +328,42 @@ public static class TestLibrary
         return (window, name);
     }
 
-    private static UIListState List(ILuaState state, AppUnderTest app, string function) =>
-        Named(state, app, function).View.List(Name(state)) ?? throw Error(state, $"app:{function}: \"{Name(state)}\" isn't a list");
+    private static Choices ChoicesNamed(ILuaState state, AppUnderTest app, string function) =>
+        ChoicesOf(Named(state, app, function).View, Name(state))
+            ?? throw Error(state, $"app:{function}: \"{Name(state)}\" isn't a list or a grid");
+
+    /// <summary>A list's rows or a grid's items, which a test reads and picks from alike, as a person does.</summary>
+    private static Choices? ChoicesOf(UIView view, string name) => (view.List(name), view.Grid(name)) switch
+    {
+        ({ } list, _) => new Choices([.. list.Items], list.SelectedIndex, index => list.SelectedIndex = index, _ => null),
+        (_, { } grid) => new Choices(
+            [.. grid.Items.Select(item => item.Title)], grid.SelectedIndex, index => grid.SelectedIndex = index,
+            index => grid.Items[index].Name, [.. grid.Items.Select(item => item.Name)]),
+        _ => null,
+    };
+
+    /// <param name="Rows">What a person reads: a list's rows or a grid's titles.</param>
+    /// <param name="Names">A grid's item names, which a test may choose by too.</param>
+    private sealed record Choices(
+        IReadOnlyList<string> Rows, int Selected, Action<int> Select, Func<int, string?> ItemName, IReadOnlyList<string?>? Names = null)
+    {
+        public int IndexOf(string text)
+        {
+            for (var index = 0; index < Rows.Count; index++)
+            {
+                if (Rows[index] == text)
+                    return index;
+            }
+
+            for (var index = 0; index < (Names?.Count ?? 0); index++)
+            {
+                if (Names![index] == text)
+                    return index;
+            }
+
+            return -1;
+        }
+    }
 
     // The control's name: the argument after the app itself, since these are called as app:press("ok").
     private static string Name(ILuaState state) => LuaText.Decode(state.L_CheckString(2));

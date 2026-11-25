@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.305
+
+- Interfaces can hold a `<Grid>`: pictures, colors, or plain tiles of one size, in rows that wrap and scroll, one of them chosen. A grid lists its `<Item>`s, or an app fills it with `window:setItems`, pictures by path included, and a click reports the item's index and name (`event.item`). See [the spec](docs/uiscript/README.md#grid).
+- App tests choose a grid's item with `app:choose`, by its title or name, and read them with `app:rows` and `app:chosen`.
+
 ## 0.8.304
 
 - `appearance --scrollbars classic` or `automatic` chooses the scroll bars, and `appearance` shows which is chosen. Scripts read and set it as `scrollbars` in `venture.appearance()` and `venture.setAppearance{}`.

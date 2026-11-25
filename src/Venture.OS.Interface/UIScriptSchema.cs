@@ -236,6 +236,23 @@ public static class UIScriptSchema
         ["TextArea"] = [.. Control, .. TextEntry, new("follows", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean)],
         ["List"] = [.. Control, new("selectable", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean)],
         ["ProgressBar"] = [.. Control, .. Range],
+        ["Grid"] =
+        [
+            .. Control,
+            new("itemWidth", UIAttributeGroup.Appearance, UIAttributeKind.Number, IsRequired: true),
+            new("itemHeight", UIAttributeGroup.Appearance, UIAttributeKind.Number, IsRequired: true),
+            new("spacing", UIAttributeGroup.Appearance, UIAttributeKind.Number),
+            new("titles", UIAttributeGroup.Appearance, UIAttributeKind.Choice, Choices: ["below", "selected", "none"]),
+        ],
+        ["Item"] =
+        [
+            new("name", UIAttributeGroup.Identity, UIAttributeKind.Name),
+            new("title", UIAttributeGroup.Text, UIAttributeKind.Text),
+            new("string", UIAttributeGroup.Text, UIAttributeKind.Reference, RefersTo: "String"),
+            new("image", UIAttributeGroup.Appearance, UIAttributeKind.Reference, RefersTo: "Image"),
+            new("color", UIAttributeGroup.Appearance, UIAttributeKind.Color),
+            new("tooltip", UIAttributeGroup.Text, UIAttributeKind.Reference, RefersTo: "String"),
+        ],
     };
 
     /// <summary>The elements UIScript reads, the root <c>UIScript</c> among them.</summary>
@@ -243,7 +260,7 @@ public static class UIScriptSchema
 
     /// <summary>The controls: the elements drawn in the window, which take a frame, text, and a style.</summary>
     public static IReadOnlyList<string> Controls { get; } =
-        ["Text", "FormattedText", "Button", "TextField", "TextArea", "List", "ProgressBar", "Region", "Shelf"];
+        ["Text", "FormattedText", "Button", "TextField", "TextArea", "List", "ProgressBar", "Region", "Shelf", "Grid"];
 
     /// <summary>The attributes <paramref name="element"/> takes, in the order an inspector shows them; none for an element UIScript doesn't read.</summary>
     public static IReadOnlyList<UIAttributeInfo> For(string element)

@@ -22,7 +22,44 @@ public enum UIControlType
     /// items, as it fills a list.
     /// </summary>
     Shelf,
+
+    /// <summary>
+    /// Items of one size, pictures, colors, or plain tiles, in rows that wrap and scroll, one of which is chosen, such
+    /// as wallpapers or accent colors. The document can list them, and the app can fill it, as it fills a list.
+    /// </summary>
+    Grid,
 }
+
+/// <summary>Where a grid shows its items' titles.</summary>
+public enum UIGridTitles
+{
+    /// <summary>Under every item.</summary>
+    Below,
+
+    /// <summary>Only under the chosen item, as a row of colors names the one in use.</summary>
+    Selected,
+
+    /// <summary>Nowhere; an item's title still shows when the pointer rests on it, without a tooltip.</summary>
+    None,
+}
+
+/// <summary>
+/// An item a document lists in a <c>&lt;Grid&gt;</c>: a picture (<paramref name="Image"/>), a color
+/// (<paramref name="Color"/>), or, with neither, a plain tile showing its title.
+/// </summary>
+/// <param name="Name">What the grid reports when it's chosen, or <see langword="null"/>.</param>
+/// <param name="Title">What it's called, literal or a <c>&lt;String&gt;</c>.</param>
+/// <param name="Image">An <c>&lt;Image&gt;</c>'s name.</param>
+/// <param name="Color">A swatch's color.</param>
+/// <param name="Tooltip">A <c>&lt;String&gt;</c>'s name, shown while the pointer rests on it.</param>
+public sealed record UIGridItem(string? Name, UIText? Title, string? Image, UIColor? Color, string? Tooltip, int Line);
+
+/// <summary>A grid's cells and the items its document lists.</summary>
+/// <param name="ItemWidth">Each cell's width, past which pictures are scaled.</param>
+/// <param name="ItemHeight">Each cell's height, not counting a title under it.</param>
+/// <param name="Spacing">The room between cells, across and down.</param>
+public sealed record UIGridLayout(
+    float ItemWidth, float ItemHeight, float Spacing, UIGridTitles Titles, IReadOnlyList<UIGridItem> Items);
 
 /// <summary>What a window is to the desktop.</summary>
 public enum UIWindowRole
@@ -238,7 +275,8 @@ public sealed record UIControl(
     (float Minimum, float Maximum)? ValueRange = null,
     bool Follows = false,
     string? Pane = null,
-    bool InSidebar = false);
+    bool InSidebar = false,
+    UIGridLayout? Grid = null);
 
 /// <summary>
 /// Which of the desktop's standard menus a document's menu adds to, so a host can merge it rather than show two
@@ -516,15 +554,19 @@ public sealed class UIScript
         UISidebar? sidebar = null;
         List<UIPane> panes = [];
 
+        // Each grid's element, and where it is among the controls, so its items, which follow it, join it.
+        Dictionary<int, int> grids = [];
+
         for (var at = 0; at < document.Children.Count; at++)
         {
             var element = document.Children[at];
 
-            // Only a menu, a pane, and a sidebar hold elements: a menu its items, separators, and submenus, and a pane
-            // or a sidebar its controls and visuals. Everything else sits in <UIScript>.
+            // Only a menu, a pane, a sidebar, and a grid hold elements: a menu its items, separators, and submenus, a
+            // pane or a sidebar its controls and visuals, and a grid its items. Everything else sits in <UIScript>.
             MenuDraft? holder = null;
             string? inPane = null;
             var inSidebar = false;
+            var inGrid = -1;
             if (element.Parent != FlatXmlDocument.RootIndex)
             {
                 var parent = document.Children[element.Parent];
@@ -539,6 +581,9 @@ public sealed class UIScript
                     case "Sidebar" when element.Name == "Visual" || ControlType(element.Name) is not null:
                         inSidebar = true;
                         break;
+                    case "Grid" when element.Name == "Item":
+                        inGrid = grids[element.Parent];
+                        break;
                     default:
                         throw new UIScriptException(
                             parent.Name switch
@@ -546,7 +591,8 @@ public sealed class UIScript
                                 "Menu" => $"<{element.Name}> can't be inside <Menu>; a menu holds menu items, separators, and submenus.",
                                 "Pane" => $"<{element.Name}> can't be inside <Pane>; a pane holds controls and visuals.",
                                 "Sidebar" => $"<{element.Name}> can't be inside <Sidebar>; a sidebar holds controls and visuals.",
-                                _ => $"<{element.Name}> can't be inside <{parent.Name}>; only a <Menu>, a <Pane>, or a <Sidebar> holds other elements.",
+                                "Grid" => $"<{element.Name}> can't be inside <Grid>; a grid holds items.",
+                                _ => $"<{element.Name}> can't be inside <{parent.Name}>; only a <Menu>, a <Pane>, a <Sidebar>, or a <Grid> holds other elements.",
                             },
                             element.Line);
                 }
@@ -678,6 +724,19 @@ public sealed class UIScript
                     Place(holder, new UIMenuEntry(null, null, null, null, element.Line), reader, entries);
                     break;
 
+                case "Item":
+                {
+                    if (inGrid < 0)
+                        throw new UIScriptException("An <Item> belongs inside a <Grid>.", element.Line);
+
+                    UIGridItem item = new(
+                        reader.String("name"), reader.Text("title", "string"), reader.String("image"), reader.Color("color"),
+                        reader.String("tooltip"), element.Line);
+                    var grid = controls[inGrid];
+                    controls[inGrid] = grid with { Grid = grid.Grid! with { Items = [.. grid.Grid.Items, item] } };
+                    break;
+                }
+
                 default:
                     if (element.Name == "Slider")
                         throw new UIScriptException(SliderRemoved, element.Line);
@@ -706,6 +765,8 @@ public sealed class UIScript
                         flatPaned.Add((named, control));
                     }
 
+                    if (type == UIControlType.Grid)
+                        grids[at] = controls.Count;
                     controls.Add(control);
                     break;
             }
@@ -771,6 +832,7 @@ public sealed class UIScript
         "ProgressBar" => UIControlType.ProgressBar,
         "Region" => UIControlType.Region,
         "Shelf" => UIControlType.Shelf,
+        "Grid" => UIControlType.Grid,
         _ => null,
     };
 
@@ -863,7 +925,8 @@ public sealed class UIScript
             Alignment: reader.Enum("alignment", ParseAlignment) ?? UITextAlignment.Left,
             ValueRange: range,
             Follows: reader.Boolean("follows") ?? false,
-            Pane: reader.String("pane"));
+            Pane: reader.String("pane"),
+            Grid: type == UIControlType.Grid ? ReadGrid(reader, name, line) : null);
     }
 
     /// <summary>
@@ -1008,7 +1071,14 @@ public sealed class UIScript
         foreach (var visual in Visuals)
             Unique(names, visual.Name, visual.Line);
         foreach (var control in Controls)
+        {
             Unique(names, control.Name, control.Line);
+            foreach (var item in control.Grid?.Items ?? [])
+            {
+                if (item.Name is { } itemName)
+                    Unique(names, itemName, item.Line);
+            }
+        }
         foreach (var pane in Panes)
             Unique(names, pane.Name, pane.Line);
         // A submenu's name is its entry's, so it's counted once, however deep.
@@ -1102,8 +1172,33 @@ public sealed class UIScript
         if (control.Tooltip is { } tooltip && !Strings.ContainsKey(tooltip))
             throw Unknown(name, "tooltip", tooltip, line);
 
+        if (control.Grid is { } grid)
+        {
+            foreach (var item in grid.Items)
+                ValidateItem(item, name);
+        }
+
         ValidateFrame(control.Frame, name, line);
     }
+
+    /// <summary>An item shows a picture, a color, or its title, and names only what the document declares.</summary>
+    private void ValidateItem(UIGridItem item, string grid)
+    {
+        var owner = item.Name ?? grid;
+        if (item.Image is not null && item.Color is not null)
+            throw new UIScriptException($"{Quoted(item, grid)} has both an image and a color; an item shows one.", item.Line);
+        if (item.Image is null && item.Color is null && item.Title is null)
+            throw new UIScriptException($"{Quoted(item, grid)} needs a title, an image, or a color to show.", item.Line);
+        if (item.Image is { } image && !Images.ContainsKey(image))
+            throw Unknown(owner, "image", image, item.Line);
+        if (item.Title is { IsReference: true } title && !Strings.ContainsKey(title.Value))
+            throw Unknown(owner, "string", title.Value, item.Line);
+        if (item.Tooltip is { } tooltip && !Strings.ContainsKey(tooltip))
+            throw Unknown(owner, "tooltip", tooltip, item.Line);
+    }
+
+    private static string Quoted(UIGridItem item, string grid) =>
+        item.Name is { } name ? $"\"{name}\"" : $"An item in \"{grid}\"";
 
     private static void ValidateFrame(UIFrame frame, string owner, int line)
     {
@@ -1125,6 +1220,26 @@ public sealed class UIScript
 
     private static UIScriptException OnlyFor(string owner, string attribute, string kind, int line) =>
         new($"\"{owner}\" can't have {attribute}; only {kind} takes it.", line);
+
+    /// <summary>A grid's cells: their size, the room between them, and where titles go. Its items join it as they're read.</summary>
+    private static UIGridLayout ReadGrid(Attributes reader, string name, int line)
+    {
+        var width = reader.RequiredNumber("itemWidth");
+        var height = reader.RequiredNumber("itemHeight");
+        var spacing = reader.Number("spacing") ?? 8;
+        if (width <= 0 || height <= 0 || spacing < 0)
+            throw new UIScriptException(
+                $"\"{name}\" needs an itemWidth and itemHeight above 0, and a spacing of 0 or more.", line);
+
+        var titles = reader.String("titles") switch
+        {
+            null or "below" => UIGridTitles.Below,
+            "selected" => UIGridTitles.Selected,
+            "none" => UIGridTitles.None,
+            var other => throw new UIScriptException($"A grid's titles are below, selected, or none, not \"{other}\".", line),
+        };
+        return new UIGridLayout(width, height, spacing, titles, []);
+    }
 
     /// <summary>Why a document scrolling a list by hand is refused, and what to do instead.</summary>
     private const string ScrollingRemoved =
