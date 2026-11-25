@@ -5,21 +5,21 @@ namespace Venture.OS.Desktop;
 /// <summary>What a control reports for its owner to act on, as Hudini's <c>UIView.Event</c> does.</summary>
 public enum UIEventKind
 {
-    /// <summary>An enabled button without a scroll binding was pressed.</summary>
+    /// <summary>An enabled button was pressed.</summary>
     Pressed,
 
     /// <summary>A text field submitted its text, with Enter.</summary>
     Submitted,
 
-    /// <summary>Dragging moved a slider that doesn't scroll a list to a new value.</summary>
+    /// <summary>Typing, or an edit such as Paste or Undo, changed a text area's text.</summary>
     Changed,
 
     /// <summary>A click on a selectable list changed its selected item.</summary>
     Selected,
 }
 
-/// <summary>An event, with the control's name and, depending on the kind, its text, value, or index.</summary>
-public readonly record struct UIEvent(UIEventKind Kind, string Control, string? Text = null, float Value = 0, int Index = -1);
+/// <summary>An event, with the control's name and, depending on the kind, its text or index.</summary>
+public readonly record struct UIEvent(UIEventKind Kind, string Control, string? Text = null, int Index = -1);
 
 /// <summary>A rectangle in pixels.</summary>
 public readonly record struct UIRect(float X, float Y, float Width, float Height)
@@ -121,7 +121,6 @@ public sealed partial class UIView
     private readonly HashSet<string> missingStrings = [];
     private string? focused;
     private string? armed;
-    private string? dragging;
 
     // The text field or area a press landed in, whose selection follows the pointer until it's released.
     private string? selecting;
@@ -184,8 +183,6 @@ public sealed partial class UIView
             }
 
             states[control.Name] = state;
-            if (control.Scrolls is { } binding)
-                scrollBound.Add(binding.List);
         }
 
         foreach (var visual in script.Visuals)
@@ -492,11 +489,11 @@ public sealed partial class UIView
             state.Cursor.SelectAll(state.Text.Length);
     }
 
-    /// <summary>A slider's or progress bar's value, or <see langword="null"/>.</summary>
+    /// <summary>A progress bar's value, or <see langword="null"/>.</summary>
     public float? Value(string name) =>
-        script.Control(name) is { Type: UIControlType.Slider or UIControlType.ProgressBar } ? Find(name)!.Value : null;
+        script.Control(name) is { Type: UIControlType.ProgressBar } ? Find(name)!.Value : null;
 
-    /// <summary>Sets a slider's or progress bar's value, kept within its range. Reports no event.</summary>
+    /// <summary>Sets a progress bar's value, kept within its range. Reports no event.</summary>
     public void SetValue(string name, float value)
     {
         if (script.Control(name) is { } control && Find(name) is { } state)
@@ -707,9 +704,6 @@ public sealed partial class UIView
         if (input.PointerPressed)
             Press(x, y, input.Time, events, originX, originY);
 
-        if (dragging is not null && input.PointerDown)
-            Drag(dragging, x, y, events);
-
         if (input.PointerDown)
             HoldScrollBar(x, y, input.Time);
 
@@ -730,7 +724,6 @@ public sealed partial class UIView
             shelfPress = null;
             ReleaseScrollBar();
             armed = null;
-            dragging = null;
             selecting = null;
         }
 
@@ -821,9 +814,6 @@ public sealed partial class UIView
                 case UIControlType.List:
                     DrawList(target, control, state, bounds);
                     break;
-                case UIControlType.Slider:
-                    DrawSlider(painter, control, state, bounds);
-                    break;
                 case UIControlType.ProgressBar:
                     DrawProgress(painter, control, state, bounds);
                     break;
@@ -902,10 +892,6 @@ public sealed partial class UIView
 
                 break;
 
-            case UIControlType.Slider:
-                dragging = hit.Name;
-                break;
-
             // Shelves are placed on the screen as they're drawn, so the press is found in the screen's terms.
             case UIControlType.Shelf when state.Shelf!.IndexAt(x + originX, y + originY) is >= 0 and var icon:
                 shelfPress = (hit.Name, icon);
@@ -915,53 +901,15 @@ public sealed partial class UIView
 
     private void Release(UIControl button, List<UIEvent> events)
     {
-        if (button.Scrolls is { } binding)
-        {
-            if (script.Control(binding.List) is { } target)
-                ScrollBy(target, binding.Direction == UIScrollDirection.Up ? -1 : 1);
-            return;
-        }
-
         events.Add(new UIEvent(UIEventKind.Pressed, button.Name));
-    }
-
-    private void Drag(string name, int x, int y, List<UIEvent> events)
-    {
-        if (script.Control(name) is not { } slider)
-            return;
-
-        var bounds = Place(slider.Frame, slider.InSidebar, false);
-        var fraction = Vertical(slider, bounds)
-            ? (y - bounds.Y) / Math.Max(1, bounds.Height)
-            : (x - bounds.X) / Math.Max(1, bounds.Width);
-        fraction = Math.Clamp(fraction, 0, 1);
-
-        if (slider.Scrolls is { } binding && script.Control(binding.List) is { } target)
-        {
-            var (_, last) = ScrollPosition(target);
-            ScrollTo(target, (int)MathF.Round(fraction * last));
-            return;
-        }
-
-        var (minimum, maximum) = Range(slider);
-        var value = minimum + (fraction * (maximum - minimum));
-        var state = states[name];
-        if (value != state.Value)
-        {
-            state.Value = value;
-            events.Add(new UIEvent(UIEventKind.Changed, name, Value: value));
-        }
     }
 
     private void ScrollOver(UIControl control, int scroll)
     {
-        var target = control.Type is UIControlType.List or UIControlType.TextArea ? control
-            : control.Scrolls is { } binding ? script.Control(binding.List)
-            : null;
-        if (target is not null)
+        if (control.Type is UIControlType.List or UIControlType.TextArea)
         {
-            ScrollBy(target, scroll);
-            ShowScrollBar(target);
+            ScrollBy(control, scroll);
+            ShowScrollBar(control);
         }
     }
 
@@ -1639,34 +1587,6 @@ public sealed partial class UIView
         return symbol;
     }
 
-    private void DrawSlider(IPainter painter, UIControl control, State state, UIRect bounds)
-    {
-        var (x, y, width, height) = Ints(bounds);
-        var style = Style(control);
-        var vertical = Vertical(control, bounds);
-        painter.FillRectangle(x, y, width, height, style?.BackgroundColor ?? DesktopTheme.Panel);
-        DesktopTheme.Outline(painter, x, y, width, height, style?.BorderColor ?? DesktopTheme.Border);
-
-        float fraction;
-        if (control.Scrolls is { } binding && script.Control(binding.List) is { } target)
-        {
-            var (first, last) = ScrollPosition(target);
-            fraction = last == 0 ? 0 : (float)first / last;
-        }
-        else
-        {
-            var (minimum, maximum) = Range(control);
-            fraction = (state.Value - minimum) / (maximum - minimum);
-        }
-
-        const int Thumb = 10;
-        var fill = style?.FillColor ?? DesktopTheme.Accent;
-        if (vertical)
-            painter.FillRectangle(x + 1, y + (int)(fraction * (height - Thumb)), width - 2, Thumb, fill);
-        else
-            painter.FillRectangle(x + (int)(fraction * (width - Thumb)), y + 1, Thumb, height - 2, fill);
-    }
-
     private void DrawProgress(IPainter painter, UIControl control, State state, UIRect bounds)
     {
         var (x, y, width, height) = Ints(bounds);
@@ -1826,14 +1746,6 @@ public sealed partial class UIView
     }
 
     private static (float Minimum, float Maximum) Range(UIControl control) => control.ValueRange ?? (0, 1);
-
-    private static bool Vertical(UIControl control, UIRect bounds) =>
-        control.Scrolls is not null || control.Orientation switch
-        {
-            UIOrientation.Vertical => true,
-            UIOrientation.Horizontal => false,
-            _ => bounds.Height > bounds.Width,
-        };
 
     private static int Align(IPainter painter, UIControl control, string text, int size, UIRect bounds, int inset) =>
         control.Alignment switch

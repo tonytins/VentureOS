@@ -10,8 +10,7 @@
   <Style name="mono" font="monospace"/>
   <Style name="prompt" font="monospace" textColor="secondaryText"/>
 
-  <TextArea name="output" x="8" y="8" width="610" height="350" readOnly="true" follows="true" style="mono"/>
-  <Slider name="outputScroll" x="622" y="8" width="10" height="350" scrolls="output"/>
+  <TextArea name="output" x="8" y="8" width="624" height="350" readOnly="true" follows="true" style="mono"/>
   <Text name="prompt" x="8" y="369" width="160" height="20" alignment="right" style="prompt"/>
   <TextField name="command" x="172" y="366" width="460" height="26" maximumLength="1024" style="mono"/>
 </UIScript>

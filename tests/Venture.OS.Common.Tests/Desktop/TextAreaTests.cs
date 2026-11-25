@@ -13,7 +13,6 @@ public sealed class TextAreaTests
         <UIScript version="1">
           <Window width="300" height="200"/>
           <TextArea name="notes" x="10" y="10" width="100" height="80" placeholder="Write here"/>
-          <Slider name="notesScroll" x="112" y="10" width="10" height="80" scrolls="notes"/>
           <TextArea name="log" x="130" y="10" width="100" height="80" readOnly="true" text="locked"/>
           <TextArea name="short" x="10" y="100" width="100" height="40" maximumLength="3"/>
         </UIScript>
@@ -45,7 +44,7 @@ public sealed class TextAreaTests
     }
 
     [Fact]
-    public void ScrollsWithTheWheelAndItsSliderAndKeepsTheCaretInView()
+    public void ScrollsWithTheWheelAndItsBarAndKeepsTheCaretInView()
     {
         view.SetText("notes", "1\n2\n3\n4\n5\n6\n7");
         Draw();
@@ -55,8 +54,9 @@ public sealed class TextAreaTests
         Draw();
         Assert.Equal("3", Lines()[0]);
 
-        // The slider's bottom is the last line in view.
-        view.Update(new UIViewInput(116, 89, true, true, false, 0, []), 0, 0);
+        // The bar's down arrow, at its bottom right, scrolls a line.
+        view.Update(new UIViewInput(100, 85, true, true, false, 0, []), 0, 0);
+        view.Update(new UIViewInput(100, 85, false, false, true, 0, []), 0, 0);
         Draw();
         Assert.Equal("4", Lines()[0]);
 
@@ -126,7 +126,6 @@ public sealed class TextAreaTests
     [Theory]
     [InlineData("""<TextArea name="a" x="0" y="0" width="10" height="10" secure="true"/>""", "secure")]
     [InlineData("""<TextArea name="a" x="0" y="0" width="10" height="10" maximumLength="0"/>""", "maximumLength")]
-    [InlineData("""<TextArea name="a" x="0" y="0" width="10" height="10"/><Button name="b" x="0" y="0" width="5" height="5" scrolls="a"/>""", "scrolls")]
     public void RefusesMistakes(string elements, string message)
     {
         var text = $"""<UIScript><Window width="10" height="10"/>{elements}</UIScript>""";

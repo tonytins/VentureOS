@@ -17,8 +17,7 @@
   <Style name="label" textColor="#FFF99D" fontSize="12"/>
 
   <Text name="pickLabel" x="12" y="10" width="200" height="14" style="label" string="pickText"/>
-  <List name="lotChoices" x="12" y="28" width="258" height="88" selectable="true"/>
-  <Slider name="lotScroll" x="272" y="28" width="14" height="88" scrolls="lotChoices"/>
+  <List name="lotChoices" x="12" y="28" width="274" height="88" selectable="true"/>
 
   <Text name="keyLabel" x="12" y="128" width="40" height="14" style="label" string="keyText"/>
   <TextField name="lotKey" x="60" y="124" width="226" height="22" secure="true"

@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,092 tests, and 296 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,063 tests, and 296 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1738,7 +1738,7 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   measured one at a time, so wrapping costs the same for any length up to
   its 65,536-character default limit. The arrows, Home, and End move the
   caret by those lines, a click places it, and the area scrolls by the wheel
-  or a bound slider (`scrolls`) and to keep the caret in view. Clicks are
+  or its scroll bar and to keep the caret in view. Clicks are
   measured with the painter last drawn with. No selection or clipboard yet.
 - **Shells for apps** (`venture.openShell()`, under `shell`). An app gets a
   shell of its own, with its own current folder, that writes to a caught
@@ -1757,8 +1757,9 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   was scrolled to the end, as a log list does.
 - **Scroll bars** (`UIView.ScrollBars.cs`, `ScrollBarStyle`, `scrollbars`
   in `appearance.xml`). Lists, text areas, and the sidebar's rows draw their
-  own bar down their right edge once their content doesn't fit; a control a
-  slider or button scrolls (`scrolls`) keeps that and draws none. The
+  own bar down their right edge once their content doesn't fit. UIScript
+  has no `<Slider>`, nor scroll buttons, since 2026-11-24; the reader
+  refuses either with what to do. The
   sidebar's bar is always automatic, so it never narrows the rows. A classic
   bar, the default, is Aqua's: 15 pixels taken from the content, a track,
   an up arrow at the top and a down arrow at the bottom, and a glossy thumb
@@ -1884,6 +1885,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | Desktop (§9), interfaces: `<Slider>`, `scrolls`, `direction`, and `orientation` leave UIScript and `UIView`; the reader refuses a slider or scroll button; TextEdit and Terminal drop theirs; airo's `app:slide` goes. |
 | 2026-11-24 | patch | Desktop (§9): the sidebar's scroll bar is always automatic, whatever the style, so it takes no room from the rows. |
 | 2026-11-24 | minor | Desktop (§9): lists, text areas, and the sidebar's rows draw their own scroll bars, classic (Aqua's, in the accent, arrows at each end) or automatic (a thin thumb over the content); `scrollbars` in `appearance.xml`. |
 | 2026-11-24 | patch | Desktop (§9): text fields align their text by `alignment` while it fits, with the caret, selection, clicks, and placeholder; a right sidebar's window keeps its grip in the corner. |

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.303
+
+- TextEdit and Terminal scroll with their own scroll bars, and their text runs to the window's edge where their sliders were.
+- Interfaces no longer have `<Slider>`, or buttons that scroll a list (`scrolls` and `direction`): lists and text areas scroll by themselves. An interface that still has one won't open, and says what to change. A level to show is a `<ProgressBar>`.
+- App tests lose `app:slide`, and a text area's `changed` event no longer carries a `value`.
+
 ## 0.8.302
 
 - The sidebar's scroll bar is always the thin one that shows while it scrolls, whichever style is chosen, so the sidebar's rows keep its full width.

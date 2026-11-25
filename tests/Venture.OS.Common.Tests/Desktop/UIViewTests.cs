@@ -16,9 +16,6 @@ public sealed class UIViewTests
           <TextField name="fixed" x="10" y="100" width="150" height="22" readOnly="true" text="locked"/>
           <List name="picks" x="170" y="10" width="120" height="60" selectable="true"/>
           <List name="log" x="170" y="80" width="100" height="40" text="first"/>
-          <Slider name="volume" x="10" y="130" width="100" height="12" minValue="0" maxValue="10"/>
-          <Slider name="logScroll" x="275" y="80" width="10" height="40" scrolls="log"/>
-          <Button name="logUp" x="275" y="60" width="10" height="10" text="^" scrolls="log" direction="up"/>
           <ProgressBar name="progress" x="10" y="150" width="100" height="10"/>
           <Text name="anchored" x="0" y="0" width="40" height="10" edgeOffsetRight="5" edgeOffsetBottom="5" string="greeting"/>
           <Region name="area" x="120" y="130" width="40" height="40"/>
@@ -193,43 +190,14 @@ public sealed class UIViewTests
     }
 
     [Fact]
-    public void ScrollButtonsAndTheWheelMoveTheList()
+    public void TheWheelMovesTheList()
     {
         var log = view.List("log")!;
         log.Items.AddRange(["two", "three", "four", "five"]);
         Click(0, 0, down: false);
-        var bottom = log.FirstVisible;
-
-        Click(278, 63, down: true);
-        var events = Click(278, 63, down: false);
-        Assert.Empty(events);
-        Assert.Equal(bottom - 1, log.FirstVisible);
 
         view.Update(new UIViewInput(200, 90, false, false, false, -10, []), 0, 0);
-        Assert.Equal(0, log.FirstVisible);
-    }
 
-    [Fact]
-    public void DraggingASliderReportsItsValue()
-    {
-        Click(10, 135, down: true);
-        var events = view.Update(new UIViewInput(60, 135, true, false, false, 0, []), 0, 0);
-
-        Assert.Equal(UIEventKind.Changed, Assert.Single(events).Kind);
-        Assert.Equal(5, view.Value("volume")!.Value, 0.01);
-    }
-
-    [Fact]
-    public void ASliderBoundToAListScrollsItWithoutReporting()
-    {
-        var log = view.List("log")!;
-        log.Items.AddRange(["two", "three", "four", "five"]);
-        Click(0, 0, down: false);
-
-        Click(280, 80, down: true);
-        var events = view.Update(new UIViewInput(280, 80, true, false, false, 0, []), 0, 0);
-
-        Assert.Empty(events);
         Assert.Equal(0, log.FirstVisible);
     }
 
@@ -238,11 +206,9 @@ public sealed class UIViewTests
     {
         view.SetText("label", "Changed");
         view.SetValue("progress", 3);
-        view.SetValue("volume", 99);
 
         Assert.Equal("Changed", view.Text("label"));
         Assert.Equal(1, view.Value("progress"));
-        Assert.Equal(10, view.Value("volume"));
         Assert.Null(view.Value("label"));
     }
 

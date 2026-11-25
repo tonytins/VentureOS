@@ -47,17 +47,10 @@ public sealed class UIScriptTests
         Assert.Equal(UIStyleColor.Literal(new UIColor(0xFF, 0xF9, 0x9D)), script.Styles["history"].Colors.Text);
         Assert.Equal(UIStyleSize.Points(14), script.Styles["entry"].FontSize);
 
-        Assert.Equal(["chatHistory", "chatHistorySlider", "scrollUp", "scrollDown", "chatEntry"],
-            script.Controls.Select(control => control.Name));
-
-        var slider = script.Control("chatHistorySlider")!;
-        Assert.Equal(UIControlType.Slider, slider.Type);
-        Assert.Equal(new UIScrollBinding("chatHistory", null), slider.Scrolls);
-
-        var up = script.Control("scrollUp")!;
-        Assert.Equal(UIText.Literal("^"), up.Text);
-        Assert.Equal(UIScrollDirection.Up, up.Scrolls!.Direction);
-        Assert.Equal(3, up.LegacyId);
+        // Upgraded ahead of Hudini: the history shows its own scroll bar, where a slider and two buttons were.
+        Assert.Equal(["chatHistory", "chatEntry"], script.Controls.Select(control => control.Name));
+        Assert.Equal(new UIFrame(40, 45, 340, 150, null), script.Control("chatHistory")!.Frame);
+        Assert.Equal(1, script.Control("chatHistory")!.LegacyId);
 
         var entry = script.Control("chatEntry")!;
         Assert.Equal(UIText.Literal("Type a message..."), entry.Placeholder);
@@ -82,8 +75,8 @@ public sealed class UIScriptTests
               <Button name="b" x="0" y="0" image="send"/>
               <TextField name="tf" x="0" y="0" width="1" height="1" placeholderString="hello" readOnly="true" secure="true"/>
               <List name="l" x="0" y="0" width="1" height="1" selectable="true"/>
-              <Slider name="sl" x="0" y="0" width="1" height="1" minValue="-1" maxValue="1.5" orientation="vertical"/>
               <ProgressBar name="p" x="0" y="0" width="1" height="1" maxValue="100"/>
+              <ProgressBar name="p2" x="0" y="0" width="1" height="1" minValue="-1" maxValue="1.5"/>
               <Region name="r" x="-4" y="0" width="1" height="1" edgeOffsetRight="8" edgeOffsetBottom="2"/>
             </UIScript>
             """);
@@ -102,9 +95,8 @@ public sealed class UIScriptTests
         Assert.Equal(UIText.Reference("hello"), script.Control("tf")!.Placeholder);
         Assert.True(script.Control("tf")!.IsReadOnly && script.Control("tf")!.IsSecure);
         Assert.True(script.Control("l")!.IsSelectable);
-        Assert.Equal((-1f, 1.5f), script.Control("sl")!.ValueRange);
-        Assert.Equal(UIOrientation.Vertical, script.Control("sl")!.Orientation);
         Assert.Equal((0f, 100f), script.Control("p")!.ValueRange);
+        Assert.Equal((-1f, 1.5f), script.Control("p2")!.ValueRange);
         Assert.Equal(new UIEdgeOffsets(null, 8, null, 2), script.Control("r")!.Frame.EdgeOffsets);
         Assert.Equal(UIControlType.Region, script.Control("r")!.Type);
     }
@@ -179,20 +171,40 @@ public sealed class UIScriptTests
     [InlineData("<UIScript><Window width='1' height='1'/><Text name='t' x='0' y='0' width='1' height='1' secure='true'/></UIScript>", "can't have secure")]
     [InlineData("<UIScript><Window width='1' height='1'/><Text name='t' x='0' y='0' width='1' height='1' selectable='true'/></UIScript>", "can't have selectable")]
     [InlineData("<UIScript><Window width='1' height='1'/><Text name='t' x='0' y='0' width='1' height='1' alignment='middle'/></UIScript>", "alignment=\"middle\"")]
-    [InlineData("<UIScript><Window width='1' height='1'/><Text name='t' x='0' y='0' width='1' height='1' orientation='vertical'/></UIScript>", "can't have orientation")]
-    [InlineData("<UIScript><Window width='1' height='1'/><Slider name='s' x='0' y='0' width='1' height='1' minValue='2' maxValue='1'/></UIScript>", "minValue must be below maxValue")]
-    [InlineData("<UIScript><Window width='1' height='1'/><Text name='t' x='0' y='0' width='1' height='1' maxValue='2'/></UIScript>", "only a Slider or ProgressBar")]
+    [InlineData("<UIScript><Window width='1' height='1'/><ProgressBar name='p' x='0' y='0' width='1' height='1' minValue='2' maxValue='1'/></UIScript>", "minValue must be below maxValue")]
+    [InlineData("<UIScript><Window width='1' height='1'/><Text name='t' x='0' y='0' width='1' height='1' maxValue='2'/></UIScript>", "only a ProgressBar")]
     [InlineData("<UIScript><Window width='1' height='1'/><Text name='t' x='0' y='0' image='i'/><Image name='i' path='p'/></UIScript>", "can't have image")]
     [InlineData("<UIScript><Window width='1' height='1'/><Button name='b' x='0' y='0' image='nope'/></UIScript>", "image=\"nope\"")]
-    [InlineData("<UIScript><Window width='1' height='1'/><Slider name='s' x='0' y='0' width='1' height='1' scrolls='nope'/></UIScript>", "scrolls=\"nope\"")]
-    [InlineData("<UIScript><Window width='1' height='1'/><List name='l' x='0' y='0' width='1' height='1'/><Slider name='s' x='0' y='0' width='1' height='1' scrolls='l' direction='up'/></UIScript>", "scrolls or direction")]
-    [InlineData("<UIScript><Window width='1' height='1'/><List name='l' x='0' y='0' width='1' height='1'/><Button name='b' x='0' y='0' width='1' height='1' scrolls='l'/></UIScript>", "scrolls or direction")]
-    [InlineData("<UIScript><Window width='1' height='1'/><Text name='x' x='0' y='0' width='1' height='1'/><Button name='b' x='0' y='0' width='1' height='1' scrolls='x' direction='up'/></UIScript>", "scrolls or direction")]
-    [InlineData("<UIScript><Window width='1' height='1'/><Button name='b' x='0' y='0' width='1' height='1' direction='up'/></UIScript>", "scrolls or direction")]
     [InlineData("<UIScript><Window width='1' height='1'/><Region name='r' x='0' y='0' width='1' height='1'>text</Region></UIScript>", "Text isn't allowed inside <Region>")]
     [InlineData("<!DOCTYPE x><UIScript/>", "DOCTYPE")]
     public void RefusesWhatHudiniRefuses(string text, string message) =>
         Assert.Contains(message, Assert.Throws<UIScriptException>(() => UIScript.Parse(text)).Message);
+
+    /// <summary>
+    /// The spec dropped sliders and hand-made scroll buttons on 2026-11-24, since lists and text areas show their own
+    /// scroll bars. A document that still has one is refused, saying what to do, rather than read with a button that
+    /// does nothing.
+    /// </summary>
+    [Theory]
+    [InlineData("<Slider name='s' x='0' y='0' width='1' height='1'/>", "<Slider> isn't part of UIScript any more")]
+    [InlineData("<List name='l' x='0' y='0' width='1' height='1'/><Button name='b' x='0' y='0' width='1' height='1' scrolls='l' direction='up'/>", "\"b\" has scrolls or direction")]
+    [InlineData("<Button name='b' x='0' y='0' width='1' height='1' direction='down'/>", "\"b\" has scrolls or direction")]
+    public void RefusesASliderAndHandMadeScrolling(string controls, string message)
+    {
+        var problem = Assert.Throws<UIScriptException>(() => UIScript.Parse($"<UIScript><Window width='1' height='1'/>{controls}</UIScript>"));
+
+        Assert.Contains(message, problem.Message);
+        Assert.Contains("show their own scroll bars", problem.Message);
+        Assert.Equal(1, problem.Line);
+    }
+
+    [Fact]
+    public void IgnoresASlidersOrientationLeftOnAnotherControl()
+    {
+        var script = UIScript.Parse("<UIScript><Window width='1' height='1'/><ProgressBar name='p' x='0' y='0' width='1' height='1' orientation='vertical'/></UIScript>");
+
+        Assert.Contains(new UIIgnoredAttribute("ProgressBar", "orientation", 1), script.IgnoredAttributes);
+    }
 
     [Fact]
     public void NamesTheLineOfAnElementsProblem()

@@ -80,7 +80,6 @@ since a person couldn't use it either.
 | `app:submit(name, text)` | Types `text` into a field or the title bar's field and presses Enter. |
 | `app:type(name, text)` | Types `text` into a field or text area, without Enter. |
 | `app:choose(name, row)` | Clicks a list's or sidebar's row: its number, counting from 1, or its text, such as `"Clock"`. |
-| `app:slide(name, value)` | Drags a slider to `value`. |
 
 A menu item or toolbar item is always there while its window is, so only its dimming counts.
 
@@ -93,7 +92,7 @@ A menu item or toolbar item is always there while its window is, so only its dim
 | `app:checked(name)` | Whether a checkbox, radio button, or toggle is on. |
 | `app:dimmed(name)` | Whether it's dimmed. |
 | `app:showing(name)` | Whether it's showing: not hidden, and in the pane shown. |
-| `app:value(name)` | A slider's value, or `nil`. |
+| `app:value(name)` | A progress bar's value, or `nil`. |
 | `app:rows(name)` | A list's or sidebar's rows, as a table of text. |
 | `app:chosen(name)` | The chosen row, counting from 1, or `nil`. |
 

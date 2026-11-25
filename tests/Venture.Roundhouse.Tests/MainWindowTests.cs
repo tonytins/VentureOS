@@ -395,7 +395,7 @@ public sealed class MainWindowTests : IDisposable
         window.Text = before.Replace("""x="174" y="256" width="46" height="40" text="="/>""", """x="174" y="256" width="46" height="40" text="=" scrolls="display"/>""", StringComparison.Ordinal);
         window.RenderNow();
 
-        // A button that scrolls something that isn't a list is refused, so nothing can be dragged onto the canvas.
+        // A button that scrolls is refused, since lists scroll themselves, so nothing can be dragged onto the canvas.
         Assert.False(window.Document!.IsEditable);
         var bounds = window.Map!.BoundsOf(equals)!.Value;
         window.MouseDown(At(window, bounds.X + 10, bounds.Y + 10), MouseButton.Left);
@@ -557,12 +557,12 @@ public sealed class MainWindowTests : IDisposable
         var (window, _) = OpenCalculator();
         var count = window.Document!.Xml!.Children.Count;
 
-        Assert.True(window.AddControl("Slider"));
+        Assert.True(window.AddControl("ProgressBar"));
 
         Assert.Equal(count, window.Selection);
-        Assert.Contains("""<Slider name="slider" x="46" y="144" width="140" height="20"/>""", window.Text);
+        Assert.Contains("""<ProgressBar name="progressBar" x="46" y="148" width="140" height="12"/>""", window.Text);
         Assert.NotNull(window.Map!.BoundsOf(count));
-        Assert.Equal("Slider  slider", ((string[])window.FindControl<ListBox>("OutlineList")!.ItemsSource!)[count]);
+        Assert.Equal("ProgressBar  progressBar", ((string[])window.FindControl<ListBox>("OutlineList")!.ItemsSource!)[count]);
         window.Close();
     });
 
@@ -676,8 +676,8 @@ public sealed class MainWindowTests : IDisposable
         Assert.Equal(1, window.Accent);
         Assert.True(Command(window, "View", "Teal").IsChecked!());
 
-        Command(window, "Insert", "Slider").Run();
-        Assert.Contains("<Slider name=\"slider\"", window.Text);
+        Command(window, "Insert", "ProgressBar").Run();
+        Assert.Contains("<ProgressBar name=\"progressBar\"", window.Text);
         window.Close();
     });
 

@@ -379,7 +379,7 @@ being five slots by hand.
   content doesn't fit: classic, a thumb in the accent on a track with an arrow
   at each end, or automatic, a thin bar over the content shown while it
   scrolls. The sidebar's is always automatic, taking no room from its rows.
-- [ ] `<Slider>`, and `scrolls` and `direction` on `<Button>`, leave UIScript,
+- [x] `<Slider>`, and `scrolls` and `direction` on `<Button>`, leave UIScript,
   the reader, and Roundhouse; TextEdit and Terminal drop theirs, and
   VentureOS's copies of Hudini's examples follow.
 - [ ] Settings' Appearance chooses the style, as does `appearance`.
@@ -435,6 +435,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | 0.8.3xx: `<Slider>` leaves UIScript, with `scrolls`, `direction`, and `orientation`, and `version` stays `1`, by my decision; the reader refuses a slider or scroll button. TextEdit and Terminal drop theirs, in their projects and in `rootfs/`, since they'd be refused at boot otherwise. VentureOS's copies of Hudini's examples are upgraded ahead of Hudini. UIScript has no control for choosing a value now. |
 | 2026-11-24 | patch | 0.8.3xx: the sidebar's scroll bar is always automatic, by my decision, so it never takes room from the rows. |
 | 2026-11-24 | patch | 0.8.3xx: lists, text areas, and the sidebar's rows draw their own scroll bars, classic or automatic; nothing chooses automatic until Settings does, later in the band. |
 | 2026-11-24 | minor | 0.8.3xx begins, by my decision: scroll bars and grids. Lists and text areas draw their own bars, classic or automatic, and `<Slider>` leaves the draft spec with no new `version`; `<Grid>` replaces Settings' wallpaper slots. The scroll bar style joins the look. |

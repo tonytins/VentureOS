@@ -106,13 +106,13 @@ public sealed class PaneDesignTests : IDisposable
         var window = Open();
         window.Select(Index(window, "clock"));
 
-        Assert.True(window.AddControl("Slider"));
+        Assert.True(window.AddControl("ProgressBar"));
 
-        // Settings' panes hold their controls, so the slider goes inside Clock.
-        var slider = window.Document!.Xml!.Children[window.Selection!.Value];
-        Assert.Equal("Slider", slider.Name);
-        Assert.Equal(Index(window, "clock"), slider.Parent);
-        Assert.Null(slider["pane"]);
+        // Settings' panes hold their controls, so the bar goes inside Clock.
+        var bar = window.Document!.Xml!.Children[window.Selection!.Value];
+        Assert.Equal("ProgressBar", bar.Name);
+        Assert.Equal(Index(window, "clock"), bar.Parent);
+        Assert.Null(bar["pane"]);
         Assert.NotNull(window.Map!.BoundsOf(window.Selection!.Value));
         window.Close();
     });

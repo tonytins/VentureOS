@@ -13,7 +13,6 @@ namespace Venture.OS.Desktop;
 /// content scrolls or the pointer moves over it, and for <see cref="ScrollBarLinger"/> after.</para>
 /// <para>The sidebar's rows always have an automatic bar, whatever the style, so the sidebar keeps its width for its
 /// rows, as GNOME's and Finder's do.</para>
-/// <para>A control a slider or button already scrolls (<c>scrolls</c>) keeps that and draws no bar of its own.</para>
 /// </remarks>
 public sealed partial class UIView
 {
@@ -30,9 +29,6 @@ public sealed partial class UIView
     private const int MinimumThumb = 18;
     private static readonly TimeSpan RepeatDelay = TimeSpan.FromMilliseconds(350);
     private static readonly TimeSpan RepeatInterval = TimeSpan.FromMilliseconds(50);
-
-    // Controls a slider or button scrolls, which draw no bar of their own.
-    private readonly HashSet<string> scrollBound = [];
 
     // An arrow or the track held down, which repeats; and the thumb being dragged, with where it was grabbed.
     private (string Control, ScrollBarPart Part, TimeSpan Next)? barHold;
@@ -97,7 +93,7 @@ public sealed partial class UIView
 
     /// <summary>Whether a control scrolls with a bar of its own: a list, text area, or the sidebar's rows.</summary>
     private bool HasOwnScrollBar(UIControl control) =>
-        control.Type is UIControlType.List or UIControlType.TextArea && !scrollBound.Contains(control.Name);
+        control.Type is UIControlType.List or UIControlType.TextArea;
 
     /// <summary>How much room a classic bar takes from a control's content: its width while it shows, else nothing.</summary>
     private int ClassicBarRoom(UIControl control) =>

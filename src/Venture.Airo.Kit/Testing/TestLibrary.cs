@@ -144,14 +144,6 @@ public static class TestLibrary
             app.Send(window, new UIEvent(UIEventKind.Selected, name, Index: (int)index - 1));
             return 0;
         });
-        Add(lua, "slide", state =>
-        {
-            var (window, name) = Usable(state, app, "slide");
-            var value = (float)state.L_CheckNumber(3);
-            window.View.SetValue(name, value);
-            app.Send(window, new UIEvent(UIEventKind.Changed, name, Value: value));
-            return 0;
-        });
 
         Add(lua, "has", state =>
         {

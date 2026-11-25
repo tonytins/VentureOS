@@ -185,27 +185,6 @@ public sealed class ScrollBarTests
     }
 
     [Fact]
-    public void AListASliderScrollsKeepsTheSliderAndHasNoBar()
-    {
-        UIView bound = new(UIScript.Parse("""
-            <UIScript>
-              <Window width="300" height="200"/>
-              <List name="log" x="0" y="0" width="100" height="102"/>
-              <Slider name="logScroll" x="100" y="0" width="10" height="102" scrolls="log"/>
-            </UIScript>
-            """));
-        var log = bound.List("log")!;
-        for (var item = 0; item < 20; item++)
-            log.Items.Add($"Line {item}");
-        bound.Update(new UIViewInput(0, 0, false, false, false, 0, []), 0, 0);
-        var first = log.FirstVisible;
-
-        bound.Update(new UIViewInput(90, 5, true, true, false, 0, []), 0, 0);
-
-        Assert.Equal(first, log.FirstVisible);
-    }
-
-    [Fact]
     public void TheSidebarsRowsScrollWithAnAutomaticBarThatTakesNoRoom()
     {
         UIView sided = new(UIScript.Parse("""

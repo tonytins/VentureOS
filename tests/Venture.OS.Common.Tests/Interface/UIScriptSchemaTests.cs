@@ -29,7 +29,6 @@ public sealed class UIScriptSchemaTests
         ["minWidth"] = """ minHeight="1" """,
         ["minHeight"] = """ minWidth="1" """,
         ["minValue"] = "",
-        ["direction"] = """ scrolls="l" """,
     };
 
     private static readonly Dictionary<string, string> Samples = new(StringComparer.Ordinal)
@@ -95,7 +94,7 @@ public sealed class UIScriptSchemaTests
     {
         Assert.Equal(
             ["Button", "FormattedText", "Image", "List", "Menu", "MenuItem", "MenuSeparator", "Pane", "Panel", "ProgressBar", "Region", "Shelf",
-                "Sidebar", "Slider", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript",
+                "Sidebar", "String", "Style", "Text", "TextArea", "TextField", "TitleField", "ToolbarItem", "UIScript",
                 "Visual", "Window"],
             UIScriptSchema.Elements.Order(StringComparer.Ordinal));
         Assert.All(UIScriptSchema.Controls, control => Assert.NotNull(UIScriptSchema.Find(control, "x")));
@@ -117,12 +116,11 @@ public sealed class UIScriptSchemaTests
     [InlineData("Text", "selectable")]
     [InlineData("Text", "placeholder")]
     [InlineData("List", "image")]
-    [InlineData("Region", "orientation")]
     [InlineData("TextField", "follows")]
     [InlineData("Button", "minValue")]
     public void WhatAKindDoesntTakeIsRefusedByTheReader(string element, string attribute)
     {
-        var text = $"""<UIScript><Window width="300" height="200"/>{Declarations}<{element} {Required(element, attribute)}{attribute}="{(attribute == "minValue" ? "0" : attribute is "selectable" or "follows" ? "true" : attribute == "image" ? "img" : attribute == "orientation" ? "vertical" : "x")}"/></UIScript>""";
+        var text = $"""<UIScript><Window width="300" height="200"/>{Declarations}<{element} {Required(element, attribute)}{attribute}="{(attribute == "minValue" ? "0" : attribute is "selectable" or "follows" ? "true" : attribute == "image" ? "img" : "x")}"/></UIScript>""";
 
         Assert.Throws<UIScriptException>(() => UIScript.Parse(text.Replace("<UIScript>", """<UIScript requires="menus sidebar shelf panes">""", StringComparison.Ordinal)));
     }
@@ -141,8 +139,7 @@ public sealed class UIScriptSchemaTests
         return written.ToString();
     }
 
-    private static string Companion(string element, string attribute) =>
-        element == "Button" && attribute == "scrolls" ? """ direction="up" """ : Companions.GetValueOrDefault(attribute, "");
+    private static string Companion(string element, string attribute) => Companions.GetValueOrDefault(attribute, "");
 
     private static string Sample(UIAttributeInfo info) => Samples.TryGetValue(info.Name, out var sample) ? sample : info.Kind switch
     {

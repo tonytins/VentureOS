@@ -188,7 +188,7 @@ take on Dark Mode with no changes. Colors written as hex still work, and each ha
 | `name` | Required. The name controls use. |
 | `textColor`, `backgroundColor`, `borderColor` | Colors used when drawing. |
 | `selectedTextColor`, `highlightedTextColor`, `disabledTextColor` | Button label colors while pressed, hovered, and disabled. |
-| `fillColor` | The filled part of a progress bar and the thumb of a slider. |
+| `fillColor` | The filled part of a progress bar. |
 | `darkTextColor`, `darkBackgroundColor`, and the rest | A color's `dark` twin: the same attribute with `dark` before it, used in place of it on a dark theme. |
 | `fontSize` | A size role, or a positive size in pixels. Without one, text uses the `body` size. |
 | `font` | `interface` (the default) or `monospace`, a fixed-width typeface for code and terminals. The host picks the actual fonts. Any other value refuses the document. |
@@ -284,11 +284,10 @@ Every control takes `name` and the position and size attributes. All of these ar
 | --- | --- | --- |
 | `<Text>` | Text at its position | `text` or `string`, `alignment` |
 | `<FormattedText>` | Text on a background, with an inset | `text` or `string`, `alignment` |
-| `<Button>` | A clickable button | `text` or `string`, `image`, `scrolls`, `direction` |
+| `<Button>` | A clickable button | `text` or `string`, `image` |
 | `<TextField>` | A one-line text entry | `text` or `string`, `placeholder` or `placeholderString`, `maximumLength`, `readOnly`, `secure`, `alignment` |
 | `<TextArea>` | A multi-line text entry | `text` or `string`, `placeholder` or `placeholderString`, `maximumLength`, `readOnly`, `follows`, `alignment` |
 | `<List>` | A scrollable list the host fills | `text` or `string`, shown as its first item, `selectable` |
-| `<Slider>` | A draggable thumb on a track | `scrolls`, `minValue`, `maxValue`, `orientation` |
 | `<ProgressBar>` | A bar filled in proportion to a value | `minValue`, `maxValue` |
 | `<Region>` | A rectangle the host draws into | None |
 | `<Shelf>` | A row of icons the host fills, such as a dock's | None. See [Shelf](#shelf). |
@@ -314,18 +313,18 @@ Every control takes `name` and the position and size attributes. All of these ar
 - **`follows`:** `true` or `false`, which defaults to `false`, and only on a `<TextArea>`. When its text changes
   while it's scrolled to its last line, it stays at the last line, as a log list does. Scrolled back, it stays put. A
   terminal uses it.
-- **`scrolls`:** names the `<List>` or `<TextArea>` a slider or button scrolls. A slider with `scrolls` always runs
-  top to bottom and has no value of its own.
-- **`minValue` and `maxValue`:** the values a slider or progress bar covers, which default to `0` and `1`. It starts
-  at the lowest.
-- **`orientation`:** `horizontal` or `vertical`. Without it, a slider runs along its longer side.
-- **`direction`:** `up` or `down`. A button with `scrolls` needs it, and a slider must not have it.
+- **`minValue` and `maxValue`:** the values a progress bar covers, which default to `0` and `1`. It starts at the
+  lowest.
+
+A `<List>` and a `<TextArea>` scroll by themselves, with the wheel and a scroll bar the host draws, so a document
+places nothing beside them to scroll them. Before 2026-11-24 a `<Slider>`, or a `<Button>` with `scrolls` and
+`direction`, did; a reader refuses either, saying so, rather than draw a control that does nothing.
 
 ### Text areas
 
 A `<TextArea>` takes typing across several lines. Enter adds a line break rather than submitting, and the starting
-`text` may hold line breaks, written `&#10;`. It wraps at spaces, scrolls with the wheel and with a bound slider or
-buttons, and keeps the caret in view. `secure` and `selectable` refuse the document on it.
+`text` may hold line breaks, written `&#10;`. It wraps at spaces, scrolls with the wheel and its scroll bar, and keeps
+the caret in view. `secure` and `selectable` refuse the document on it.
 
 The host reads and sets an area's text by name. A reader may also report typing, such as with `changed` and the
 text, but hosts shouldn't rely on it: Hudini doesn't report it.
@@ -443,8 +442,8 @@ A menu holds its items, separators, and submenus. A `<Menu>` directly inside `<U
 `<Menu>` inside another is a submenu: an entry in its parent that opens another menu beside it. Submenus nest to any
 depth. Menus appear in the bar in document order, and everything in a menu appears in the order it's written.
 
-A menu's items and separators may instead sit directly in `<UIScript>`, each naming its menu with `menu`, as a slider
-names the list it scrolls. This is the form menus had before they nested, and it still reads the same:
+A menu's items and separators may instead sit directly in `<UIScript>`, each naming its menu with `menu`, as a control
+names its pane with `pane`. This is the form menus had before they nested, and it still reads the same:
 
 ```xml
 <Menu name="notesMenu" title="Notes" hotkey="N"/>
@@ -556,7 +555,7 @@ A sidebar may hold controls and visuals in place of rows, as a radio's player si
   <Visual name="cover" image="art" x="52" y="16" width="96" height="96"/>
   <Text name="station" x="10" y="122" width="180" height="24" alignment="center" text="Jazz Radio"/>
   <Button name="stop" x="60" y="178" width="80" height="26" text="Stop"/>
-  <Slider name="volume" x="16" y="218" width="168" height="20" edgeOffsetLeft="16" edgeOffsetRight="16"/>
+  <ProgressBar name="level" x="16" y="222" width="168" height="8" edgeOffsetLeft="16" edgeOffsetRight="16"/>
 </Sidebar>
 ```
 
@@ -660,7 +659,7 @@ Controls report what the person does as events carrying the control's name.
 | --- | --- |
 | `pressed` | A button, toolbar item, menu item, or shelf item is chosen. Opening a menu or submenu reports nothing. |
 | `submitted` | Enter is pressed in a text field or title field, with its text, or an item in a selectable list is double-clicked, with the item's text. |
-| `changed` | A slider without a scroll binding moves, with its value. |
+| `changed` | A text area's text changes by typing or an edit, with its text, where the reader reports it. |
 | `selected` | A click on a selectable list or sidebar picks a different row, with its index. |
 
 A handler checks the kind, so `submitted` from a list and from a field are told apart by name.
@@ -708,7 +707,7 @@ The format leaves to the host everything about live data and drawing. A host:
 
 - Supplies images and strings, and reports which it couldn't. A missing string shows its table and index instead.
 - Shows and hides controls, disables buttons and items, and marks toggles or choices, by name.
-- Sets text at runtime, the value of a slider or progress bar, and a list's items and selection. A host's own items
+- Sets text at runtime, the value of a progress bar, and a list's items and selection. A host's own items
   are the source of what a selection's index means, and setting a selection reports no event.
 - Gives the view a new size when the space around anchored controls changes, and never below the document's
   minimum on either axis.
@@ -734,8 +733,7 @@ As a host, it also:
 - Selects text and uses the clipboard in text areas.
 - Draws a scroll bar in lists, text areas, and a sidebar's rows once their content doesn't fit, in the style the
   person chose: classic, with arrows and a thumb in the accent, or automatic, a thin thumb shown while it scrolls. A
-  sidebar's rows always have the automatic one, so they keep the sidebar's width. A control a slider or button
-  scrolls keeps that and has no bar of its own.
+  sidebar's rows always have the automatic one, so they keep the sidebar's width.
 - Gives a sidebar's rows icons and groups, which apps set through `window:setItems` (see
   [the desktop tutorial](../tutorial/desktop.md#sidebars-and-panes)).
 
@@ -750,10 +748,18 @@ sidebars, shelves, and panes as unknown elements, and skips `subtitle` and toolb
 [UISCRIPT.md](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) says how a Swift host uses it, and how it
 reads `.uis` files into the same model.
 
+Hudini hasn't followed the 2026-11-24 change yet: it still reads `<Slider>` and scroll buttons, which VentureOS
+refuses, so a document using them reads in Hudini and not here until it does.
+
 ## Change log
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-24:** `<Slider>` is gone, with `scrolls` and `direction` on `<Button>` and `orientation`: lists and text
+  areas scroll by themselves, with a bar the host draws. `changed` is a text area's alone. `version` stays `1`, since
+  the spec is a draft; a reader refuses a document that still has a slider or a scroll button, with what to do, and
+  ignores `orientation` like any unknown attribute. A level to show is a `<ProgressBar>`; the format has no control
+  for choosing a value now.
 - **2026-11-24:** `<TextArea>` and `<TextField>` list `alignment`: an area aligns each line, and a field its text
   while it fits. Readers already accepted it there; one that draws them on the left is plainer but still correct.
 - **2026-11-24:** A `<Sidebar>` may hold controls and visuals in place of rows, placed from its own corner. One that

@@ -14,7 +14,6 @@ public enum UIControlType
     /// <summary>A multi-line text entry: Enter adds a line, and its text wraps and scrolls.</summary>
     TextArea,
     List,
-    Slider,
     ProgressBar,
     Region,
 
@@ -65,20 +64,6 @@ public enum UIFont
 
     /// <summary>A fixed-width font, for code and a terminal.</summary>
     Monospace,
-}
-
-/// <summary>Which way a slider runs. Without one, it runs along its longer side.</summary>
-public enum UIOrientation
-{
-    Horizontal,
-    Vertical,
-}
-
-/// <summary>Which way a scroll button moves its list.</summary>
-public enum UIScrollDirection
-{
-    Up,
-    Down,
 }
 
 /// <summary>A size in pixels.</summary>
@@ -229,9 +214,6 @@ public sealed record UIText(string Value, bool IsReference)
 /// </summary>
 public sealed record UIVisual(string Name, string Image, UIFrame Frame, int Line, string? Pane = null, bool InSidebar = false);
 
-/// <summary>A list a slider or scroll button moves, and for a button, which way.</summary>
-public sealed record UIScrollBinding(string List, UIScrollDirection? Direction);
-
 /// <summary>
 /// A control, with every attribute any control can take; those that don't apply are unset. One
 /// <see cref="InSidebar"/> is placed from the sidebar's corner, and anchored to the sidebar's edges, rather than the
@@ -249,13 +231,11 @@ public sealed record UIControl(
     string? Image = null,
     string? Tooltip = null,
     int? MaximumLength = null,
-    UIScrollBinding? Scrolls = null,
     bool IsReadOnly = false,
     bool IsSecure = false,
     bool IsSelectable = false,
     UITextAlignment Alignment = UITextAlignment.Left,
     (float Minimum, float Maximum)? ValueRange = null,
-    UIOrientation? Orientation = null,
     bool Follows = false,
     string? Pane = null,
     bool InSidebar = false);
@@ -389,7 +369,8 @@ public sealed class UIScriptException(string message, int? line = null)
 /// </summary>
 /// <remarks>
 /// <para>This reads the UIScript spec VentureOS keeps (docs/uiscript/, Draft, version 1). Hudini reads a subset of
-/// it, so a document Hudini reads reads the same here. A document reads completely and validly, or throws
+/// it, so a document Hudini reads reads the same here, except a slider or a hand-made scroll button, which the spec
+/// dropped on 2026-11-24 and this reader refuses, saying why. A document reads completely and validly, or throws
 /// <see cref="UIScriptException"/>.</para>
 /// <list type="bullet">
 /// <item><description>A newer <c>version</c> or an unknown <c>requires</c> name refuses the document, before
@@ -698,6 +679,8 @@ public sealed class UIScript
                     break;
 
                 default:
+                    if (element.Name == "Slider")
+                        throw new UIScriptException(SliderRemoved, element.Line);
                     if (ControlType(element.Name) is not { } type)
                         throw new UIScriptException($"<{element.Name}> isn't a UIScript element.", element.Line);
 
@@ -785,7 +768,6 @@ public sealed class UIScript
         "TextField" => UIControlType.TextField,
         "TextArea" => UIControlType.TextArea,
         "List" => UIControlType.List,
-        "Slider" => UIControlType.Slider,
         "ProgressBar" => UIControlType.ProgressBar,
         "Region" => UIControlType.Region,
         "Shelf" => UIControlType.Shelf,
@@ -848,10 +830,9 @@ public sealed class UIScript
     {
         var name = reader.RequiredString("name");
 
-        var direction = reader.Enum("direction", ParseDirection);
-        var list = reader.String("scrolls");
-        if (list is null && direction is not null)
-            throw ScrollProblem(name, line);
+        // Read, so they aren't listed as ignored, and refused: ignoring them would leave a button that does nothing.
+        if (reader.String("scrolls") is not null || reader.String("direction") is not null)
+            throw new UIScriptException($"\"{name}\" has scrolls or direction. {ScrollingRemoved}", line);
 
         var minimum = reader.Number("minValue");
         var maximum = reader.Number("maxValue");
@@ -876,13 +857,11 @@ public sealed class UIScript
             Image: reader.String("image"),
             Tooltip: reader.String("tooltip"),
             MaximumLength: reader.Integer("maximumLength"),
-            Scrolls: list is null ? null : new UIScrollBinding(list, direction),
             IsReadOnly: reader.Boolean("readOnly") ?? false,
             IsSecure: reader.Boolean("secure") ?? false,
             IsSelectable: reader.Boolean("selectable") ?? false,
             Alignment: reader.Enum("alignment", ParseAlignment) ?? UITextAlignment.Left,
             ValueRange: range,
-            Orientation: reader.Enum("orientation", ParseOrientation),
             Follows: reader.Boolean("follows") ?? false,
             Pane: reader.String("pane"));
     }
@@ -1099,24 +1078,8 @@ public sealed class UIScript
         if (control.Follows && type != UIControlType.TextArea)
             throw OnlyFor(name, "follows", "a TextArea", line);
 
-        if (control.Scrolls is { } binding)
-        {
-            if (Control(binding.List) is not { } target)
-                throw Unknown(name, "scrolls", binding.List, line);
-            var directionFits = type switch
-            {
-                UIControlType.Slider => binding.Direction is null,
-                UIControlType.Button => binding.Direction is not null,
-                _ => false,
-            };
-            if (target.Type is not (UIControlType.List or UIControlType.TextArea) || !directionFits)
-                throw ScrollProblem(name, line);
-        }
-
-        if (control.ValueRange is not null && type is not (UIControlType.Slider or UIControlType.ProgressBar))
+        if (control.ValueRange is not null && type != UIControlType.ProgressBar)
             throw RangeProblem(name, line);
-        if (control.Orientation is not null && type != UIControlType.Slider)
-            throw OnlyFor(name, "orientation", "a Slider", line);
         if (control.Style is { } style && !Styles.ContainsKey(style))
             throw Unknown(name, "style", style, line);
 
@@ -1163,18 +1126,16 @@ public sealed class UIScript
     private static UIScriptException OnlyFor(string owner, string attribute, string kind, int line) =>
         new($"\"{owner}\" can't have {attribute}; only {kind} takes it.", line);
 
-    private static UIScriptException ScrollProblem(string owner, int line) =>
-        new($"\"{owner}\" has scrolls or direction that don't fit: a Slider scrolls a List or TextArea with no direction, and a Button scrolls one up or down.", line);
+    /// <summary>Why a document scrolling a list by hand is refused, and what to do instead.</summary>
+    private const string ScrollingRemoved =
+        "Lists and text areas show their own scroll bars, so nothing scrolls them by hand any more; remove it.";
+
+    /// <summary>Why a slider is refused, and what to do instead.</summary>
+    private const string SliderRemoved =
+        "<Slider> isn't part of UIScript any more. " + ScrollingRemoved + " A level to show is a <ProgressBar>.";
 
     private static UIScriptException RangeProblem(string owner, int line) =>
-        new($"\"{owner}\" has a minValue and maxValue that don't fit: only a Slider or ProgressBar takes them, and minValue must be below maxValue.", line);
-
-    private static UIScrollDirection? ParseDirection(string value) => value switch
-    {
-        "up" => UIScrollDirection.Up,
-        "down" => UIScrollDirection.Down,
-        _ => null,
-    };
+        new($"\"{owner}\" has a minValue and maxValue that don't fit: only a ProgressBar takes them, and minValue must be below maxValue.", line);
 
     // A style's colors, each attribute's name after the prefix: textColor, or with "dark", darkTextColor.
     private static UIStyleColors ReadColors(Attributes reader, string prefix)
@@ -1234,13 +1195,6 @@ public sealed class UIScript
         "left" => UITextAlignment.Left,
         "center" => UITextAlignment.Center,
         "right" => UITextAlignment.Right,
-        _ => null,
-    };
-
-    private static UIOrientation? ParseOrientation(string value) => value switch
-    {
-        "horizontal" => UIOrientation.Horizontal,
-        "vertical" => UIOrientation.Vertical,
         _ => null,
     };
 

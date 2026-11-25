@@ -20,7 +20,7 @@ public sealed class UiLibraryTests : IDisposable
           <Text name="label" x="10" y="10" width="100" height="20" text="Hello"/>
           <TextField name="field" x="10" y="35" width="100" height="20"/>
           <List name="items" x="10" y="60" width="100" height="40" selectable="true"/>
-          <Slider name="volume" x="120" y="10" width="60" height="12" minValue="0" maxValue="10"/>
+          <ProgressBar name="volume" x="120" y="10" width="60" height="12" minValue="0" maxValue="10"/>
           <Button name="ok" x="120" y="90" width="60" height="20" text="OK"/>
           <ToolbarItem name="refresh" title="Refresh"/>
           <TitleField name="address"/>
@@ -141,14 +141,13 @@ public sealed class UiLibraryTests : IDisposable
               print(event.kind, event.control, event.text, event.value, event.index)
             end
             window:on("field", show)
-            window:on("volume", show)
             window:on("items", show)
             window:on("save", show)
             """);
         var window = Assert.Single(windows.Windows);
 
         Send(window, new UIEvent(UIEventKind.Submitted, "field", Text: "typed"));
-        Send(window, new UIEvent(UIEventKind.Changed, "volume", Value: 2.5f));
+        Send(window, new UIEvent(UIEventKind.Changed, "field", Text: "typed!"));
         Send(window, new UIEvent(UIEventKind.Selected, "items", Text: "two", Index: 1));
         Send(window, new UIEvent(UIEventKind.Pressed, "save"));
         Send(window, new UIEvent(UIEventKind.Pressed, "ok"));
@@ -156,7 +155,7 @@ public sealed class UiLibraryTests : IDisposable
         Assert.Equal(
             [
                 "submitted\tfield\ttyped\tnil\tnil",
-                "changed\tvolume\tnil\t2.5\tnil",
+                "changed\tfield\ttyped!\tnil\tnil",
                 "selected\titems\ttwo\tnil\t2",
                 "pressed\tsave\tnil\tnil\tnil",
             ],

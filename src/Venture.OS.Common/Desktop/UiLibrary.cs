@@ -385,12 +385,12 @@ public sealed class WindowTimer
 /// <para>A relative path is in the app's <c>Contents/Resources/</c>. The window belongs to the app: quitting the
 /// app closes it, and closing the app's last window quits the app. Event handlers get a table with
 /// <c>kind</c> (<c>pressed</c>, <c>submitted</c>, <c>changed</c>, or <c>selected</c>), <c>control</c>, and, when they
-/// apply, <c>text</c>, <c>value</c>, and <c>index</c> (counting from 1). A chosen menu item is <c>pressed</c>.</para>
+/// apply, <c>text</c> and <c>index</c> (counting from 1). A chosen menu item is <c>pressed</c>.</para>
 /// <para>Methods take a control by name and raise a Lua error for a name the document doesn't have, so a typo
 /// shows at once instead of silently doing nothing. They need the colon: <c>window:setText(...)</c>.</para>
 /// <list type="bullet">
 /// <item><description><c>text(name)</c>, <c>setText(name, text)</c>: a control's text.</description></item>
-/// <item><description><c>value(name)</c>, <c>setValue(name, number)</c>: a slider's or progress bar's value.</description></item>
+/// <item><description><c>value(name)</c>, <c>setValue(name, number)</c>: a progress bar's value.</description></item>
 /// <item><description><c>items(name)</c>, <c>setItems(name, list)</c>, <c>selected(name)</c>,
 /// <c>select(name, index)</c>: a list's items and its selection, counting from 1, or <c>nil</c> for none.</description></item>
 /// <item><description><c>setHidden</c>, <c>setDisabled</c>, <c>setChecked(name, on)</c>: hide, disable, or check a
@@ -1250,12 +1250,6 @@ public static class UiLibrary
             {
                 lua.PushString(LuaText.Encode(text));
                 lua.SetField(-2, "text");
-            }
-
-            if (uiEvent.Kind == UIEventKind.Changed)
-            {
-                lua.PushNumber(uiEvent.Value);
-                lua.SetField(-2, "value");
             }
 
             if (uiEvent.Index >= 0)

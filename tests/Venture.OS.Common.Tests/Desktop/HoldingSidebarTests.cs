@@ -19,7 +19,7 @@ public sealed class HoldingSidebarTests
           <Sidebar name="player" width="100" edge="{edge}">
             <Visual name="cover" image="art" x="10" y="10" width="2" height="2"/>
             <Button name="stop" x="10" y="40" width="80" height="24" text="Stop"/>
-            <Slider name="volume" x="10" y="80" width="40" height="20" edgeOffsetLeft="10" edgeOffsetRight="10"/>
+            <ProgressBar name="volume" x="10" y="80" width="40" height="20" edgeOffsetLeft="10" edgeOffsetRight="10"/>
           </Sidebar>
           <List name="stations" x="10" y="10" width="280" height="180" selectable="true"/>
         </UIScript>

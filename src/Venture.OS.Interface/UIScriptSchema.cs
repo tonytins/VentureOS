@@ -129,9 +129,6 @@ public static class UIScriptSchema
         new("maxValue", UIAttributeGroup.Behaviour, UIAttributeKind.Number),
     ];
 
-    private static readonly UIAttributeInfo Scrolls =
-        new("scrolls", UIAttributeGroup.Behaviour, UIAttributeKind.Reference, RefersTo: "List");
-
     private static readonly UIAttributeInfo[] Colors = [.. StyleColors("", UIAttributeGroup.Appearance), .. StyleColors("dark", UIAttributeGroup.Appearance)];
 
     private static readonly Dictionary<string, UIAttributeInfo[]> Attributes = new(StringComparer.Ordinal)
@@ -234,19 +231,10 @@ public static class UIScriptSchema
         [
             .. Control,
             new("image", UIAttributeGroup.Appearance, UIAttributeKind.Reference, RefersTo: "Image"),
-            Scrolls,
-            new("direction", UIAttributeGroup.Behaviour, UIAttributeKind.Choice, Choices: ["up", "down"]),
         ],
         ["TextField"] = [.. Control, .. TextEntry, new("secure", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean)],
         ["TextArea"] = [.. Control, .. TextEntry, new("follows", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean)],
         ["List"] = [.. Control, new("selectable", UIAttributeGroup.Behaviour, UIAttributeKind.Boolean)],
-        ["Slider"] =
-        [
-            .. Control,
-            .. Range,
-            new("orientation", UIAttributeGroup.Appearance, UIAttributeKind.Choice, Choices: ["horizontal", "vertical"]),
-            Scrolls,
-        ],
         ["ProgressBar"] = [.. Control, .. Range],
     };
 
@@ -255,7 +243,7 @@ public static class UIScriptSchema
 
     /// <summary>The controls: the elements drawn in the window, which take a frame, text, and a style.</summary>
     public static IReadOnlyList<string> Controls { get; } =
-        ["Text", "FormattedText", "Button", "TextField", "TextArea", "List", "Slider", "ProgressBar", "Region", "Shelf"];
+        ["Text", "FormattedText", "Button", "TextField", "TextArea", "List", "ProgressBar", "Region", "Shelf"];
 
     /// <summary>The attributes <paramref name="element"/> takes, in the order an inspector shows them; none for an element UIScript doesn't read.</summary>
     public static IReadOnlyList<UIAttributeInfo> For(string element)

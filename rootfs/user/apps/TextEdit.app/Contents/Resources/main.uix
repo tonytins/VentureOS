@@ -14,10 +14,8 @@
   <Style name="quiet" textColor="secondaryText"/>
 
   <!-- Edge offsets keep these to the window's edges as it's resized; the status stays clear of the grip. -->
-  <TextArea name="text" x="10" y="10" width="488" height="316"
-            edgeOffsetLeft="10" edgeOffsetTop="10" edgeOffsetRight="22" edgeOffsetBottom="34"/>
-  <Slider name="textScroll" x="502" y="10" width="10" height="316" scrolls="text"
-          edgeOffsetRight="8" edgeOffsetTop="10" edgeOffsetBottom="34"/>
+  <TextArea name="text" x="10" y="10" width="502" height="316"
+            edgeOffsetLeft="10" edgeOffsetTop="10" edgeOffsetRight="8" edgeOffsetBottom="34"/>
   <Text name="status" x="10" y="332" width="488" height="20" alignment="right" style="quiet"
         edgeOffsetLeft="10" edgeOffsetRight="22" edgeOffsetBottom="8"/>
 </UIScript>

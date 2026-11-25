@@ -75,7 +75,7 @@ public sealed class FrameDragTests
         Assert.Same(document, FrameEdit.Apply(document, 0, Frame, new FrameChange(1, 0, 0, 0)));
         Assert.Throws<ArgumentException>(() => FrameEdit.Apply(document, 1, Frame, new FrameChange(1, 0, 0, 0)));
         Assert.True(FrameEdit.IsFramed("Visual"));
-        Assert.True(FrameEdit.IsFramed("Slider"));
+        Assert.True(FrameEdit.IsFramed("ProgressBar"));
         Assert.False(FrameEdit.IsFramed("Window"));
     }
 
