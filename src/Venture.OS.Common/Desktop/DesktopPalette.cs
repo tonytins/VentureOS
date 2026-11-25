@@ -98,6 +98,15 @@ public sealed record DesktopPalette
     public UIColor DockEdge { get; private init; }
     public UIColor OpenAppDot { get; private init; }
     public UIColor DockLabel { get; private init; }
+
+    /// <summary>
+    /// A toast's and a history card's body: the dock's shelf made nearly opaque, so <see cref="Text"/> and
+    /// <see cref="SecondaryText"/> read on it over any wallpaper. Light in the light palette and dark in the dark one.
+    /// </summary>
+    public UIColor NotificationBackground { get; private init; }
+
+    /// <summary>The bright edge around a toast or a card, the dock's.</summary>
+    public UIColor NotificationEdge { get; private init; }
     public UIColor IconPressed { get; private init; }
 
     /// <summary>The top of the desktop's sky.</summary>
@@ -167,6 +176,8 @@ public sealed record DesktopPalette
                 InactiveFade = new UIColor(24, 24, 28, 100),
                 DockShelf = new UIColor(255, 255, 255, 40),
                 DockEdge = new UIColor(255, 255, 255, 90),
+                NotificationBackground = new UIColor(34, 34, 38, 215),
+                NotificationEdge = new UIColor(255, 255, 255, 90),
                 DockLabel = new UIColor(0, 0, 0, 170),
                 SkyTop = Tint(0.85f, 0.18f),
                 SkyBottom = Tint(0.45f, 0.4f),
@@ -197,6 +208,9 @@ public sealed record DesktopPalette
                 InactiveFade = new UIColor(255, 255, 255, 90),
                 DockShelf = new UIColor(255, 255, 255, 70),
                 DockEdge = new UIColor(255, 255, 255, 150),
+                // Opaque white: the light palette's secondary text reaches 3 to 1 on white, and only just.
+                NotificationBackground = new UIColor(255, 255, 255, 255),
+                NotificationEdge = new UIColor(255, 255, 255, 150),
                 DockLabel = new UIColor(0, 0, 0, 150),
                 SkyTop = Tint(0.893f, 0.549f),
                 SkyBottom = Tint(0.297f, 0.949f),

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.406
+
+- `venture.ui.toast(text)` posts a notification: from an app, with its name and icon; from any other script, from VentureOS. They're kept in a history until restart, and printed while the desktop is hidden. They don't show on the desktop yet; toasts and the history arrive in the next builds.
+
 ## 0.8.404
 
 - vdb's `install.sh` builds every time, incrementally, so it never installs a stale vdb, and `--rebuild` cleans the build first. It runs from any folder, stops at the first failure, and says when `~/.local/bin` isn't on your `PATH`.

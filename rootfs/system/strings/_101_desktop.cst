@@ -51,3 +51,13 @@ megabytes ^%s MB^
 trustTitle ^Trust This Computer?^
 trust ^Trust^
 deny ^Deny^
+
+// Notifications: the history's heading and its button, what an empty one says, a stack's note, such as
+// "2 more from Terminal", and how long ago one came.
+notifications ^Notifications^
+clearAll ^Clear All^
+noNotifications ^No notifications^
+moreFrom ^%s more from %s^
+justNow ^now^
+minutesAgo ^%s min^
+hoursAgo ^%s hr^

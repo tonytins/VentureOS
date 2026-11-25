@@ -324,6 +324,24 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     /// <summary>Opens a Quick Look preview of a file or folder.</summary>
     /// <returns>Why there's no preview, or <see langword="null"/> when it opened.</returns>
     /// <param name="path">A full VentureOS path, as a script names it.</param>
+    /// <summary>
+    /// Posts a toast from an app, with its name and icon, or from VentureOS when <paramref name="app"/> is
+    /// <see langword="null"/>. The poster supplies only the text, so nothing speaks as another. While the desktop is
+    /// hidden, it goes into the history without showing, and is printed, as an alert is.
+    /// </summary>
+    /// <returns>Why it wasn't posted, or <see langword="null"/>.</returns>
+    public string? Toast(string text, Bundles.Bundle? app)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var title = app?.Name ?? "VentureOS";
+        var showing = Windows.IsShowing;
+        if (!Windows.Notifications.TryPost(title, text, app?.Name, app?.Icon, showing, out var posted, out var problem))
+            return problem;
+        if (!showing)
+            Output.WriteLine($"{title}: {posted.Text}");
+        return null;
+    }
+
     public string? Preview(string path)
     {
         string host;
@@ -450,6 +468,18 @@ public static class UiLibrary
                 desktop.Windows.Open(DesktopAlert.Create(title, message, desktop.Text.Get("ok"), app.Name));
             else
                 desktop.Output.WriteLine($"{title}: {message}");
+            lua.PushBoolean(true);
+            return 1;
+        });
+        Function(state, "toast", app, host, (lua, desktop) =>
+        {
+            if (desktop.Toast(LuaText.Decode(lua.L_CheckString(1)), app) is { } problem)
+            {
+                lua.PushNil();
+                lua.PushString(LuaText.Encode(problem));
+                return 2;
+            }
+
             lua.PushBoolean(true);
             return 1;
         });

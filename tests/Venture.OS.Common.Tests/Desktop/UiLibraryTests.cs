@@ -373,6 +373,27 @@ public sealed class UiLibraryTests : IDisposable
     }
 
     [Fact]
+    public void AnAppsToastIsItsOwnAndIsKeptAndPrintedWithoutTheDesktop()
+    {
+        Open("""
+            print(venture.ui.toast("Saved 3 notes."))
+            print(venture.ui.toast("   "))
+            """);
+
+        // The desktop isn't on the screen in this test: the toast is kept in the history, printed, and not shown.
+        var toast = Assert.Single(windows.Notifications.History);
+        Assert.Equal(("Pad", "Saved 3 notes.", "Pad"), (toast.Title, toast.Text, toast.App));
+        Assert.Empty(windows.Notifications.Waiting);
+        Assert.Contains("Pad: Saved 3 notes.", events.Lines);
+        Assert.Equal(["true", "nil\ta notification needs some text"], output.Lines.TakeLast(2));
+
+        windows.IsShowing = true;
+        Assert.True(manager.CloseApp("Pad", new RecordingOutput()));
+        Open("""venture.ui.toast("Shown.")""");
+        Assert.Equal("Shown.", Assert.Single(windows.Notifications.Waiting).Text);
+    }
+
+    [Fact]
     public void ExplainsThatThereIsNoDesktop()
     {
         Write("""venture.ui.open("main.uix")""");

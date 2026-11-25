@@ -110,12 +110,13 @@ A notification is an icon, a title, a text, and when it came:
 ### Readable on every palette
 
 The shelf alone is too faint to read over a bright wallpaper. A toast and a card are drawn as a nearly opaque tint
-under the shelf's translucent white and its bright edge, so the wallpaper only shows at the edges and through the
-gaps between cards. New color roles carry it, system-only as the dock's are, defined in both palettes:
+with the shelf's bright edge, so the wallpaper only shows at the edges and through the gaps between cards. The
+shelf's translucent white isn't laid over the tint: in the dark palette it lifts the body enough to drop the
+secondary text under 3 to 1 over a white wallpaper. New color roles carry it, system-only as the dock's are:
 
-- `NotificationBackground`: the tint, at least 200 of 255 opaque: dark in the dark palette and light in the light
-  one, so `Text` reads on it as it does on a window, and the toast follows the mode as the dock does. The mockups
-  showed the dark one.
+- `NotificationBackground`: the tint. Dark, 215 of 255 opaque, in the dark palette; opaque white in the light one,
+  where the secondary text reaches 3 to 1 on white and only just (it was found below it on an off-white while
+  building phase 1). `Text` reads on it as it does on a window, and it follows the mode as the dock does.
 - `NotificationEdge`: the bright edge, the dock's.
 - Title and text use `Text` and `SecondaryText`, which the tint makes readable.
 
@@ -181,7 +182,7 @@ for the owner to check:
 - Crash and start-failure notices become toasts; held app output stays an alert.
 - Scripts outside apps post as VentureOS; while the desktop is hidden, a toast is kept and printed.
 - vdb posts on install and on a trusted connection, and gains `notifications`, in `ui` and as a tool.
-- The light palette's toast is light, following the mode as the dock does.
+- The light palette's toast is opaque white, following the mode as the dock does; the dark one is translucent.
 - The history survives leaving the desktop, but not a restart.
 
 ## Left to whoever builds it

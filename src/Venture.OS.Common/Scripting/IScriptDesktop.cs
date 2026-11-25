@@ -19,6 +19,13 @@ public interface IScriptDesktop
     string? Preview(string path);
 
     /// <summary>
+    /// Posts a toast from VentureOS, for a script that isn't an app. While the desktop is hidden, it goes into the
+    /// history and is printed.
+    /// </summary>
+    /// <returns>Why it wasn't posted, or <see langword="null"/>.</returns>
+    string? Toast(string text);
+
+    /// <summary>
     /// Opens an app, by name or bundle path, and hands it a file when one is given; an open app comes forward.
     /// </summary>
     /// <returns>Why it couldn't, or <see langword="null"/>.</returns>

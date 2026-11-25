@@ -39,6 +39,26 @@ public sealed class ScriptUiTests
     }
 
     [Fact]
+    public void AToastFromAScriptGoesToTheDesktop()
+    {
+        Run("""print(venture.ui.toast("Backup finished."))""", scopes: ScriptScopes.None);
+
+        Assert.Equal(["Backup finished."], desktop.Toasts);
+        Assert.Equal(["true"], output.Lines);
+    }
+
+    [Fact]
+    public void WithoutADesktopAToastIsPrinted()
+    {
+        LuaRunner.Run(output, "/mnt", lua => lua.DoString("""
+            print(venture.ui.toast("Backup finished."))
+            print(venture.ui.toast(""))
+            """), new FakeSystemInfo());
+
+        Assert.Equal(["VentureOS: Backup finished.", "true", "nil\ta notification needs some text"], output.Lines);
+    }
+
+    [Fact]
     public void PreviewAndLaunchTakePathsFromTheScriptsFolder()
     {
         Run("""

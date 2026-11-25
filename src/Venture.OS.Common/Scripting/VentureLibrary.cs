@@ -106,6 +106,22 @@ public static class VentureLibrary
         state.SetField(-2, "preview");
         state.PushCSharpFunction(lua =>
         {
+            var text = LuaText.Decode(lua.L_CheckString(1));
+            if (system.Desktop is not { } desktop)
+            {
+                // A system with no desktop has nowhere to keep it, so it's only printed.
+                if (string.IsNullOrWhiteSpace(text))
+                    return Answer(lua, "a notification needs some text");
+                output?.WriteLine($"VentureOS: {text.Trim()}");
+                lua.PushBoolean(true);
+                return 1;
+            }
+
+            return Answer(lua, desktop.Toast(text));
+        });
+        state.SetField(-2, "toast");
+        state.PushCSharpFunction(lua =>
+        {
             var app = LuaText.Decode(lua.L_CheckString(1));
             var file = lua.IsNoneOrNil(2) ? null : LuaText.Decode(lua.L_CheckString(2));
             return Answer(lua, system.Desktop is { } desktop ? desktop.Launch(app, file, folder()) : NoDesktop("launch"));

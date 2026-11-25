@@ -11,6 +11,8 @@ internal sealed class FakeScriptDesktop : IScriptDesktop
 
     public List<string> Previews { get; } = [];
 
+    public List<string> Toasts { get; } = [];
+
     public List<(string App, string? File, string WorkingDirectory)> Launches { get; } = [];
 
     /// <summary>What Preview and Launch answer: <see langword="null"/> for success, or why not.</summary>
@@ -21,6 +23,12 @@ internal sealed class FakeScriptDesktop : IScriptDesktop
     public string? Preview(string path)
     {
         Previews.Add(path);
+        return Problem;
+    }
+
+    public string? Toast(string text)
+    {
+        Toasts.Add(text);
         return Problem;
     }
 

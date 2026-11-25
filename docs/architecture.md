@@ -1939,6 +1939,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | Desktop: `Notifications`, on `WindowManager` so it outlasts each visit, holds toasts waiting to show and the history (newest 50); `venture.ui.toast` posts to it, and the palette gains `NotificationBackground` and `NotificationEdge`. Nothing draws it yet. |
 | 2026-11-25 | minor | vdb (§8.1): `vdb mcp`, the tool's MCP server, and `install.sh --rebuild`; the current state counts 2,197 tests for Common and 51 for vdb. |
 | 2026-11-25 | minor | Boot (§4) and vdb (§8.1): `venture.startDesktop()` opens the desktop in place of the first prompt, for `developer.local.lua`; the kernel offers `ui`, queuing keys for the next frame and reading screenshots from the desktop's canvas. |
 | 2026-11-25 | patch | vdb (§8.1): vdb/1's `ui` feature in Common, offered when a session has a desktop (`IVdbDesktop`): `windows`, `snapshot`, `act`, `key`, and `screenshot`, over app windows only; the kernel doesn't offer it yet. |

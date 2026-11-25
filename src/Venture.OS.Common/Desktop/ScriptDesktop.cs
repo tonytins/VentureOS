@@ -21,6 +21,8 @@ public sealed class ScriptDesktop(AppWindows host, Func<AppManager?> apps) : ISc
     /// <inheritdoc/>
     public string? Preview(string path) => host.Preview(path);
 
+    public string? Toast(string text) => host.Toast(text, null);
+
     /// <inheritdoc/>
     public string? Launch(string app, string? file, string workingDirectory) =>
         apps() is { } manager

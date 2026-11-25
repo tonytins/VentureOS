@@ -170,6 +170,12 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     public bool IsShowing { get; set; }
 
     /// <summary>
+    /// The notifications: toasts waiting to show and the history. They live with the windows, so they outlast each
+    /// visit to the desktop.
+    /// </summary>
+    public Notifications Notifications { get; } = new();
+
+    /// <summary>
     /// Changes the screen the windows are on. Windows outlive a visit to the desktop, since apps open them from the
     /// shell too, so the screen is only known once the desktop shows; windows already open stay where they are.
     /// </summary>
