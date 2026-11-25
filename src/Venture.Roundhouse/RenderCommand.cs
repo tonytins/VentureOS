@@ -135,6 +135,12 @@ public static class RenderCommand
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(fonts);
 
+        if (view.Script.StatusItem is { } status)
+        {
+            drawn = new DesktopWindow(title, view);
+            return DrawStatusItem(view, status, fonts);
+        }
+
         var bar = menuBar is { Menus.Count: > 0 } ? menuBar : null;
         var top = bar is null ? 0 : MenuBar.Height;
         DesktopWindow window = new(title, view);
@@ -171,6 +177,48 @@ public static class RenderCommand
         drawn = window;
         return painter;
     }
+
+    /// <summary>
+    /// A status item as the bar shows it: its title and symbol at the right of a bar, its menus dropping from it as
+    /// they would, and, for one that holds controls, its panel below it on the shelf's card, open.
+    /// </summary>
+    private static SkiaPainter DrawStatusItem(UIView view, UIStatusItem status, SkiaFonts fonts)
+    {
+        var size = view.Script.Window.Size;
+        var width = Math.Max(StatusBarWidth, (int)size.Width + (2 * Margin));
+        var menuRows = view.Script.Menus.Sum(menu => menu.Entries.Count);
+        var height = MenuBar.Height + Math.Max(Margin + (int)size.Height + Margin, menuRows * MenuRow + Margin);
+
+        var icon = status.Image is { } image && view.Image(image) is { Height: > 0 } picture
+            ? picture.Scaled(Math.Max(1, picture.Width * DesktopSession.StatusIconSize / picture.Height), DesktopSession.StatusIconSize)
+            : null;
+        IReadOnlyList<UIMenuEntry> entries = view.Script.Menus.Count == 1
+            ? view.Script.Menus[0].Entries
+            : [.. view.Script.Menus.Select(menu => new UIMenuEntry(menu.Name, menu.Title, null, null, menu.Line, menu))];
+        MenuBar bar = new();
+        bar.SetMenus([new BarMenu(new UIMenu(status.Name, status.Title ?? "", null, entries, status.Line), MenuGroup.Status, view, Icon: icon)]);
+
+        SkiaPainter painter = new(width, height, fonts);
+        painter.DrawPixels(DesktopBackground.Render(width, height), 0, 0, width, height);
+        bar.Draw(painter);
+        if (entries.Count > 0)
+        {
+            // Open, so its menu shows below it.
+            bar.OpenAt(0);
+            bar.Draw(painter);
+        }
+        else if (size.Width > 0 && size.Height > 0)
+        {
+            var x = width - Margin - (int)size.Width;
+            NotificationCard.DrawBody(painter, x, MenuBar.Height + 4, (int)size.Width, (int)size.Height);
+            view.Draw(painter, x, MenuBar.Height + 4);
+        }
+
+        return painter;
+    }
+
+    // Wide enough for a status item's bar to look like the bar's right end.
+    private const int StatusBarWidth = 320;
 
     // What an empty shelf shows in a design: apps of the system's and the user's, and a minimized window.
     private static readonly ShelfItem[] SampleIcons =

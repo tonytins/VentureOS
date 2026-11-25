@@ -105,6 +105,19 @@
     <Text name="clockShown" x="148" y="43" width="220" height="20" style="quiet"/>
   </Pane>
 
+  <Pane name="startup" title="Startup">
+    <!-- Startup: the apps that open with the desktop, after Files and the Dock, as macOS's login items do. An app may
+         also ask, which adds it here when you say yes. -->
+    <Text name="startupHeading" x="12" y="10" width="406" height="24" style="heading" text="Open at startup"/>
+    <FormattedText name="startupAbout" x="12" y="38" width="406" height="44" style="quiet" edgeOffsetRight="12"/>
+    <List name="startupItems" x="12" y="88" width="406" height="110" selectable="true" edgeOffsetRight="12"/>
+    <Button name="removeStartup" x="12" y="204" width="90" height="26" text="Remove"/>
+    <Text name="addHeading" x="12" y="246" width="406" height="20" text="Add an app"/>
+    <List name="installedApps" x="12" y="270" width="406" height="150" selectable="true" edgeOffsetRight="12"/>
+    <Button name="addStartup" x="12" y="426" width="90" height="26" text="Add"/>
+    <Text name="startupStatus" x="110" y="430" width="308" height="20" style="quiet" edgeOffsetRight="12"/>
+  </Pane>
+
   <Pane name="developer" title="Developer">
     <!-- Developer: developer mode, for vdb, which sends apps from another computer while the desktop runs. -->
     <Text name="developerHeading" x="12" y="10" width="356" height="24" style="heading" text="Developer mode"/>

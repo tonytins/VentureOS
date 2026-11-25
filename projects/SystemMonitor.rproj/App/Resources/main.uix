@@ -1,17 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- System Monitor's window. main.lua fills in the values every second. -->
+<!-- System Monitor's window: System, the version, uptime, memory, and network; Processes, every app running, which
+     can be ended, since an app may run out of sight. main.lua fills them in every second. -->
 <UIScript version="1">
-  <Window width="340" height="150"/>
+  <Window width="360" height="200" minWidth="360" minHeight="200" resizable="true"/>
+  <Sidebar name="panes" width="110"/>
 
   <Style name="label" textColor="secondaryText"/>
 
-  <Text name="versionLabel" x="16" y="16" width="80" height="20" style="label" text="Version"/>
-  <Text name="version" x="100" y="16" width="224" height="20"/>
-  <Text name="uptimeLabel" x="16" y="40" width="80" height="20" style="label" text="Uptime"/>
-  <Text name="uptime" x="100" y="40" width="224" height="20"/>
-  <Text name="memoryLabel" x="16" y="64" width="80" height="20" style="label" text="Memory"/>
-  <Text name="memory" x="100" y="64" width="224" height="20"/>
-  <ProgressBar name="memoryBar" x="100" y="88" width="224" height="10"/>
-  <Text name="networkLabel" x="16" y="110" width="80" height="20" style="label" text="Network"/>
-  <Text name="network" x="100" y="110" width="224" height="20"/>
+  <Pane name="system" title="System">
+    <Text name="versionLabel" x="16" y="16" width="80" height="20" style="label" text="Version"/>
+    <Text name="version" x="100" y="16" width="244" height="20" edgeOffsetRight="16"/>
+    <Text name="uptimeLabel" x="16" y="40" width="80" height="20" style="label" text="Uptime"/>
+    <Text name="uptime" x="100" y="40" width="244" height="20" edgeOffsetRight="16"/>
+    <Text name="memoryLabel" x="16" y="64" width="80" height="20" style="label" text="Memory"/>
+    <Text name="memory" x="100" y="64" width="244" height="20" edgeOffsetRight="16"/>
+    <ProgressBar name="memoryBar" x="100" y="88" width="244" height="10" edgeOffsetRight="16"/>
+    <Text name="networkLabel" x="16" y="110" width="80" height="20" style="label" text="Network"/>
+    <Text name="network" x="100" y="110" width="244" height="20" edgeOffsetRight="16"/>
+  </Pane>
+
+  <Pane name="processes" title="Processes">
+    <List name="processList" x="12" y="12" width="336" height="136" selectable="true" edgeOffsetRight="12" edgeOffsetBottom="52"/>
+    <Button name="endProcess" x="12" y="160" width="80" height="26" text="End" edgeOffsetBottom="14"/>
+    <Text name="processStatus" x="100" y="164" width="248" height="20" style="label" edgeOffsetRight="12" edgeOffsetBottom="16"/>
+  </Pane>
 </UIScript>

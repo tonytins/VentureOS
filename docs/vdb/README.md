@@ -95,7 +95,7 @@ holds at most 600 characters, so every line fits; a line with a value cut short 
 
 | Command | Answer |
 |---|---|
-| `windows` | A `window` line for each app window, front first: `id`, `app`, `title`, and the flags `front` and `minimized`. Then `ok`. |
+| `windows` | A `window` line for each app window, front first: `id`, `app`, `title`, `kind=statusItem` for an app's status item in the menu bar, and the flags `front` and `minimized`. Then `ok`. |
 | `snapshot <id>` | A `window` line (`id`, `title`, `subtitle`, `pane`, `focused`), then a `control` line for each control, the sidebar, the title field, each toolbar item, and each menu item, in that order: `name`, `kind`, `text`, `value`, `chosen` (from 1), `rows` (how many), and the flags `hidden`, `dimmed`, `checked`, and `focused`. A list's, sidebar's, or grid's first 100 rows follow its line, as `row "<text>"`. Then `ok`. |
 | `act <id> press <name>` | Presses a button, toolbar item, or menu item. |
 | `act <id> submit <name> "<text>"` | Puts the text in a field, or the title bar's field, and presses Enter. |
@@ -107,7 +107,11 @@ holds at most 600 characters, so every line fits; a line with a value cut short 
 | `screenshot` | `screen width=<w> height=<h>`, then the pixels in `data` lines, three bytes each, red, green, then blue, a row at a time from the top, then `ok`. |
 
 - A `kind` is the element, as a document writes it, starting lowercase (`button`, `textField`, `grid`, ...), or
-  `sidebar`, `titleField`, `toolbarItem`, or `menuItem`. `kind` is never quoted.
+  `statusItem`, `sidebar`, `titleField`, `toolbarItem`, or `menuItem`. `kind` is never quoted.
+- An app's status item is a window of its own: its snapshot lists the item itself first, `kind=statusItem` with the
+  bar's text, then its panel's controls or its menu's items. `act <id> press <name>` presses a button item by its
+  name, and its panel's controls work by name whether the panel is open or not. The bar's own items, the bell and the
+  clock, stay out of reach.
 - `act` and `key` bring their window to the front, restoring it if it was minimized, as a click would. An action
   is answered `ok` once the app has handled it, in the same frame, or `error` with why a person couldn't do it,
   such as `"ok" is dimmed, so a person couldn't use it`; nothing is done then. Keys reach the window on the

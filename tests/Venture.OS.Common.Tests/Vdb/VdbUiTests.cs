@@ -137,6 +137,31 @@ public sealed class VdbUiTests : IDisposable
     }
 
     [Fact]
+    public void AnAppsStatusItemIsListedAndUsedByName()
+    {
+        var script = Venture.OS.Interface.UIScript.Parse("""
+            <UIScript><StatusItem name="mixer" title="Mix" width="200" height="60"/>
+              <Slider name="volume" x="10" y="20" width="180" height="20" maxValue="10" step="1"/>
+            </UIScript>
+            """);
+        List<UIEvent> heard = [];
+        DesktopWindow item = new("Mix", new UIView(script)) { App = "Mixer", EventHandler = (_, uiEvent) => heard.Add(uiEvent) };
+        desktop.Windows.Open(item);
+        var session = Start(desktop);
+
+        Send(session, "windows");
+        Assert.Contains(computer.Heard, line => line == $"window id={item.Id} app=\"Mixer\" title=\"Mix\" kind=statusItem");
+
+        Send(session, $"snapshot {item.Id}");
+        Assert.Contains(computer.Heard, line => line == "control name=\"mixer\" kind=statusItem text=\"Mix\"");
+
+        Send(session, $"act {item.Id} press mixer");
+        Send(session, $"act {item.Id} slide volume 4");
+        Assert.Equal(new UIEvent(UIEventKind.Pressed, "mixer"), heard[0]);
+        Assert.Equal(4, item.View.Value("volume"));
+    }
+
+    [Fact]
     public void AnActionInAMinimizedWindowRestoresIt()
     {
         var window = desktop.OpenApp("Notes", "Notes");

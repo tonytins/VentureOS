@@ -76,6 +76,7 @@ public sealed partial class VdbSession
                 continue;
             var cut = false;
             var line = $"window id={window.Id}{VdbWords.Pair("app", window.App, ref cut)}{VdbWords.Pair("title", window.Title, ref cut)}"
+                + $"{(window.IsStatusItem ? " kind=statusItem" : "")}"
                 + $"{VdbWords.Flag("front", window == focused)}{VdbWords.Flag("minimized", window.IsMinimized)}";
             Send(line + VdbWords.Flag("cut", cut));
         }

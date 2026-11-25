@@ -33,6 +33,26 @@ public sealed class RenderCommandTests : IDisposable
     }
 
     [Fact]
+    public void DrawsAStatusItemAsTheBarShowsItWithItsPanelOpen()
+    {
+        var document = Path.Combine(folder, "mixer.uix");
+        File.WriteAllText(document, """
+            <UIScript><StatusItem name="mixer" title="Mix" width="200" height="60"/>
+              <Slider name="volume" x="10" y="20" width="180" height="20" maxValue="100"/>
+            </UIScript>
+            """);
+        var picture = Path.Combine(folder, "mixer.png");
+
+        Assert.Equal(0, RenderCommand.Run([document, picture], error));
+
+        // A bar across the top, and the panel's white card below it, at the right, where its item is.
+        using var bitmap = SKBitmap.Decode(picture);
+        Assert.Equal(320, bitmap.Width);
+        var card = bitmap.GetPixel(bitmap.Width - 24 - 100, Venture.OS.Desktop.MenuBar.Height + 4 + 50);
+        Assert.Equal((255, 255, 255), (card.Red, card.Green, card.Blue));
+    }
+
+    [Fact]
     public void DarkAndAnAccentFollowThePalette()
     {
         var about = Path.Combine(SkiaPainterTests.RepositoryRoot(), "rootfs", "system", "interfaces", "about.uix");

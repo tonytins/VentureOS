@@ -2,7 +2,8 @@
 -- the desktop's look, light, dark, or auto, its accent color, and its scroll
 -- bars, each a grid of choices; Wallpaper, every wallpaper; Dock, how the dock
 -- behaves; Clock holds the clock's offset from UTC; Developer turns on
--- developer mode, for vdb. Each look, dock, and clock choice applies at once
+-- developer mode, for vdb; Startup, the apps that open with the desktop. Each
+-- look, dock, and clock choice applies at once
 -- and is saved in /mnt/user/settings, as the appearance and clock commands'
 -- are; developer mode isn't saved.
 
@@ -203,12 +204,72 @@ window:on("developerOn", function() venture.developer.enable(); showDeveloper() 
 window:on("developerOff", function() venture.developer.disable(); showDeveloper() end)
 window:every(2, function() showDeveloper() end)
 
+-- Startup: the apps that open with the desktop, and every other installed app
+-- to add from. The list lasts until VentureOS restarts, as the rest of
+-- /mnt/user does.
+local startupShown = {}
+local installedShown = {}
+
+local function showStartup(said)
+  local items, problem = venture.startupItems()
+  if not items then
+    window:setItems("startupItems", {})
+    window:setItems("installedApps", {})
+    window:setText("startupStatus", problem or "This system doesn't open apps at startup.")
+    return
+  end
+
+  local listed, rows = {}, {}
+  startupShown = items
+  for _, item in ipairs(items) do
+    listed[item.identifier] = true
+    rows[#rows + 1] = item.name or (item.identifier .. " (not installed)")
+  end
+  window:setItems("startupItems", rows)
+
+  installedShown = {}
+  local names = {}
+  for _, app in ipairs(venture.desktop.apps(true)) do
+    if not listed[app.identifier] and app.name ~= "Settings" then
+      installedShown[#installedShown + 1] = app
+      names[#names + 1] = app.name
+    end
+  end
+  window:setItems("installedApps", names)
+  -- The rows moved, so a choice left standing would point at another app.
+  window:select("startupItems")
+  window:select("installedApps")
+  window:setText("startupStatus", said or "")
+end
+
+local function changeStartup(identifier, on, name)
+  local ok, problem = venture.setStartupItem(identifier, on)
+  if ok then
+    showStartup(name .. (on and " opens at startup." or " won't open at startup."))
+  else
+    showStartup("Couldn't change that: " .. problem .. ".")
+  end
+end
+
+window:setText("startupAbout",
+  "These apps open when the desktop starts, after Files and the Dock. One that quits stays closed until "
+  .. "it's opened again.")
+window:on("addStartup", function()
+  local app = installedShown[window:selected("installedApps") or 0]
+  if app then changeStartup(app.identifier, true, app.name) end
+end)
+window:on("removeStartup", function()
+  local item = startupShown[window:selected("startupItems") or 0]
+  if item then changeStartup(item.identifier, false, item.name or item.identifier) end
+end)
+
 -- The panes are main.uix's: the sidebar shows them, and only the chosen
 -- pane's controls. The window's title follows the pane.
 local function showPane(number)
   local title = window:items("panes")[number]
   window:setTitle(title)
   if title == "Developer" then showDeveloper() end
+  if title == "Startup" then showStartup() end
 end
 
 window:on("panes", function(event)
@@ -219,4 +280,5 @@ show()
 showDock()
 showClock()
 showDeveloper()
+showStartup()
 showPane(1)

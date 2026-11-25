@@ -82,6 +82,14 @@ struct UIConversationTests {
         #expect(notifications[1].app == "Notes" && notifications[1].seconds == 0)
     }
 
+    @Test func aStatusItemSaysSo() throws {
+        let item = try VdbWindow(VdbAnswerLine(#"window id=7 app="Mixer" title="Mix" kind=statusItem"#))
+        let window = try VdbWindow(VdbAnswerLine(#"window id=3 app="Notes" title="Notes" front"#))
+
+        #expect(item.kind == "statusItem" && !item.isFront)
+        #expect(window.kind == nil && window.isFront)
+    }
+
     @Test func actionsAreWrittenAsVentureOSReadsThem() {
         #expect(VdbAction.press("ok").words == "press ok")
         #expect(VdbAction.submit("name", text: "Ada Lovelace").words == "submit name \"Ada Lovelace\"")

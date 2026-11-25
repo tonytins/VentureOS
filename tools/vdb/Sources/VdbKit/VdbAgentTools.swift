@@ -295,7 +295,8 @@ extension VdbAgentTools {
 
     /// The tools, as tools/list gives them; made on each use, since a dictionary of `Any` can't be shared.
     static var definitions: [[String: Any]] { [
-        tool("windows", "Lists the app windows open on VentureOS, front first: each one's number, app, and title." + untrusted,
+        tool("windows", "Lists the app windows open on VentureOS, front first: each one's number, app, and title, and "
+             + "kind statusItem for an app's item in the menu bar, whose controls are used by name as a window's are." + untrusted,
              [:], readOnly: true),
         tool("snapshot", "Reads an app window: its title, the pane shown, the focused control, and every control, sidebar, "
              + "toolbar item, and menu item, each with its name, kind, text, value, rows, chosen row, and whether it's "

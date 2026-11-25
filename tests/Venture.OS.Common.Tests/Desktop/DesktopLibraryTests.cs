@@ -66,6 +66,19 @@ public sealed class DesktopLibraryTests : IDisposable
     }
 
     [Fact]
+    public void AllTheAppsListsThoseOutOfTheDockTooSayingSo()
+    {
+        App("Ghost", "", "", extra: "dock=\"hidden\"");
+
+        Open("""
+            for _, app in ipairs(venture.desktop.apps(true)) do print(app.name, app.docked) end
+            """);
+
+        Assert.Contains("Ghost\tfalse", output.Lines);
+        Assert.Contains("Alpha\ttrue", output.Lines);
+    }
+
+    [Fact]
     public void OpensAnAppAndRestoresAWindow()
     {
         Open($$"""

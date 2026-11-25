@@ -151,6 +151,10 @@ public static class WindowControls
         var focused = view.FocusedControl;
         var controls = new List<ControlSnapshot>();
 
+        // A status item first: itself, as the bar shows it, then what its panel or menu holds.
+        if (script.StatusItem is { } status)
+            controls.Add(InBar(window, status.Name, "statusItem", window.Title, false));
+
         foreach (var control in script.Controls)
         {
             var choices = Choices(window, control.Name);
@@ -257,7 +261,7 @@ public static class WindowControls
     private static bool InBars(DesktopWindow window, string name)
     {
         var script = window.View.Script;
-        if (script.TitleField?.Name == name)
+        if (script.TitleField?.Name == name || script.StatusItem?.Name == name)
             return true;
         foreach (var item in script.ToolbarItems)
         {
@@ -321,7 +325,7 @@ public sealed record WindowSnapshot(string? Title, string? Subtitle, string? Pan
 /// <summary>One thing in a window a person could read or use.</summary>
 /// <param name="Kind">
 /// The element it is, as a document writes it, starting lowercase (<c>button</c>, <c>textField</c>, <c>grid</c>,
-/// ...), or <c>sidebar</c>, <c>titleField</c>, <c>toolbarItem</c>, or <c>menuItem</c>.
+/// ...), or <c>statusItem</c>, <c>sidebar</c>, <c>titleField</c>, <c>toolbarItem</c>, or <c>menuItem</c>.
 /// </param>
 /// <param name="Text">A label's, button's, or field's text, or an item's title.</param>
 /// <param name="Value">A progress bar's or slider's value.</param>

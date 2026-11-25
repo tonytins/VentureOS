@@ -5,11 +5,13 @@ public struct VdbWindow: Codable, Equatable, Sendable {
     public var id: Int
     public var app: String?
     public var title: String?
+    /// `statusItem` for an app's item in the menu bar, or `nil` for a window.
+    public var kind: String?
     public var isFront: Bool
     public var isMinimized: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, app, title
+        case id, app, title, kind
         case isFront = "front"
         case isMinimized = "minimized"
     }
@@ -21,6 +23,7 @@ public struct VdbWindow: Codable, Equatable, Sendable {
         self.id = id
         app = line.values["app"]
         title = line.values["title"]
+        kind = line.values["kind"]
         isFront = line.flags.contains("front")
         isMinimized = line.flags.contains("minimized")
     }

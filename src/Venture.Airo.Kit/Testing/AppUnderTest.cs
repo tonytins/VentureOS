@@ -74,6 +74,7 @@ public sealed class AppUnderTest : IDisposable, IShellHost
             openShell: (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false },
             supervisor: system.Processes);
         system.Desktop = new ScriptDesktop(appWindows, () => apps);
+        system.StartupItems = new StartupItems(disk.HostPath("/mnt/user/settings/startup.xml"), app => apps.FindBundle(app));
         shell = new CommandShell(new ShellContext(commandOutput, this, commands) { CurrentDirectory = SimulatedDisk.UserFolder, HasConsole = false });
         Opened = apps.OpenApp($"{folder}/{appName}{Bundle.Extension(BundleKind.App)}", SimulatedDisk.UserFolder, printed, explainNeeds: false);
     }

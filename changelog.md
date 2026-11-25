@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.503
+
+- Settings has a Startup pane: the apps that open with the desktop, Remove to take one off, and every other installed app to add.
+- System Monitor has a sidebar, with a Processes pane listing each running app, how long it's run, and whether it's kept, and End to end one.
+- vdb's `windows`, and `vdb mcp`'s `windows` tool, mark an app's status item `kind=statusItem`, and `act` presses, chooses from, and uses the panel of one by name.
+- Roundhouse's Run and `--render` draw a status item as the menu bar shows it, with its menu or panel open.
+- `venture.desktop.apps(true)` lists the apps out of the dock too, each saying whether it's `docked`.
+
 ## 0.8.502
 
 - Apps can put status items in the menu bar, left of the bell: open a `.uix` whose root is `<StatusItem>`. One that holds nothing is a button; one with menus drops them down; one with controls opens a panel of them under it, which Escape, a click outside, or the item again closes. It belongs to its app, leaving the bar when the app ends, and `setTitle` changes its text.

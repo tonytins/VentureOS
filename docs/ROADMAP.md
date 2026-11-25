@@ -431,7 +431,7 @@ from 0.8.4xx by my decision ([its design](./design/2026-11-25-status-items-desig
   nothing is a button, one that holds menus drops them down, and one that
   holds controls and visuals opens a small panel of them. It belongs to its
   app's process, and the bell and the clock join its row.
-- [ ] Settings' Startup pane and System Monitor's Processes pane ship.
+- [x] Settings' Startup pane and System Monitor's Processes pane ship.
 
 ## Ideas
 
@@ -481,6 +481,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | 0.8.5xx: Settings' Startup pane and System Monitor's Processes pane ship. |
 | 2026-11-25 | minor | 0.8.5xx, status items, begins, by my word, with its design: startup items as daemons, kept apps in `Info.xml`, and System Monitor's process list join it. |
 | 2026-11-25 | minor | 0.8.4xx is complete: the value slider ships, for apps and Hudini's games alike, with a glossed rail progress bars share; a boot showed it in light and dark. 0.8.5xx, status items, is next, to be talked through first. |
 | 2026-11-25 | patch | 0.8.4xx: toasts and their history ship, with the bell, `venture.ui.toast`, crash notices as toasts, and vdb's posts and `notifications`; checked on boots in light and dark. A simpler `<Slider>` is next. |

@@ -10,9 +10,10 @@ namespace Venture.OS.Desktop;
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
-/// <item><description><c>apps()</c>: every app the dock shows, the desktop's own first, then the system's and the
-/// user's, each <c>{ name, path, icon, identifier, user, open }</c>, where <c>path</c> and <c>icon</c> are full
-/// paths and <c>icon</c> is <c>nil</c> without one.</description></item>
+/// <item><description><c>apps(all)</c>: every app the dock shows, the desktop's own first, then the system's and the
+/// user's, each <c>{ name, path, icon, identifier, user, open, docked }</c>, where <c>path</c> and <c>icon</c> are
+/// full paths and <c>icon</c> is <c>nil</c> without one; with <c>all</c> true, the apps that stay out of the dock
+/// too, <c>docked</c> saying which, as Settings lists them.</description></item>
 /// <item><description><c>open(path)</c>: opens an app as the dock does, bringing it forward when it's open, with a new
 /// window when it has none. Returns <c>true</c>, or <c>nil</c> and why.</description></item>
 /// <item><description><c>minimized()</c>: minimized windows, oldest first, each <c>{ id, title, app }</c>; and
@@ -41,7 +42,7 @@ public static class DesktopLibrary
 
         var allowed = app.Needs.HasFlag(ScriptScopes.System);
         state.NewTable();
-        Function(state, "apps", allowed, host, apps, (lua, _, manager) => PushApps(lua, host!, manager));
+        Function(state, "apps", allowed, host, apps, (lua, _, manager) => PushApps(lua, host!, manager, lua.ToBoolean(1)));
         Function(state, "open", allowed, host, apps, (lua, desktop, manager) =>
         {
             var path = LuaText.Decode(lua.L_CheckString(1));
@@ -83,7 +84,8 @@ public static class DesktopLibrary
         state.Pop(1);
     }
 
-    private static int PushApps(ILuaState lua, AppWindows host, AppManager apps)
+    // The apps, as the dock shows them, or with every app, each saying whether the dock shows it, for Settings.
+    private static int PushApps(ILuaState lua, AppWindows host, AppManager apps, bool all)
     {
         lua.NewTable();
         var index = 0;
@@ -98,7 +100,8 @@ public static class DesktopLibrary
                     continue;
 
                 // An app that stays out of the dock, as a startup item living in the menu bar may.
-                if (!host.IsShownInDock(bundle))
+                var docked = host.IsShownInDock(bundle);
+                if (!docked && !all)
                     continue;
 
                 lua.NewTable();
@@ -110,6 +113,8 @@ public static class DesktopLibrary
                 lua.SetField(-2, "user");
                 lua.PushBoolean(apps.IsOpen(bundle.Identifier));
                 lua.SetField(-2, "open");
+                lua.PushBoolean(docked);
+                lua.SetField(-2, "docked");
                 lua.RawSetI(-2, ++index);
             }
         }
