@@ -175,6 +175,79 @@ public sealed class DesignEditsTests
         Assert.Equal("general", edited.Script!.Controls.Single().Pane);
     }
 
+    [Fact]
+    public void APictureIsAnImageAmongTheResourcesAndAVisualShowingIt()
+    {
+        var plain = UIDocument.Read("""
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Style name="plain" fontSize="12"/>
+              <Button name="ok" x="0" y="0" width="10" height="10"/>
+            </UIScript>
+            """);
+
+        var (edited, element) = DesignEdits.Add(plain, "Visual", null);
+
+        var xml = edited.Xml!;
+        Assert.Equal(["Window", "Style", "Image", "Button", "Visual"], xml.ChildrenOf(UIDocument.Root).Select(child => xml.Children[child].Name));
+        Assert.Equal("Visual", xml.Children[element].Name);
+        var visual = Assert.Single(edited.Script!.Visuals);
+        Assert.Equal(("picture", "picture", null), (visual.Name, visual.Image, visual.Pane));
+        Assert.Equal("picture.png", edited.Script.Images["picture"].Path);
+        Assert.Equal((118, 68, 64, 64), ((int)visual.Frame.X, (int)visual.Frame.Y, (int)visual.Frame.Width!, (int)visual.Frame.Height!));
+    }
+
+    [Fact]
+    public void APictureGoesInThePaneOnShowAndItsImageStaysAtTheRoot()
+    {
+        var (edited, element) = DesignEdits.Add(UIDocument.Read(NestedPanes), "Visual", null, "advanced");
+
+        var xml = edited.Xml!;
+        Assert.Equal("Pane", xml.Children[xml.Children[element].Parent].Name);
+        Assert.Equal("advanced", Assert.Single(edited.Script!.Visuals).Pane);
+        Assert.Equal(UIDocument.Root, xml.Children.Single(child => child.Name == "Image").Parent);
+
+        // A second one takes a name of its own, for both its image and its visual.
+        var (again, _) = DesignEdits.Add(edited, "Visual", null, "advanced");
+        Assert.Equal(["picture", "picture2"], again.Script!.Visuals.Select(visual => visual.Image));
+    }
+
+    [Fact]
+    public void APictureCantGoInAPaneWhoseControlsNameItFromOutside()
+    {
+        var flat = UIDocument.Read("""
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Sidebar name="side" width="100"/>
+              <Pane name="general" title="General"/>
+              <Button name="ok" x="0" y="0" width="10" height="10" pane="general"/>
+            </UIScript>
+            """);
+
+        var problem = Assert.Throws<UIScriptException>(() => DesignEdits.Add(flat, "Visual", null, "general"));
+
+        Assert.Contains("Move its controls into it first", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AVisualMovesIntoThePaneBeforeIt()
+    {
+        var document = UIDocument.Read("""
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Image name="logo" path="logo.png"/>
+              <Sidebar name="side" width="100"/>
+              <Pane name="about" title="About"/>
+              <Visual name="icon" image="logo" x="0" y="0" width="64" height="64"/>
+            </UIScript>
+            """);
+
+        var (moved, element) = DesignEdits.MoveInto(document, 4);
+
+        Assert.Equal(3, moved.Xml!.Children[element].Parent);
+        Assert.Equal("about", Assert.Single(moved.Script!.Visuals).Pane);
+    }
+
     private const string NestedPanes = """
         <UIScript>
           <Window width="300" height="200"/>

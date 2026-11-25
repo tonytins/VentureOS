@@ -9,6 +9,8 @@ namespace Venture.OS.Tests.Desktop;
 /// </summary>
 public sealed class PaneViewTests
 {
+    private const int Red = unchecked((int)0xFFFF0000);
+
     private const string Document = """
         <UIScript version="1" requires="sidebar panes">
           <Window width="300" height="200"/>
@@ -85,6 +87,52 @@ public sealed class PaneViewTests
         view.Update(new UIViewInput(0, 0, false, false, false, 0, []), 0, 0);
 
         Assert.Null(view.FocusedControl);
+    }
+
+    [Fact]
+    public void AVisualInAPaneShowsAndDrawsOnlyWithItsPane()
+    {
+        var pictured = new UIView(UIScript.Parse("""
+            <UIScript version="1">
+              <Window width="300" height="200"/>
+              <Sidebar name="panes" width="100"/>
+              <Image name="logo" path="logo.png"/>
+              <Pane name="about" title="About">
+                <Visual name="icon" image="logo" x="10" y="10" width="2" height="2"/>
+              </Pane>
+              <Pane name="credits" title="Credits"/>
+            </UIScript>
+            """));
+        pictured.SetImage("logo", new DesktopImage(2, 2, [Red, Red, Red, Red]));
+
+        var onAbout = new RecordingPainter(300, 200);
+        pictured.Draw(onAbout, 0, 0);
+        pictured.List("panes")!.SelectedIndex = 1;
+        var onCredits = new RecordingPainter(300, 200);
+        pictured.Draw(onCredits, 0, 0);
+
+        Assert.Single(onAbout.Images, drawn => (drawn.X, drawn.Y) == (10, 10));
+        Assert.DoesNotContain(onCredits.Images, drawn => (drawn.X, drawn.Y) == (10, 10));
+        Assert.False(pictured.IsShowing("icon"));
+    }
+
+    [Fact]
+    public void AHiddenVisualStaysHiddenWhenItsPaneShows()
+    {
+        var pictured = new UIView(UIScript.Parse("""
+            <UIScript version="1">
+              <Window width="300" height="200"/>
+              <Sidebar name="panes" width="100"/>
+              <Image name="logo" path="logo.png"/>
+              <Pane name="about" title="About">
+                <Visual name="icon" image="logo" x="10" y="10" width="2" height="2"/>
+              </Pane>
+            </UIScript>
+            """));
+
+        pictured.SetHidden(true, "icon");
+
+        Assert.False(pictured.IsShowing("icon"));
     }
 
     [Fact]

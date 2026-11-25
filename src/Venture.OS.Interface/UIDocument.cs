@@ -180,7 +180,7 @@ public sealed class UIDocument
     /// <returns>The edited document, and the element's index in it; this one is unchanged.</returns>
     /// <exception cref="InvalidOperationException">The document can only be edited as text; see <see cref="Problem"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">There's no such element or parent, or the parent is inside the element.</exception>
-    /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a visual in a pane.</exception>
+    /// <exception cref="UIScriptException">VentureOS would refuse the result, such as a pane inside a pane.</exception>
     public (UIDocument Document, int Element) MoveInto(int element, int parent)
     {
         var xml = Editable();

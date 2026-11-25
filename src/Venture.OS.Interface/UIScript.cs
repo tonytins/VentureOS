@@ -221,8 +221,8 @@ public sealed record UIText(string Value, bool IsReference)
     public static UIText Reference(string name) => new(name, true);
 }
 
-/// <summary>A decorative image.</summary>
-public sealed record UIVisual(string Name, string Image, UIFrame Frame, int Line);
+/// <summary>A decorative image, shown with its <see cref="Pane"/> when it's in one.</summary>
+public sealed record UIVisual(string Name, string Image, UIFrame Frame, int Line, string? Pane = null);
 
 /// <summary>A list a slider or scroll button moves, and for a button, which way.</summary>
 public sealed record UIScrollBinding(string List, UIScrollDirection? Direction);
@@ -529,7 +529,7 @@ public sealed class UIScript
             var element = document.Children[at];
 
             // Only a menu and a pane hold elements: a menu its items, separators, and submenus, and a pane its
-            // controls. Everything else sits in <UIScript>.
+            // controls and visuals. Everything else sits in <UIScript>.
             MenuDraft? holder = null;
             string? inPane = null;
             if (element.Parent != FlatXmlDocument.RootIndex)
@@ -540,7 +540,7 @@ public sealed class UIScript
                     case "Menu" when element.Name is "Menu" or "MenuItem" or "MenuSeparator":
                         holder = menus[element.Parent];
                         break;
-                    case "Pane" when ControlType(element.Name) is not null:
+                    case "Pane" when element.Name == "Visual" || ControlType(element.Name) is not null:
                         inPane = paneNames[element.Parent];
                         break;
                     default:
@@ -548,7 +548,7 @@ public sealed class UIScript
                             parent.Name switch
                             {
                                 "Menu" => $"<{element.Name}> can't be inside <Menu>; a menu holds menu items, separators, and submenus.",
-                                "Pane" => $"<{element.Name}> can't be inside <Pane>; a pane holds controls.",
+                                "Pane" => $"<{element.Name}> can't be inside <Pane>; a pane holds controls and visuals.",
                                 _ => $"<{element.Name}> can't be inside <{parent.Name}>; only a <Menu> or a <Pane> holds other elements.",
                             },
                             element.Line);
@@ -601,7 +601,7 @@ public sealed class UIScript
 
                 case "Visual":
                     visuals.Add(new UIVisual(
-                        reader.RequiredString("name"), reader.RequiredString("image"), ReadFrame(reader), element.Line));
+                        reader.RequiredString("name"), reader.RequiredString("image"), ReadFrame(reader), element.Line, inPane));
                     break;
 
                 case "Menu":

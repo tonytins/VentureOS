@@ -101,11 +101,32 @@ public sealed class UIScriptPaneTests
     [Theory]
     [InlineData("<Pane name='p' title='P'><Button name='b' x='0' y='0' width='1' height='1' pane='p'/></Pane>", "\"b\" is inside the pane \"p\", so it doesn't name one with pane")]
     [InlineData("<Pane name='p' title='P'><Button name='a' x='0' y='0' width='1' height='1'/></Pane><Button name='b' x='0' y='0' width='1' height='1' pane='p'/>", "\"b\" names the pane \"p\", which holds its controls inside it")]
-    [InlineData("<Pane name='p' title='P'><Visual name='v' image='i' x='0' y='0' width='1' height='1'/></Pane>", "<Visual> can't be inside <Pane>; a pane holds controls")]
+    [InlineData("<Image name='i' path='i.png'/><Pane name='p' title='P'><Visual name='v' image='i' x='0' y='0' width='1' height='1'/></Pane><Button name='b' x='0' y='0' width='1' height='1' pane='p'/>", "\"b\" names the pane \"p\", which holds its controls inside it")]
+    [InlineData("<Pane name='p' title='P'><Image name='i' path='i.png'/></Pane>", "<Image> can't be inside <Pane>; a pane holds controls and visuals")]
+    [InlineData("<Pane name='p' title='P'><Visual name='v' image='missing' x='0' y='0' width='1' height='1'/></Pane>", "missing")]
     [InlineData("<Pane name='p' title='P'><Pane name='q' title='Q'/></Pane>", "<Pane> can't be inside <Pane>")]
     [InlineData("<Pane name='p' title='P'><Style name='s'/></Pane>", "<Style> can't be inside <Pane>")]
     public void RefusesWhatTheSpecRefusesOfNestedPanes(string elements, string message) =>
         Assert.Contains(message, Assert.Throws<UIScriptException>(() => UIScript.Parse(Head + elements + "</UIScript>")).Message, StringComparison.Ordinal);
+
+    [Fact]
+    public void AVisualInAPaneIsInItAndItsImageStaysAtTheRoot()
+    {
+        var script = UIScript.Parse(Head + """
+            <Image name="logo" path="logo.png"/>
+            <Visual name="banner" image="logo" x="0" y="0" width="10" height="10"/>
+            <Pane name="about" title="About">
+              <Visual name="icon" image="logo" x="0" y="0" width="64" height="64"/>
+              <Text name="title" x="0" y="70" width="100" height="20"/>
+            </Pane>
+            </UIScript>
+            """);
+
+        Assert.Null(script.Visuals.Single(visual => visual.Name == "banner").Pane);
+        Assert.Equal("about", script.Visuals.Single(visual => visual.Name == "icon").Pane);
+        Assert.Equal("about", script.Control("title")!.Pane);
+        Assert.Empty(script.IgnoredAttributes);
+    }
 
     [Fact]
     public void NestedPanesNeedASidebarToo()

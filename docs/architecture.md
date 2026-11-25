@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,016 tests, and 278 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,028 tests, and 282 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1441,8 +1441,9 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
 - **Panes** (0.7.4xx, [spec](./uiscript/README.md#panes)): a document's
   `<Pane>`s are its sidebar's rows, and a pane holds its controls (since
   0.7.7xx; a control's `pane` still puts one written outside it there, one
-  form per pane). `UIView` fills the rows from the panes, selects the
-  first, and shows a control in a pane only while that pane's row is
+  form per pane) and visuals (since 0.8.2xx; their images stay at the
+  root). `UIView` fills the rows from the panes, selects the
+  first, and shows a control or visual in a pane only while that pane's row is
   selected (`IsShowing`), apart from what the app hides (`IsHidden`); a
   field whose pane goes away loses the keyboard. `window:setItems` refuses
   a sidebar of panes. Settings declares Appearance, Dock, Clock, and
@@ -1847,6 +1848,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | Panes (§9): a pane holds visuals as well as controls, and `UIView` shows a visual only with its pane; the images stay at the root. |
 | 2026-11-24 | patch | Desktop text (§9): alerts and Quick Look's summaries draw their text on the `panel` role, not a fixed light box; Quick Look's words and vdb's Trust question come from `_101_desktop.cst`. |
 | 2026-11-24 | patch | Layout (§2): the app guide is split into `docs/tutorial/` (command-line, desktop, troubleshooting); `docs/writing-apps.md` points there. The HIG is in `docs/hig/`. |
 | 2026-11-24 | minor | Desktop text (§9): the desktop's menus, About's names, and the alerts' OK come from `_101_desktop.cst` through `DesktopText`; a missing word shows its key and is reported once. |

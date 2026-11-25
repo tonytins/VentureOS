@@ -186,7 +186,7 @@ public sealed class UIView
         }
 
         foreach (var visual in script.Visuals)
-            states[visual.Name] = new State();
+            states[visual.Name] = new State { Pane = visual.Pane };
 
         if (script.Sidebar is { } side)
         {

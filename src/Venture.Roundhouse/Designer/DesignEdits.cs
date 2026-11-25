@@ -45,11 +45,12 @@ public static class DesignEdits
     public static (UIDocument Document, int Element) Add(UIDocument document, string element) => Add(document, element, null);
 
     /// <summary>
-    /// The parts of a window that aren't controls, which the library adds too: the title bar's items and title field,
-    /// the menus, the sidebar, and its panes.
+    /// The parts of a window that aren't controls, which the library adds too: a picture, the title bar's items and
+    /// title field, the menus, the sidebar, and its panes.
     /// </summary>
     public static IReadOnlyList<(string Element, string Title)> Parts { get; } =
     [
+        ("Visual", "Picture"),
         ("ToolbarItem", "Toolbar Item"),
         ("TitleField", "Title Field"),
         ("Menu", "Menu"),
@@ -63,7 +64,8 @@ public static class DesignEdits
     /// Adds a control (see <see cref="Add(UIDocument, string)"/>) or one of the window's other <see cref="Parts"/>. A
     /// menu item or separator joins the <paramref name="selected"/> menu, or the menu of the selected item, or else
     /// the last menu, after its last entry. A pane needs a sidebar, and goes after the last pane, so it's the
-    /// sidebar's last row. A control goes in <paramref name="pane"/>, the pane on show, when there is one.
+    /// sidebar's last row. A control goes in <paramref name="pane"/>, the pane on show, when there is one, and so does
+    /// a picture: a <c>&lt;Visual&gt;</c> there, with the <c>&lt;Image&gt;</c> it shows among the resources.
     /// </summary>
     /// <exception cref="ArgumentException">The library has no such element, or a menu item has no menu to join.</exception>
     /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a second title field.</exception>
@@ -96,6 +98,9 @@ public static class DesignEdits
             {
                 return Insert(document, end, element, [new("name", UniqueName(document, "sidebar")), new("width", "160")]);
             }
+
+            case "Visual":
+                return AddPicture(document, pane);
 
             case "Pane":
             {
@@ -216,7 +221,7 @@ public static class DesignEdits
     /// another as a submenu, or a control into a pane.
     /// </summary>
     /// <exception cref="ArgumentException">There's no menu or pane just before it.</exception>
-    /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a visual in a pane.</exception>
+    /// <exception cref="UIScriptException">VentureOS wouldn't read the result, such as a pane in a pane.</exception>
     public static (UIDocument Document, int Element) MoveInto(UIDocument document, int element)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -285,6 +290,61 @@ public static class DesignEdits
         }
 
         return (document, element);
+    }
+
+    /// <summary>The size a new picture is drawn at, an app icon's in About.</summary>
+    private const int PictureSize = 64;
+
+    /// <summary>
+    /// Adds an <c>&lt;Image&gt;</c> after the other resources, since images stay at the root, and a
+    /// <c>&lt;Visual&gt;</c> showing it, of the same name, in the pane on show or else the window. Its path is a
+    /// placeholder the person changes in the inspector; until then the visual is outlined.
+    /// </summary>
+    private static (UIDocument, int) AddPicture(UIDocument document, string? pane)
+    {
+        var script = document.Script ?? throw new InvalidOperationException("Only a document VentureOS reads can be edited.");
+        var xml = document.Xml!;
+
+        // A pane whose controls name it from outside can't also hold a picture, and a picture outside it would show
+        // on every pane, so it's refused rather than put somewhere else.
+        var holder = pane is not null ? PaneElement(document, pane) : null;
+        if (holder is { } paneIndex && xml.ChildrenOf(paneIndex).Length == 0
+            && xml.ChildrenOf(UIDocument.Root).Any(child => xml.Children[child]["pane"] == pane))
+        {
+            throw new UIScriptException($"The pane \"{pane}\" has controls that name it from outside, so a picture can't go in it. Move its controls into it first.");
+        }
+
+        // After the last resource, or else after the window.
+        var after = -1;
+        foreach (var child in xml.ChildrenOf(UIDocument.Root))
+        {
+            if (xml.Children[child].Name is "Image" or "String" or "Style" || (after < 0 && xml.Children[child].Name is "Window" or "Panel"))
+                after = child;
+        }
+
+        var name = UniqueName(document, "picture");
+        var imageAt = after < 0 ? 0 : xml.End(after);
+        var withImage = document.InsertElement(imageAt, "Image", [new("name", name), new("path", name + ".png")]);
+
+        var x = (int)MathF.Max(0, MathF.Round((script.Window.Size.Width - PictureSize) / 2));
+        var y = (int)MathF.Max(0, MathF.Round((script.Window.Size.Height - PictureSize) / 2));
+        (x, y) = FreePlace(withImage, x, y);
+        List<KeyValuePair<string, string>> attributes =
+        [
+            new("name", name), new("image", name),
+            new("x", Number(x)), new("y", Number(y)), new("width", Number(PictureSize)), new("height", Number(PictureSize)),
+        ];
+
+        // Indexes after the image moved up by one when it went in before the pane.
+        if (holder is { } held)
+        {
+            var moved = held >= imageAt ? held + 1 : held;
+            var inside = withImage.Xml!.End(moved);
+            return (withImage.InsertElement(inside, "Visual", attributes, moved), inside);
+        }
+
+        var index = withImage.Xml!.Children.Count;
+        return (withImage.InsertElement(index, "Visual", attributes), index);
     }
 
     /// <summary>The index of the pane named <paramref name="name"/>, or <see langword="null"/>.</summary>

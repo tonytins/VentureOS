@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.204
+
+- A pane can hold pictures: a `<Visual>` inside a `<Pane>` shows only while that pane is selected. Its `<Image>` stays at the top of the document with the other resources. See [the spec](docs/uiscript/README.md#panes).
+- Roundhouse's Insert ▸ Picture adds a picture to the window, or to the pane on show, along with the `<Image>` it uses. Move Into now puts a picture into the pane before it instead of refusing.
+
 ## 0.8.202
 
 - System Monitor's bundle is now `System Monitor.app`, named after the app, so `airo build --replace` updates it instead of adding a second copy beside it.

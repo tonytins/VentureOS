@@ -536,7 +536,7 @@ A host that shows sidebars:
 ## Panes
 
 A sidebar can hold **panes**, as GNOME Settings does: each row is a pane, and choosing a row shows that pane's
-controls in place of the others'. The document says which controls each pane holds, so the host shows one pane at a
+controls in place of the others'. The document says which controls and visuals each pane holds, so the host shows one pane at a
 time with no code of the app's, and a designer that runs no code shows them the same way.
 
 ```xml
@@ -554,10 +554,21 @@ time with no code of the app's, and a designer that runs no code shows them the 
 </UIScript>
 ```
 
-A pane holds its controls, and a control directly in `<UIScript>` shows on every pane.
+A pane holds its controls and visuals, and one directly in `<UIScript>` shows on every pane. A visual's `<Image>`
+stays in `<UIScript>`, with the other resources, so any pane's visuals can show it:
+
+```xml
+<Image name="logo" path="logo.png"/>
+<Sidebar name="panes" width="108"/>
+<Pane name="about" title="About">
+  <Visual name="icon" image="logo" x="138" y="16" width="64" height="64"/>
+  <Text name="name" x="20" y="88" width="300" height="30" text="VentureOS"/>
+</Pane>
+```
 
 A pane's controls may instead sit directly in `<UIScript>`, each naming its pane with `pane`, as menu items can name
-their menu. This is the form panes had before they nested, and it still reads the same:
+their menu. This is the form panes had before they nested, and it still reads the same. Visuals have no such form: one
+in a pane is always inside it.
 
 ```xml
 <Pane name="general" title="General"/>
@@ -576,24 +587,25 @@ A pane uses one form or the other: one that holds anything can't also be named b
 Rules:
 
 - Panes need a `<Sidebar>`. Panes without one refuse the document.
-- A pane holds controls only, not visuals, other panes, or anything else, and a control in a pane takes no `pane` of
-  its own. Either refuses the document.
+- A pane holds controls and visuals only, not resources, other panes, or anything else, and a control in a pane takes
+  no `pane` of its own. Either refuses the document.
 - A `pane` that names no pane, or a pane that holds anything, refuses the document.
 - Positions in a pane are the window's content's, as for any control: a pane is a set of controls, not a box.
 - The first pane starts selected.
 
 A host that shows panes:
 
-- Shows each pane's `title` as a sidebar row, in order, and shows a control in a pane only while that pane's row is
-  selected, as well as when the host hasn't hidden it. A host hiding a control and a pane hiding it are separate:
+- Shows each pane's `title` as a sidebar row, in order, and shows a control or visual in a pane only while that pane's
+  row is selected, as well as when the host hasn't hidden it. A host hiding one and a pane hiding it are separate:
   switching panes never shows what the host hid.
 - Reports a row's selection as it does any sidebar's, so an app can follow it, such as by retitling its window.
 - Treats the rows as the document's. VentureOS refuses `window:setItems` on a sidebar of panes; selecting rows still
   works.
-- With no row selected, shows only the controls in no pane.
+- With no row selected, shows only the controls and visuals in no pane.
 
 A reader without panes refuses `<Pane>` as an unknown element. That's deliberate: a reader that drew the document
-without them would draw every pane's controls over each other.
+without them would draw every pane's controls over each other. A reader from before visuals could sit in panes
+refuses a `<Visual>` inside one, rather than draw it on every pane.
 
 ## Events
 
@@ -693,6 +705,8 @@ reads `.uis` files into the same model.
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-24:** A `<Pane>` may hold visuals as well as controls; their `<Image>`s stay in `<UIScript>`. Visuals
+  have no flat form. A reader from before refuses a visual in a pane.
 - **2026-11-24:** A host may leave a window's title out of its title bar, and a subtitle then takes the title's
   place. The format is unchanged: the title was never the document's.
 - **2026-11-20:** A `<Pane>` may hold its controls, which then take no `pane`. The flat form, with `pane` on each
