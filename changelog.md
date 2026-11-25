@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.209
+
+- A text area's `alignment` works: each line sits left, centred, or right, with its caret and selection, so About VentureOS's credits are centred.
+- The Earthset wallpaper is credited, in About VentureOS's credits and the README: NASA's photo from Artemis II, in the public domain.
+
 ## 0.8.208
 
 - Roundhouse designs inside a sidebar: with the sidebar, or something in it, selected, Insert adds a control or picture there, centred in it. Move Into (Tab in the outline) takes a control into the sidebar before it, and Move Out takes it back. The outline nests what the sidebar holds, and a sidebar on the right resizes from its left edge, where it meets the content.

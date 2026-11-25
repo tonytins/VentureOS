@@ -388,6 +388,9 @@ Worth doing someday, in no order, and not yet given a release.
 - **Text:** selecting from read-only text, such as Terminal's output;
   dragging to select in the title field; double-clicking a word.
 - **Windows:** resizing Terminal; collapsing a sidebar in a narrow window.
+- **Keyboard panes:** moving a sidebar's selection, and so its pane, with the
+  arrow keys, as About VentureOS's Credits can't be reached without a
+  pointer today.
 - **Lua:** the clipboard for apps.
 - **ARM64:** booting it under QEMU, not only building it.
 - **Hudini:** adopting VentureOS's remaining UIScript drafts (the title
@@ -411,6 +414,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | 0.8.2xx: text areas honour `alignment`, so About VentureOS's credits are centred; Earthset is credited, NASA's from Artemis II. Keyboard panes go to Ideas, by my decision. |
 | 2026-11-24 | minor | 0.8.2xx is complete: Roundhouse's designer adds controls and pictures to a sidebar, moves them in and out, and resizes a right sidebar from its left edge. The next band is the owner's to plan. |
 | 2026-11-24 | patch | 0.8.2xx: a sidebar may hold controls and visuals in place of rows, on either edge; the desktop draws them. Roundhouse's designer placing them is the band's last item. |
 | 2026-11-24 | patch | 0.8.2xx: a sidebar may run down the window's right (`edge="right"`); holding controls, the rest of that item, is next. |

@@ -124,5 +124,8 @@ The desktop's fonts keep their own licenses, which ship beside them in
 `rootfs/system/fonts/`: Open Sans under the Apache License 2.0, and
 Fira Code under the SIL Open Font License 1.1.
 
+The Earthset wallpaper is NASA's photo of the Earth setting behind the Moon from Orion during Artemis II,
+[art002e009288](https://images.nasa.gov/details/art002e009288), in the public domain as a work of NASA.
+
 The Charger wallpaper is a photo by Tony Bark of Amtrak 315 at New Orleans,
 [under CC0](https://commons.wikimedia.org/wiki/File:Amtrak_315_at_New_Orleans,_December_2024.jpg).

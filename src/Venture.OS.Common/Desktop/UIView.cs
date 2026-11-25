@@ -1132,27 +1132,30 @@ public sealed class UIView
         state.FirstLine = Math.Clamp(state.FirstLine, 0, Math.Max(0, lines.Count - visible));
         var color = state.Disabled ? DesktopTheme.DisabledText : TextColor(control);
         var (from, selected) = state.Cursor.Selection;
+        var room = width - (2 * Inset);
         for (var row = 0; row < visible && state.FirstLine + row < lines.Count; row++)
         {
             var (start, length) = lines[state.FirstLine + row];
+            var lineX = x + Inset + LineShift(painter, control, state.Text.Substring(start, length), size, room);
 
             // The part of the selection on this line, behind its text.
             var (first, last) = (Math.Max(from, start), Math.Min(from + selected, start + length));
             if (isFocused && last > first)
             {
                 var left = painter.MeasureText(state.Text[start..first], size);
-                painter.FillRectangle(x + Inset + left, y + Inset + (row * lineHeight),
+                painter.FillRectangle(lineX + left, y + Inset + (row * lineHeight),
                     painter.MeasureText(state.Text[first..last], size), lineHeight, DesktopTheme.Selection);
             }
 
             if (length > 0)
-                painter.DrawText(state.Text.Substring(start, length), x + Inset, y + Inset + (row * lineHeight), color, size);
+                painter.DrawText(state.Text.Substring(start, length), lineX, y + Inset + (row * lineHeight), color, size);
         }
 
         if (isFocused && caretLine >= state.FirstLine && caretLine < state.FirstLine + visible)
         {
-            var (start, _) = lines[caretLine];
-            var caretX = x + Inset + painter.MeasureText(state.Text[start..state.Caret], size) + 1;
+            var (start, length) = lines[caretLine];
+            var lineX = x + Inset + LineShift(painter, control, state.Text.Substring(start, length), size, room);
+            var caretX = lineX + painter.MeasureText(state.Text[start..state.Caret], size) + 1;
             painter.FillRectangle(caretX, y + Inset + ((caretLine - state.FirstLine) * lineHeight), 1, lineHeight, TextColor(control));
         }
     }
@@ -1259,7 +1262,8 @@ public sealed class UIView
         var size = TextSize(area);
         var line = Math.Clamp(state.FirstLine + (int)((y - bounds.Y - Inset) / LineHeight(size)), 0, lines.Count - 1);
         var (start, length) = lines[line];
-        var along = x - bounds.X - Inset;
+        var along = x - bounds.X - Inset
+            - LineShift(painter, area, state.Text.Substring(start, length), size, (int)bounds.Width - (2 * Inset));
         for (var count = 0; count < length; count++)
         {
             var before = painter.MeasureText(state.Text.Substring(start, count), size);
@@ -1791,6 +1795,18 @@ public sealed class UIView
             UITextAlignment.Center => (int)(bounds.X + ((bounds.Width - painter.MeasureText(text, size)) / 2)),
             UITextAlignment.Right => (int)(bounds.X + bounds.Width - inset - painter.MeasureText(text, size)),
             _ => (int)bounds.X + inset,
+        };
+
+    /// <summary>
+    /// How far a text area's line starts past its inset for the area's <c>alignment</c>: nothing on the left, half the
+    /// spare room centred, and all of it on the right. Drawing, the selection, the caret, and clicks share it.
+    /// </summary>
+    private static int LineShift(IPainter painter, UIControl control, string line, int size, int room) =>
+        control.Alignment switch
+        {
+            UITextAlignment.Center => Math.Max(0, (room - painter.MeasureText(line, size)) / 2),
+            UITextAlignment.Right => Math.Max(0, room - painter.MeasureText(line, size)),
+            _ => 0,
         };
 
     /// <summary>The text, cut short with an ellipsis if it's wider than the room.</summary>
