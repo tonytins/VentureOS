@@ -81,14 +81,13 @@ The new commands, sealed like every other, after trust:
 
 | Command | Answer |
 |---|---|
-| `windows` | `window <id> <app> <title>` lines for each app window, front first, then `ok` |
+| `windows` | a `window` line for each app window, front first, then `ok` |
 | `snapshot <window>` | one `control ...` line per control, then `ok` |
 | `act <window> <action> <name> [text]` | `ok`, or `error <reason>`, after the app has handled it |
 | `key <window> <keys>` | `ok` |
-| `screenshot` | `pixels <width> <height>`, `data <base64>` lines of raw RGB, then `ok` |
+| `screenshot` | `screen width=<w> height=<h>`, `data <base64>` lines of raw RGB, then `ok` |
 
-The line formats, escaping of names and text with spaces, and the exact lines are settled when the commands are
-built, recorded as [conversations](../vdb/README.md#conversations) that both sides' tests replay, as the existing
+The line formats, escaping, and exact lines were settled in phase 2 and are in [docs/vdb](../vdb/README.md#ui), recorded as [conversations](../vdb/README.md#conversations) that both sides' tests replay, as the existing
 commands are. A window that isn't an app's, or has closed, is `error`. `act` brings its window to the front first,
 as a click would.
 

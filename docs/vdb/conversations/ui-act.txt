@@ -1,0 +1,38 @@
+# Using an app window's controls by name, as app tests do: each action brings the window to the front, hands the
+# app its event, and is answered once the app has handled it; one a person couldn't do says why.
+! desktop
+! identity 0123456789abcdef0123456789abcdef
+! trusted 0123456789abcdef0123456789abcdef
+! app-window Notes Notes
+! app-window Notes Groceries
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
+< hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+< ok vdb/1 install launch ui
+> act 1 press ok
+< ok
+! front 1
+! event 1 pressed ok
+> act 1 submit name "Ada Lovelace"
+< ok
+! event 1 submitted name Ada Lovelace
+> act 1 choose notes "Eggs"
+< ok
+! event 1 selected notes 2
+> act 2 choose notes 1
+< ok
+! front 2
+! event 2 selected notes 1
+> act 1 choose notes 3
+< error "notes" has 2 rows, so there's no row 3
+> act 1 press missing
+< error there's no "missing" in Notes
+> act 1 fly ok
+< error "fly" isn't an action; act can press, submit, type, or choose
+> act 1 type name
+< error act type takes a window, a control, and quoted text, such as act 3 type name "Ada"
+> act 9 press ok
+< error there's no app window 9; windows lists them
+> act 1 submit name "Ada
+< error a quoted word has no closing quote
+> bye
+< ok

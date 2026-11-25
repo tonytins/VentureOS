@@ -1,0 +1,35 @@
+# With a desktop, VentureOS offers ui. It lists app windows, front first, and never a panel or one of its own,
+# such as the Trust alert; a snapshot gives a window's controls, each with what a person would see of it.
+! desktop
+! identity 0123456789abcdef0123456789abcdef
+! trusted 0123456789abcdef0123456789abcdef
+! panel Dock
+! system-alert Trust
+! app-window Notes Notes
+! app-window Notes Groceries
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
+< hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+< ok vdb/1 install launch ui
+> windows
+< window id=4 app="Notes" title="Groceries" front
+< window id=3 app="Notes" title="Notes"
+< ok
+> snapshot 3
+< window id=3 title="Notes" subtitle="2 notes"
+< control name="label" kind=text text="Say \"hi\""
+< control name="ok" kind=button text="OK"
+< control name="name" kind=textField text=""
+< control name="notes" kind=list rows=2
+< row "Milk"
+< row "Eggs"
+< control name="newNote" kind=menuItem text="New Note"
+< ok
+# The dock's panel and the Trust alert are there, but not for vdb.
+> snapshot 1
+< error there's no app window 1; windows lists them
+> snapshot 2
+< error there's no app window 2; windows lists them
+> snapshot Notes
+< error a window is named by its number, as windows lists it, not "Notes"
+> bye
+< ok

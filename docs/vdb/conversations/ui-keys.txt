@@ -1,0 +1,21 @@
+# Keys are pressed in an app window, which comes to the front, on the desktop's next frame.
+! desktop
+! identity 0123456789abcdef0123456789abcdef
+! trusted 0123456789abcdef0123456789abcdef
+! app-window Notes Notes
+! app-window Notes Groceries
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
+< hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+< ok vdb/1 install launch ui
+> key 1 Ctrl+Shift+Z Enter a Shift+b Space +
+< ok
+! front 1
+! keys 1 Ctrl+Shift+z, 1 Enter, 1 a, 1 Shift+B, 1  , 1 +
+> key 1 Hyper+Z
+< error "Hyper" isn't Ctrl, Shift, or Alt
+> key 1 Enterr
+< error "Enterr" isn't a key; name one character, or Space, Enter, Escape, Tab, Backspace, Delete, Left, Right, Up, Down, Home, or End
+> key 1
+< error key names a window and 1 to 32 keys, such as key 3 Ctrl+Z
+> bye
+< ok

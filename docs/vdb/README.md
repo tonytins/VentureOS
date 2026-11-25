@@ -27,7 +27,7 @@ Only hello, and pairing, are plain text. Everything after VentureOS's `hello` is
    16 hexadecimal characters of SHA-256 of the ASCII text `vdb key-id ` and the identity. The **nonce** is 16 random
    bytes, as 32 lowercase hexadecimal characters, new for every connection.
 2. A computer VentureOS trusts is answered `hello vdb/1 <nonce>`, VentureOS's own nonce, then, sealed,
-   `ok vdb/1 install launch`.
+   `ok vdb/1 install launch`, and `ui` after them when VentureOS can offer [its commands](#ui).
 3. One it doesn't is answered `wait trust` while the person is asked. If they choose **Trust**, VentureOS sends
    `pair`, and the computer sends `pair <identity>`, the one time the identity crosses the network. If it gives the
    key ID, VentureOS trusts it and answers as in step 2; if not, `error closing`.
@@ -74,9 +74,43 @@ from its own system's generator, keeps the keys fresh regardless.
 | `abort` | `ok` | Throws the app away. |
 | `launch <Name.app>` | `ok` | Opens an app, as the dock would. |
 | `bye` | `ok` | Ends the connection. |
+| `windows`, `snapshot`, `act`, `key`, `screenshot` | see [ui](#ui) | Only when VentureOS offers `ui`; otherwise they aren't commands. |
 
 After an error inside a file, the rest of that file's `data` lines and its `end` are passed over, so each file is
 answered once: a computer can send a whole file and then read one answer.
+
+## ui
+
+With the `ui` feature, a computer sees and uses app windows by name, with the words app tests use
+([`app:press`, `app:choose`, ...](../airo/testing.md#the-app)), rather than by pointing. It reaches only windows an
+app opened, its alerts among them: never a panel, such as the dock or the menu bar, or one of VentureOS's own, such
+as the Trust alert.
+
+Its lines are words separated by spaces. A word is bare, or quoted in `"`, with `\\`, `\"`, `\n`, `\r`, and `\t`
+escaped; other control characters become spaces. Answers are `key=value` words, a bare key being a flag that's on,
+and **a reader skips keys it doesn't know**, so later versions can say more without a new feature. A quoted value
+holds at most 600 characters, so every line fits; a line with a value cut short ends with the flag `cut`.
+
+| Command | Answer |
+|---|---|
+| `windows` | A `window` line for each app window, front first: `id`, `app`, `title`, and the flags `front` and `minimized`. Then `ok`. |
+| `snapshot <id>` | A `window` line (`id`, `title`, `subtitle`, `pane`, `focused`), then a `control` line for each control, the sidebar, the title field, each toolbar item, and each menu item, in that order: `name`, `kind`, `text`, `value`, `chosen` (from 1), `rows` (how many), and the flags `hidden`, `dimmed`, `checked`, and `focused`. A list's, sidebar's, or grid's first 100 rows follow its line, as `row "<text>"`. Then `ok`. |
+| `act <id> press <name>` | Presses a button, toolbar item, or menu item. |
+| `act <id> submit <name> "<text>"` | Puts the text in a field, or the title bar's field, and presses Enter. |
+| `act <id> type <name> "<text>"` | Puts the text in a field or text area, without Enter. |
+| `act <id> choose <name> <row>` | Chooses a list's or sidebar's row, or a grid's item: its number, from 1, or its text or a grid item's name, quoted. |
+| `key <id> <key>…` | Presses up to 32 keys: a character, or `Space`, `Enter`, `Escape`, `Tab`, `Backspace`, `Delete`, `Left`, `Right`, `Up`, `Down`, `Home`, or `End`, after any of `Ctrl+`, `Shift+`, and `Alt+`, such as `Ctrl+Shift+Z`. |
+| `screenshot` | `screen width=<w> height=<h>`, then the pixels in `data` lines, three bytes each, red, green, then blue, a row at a time from the top, then `ok`. |
+
+- A `kind` is the element, as a document writes it, starting lowercase (`button`, `textField`, `grid`, ...), or
+  `sidebar`, `titleField`, `toolbarItem`, or `menuItem`. `kind` is never quoted.
+- `act` and `key` bring their window to the front, restoring it if it was minimized, as a click would. An action
+  is answered `ok` once the app has handled it, in the same frame, or `error` with why a person couldn't do it,
+  such as `"ok" is dimmed, so a person couldn't use it`; nothing is done then. Keys reach the window on the
+  desktop's next frame, so a `snapshot` right after may not show them yet.
+- A `<id>` is a window's number, as `windows` gives it; one that isn't an app window's is `error`.
+- A screenshot goes out 16 lines a frame, so a large one takes a few frames. Commands sent meanwhile are answered
+  after its `ok`, and the wait doesn't count toward the 30 seconds of silence.
 
 ## Limits
 
@@ -102,6 +136,10 @@ answered once: a computer can send a whole file and then read one answer.
   `system-app <identifier>`, `print <text>` (an app prints it), `disconnect`, and the checks `closed`,
   `installed <Name.app>`, `not-installed <Name.app>`, `staging-empty`, `launched <Name.app>`, and
   `closed-app <identifier>`.
+- `! desktop`, anywhere, gives VentureOS a desktop, so it offers `ui`. Then `app-window <app> <title>` opens a sample
+  window, `panel <app>` an app's panel, and `system-alert <title>` one of VentureOS's own, numbered from 1 in the
+  order they open; `screen <width> <height>` sets the screen, its bytes counting up from 0; and `event <id> <kind> <control> [text or row]`, `keys <id> <key>, …`, and `front <id>` check what a window was
+  handed and which is in front. The sample's controls are in `FakeVdbDesktop`, in Common's tests.
 - `#` starts a comment.
 - Paths VentureOS sends back are shown as they are on VentureOS, under `/mnt/user`.
 

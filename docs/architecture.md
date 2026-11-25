@@ -156,7 +156,8 @@ VentureOS/
 │  │  │                            (VentureLibrary, ShellLibrary, FilesLibrary), backed by ISystemInfo and IAppearance
 │  │  ├─ Bundles/                  Venture.OS.Bundles: Bundle (Contents/Info.xml), AppManager, AppLibrary (venture.app)
 │  │  ├─ Cryptography/             Venture.OS.Cryptography: SHA-256, HMAC, HKDF, and ChaCha20-Poly1305, for vdb
-│  │  ├─ Vdb/                      Venture.OS.Vdb: vdb/1 without sockets (VdbSession), the seal, trust, and developer mode
+│  │  ├─ Vdb/                      Venture.OS.Vdb: vdb/1 without sockets (VdbSession), the seal, trust, developer mode,
+│  │  │                            and the ui feature over a desktop (IVdbDesktop)
 │  │  ├─ Processes/                Venture.OS.Processes: AppProcess and the Supervisor, which AppManager opens apps through
 │  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
 │  │                               UiLibrary (venture.ui), all drawn through IPainter, and WindowControls (using a
@@ -1911,6 +1912,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | vdb (§8.1): vdb/1's `ui` feature in Common, offered when a session has a desktop (`IVdbDesktop`): `windows`, `snapshot`, `act`, `key`, and `screenshot`, over app windows only; the kernel doesn't offer it yet. |
 | 2026-11-25 | patch | Layout: airo's actions and reads (`app:press`, `app:choose`, ...) move into Common's `WindowControls`, with a snapshot of a window's controls, so vdb can use them too. |
 | 2026-11-25 | minor | Settings (§9): built from its project, Settings ships with grids for the style, accent, scroll bars, and every wallpaper, in a larger, resizable window. |
 | 2026-11-25 | patch | Scripting: `venture.wallpapers()` gives paths as the script sees them (`FileRoot.Venture`), so Roundhouse's Run and airo can show them; Roundhouse's `--render` takes `--scrollbars`, flashing automatic bars (`UIView.FlashScrollBars`) so a picture shows them. |

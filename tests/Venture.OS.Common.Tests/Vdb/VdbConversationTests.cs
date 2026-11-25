@@ -11,7 +11,7 @@ namespace Venture.OS.Tests.Vdb;
 /// <c>! identity</c> names the computer's identity, which the replay keys the connection from; VentureOS's nonce is
 /// always <c>f0f1…ff</c>. Lines after VentureOS's <c>hello</c> are written as they read inside the seal, and the
 /// replay seals and opens them, unless <c>! raw</c> says the lines from there on are written as they go on the
-/// network.
+/// network. A conversation with <c>! desktop</c> has a desktop, so VentureOS offers <c>ui</c>; the others don't.
 /// </remarks>
 public sealed class VdbConversationTests
 {
@@ -39,11 +39,13 @@ public sealed class VdbConversationTests
         var computer = new TestComputer();
         var isRaw = false;
         List<string> network = [];
-        VdbSession session = new(host, trust, line => { network.Add(line); computer.Hear(line); }, ServerNonce, now);
+        var path = Path.Combine(Folder, name);
+        var desktop = File.ReadLines(path).Contains("! desktop") ? new FakeVdbDesktop() : null;
+        VdbSession session = new(host, trust, line => { network.Add(line); computer.Hear(line); }, ServerNonce, now, desktop);
         var heard = 0;
 
         var number = 0;
-        foreach (var line in File.ReadLines(Path.Combine(Folder, name)))
+        foreach (var line in File.ReadLines(path))
         {
             number++;
             var at = $"{name}, line {number}";
@@ -73,7 +75,7 @@ public sealed class VdbConversationTests
                     isRaw = true;
                     break;
                 case '!':
-                    now = Act(text, at, host, trust, session, now);
+                    now = Act(text, at, host, trust, session, now, desktop);
                     break;
                 default:
                     Assert.Fail($"{at}: a line starts with >, <, !, or #.");
@@ -92,12 +94,17 @@ public sealed class VdbConversationTests
             nonce[index] = (byte)(0xf0 + index);
     }
 
-    private static TimeSpan Act(string text, string at, FakeVdbHost host, VdbTrust trust, VdbSession session, TimeSpan now)
+    private static TimeSpan Act(string text, string at, FakeVdbHost host, VdbTrust trust, VdbSession session, TimeSpan now, FakeVdbDesktop? desktop)
     {
         var words = text.Split(' ', 2);
         var argument = words.Length > 1 ? words[1] : "";
+        if (words[0] is not "desktop" && Desktop(words[0], argument, at, desktop))
+            return now;
+
         switch (words[0])
         {
+            case "desktop":
+                break;
             case "trusted":
                 trust.Trust(argument);
                 break;
@@ -143,5 +150,45 @@ public sealed class VdbConversationTests
         }
 
         return now;
+    }
+
+    // What a conversation sets up or checks on the desktop: whether it was one of those.
+    private static bool Desktop(string what, string argument, string at, FakeVdbDesktop? desktop)
+    {
+        if (what is not ("app-window" or "panel" or "system-alert" or "event" or "keys" or "front" or "screen"))
+            return false;
+        Assert.True(desktop is not null, $"{at}: \"{what}\" needs ! desktop at the top.");
+
+        switch (what)
+        {
+            case "app-window":
+                var app = argument.Split(' ', 2);
+                desktop.OpenApp(app[0], app[1]);
+                break;
+            case "panel":
+                desktop.OpenPanel(argument);
+                break;
+            case "system-alert":
+                desktop.OpenSystemAlert(argument);
+                break;
+            case "event":
+                Assert.Contains(argument, desktop.Events);
+                break;
+            case "keys":
+                Assert.Equal(argument, string.Join(", ", desktop.Keys));
+                break;
+            case "front":
+                Assert.Equal(int.Parse(argument, System.Globalization.CultureInfo.InvariantCulture), desktop.Windows.Focused?.Id);
+                break;
+            case "screen":
+                // Pixels counting up from 0, so every byte of the picture is told apart.
+                var size = argument.Split(' ');
+                var (width, height) = (int.Parse(size[0], System.Globalization.CultureInfo.InvariantCulture),
+                    int.Parse(size[1], System.Globalization.CultureInfo.InvariantCulture));
+                desktop.Screen = new VdbScreenshot(width, height, [.. Enumerable.Range(0, width * height * 3).Select(index => (byte)index)]);
+                break;
+        }
+
+        return true;
     }
 }

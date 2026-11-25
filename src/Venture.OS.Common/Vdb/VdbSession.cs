@@ -17,10 +17,10 @@ namespace Venture.OS.Vdb;
 /// connection stays, unless the error starts <c>error closing</c>. After that, or <c>bye</c>,
 /// <see cref="IsClosed"/> is set and the connection should be closed once what was sent has gone.
 /// </remarks>
-public sealed class VdbSession
+public sealed partial class VdbSession
 {
-    /// <summary>The features this VentureOS offers in its <c>hello</c>.</summary>
-    public const string Features = "install launch";
+    /// <summary>The features every VentureOS offers in its <c>hello</c>.</summary>
+    public const string BaseFeatures = "install launch";
 
     private readonly IVdbHost host;
     private readonly VdbTrust trust;
@@ -45,7 +45,9 @@ public sealed class VdbSession
     /// <param name="send">Sends a line to the computer, as it goes on the network: sealed, once the channel is.</param>
     /// <param name="random">Fills VentureOS's nonce for the connection.</param>
     /// <param name="now">The time the connection opened, on any clock that only goes forward.</param>
-    public VdbSession(IVdbHost host, VdbTrust trust, Action<string> send, Action<Span<byte>> random, TimeSpan now)
+    /// <param name="desktop">The running desktop, which the <c>ui</c> feature uses, or <see langword="null"/> to not offer it.</param>
+    public VdbSession(
+        IVdbHost host, VdbTrust trust, Action<string> send, Action<Span<byte>> random, TimeSpan now, IVdbDesktop? desktop = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(trust);
@@ -55,8 +57,12 @@ public sealed class VdbSession
         this.trust = trust;
         this.send = send;
         this.random = random;
+        this.desktop = desktop;
         lastHeard = now;
     }
+
+    /// <summary>The features this VentureOS offers in its <c>hello</c>: <c>ui</c> too, when it has a desktop.</summary>
+    public string Features => desktop is null ? BaseFeatures : $"{BaseFeatures} ui";
 
     /// <summary>Whether the connection is over and should be closed.</summary>
     public bool IsClosed { get; private set; }
@@ -75,8 +81,7 @@ public sealed class VdbSession
 
         lastHeard = now;
         reader.Feed(bytes);
-        while (!IsClosed && reader.Take() is { } line)
-            Handle(line);
+        HandleWaiting();
 
         if (!IsClosed && reader.Problem is { } problem)
             Close($"error closing {problem}");
@@ -91,6 +96,15 @@ public sealed class VdbSession
         if (keyId is not null && !ready)
         {
             CheckTrust(now);
+            return;
+        }
+
+        // A screenshot goes out a few lines a frame, and the lines that came in meanwhile are handled after it.
+        if (screen is not null)
+        {
+            SendScreen();
+            lastHeard = now;
+            HandleWaiting();
             return;
         }
 
@@ -117,10 +131,7 @@ public sealed class VdbSession
                     characters[index] = ' ';
             }
 
-            var clean = new string(characters, 0, Math.Min(characters.Length, Room));
-            for (var excess = Encoding.UTF8.GetByteCount(clean) - Room; excess > 0; excess = Encoding.UTF8.GetByteCount(clean) - Room)
-                clean = clean[..^Math.Max(1, excess / 3)];
-            Send($"out {clean}");
+            Send($"out {Fit(new string(characters), Room)}");
         }
     }
 
@@ -134,6 +145,13 @@ public sealed class VdbSession
         EndInstall();
         if (keyId is not null && !ready)
             trust.Withdraw(keyId);
+    }
+
+    // Handles the lines that have come in, as far as they make whole lines, unless a screenshot is still going out.
+    private void HandleWaiting()
+    {
+        while (!IsClosed && screen is null && reader.Take() is { } line)
+            Handle(line);
     }
 
     private void Handle(string line)
@@ -231,6 +249,9 @@ public sealed class VdbSession
             case "bye":
                 Send("ok");
                 Close();
+                break;
+            case "windows" or "snapshot" or "act" or "key" or "screenshot" when desktop is not null:
+                HandleUi(command, rest, desktop);
                 break;
             default:
                 Send($"error \"{Shorten(command)}\" isn't a vdb command");
@@ -461,6 +482,15 @@ public sealed class VdbSession
     {
         Send(message);
         Close();
+    }
+
+    // Text cut to fit in room bytes of UTF-8.
+    private static string Fit(string text, int room)
+    {
+        var clean = text.Length <= room ? text : text[..room];
+        for (var excess = Encoding.UTF8.GetByteCount(clean) - room; excess > 0; excess = Encoding.UTF8.GetByteCount(clean) - room)
+            clean = clean[..^Math.Max(1, excess / 3)];
+        return clean;
     }
 
     private static string Shorten(string text) => text.Length <= 40 ? text : text[..40] + "…";
