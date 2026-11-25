@@ -253,3 +253,66 @@ public sealed class VdbKeysTests
     [InlineData("\u0007")]
     public void RefusesWhatIsNotAKey(string name) => Assert.False(VdbKeys.TryParse(name, out _, out _));
 }
+
+/// <summary>What vdb tells the person at VentureOS, in toasts.</summary>
+public sealed class VdbNotificationTests : IDisposable
+{
+    private const string Info = """<App version="1"><Info identifier="dev.example.dice" name="Dice"/></App>""";
+
+    private readonly FakeVdbHost host = new();
+    private readonly FakeVdbDesktop desktop = new();
+    private readonly VdbTrust trust = new();
+
+    public VdbNotificationTests() => trust.Trust(TestComputer.DefaultIdentity);
+
+    public void Dispose() => host.Dispose();
+
+    private (VdbSession Session, TestComputer Computer) Connect()
+    {
+        TestComputer computer = new();
+        VdbSession session = new(host, trust, computer.Hear, nonce => nonce.Fill(0xf0), TimeSpan.Zero, desktop);
+        session.Receive(computer.Bytes(computer.Hello()), TimeSpan.Zero);
+        return (session, computer);
+    }
+
+    private IEnumerable<string> Texts => desktop.Windows.Notifications.History.Select(notification => notification.Text);
+
+    [Fact]
+    public void AComputerConnectingIsToldOnceUntilVentureOSRestarts()
+    {
+        Connect();
+        Connect();
+
+        Assert.Equal(["A computer connected over vdb."], Texts);
+        Assert.Equal("VentureOS", desktop.Windows.Notifications.History[0].Title);
+    }
+
+    [Fact]
+    public void AnInstalledAppIsToldInAToast()
+    {
+        var (session, computer) = Connect();
+        var info = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Info));
+        foreach (var line in new[]
+        {
+            "install Dice.app", $"file Contents/Info.xml {System.Text.Encoding.UTF8.GetByteCount(Info)}", $"data {info}", "end",
+            "file Contents/Lua/main.lua 0", "end", "commit",
+        })
+        {
+            session.Receive(computer.Bytes(line), TimeSpan.Zero);
+        }
+
+        Assert.StartsWith("ok installed", computer.Heard[^1]);
+        Assert.Equal(["vdb installed Dice.app.", "A computer connected over vdb."], Texts);
+        Assert.Equal(2, desktop.Windows.Notifications.Waiting.Count);
+    }
+
+    [Fact]
+    public void WithoutADesktopNothingIsPosted()
+    {
+        TestComputer computer = new();
+        VdbSession session = new(host, trust, computer.Hear, nonce => nonce.Fill(0xf0), TimeSpan.Zero);
+        session.Receive(computer.Bytes(computer.Hello()), TimeSpan.Zero);
+
+        Assert.Empty(Texts);
+    }
+}

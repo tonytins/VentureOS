@@ -155,7 +155,7 @@ public sealed class VdbConversationTests
     // What a conversation sets up or checks on the desktop: whether it was one of those.
     private static bool Desktop(string what, string argument, string at, FakeVdbDesktop? desktop)
     {
-        if (what is not ("app-window" or "panel" or "system-alert" or "event" or "keys" or "front" or "screen"))
+        if (what is not ("app-window" or "panel" or "system-alert" or "event" or "keys" or "front" or "screen" or "toast"))
             return false;
         Assert.True(desktop is not null, $"{at}: \"{what}\" needs ! desktop at the top.");
 
@@ -164,6 +164,10 @@ public sealed class VdbConversationTests
             case "app-window":
                 var app = argument.Split(' ', 2);
                 desktop.OpenApp(app[0], app[1]);
+                break;
+            case "toast":
+                var toast = argument.Split(' ', 2);
+                Assert.True(desktop.Windows.Notifications.TryPost(toast[0], toast[1], toast[0], null, true, out _, out _));
                 break;
             case "panel":
                 desktop.OpenPanel(argument);

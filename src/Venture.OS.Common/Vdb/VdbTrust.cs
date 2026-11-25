@@ -34,6 +34,7 @@ public sealed class VdbTrust
 
     private readonly Dictionary<string, string> trusted = new(StringComparer.Ordinal);
     private readonly Dictionary<string, VdbTrustState> questions = new(StringComparer.Ordinal);
+    private readonly HashSet<string> connected = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Raised when a computer needs asking about, with its key ID, so the desktop can ask the person; they answer
@@ -102,6 +103,12 @@ public sealed class VdbTrust
         if (State(keyId) == VdbTrustState.Asking)
             questions[keyId] = trust ? VdbTrustState.Approved : VdbTrustState.Denied;
     }
+
+    /// <summary>
+    /// Notes that a trusted computer connected, giving whether it's the first time since VentureOS started, so the
+    /// desktop says so once rather than every time an agent's tool connects again.
+    /// </summary>
+    public bool FirstConnection(string keyId) => connected.Add(keyId);
 
     /// <summary>
     /// Drops the question about a computer, its approval, or its refusal, such as when it disconnects, so it's asked

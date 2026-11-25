@@ -1,0 +1,18 @@
+# The notification history, newest first: what apps posted, and VentureOS's own note that a computer connected
+# over vdb, posted the first time it connects after VentureOS starts. Ages here are 0, as the replay's clock stands
+# still.
+! desktop
+! identity 0123456789abcdef0123456789abcdef
+! trusted 0123456789abcdef0123456789abcdef
+! toast Notes Saved 3 notes.
+> hello vdb/1 0a30b19247f0d8d7 00112233445566778899aabbccddeeff
+< hello vdb/1 f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+< ok vdb/1 install launch ui
+> notifications
+< notification title="VentureOS" text="A computer connected over vdb." seconds=0
+< notification app="Notes" title="Notes" text="Saved 3 notes." seconds=0
+< ok
+> notifications now
+< error notifications takes nothing after it
+> bye
+< ok

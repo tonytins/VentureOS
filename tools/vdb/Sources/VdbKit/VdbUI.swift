@@ -26,6 +26,26 @@ public struct VdbWindow: Codable, Equatable, Sendable {
     }
 }
 
+/// A notification in VentureOS's history, as `notifications` gives it.
+public struct VdbNotification: Codable, Equatable, Sendable {
+    /// The app it's from, or `nil` for VentureOS itself.
+    public var app: String?
+    public var title: String
+    public var text: String
+    /// How long ago it came.
+    public var seconds: Int
+
+    init(_ line: VdbAnswerLine) throws {
+        guard line.kind == "notification", let title = line.values["title"], let text = line.values["text"] else {
+            throw VdbError.unexpected("a notification without its title or text")
+        }
+        app = line.values["app"]
+        self.title = title
+        self.text = text
+        seconds = line.int("seconds") ?? 0
+    }
+}
+
 /// What an app window shows, as `snapshot` gives it.
 public struct VdbSnapshot: Codable, Equatable, Sendable {
     public var window: Int

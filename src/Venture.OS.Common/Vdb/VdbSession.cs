@@ -250,7 +250,7 @@ public sealed partial class VdbSession
                 Send("ok");
                 Close();
                 break;
-            case "windows" or "snapshot" or "act" or "key" or "screenshot" when desktop is not null:
+            case "windows" or "snapshot" or "act" or "key" or "screenshot" or "notifications" when desktop is not null:
                 HandleUi(command, rest, desktop);
                 break;
             default:
@@ -356,6 +356,8 @@ public sealed partial class VdbSession
         channel = VdbChannel.ForVentureOS(identity, clientNonce, serverNonce);
         ready = true;
         Send($"ok {VdbProtocol.Version} {Features}");
+        if (trust.FirstConnection(keyId!))
+            Notify("A computer connected over vdb.");
     }
 
     /// <summary>Sends a line, sealed once the channel is.</summary>
@@ -446,8 +448,10 @@ public sealed partial class VdbSession
             return;
         }
 
+        var app = install.App;
         install = null;
         Send($"ok installed {installed}");
+        Notify($"vdb installed {app}.");
     }
 
     private void Launch(string app)

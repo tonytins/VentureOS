@@ -571,7 +571,7 @@ how it's sealed, and [docs/vdb](./vdb/README.md) the protocol.
   tests replay the same recorded conversations VentureOS's do, and both
   sides reproduce `sealed-lines.txt`, sealed by Python's `cryptography`. While following output, it sends an empty
   line every 10 seconds to stay under the idle limit.
-- **`vdb mcp`** serves the `ui` feature to an agent as eight MCP tools, on
+- **`vdb mcp`** serves the `ui` feature to an agent as nine MCP tools, on
   stdio: `MCPServer` answers newline-delimited JSON-RPC by hand (initialize,
   ping, tools/list, tools/call), and `VdbAgentTools` makes a connection when
   a tool needs one, and again after 25 seconds unused or anything but a
@@ -1939,6 +1939,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | vdb (§8.1): a session with a desktop posts a toast on install and on a computer's first connection since boot (`VdbTrust.FirstConnection`); `ui` gains `notifications`, and `vdb mcp` a ninth tool over it. |
 | 2026-11-25 | minor | Desktop: `NotificationHistory`, the column of cards the bar's bell (`MenuBar.ShowsBell`, drawn in pixels, with an unseen dot) and VentureOS ▸ Notifications (Ctrl+Shift+N) open; `NotificationCard` draws toasts and cards alike. A press the desktop takes itself (a toast, the bell, the history, or outside it) is `PointerOwner.Desktop`, and goes no further. |
 | 2026-11-25 | minor | Desktop: `Toasts` draws notifications in the top-right, over windows and panels and under the bar's menus, sliding in and out, asking for frames only as they move; a press on one dismisses it and goes no further. Crash and start-failure notices are toasts, not alerts. |
 | 2026-11-25 | patch | Desktop: `Notifications`, on `WindowManager` so it outlasts each visit, holds toasts waiting to show and the history (newest 50); `venture.ui.toast` posts to it, and the palette gains `NotificationBackground` and `NotificationEdge`. Nothing draws it yet. |

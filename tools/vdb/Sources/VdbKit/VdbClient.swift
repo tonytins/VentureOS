@@ -183,6 +183,11 @@ public final class VdbClient {
         _ = try uiCommand("key \(window) " + keys.map(VdbWords.word).joined(separator: " "))
     }
 
+    /// The notification history, newest first: what apps, the system, and vdb posted since VentureOS started.
+    public func notifications() throws -> [VdbNotification] {
+        try uiCommand("notifications").map { try VdbNotification(VdbAnswerLine($0)) }
+    }
+
     /// The screen as VentureOS last drew it.
     public func screenshot() throws -> VdbScreenshot {
         let lines = try uiCommand("screenshot")

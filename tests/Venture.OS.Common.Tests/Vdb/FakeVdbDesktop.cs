@@ -23,7 +23,8 @@ internal sealed class FakeVdbDesktop : IVdbDesktop
         </UIScript>
         """;
 
-    public WindowManager Windows { get; } = new(1024, 768);
+    /// <summary>The windows, whose notifications' clock stands still, so ages in answers are always 0 seconds.</summary>
+    public WindowManager Windows { get; } = new(1024, 768) { Notifications = new(() => TimeSpan.Zero), IsShowing = true };
 
     /// <summary>What each window was handed, as <c>&lt;id&gt; &lt;kind&gt; &lt;control&gt; [text or row]</c>.</summary>
     public List<string> Events { get; } = [];

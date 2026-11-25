@@ -14,7 +14,9 @@ private func replaying(_ name: String) throws -> (VdbClient, ScriptedTransport, 
 
 /// The `ui` conversations, which VentureOS's tests replay too, from vdb's side.
 struct UIConversationTests {
-    static let conversations = ["ui-windows-and-snapshot.txt", "ui-act.txt", "ui-keys.txt", "ui-screenshot.txt"]
+    static let conversations = [
+        "ui-windows-and-snapshot.txt", "ui-act.txt", "ui-keys.txt", "ui-screenshot.txt", "ui-notifications.txt",
+    ]
 
     /// Every command, as written, is answered as recorded: the lines before `ok`, or the refusal.
     @Test(arguments: conversations)
@@ -67,6 +69,16 @@ struct UIConversationTests {
 
         #expect(json == #"{"dimmed":true,"kind":"button","name":"ok","text":"OK"}"#)
         #expect(try JSONDecoder().decode(VdbControl.self, from: Data(json.utf8)) == control)
+    }
+
+    @Test func readsTheNotificationHistory() throws {
+        let (client, _, _) = try replaying("ui-notifications.txt")
+
+        let notifications = try client.notifications()
+
+        #expect(notifications.map(\.text) == ["A computer connected over vdb.", "Saved 3 notes."])
+        #expect(notifications[0].app == nil && notifications[0].title == "VentureOS")
+        #expect(notifications[1].app == "Notes" && notifications[1].seconds == 0)
     }
 
     @Test func actionsAreWrittenAsVentureOSReadsThem() {
@@ -205,13 +217,14 @@ struct MCPTests {
         #expect(server.handle(#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#) == nil)
     }
 
-    @Test func listsEightToolsEachWithASchema() throws {
+    @Test func listsNineToolsEachWithASchema() throws {
         let (server, _) = server([])
 
         let answer = try json(server.handle(#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#))
         let tools = try #require((answer["result"] as? [String: Any])?["tools"] as? [[String: Any]])
 
-        #expect(Set(tools.compactMap { $0["name"] as? String }) == ["windows", "snapshot", "act", "key", "screenshot", "install", "launch", "output"])
+        #expect(Set(tools.compactMap { $0["name"] as? String })
+            == ["windows", "snapshot", "act", "key", "screenshot", "install", "launch", "output", "notifications"])
         #expect(tools.allSatisfy { ($0["inputSchema"] as? [String: Any])?["type"] as? String == "object" })
     }
 

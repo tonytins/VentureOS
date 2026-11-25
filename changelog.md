@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.410
+
+- vdb says so in a toast when it installs an app, and when a computer connects for the first time since VentureOS started.
+- vdb's `notifications` command, and `vdb mcp`'s `notifications` tool, list the notification history, so an agent can see what was posted.
+
 ## 0.8.409
 
 - A bell beside the clock opens the notification history, with a dot beside it while something arrived that you haven't seen. So does VentureOS ▸ Notifications (Ctrl+Shift+N).

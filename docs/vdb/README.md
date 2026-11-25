@@ -102,6 +102,7 @@ holds at most 600 characters, so every line fits; a line with a value cut short 
 | `act <id> type <name> "<text>"` | Puts the text in a field or text area, without Enter. |
 | `act <id> choose <name> <row>` | Chooses a list's or sidebar's row, or a grid's item: its number, from 1, or its text or a grid item's name, quoted. |
 | `key <id> <key>…` | Presses up to 32 keys: a character, or `Space`, `Enter`, `Escape`, `Tab`, `Backspace`, `Delete`, `Left`, `Right`, `Up`, `Down`, `Home`, or `End`, after any of `Ctrl+`, `Shift+`, and `Alt+`, such as `Ctrl+Shift+Z`. |
+| `notifications` | A `notification` line for each in the history, newest first: `app` (left out for VentureOS's own), `title`, `text`, and `seconds` ago. Then `ok`. |
 | `screenshot` | `screen width=<w> height=<h>`, then the pixels in `data` lines, three bytes each, red, green, then blue, a row at a time from the top, then `ok`. |
 
 - A `kind` is the element, as a document writes it, starting lowercase (`button`, `textField`, `grid`, ...), or

@@ -18,6 +18,13 @@ public sealed partial class VdbSession
     private VdbScreenshot? screen;
     private int screenSent;
 
+    // A heads-up on the desktop, from VentureOS, when there's a desktop to show it.
+    private void Notify(string text)
+    {
+        if (desktop is { } shown)
+            _ = shown.Windows.Notifications.TryPost("VentureOS", text, null, null, shown.Windows.IsShowing, out _, out _);
+    }
+
     private void HandleUi(string command, string rest, IVdbDesktop desktop)
     {
         if (!VdbWords.TrySplit(rest, out var words, out var problem))
@@ -43,6 +50,9 @@ public sealed partial class VdbSession
             case "screenshot":
                 Screenshot(desktop, words);
                 break;
+            case "notifications":
+                Notifications(desktop, words);
+                break;
         }
     }
 
@@ -67,6 +77,27 @@ public sealed partial class VdbSession
             var cut = false;
             var line = $"window id={window.Id}{VdbWords.Pair("app", window.App, ref cut)}{VdbWords.Pair("title", window.Title, ref cut)}"
                 + $"{VdbWords.Flag("front", window == focused)}{VdbWords.Flag("minimized", window.IsMinimized)}";
+            Send(line + VdbWords.Flag("cut", cut));
+        }
+
+        Send("ok");
+    }
+
+    private void Notifications(IVdbDesktop desktop, List<VdbWord> words)
+    {
+        if (words.Count != 0)
+        {
+            Error("notifications takes nothing after it");
+            return;
+        }
+
+        var notifications = desktop.Windows.Notifications;
+        var now = notifications.Now;
+        foreach (var notification in notifications.History)
+        {
+            var cut = false;
+            var line = $"notification{VdbWords.Pair("app", notification.App, ref cut)}{VdbWords.Pair("title", notification.Title, ref cut)}"
+                + $"{VdbWords.Pair("text", notification.Text, ref cut)}{VdbWords.Pair("seconds", Math.Max(0, (int)(now - notification.Posted).TotalSeconds))}";
             Send(line + VdbWords.Flag("cut", cut));
         }
 

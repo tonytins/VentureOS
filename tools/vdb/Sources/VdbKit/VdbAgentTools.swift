@@ -105,6 +105,8 @@ public final class VdbAgentTools {
             let app = try arguments.string("app")
             try using { try $0.launch(app) }
             return .text("Opened \(app).")
+        case "notifications":
+            return try .text(json(using { try $0.notifications() }))
         case "output":
             try using { try $0.drainOutput() }
             defer { printed.removeAll() }
@@ -317,6 +319,8 @@ extension VdbAgentTools {
         tool("launch", "Opens an installed app by its folder's name, such as Calculator.app.",
              ["app": ["type": "string"]], required: ["app"]),
         tool("output", "Gives what apps printed since the last call." + untrusted, [:], readOnly: true),
+        tool("notifications", "Lists VentureOS's notification history, newest first: what apps, the system, and vdb "
+             + "posted as toasts, each with its app, title, text, and how many seconds ago." + untrusted, [:], readOnly: true),
     ] }
 
     private static func tool(

@@ -82,6 +82,7 @@ claude mcp add vdb -- /path/to/vdb mcp        # --host and --port as for the oth
 | `install` | Sends a `.app` folder from this computer and installs it, opening it with `launch`. |
 | `launch` | Opens an installed app. |
 | `output` | What apps printed since the last call. |
+| `notifications` | VentureOS's notification history, newest first: what apps, the system, and vdb posted as toasts. |
 
 The actions are app tests' (`app:press`, `app:choose`, ...), so what works in a test works here. Panels, such as the
 dock and the menu bar, and VentureOS's own windows, such as the Trust alert, can't be reached. Everything an app
