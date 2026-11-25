@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.201
+
+- Closing or minimizing a window gives the one behind it back its text field, caret and all, as clicking it would. Before, typing went nowhere until you clicked the field again.
+
 ## 0.8.114
 
 - Alerts and Quick Look follow dark mode: their text sits on the window's own background instead of a light box.

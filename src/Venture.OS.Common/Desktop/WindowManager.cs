@@ -300,9 +300,12 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
         if (!windows.Contains(window) || window.IsMinimized || window.IsPanel)
             return false;
 
+        var wasFront = Focused == window;
         Unfocus(window);
         window.IsMinimized = true;
         Release(window);
+        if (wasFront)
+            Focused?.View.RestoreFocus();
         return true;
     }
 
@@ -310,10 +313,15 @@ public sealed class WindowManager(int screenWidth, int screenHeight)
     /// <returns>Whether it was open.</returns>
     public bool Close(DesktopWindow window)
     {
+        var wasFront = Focused == window;
         if (!windows.Remove(window))
             return false;
 
         Release(window);
+        // The window now in front had its field set aside when this one opened over it; give it back, as bringing it
+        // forward would. Only when the front one left, so a back window closing can't end a title edit in front.
+        if (wasFront)
+            Focused?.View.RestoreFocus();
         return true;
     }
 

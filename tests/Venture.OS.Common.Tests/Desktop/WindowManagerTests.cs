@@ -31,6 +31,50 @@ public sealed class WindowManagerTests
     }
 
     [Fact]
+    public void AWindowGetsItsFocusBackWhenTheOneInFrontCloses()
+    {
+        var back = Window("Back");
+        manager.Open(back);
+        back.View.Focus("field");
+        var front = Window("Front");
+        manager.Open(front);
+
+        manager.Close(front);
+
+        Assert.Same(back, manager.Focused);
+        Assert.Equal("field", back.View.FocusedControl);
+    }
+
+    [Fact]
+    public void AWindowGetsItsFocusBackWhenTheOneInFrontMinimizes()
+    {
+        var back = Window("Back");
+        manager.Open(back);
+        back.View.Focus("field");
+        var front = Window("Front");
+        manager.Open(front);
+
+        manager.Minimize(front);
+
+        Assert.Same(back, manager.Focused);
+        Assert.Equal("field", back.View.FocusedControl);
+    }
+
+    [Fact]
+    public void ClosingABackWindowLeavesTheFrontOnesFocusAlone()
+    {
+        var back = Window("Back");
+        manager.Open(back);
+        var front = Window("Front");
+        manager.Open(front);
+        front.View.Focus("field");
+
+        manager.Close(back);
+
+        Assert.Equal("field", front.View.FocusedControl);
+    }
+
+    [Fact]
     public void OpensWindowsCenteredAndCascaded()
     {
         var first = Window("One");
