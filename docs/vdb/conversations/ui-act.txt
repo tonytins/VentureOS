@@ -22,12 +22,20 @@
 < ok
 ! front 2
 ! event 2 selected notes 1
+> act 1 slide volume 6.6
+< ok
+! event 1 changed volume 7
+! event 1 committed volume 7
+> act 1 slide volume many
+< error a slider's value is a number, such as 40 or 7.5, not "many"
+> act 1 slide notes 1
+< error "notes" isn't a slider
 > act 1 choose notes 3
 < error "notes" has 2 rows, so there's no row 3
 > act 1 press missing
 < error there's no "missing" in Notes
 > act 1 fly ok
-< error "fly" isn't an action; act can press, submit, type, or choose
+< error "fly" isn't an action; act can press, submit, type, choose, or slide
 > act 1 type name
 < error act type takes a window, a control, and quoted text, such as act 3 type name "Ada"
 > act 9 press ok

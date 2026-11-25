@@ -20,6 +20,7 @@ internal sealed class FakeVdbDesktop : IVdbDesktop
           <Button name="ok" x="10" y="40" width="60" height="20" text="OK"/>
           <TextField name="name" x="10" y="70" width="200" height="24"/>
           <List name="notes" x="10" y="100" width="200" height="80"/>
+          <Slider name="volume" x="220" y="100" width="70" height="20" maxValue="10" step="1"/>
         </UIScript>
         """;
 
@@ -84,6 +85,7 @@ internal sealed class FakeVdbDesktop : IVdbDesktop
             Events.Add(uiEvent.Kind switch
             {
                 UIEventKind.Selected => $"{sender.Id} selected {uiEvent.Control} {uiEvent.Index + 1}",
+                _ when uiEvent.Value is { } value => $"{sender.Id} {uiEvent.Kind.ToString().ToLowerInvariant()} {uiEvent.Control} {value}",
                 _ when uiEvent.Text is not null => $"{sender.Id} {uiEvent.Kind.ToString().ToLowerInvariant()} {uiEvent.Control} {uiEvent.Text}",
                 _ => $"{sender.Id} {uiEvent.Kind.ToString().ToLowerInvariant()} {uiEvent.Control}",
             });

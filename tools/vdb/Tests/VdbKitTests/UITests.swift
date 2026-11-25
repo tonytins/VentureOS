@@ -51,7 +51,8 @@ struct UIConversationTests {
 
         let snapshot = try client.snapshot(window: 3)
         #expect(snapshot.title == "Notes" && snapshot.subtitle == "2 notes" && snapshot.pane == nil)
-        #expect(snapshot.controls.map(\.name) == ["label", "ok", "name", "notes", "newNote"])
+        #expect(snapshot.controls.map(\.name) == ["label", "ok", "name", "notes", "volume", "newNote"])
+        #expect(snapshot.controls[4].kind == "slider" && snapshot.controls[4].value == 0 && snapshot.controls[4].text == nil)
         #expect(snapshot.controls[0].text == "Say \"hi\"")
         #expect(snapshot.controls[2].kind == "textField" && snapshot.controls[2].text == "")
         #expect(snapshot.controls[3].rows == ["Milk", "Eggs"] && snapshot.controls[3].rowCount == 2)
@@ -87,6 +88,8 @@ struct UIConversationTests {
         #expect(VdbAction.chooseText("notes", text: "Eggs").words == "choose notes \"Eggs\"")
         #expect(VdbAction.chooseRow("notes", row: 2).words == "choose notes 2")
         #expect(VdbAction.press("two words").words == "press \"two words\"")
+        #expect(VdbAction.slide("volume", value: 7).words == "slide volume 7")
+        #expect(VdbAction.slide("volume", value: 7.5).words == "slide volume 7.5")
     }
 
     @Test func takesAScreenshotAndRefusesOneThatCantBeRead() throws {
@@ -256,8 +259,19 @@ struct MCPTests {
         let result = try call(server, "act", #"{"window":2,"steps":[{"action":"press","name":"ok"},{"action":"fly","name":"x"}]}"#)
 
         #expect(result.isError)
-        #expect(result.text == "Step 2's action is press, submit, type, or choose, not fly.")
+        #expect(result.text == "Step 2's action is press, submit, type, choose, or slide, not fly.")
         #expect(transport.heard.isEmpty)
+    }
+
+    @Test func slidesASliderByName() throws {
+        let (server, transport) = server(Self.welcomed + [.sent("act 2 slide volume 6.5"), .answered("ok")])
+
+        let result = try call(server, "act", #"{"window":2,"steps":[{"action":"slide","name":"volume","value":6.5}]}"#)
+
+        #expect(!result.isError, "\(result.text)")
+        #expect(transport.mismatches.isEmpty && transport.unplayed.isEmpty)
+        #expect(try call(server, "act", #"{"window":2,"steps":[{"action":"slide","name":"volume"}]}"#).text
+            == "Step 1, which slides, needs value, a number.")
     }
 
     @Test func refusesAWindowThatIsntAWholeNumber() throws {

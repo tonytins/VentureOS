@@ -142,6 +142,13 @@ public enum VdbAction: Equatable, Sendable {
     case chooseRow(String, row: Int)
     /// Chooses a row by its text, or a grid's item by its title or name.
     case chooseText(String, text: String)
+    /// Moves a slider to a value, as a drag that ends there: snapped to its step and kept in its range.
+    case slide(String, value: Double)
+
+    /// A number as VentureOS reads it: `7` for a whole one, else as Swift writes it, such as `7.5`.
+    private static func number(_ value: Double) -> String {
+        value == value.rounded() && abs(value) < 1e15 ? String(Int64(value)) : String(value)
+    }
 
     /// The words after `act <window>`.
     var words: String {
@@ -151,6 +158,7 @@ public enum VdbAction: Equatable, Sendable {
         case .type(let name, let text): "type \(VdbWords.word(name)) \(VdbWords.quote(text))"
         case .chooseRow(let name, let row): "choose \(VdbWords.word(name)) \(row)"
         case .chooseText(let name, let text): "choose \(VdbWords.word(name)) \(VdbWords.quote(text))"
+        case .slide(let name, let value): "slide \(VdbWords.word(name)) \(Self.number(value))"
         }
     }
 }

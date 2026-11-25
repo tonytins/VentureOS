@@ -100,6 +100,7 @@ holds at most 600 characters, so every line fits; a line with a value cut short 
 | `act <id> press <name>` | Presses a button, toolbar item, or menu item. |
 | `act <id> submit <name> "<text>"` | Puts the text in a field, or the title bar's field, and presses Enter. |
 | `act <id> type <name> "<text>"` | Puts the text in a field or text area, without Enter. |
+| `act <id> slide <name> <value>` | Moves a slider to the value, a number such as `40` or `7.5`, as a drag that ends there: snapped and kept in its range. |
 | `act <id> choose <name> <row>` | Chooses a list's or sidebar's row, or a grid's item: its number, from 1, or its text or a grid item's name, quoted. |
 | `key <id> <key>…` | Presses up to 32 keys: a character, or `Space`, `Enter`, `Escape`, `Tab`, `Backspace`, `Delete`, `Left`, `Right`, `Up`, `Down`, `Home`, or `End`, after any of `Ctrl+`, `Shift+`, and `Alt+`, such as `Ctrl+Shift+Z`. |
 | `notifications` | A `notification` line for each in the history, newest first: `app` (left out for VentureOS's own), `title`, `text`, and `seconds` ago. Then `ok`. |

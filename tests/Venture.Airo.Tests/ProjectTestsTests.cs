@@ -83,6 +83,7 @@ public sealed class ProjectTestsTests : IDisposable
     [InlineData("app:press(\"nothing\")", "Tests/sample.lua:1: app:press: there's no \"nothing\" in Sample")]
     [InlineData("app:press(\"off\")", "Tests/sample.lua:1: app:press: \"off\" is dimmed, so a person couldn't use it")]
     [InlineData("app:choose(\"count\", 1)", "Tests/sample.lua:1: app:choose: \"count\" isn't a list or a grid")]
+    [InlineData("app:slide(\"count\", 1)", "Tests/sample.lua:1: app:slide: \"count\" isn't a slider")]
     public void UsingWhatAPersonCouldntFails(string call, string failure)
     {
         var result = Assert.Single(Run($"test.case(\"use\", function(app) {call} end)"));
@@ -177,6 +178,12 @@ public sealed class ProjectTestsTests : IDisposable
               test.equal(app:text("result"), "Chose dark")
               app:choose("looks", "Light")
               test.equal(app:text("result"), "Chose light")
+
+              app:slide("volume", 6.6)
+              test.equal(app:value("volume"), 7)
+              test.equal(app:text("result"), "committed 7")
+              app:slide("volume", 99)
+              test.equal(app:value("volume"), 10)
 
               test.expect(app:has("reset") and app:has("place") and app:has("add") and app:has("fruits"))
               test.expect(not app:has("nothing"))

@@ -76,7 +76,7 @@ claude mcp add vdb -- /path/to/vdb mcp        # --host and --port as for the oth
 |---|---|
 | `windows` | Lists the app windows, front first: each one's number, app, and title. |
 | `snapshot` | Reads a window's controls (the one in front unless `window` names one), each with its name, kind, text, value, rows, and state. |
-| `act` | Uses controls by name, in order: `press`, `submit` (Enter), `type`, or `choose` a row by number or text. It stops at the first step a person couldn't do, saying why, and the steps before it stay done. |
+| `act` | Uses controls by name, in order: `press`, `submit` (Enter), `type`, `choose` a row by number or text, or `slide` a slider to a value. It stops at the first step a person couldn't do, saying why, and the steps before it stay done. |
 | `key` | Presses keys, such as `Ctrl+Z` or `Enter`, for what has no name. They reach the window on the next frame. |
 | `screenshot` | The whole screen, as a PNG. |
 | `install` | Sends a `.app` folder from this computer and installs it, opening it with `launch`. |

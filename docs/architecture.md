@@ -1941,6 +1941,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | `WindowControls.TrySlide`, shared by airo's `app:slide` and vdb's `act … slide` (and `vdb mcp`'s); snapshots name sliders `slider` and give no text for sliders and progress bars. |
 | 2026-11-25 | minor | Desktop: sliders drag, jump on a track click, take the keyboard (arrows, Home, End), snap to their step, and report `changed` and `committed` (`UIView.Slider.cs`); they and progress bars share the glossed rail (`RailTop`, `RailBottom`, `KnobEdge`); `setValue` and `value` work on sliders. |
 | 2026-11-25 | patch | UIScript: `<Slider>` reads again, a value only, with `step` (`UIControl.Step`); `UIEvent` regains `Value` and gains `Committed`, and the Lua event `value`. The desktop doesn't draw sliders yet. |
 | 2026-11-25 | patch | Current state and Lua's windows: toasts, the history, and `venture.ui.toast` described for anyone reading in; 0.8.4xx's toasts are done. |

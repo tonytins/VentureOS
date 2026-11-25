@@ -23,6 +23,7 @@ public sealed class WindowControlsTests
           <TextField name="name" x="10" y="70" width="200" height="24"/>
           <List name="notes" x="10" y="100" width="200" height="80"/>
           <ProgressBar name="level" x="10" y="190" width="200" height="8"/>
+          <Slider name="taxes" x="220" y="190" width="150" height="20" maxValue="20" step="1"/>
           <Grid name="colors" x="10" y="200" width="200" height="60" itemWidth="20" itemHeight="20" titles="none">
             <Item name="red" title="Red" color="#FF0000"/>
             <Item name="blue" title="Blue" color="#0000FF"/>
@@ -89,6 +90,35 @@ public sealed class WindowControlsTests
 
         Assert.Equal("Ada", window.View.Text("name"));
         Assert.Equal([new UIEvent(UIEventKind.Changed, "name", "Ada")], events);
+    }
+
+    [Fact]
+    public void SlidingMovesItAsADragThatEndsThereWould()
+    {
+        Assert.True(WindowControls.TrySlide(window, "taxes", 7.4f, out var problem), problem);
+
+        Assert.Equal(7, window.View.Value("taxes"));
+        Assert.Equal(
+            [new UIEvent(UIEventKind.Changed, "taxes", Value: 7), new UIEvent(UIEventKind.Committed, "taxes", Value: 7)],
+            events);
+    }
+
+    [Fact]
+    public void SlidingToWhereItIsReportsNothing()
+    {
+        Assert.True(WindowControls.TrySlide(window, "taxes", 0.2f, out var problem), problem);
+        Assert.Empty(events);
+    }
+
+    [Theory]
+    [InlineData("ok", 1f, "\"ok\" isn't a slider")]
+    [InlineData("taxes", float.NaN, "a slider's value is a number, not NaN")]
+    [InlineData("missing", 1f, "there's no \"missing\" in Sample")]
+    public void SlidingWhatIsntASliderOrToWhatIsntANumberIsRefused(string name, float value, string reason)
+    {
+        Assert.False(WindowControls.TrySlide(window, name, value, out var problem));
+        Assert.Equal(reason, problem);
+        Assert.Empty(events);
     }
 
     [Fact]
@@ -163,7 +193,7 @@ public sealed class WindowControlsTests
         Assert.Equal("3 items", snapshot.Subtitle);
         Assert.Equal("name", snapshot.Focused);
         Assert.Equal(
-            ["label", "ok", "gone", "dim", "name", "notes", "level", "colors", "address", "share", "newNote"],
+            ["label", "ok", "gone", "dim", "name", "notes", "level", "taxes", "colors", "address", "share", "newNote"],
             snapshot.Controls.Select(control => control.Name));
 
         var byName = snapshot.Controls.ToDictionary(control => control.Name);
@@ -175,6 +205,7 @@ public sealed class WindowControlsTests
         Assert.Equal(["Milk", "Eggs", "Bread"], byName["notes"].Rows);
         Assert.Equal(3, byName["notes"].Chosen);
         Assert.Equal(0.5f, byName["level"].Value);
+        Assert.Equal(("slider", 0f), (byName["taxes"].Kind, byName["taxes"].Value));
         Assert.Equal(["Red", "Blue"], byName["colors"].Rows);
         Assert.Equal(("titleField", "toolbarItem", "menuItem"), (byName["address"].Kind, byName["share"].Kind, byName["newNote"].Kind));
         Assert.Equal("New Note", byName["newNote"].Text);

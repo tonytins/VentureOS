@@ -150,13 +150,18 @@ public final class VdbAgentTools {
             return .submit(name, text: try step.string("text", in: "step \(number)"))
         case "type":
             return .type(name, text: try step.string("text", in: "step \(number)"))
+        case "slide":
+            guard let value = try step.optionalNumber("value") else {
+                throw ArgumentError(reason: "Step \(number), which slides, needs value, a number.")
+            }
+            return .slide(name, value: value)
         case "choose":
             if let row = try step.optionalInt("row") {
                 return .chooseRow(name, row: row)
             }
             return .chooseText(name, text: try step.string("text", in: "step \(number), which chooses by row or text,"))
         case let other:
-            throw ArgumentError(reason: "Step \(number)'s action is press, submit, type, or choose, not \(other).")
+            throw ArgumentError(reason: "Step \(number)'s action is press, submit, type, choose, or slide, not \(other).")
         }
     }
 
@@ -245,6 +250,17 @@ private struct Arguments {
         }
     }
 
+    func optionalNumber(_ key: String) throws -> Double? {
+        switch values[key] {
+        case nil, .null?:
+            return nil
+        case .number(let number)? where number.isFinite:
+            return number
+        default:
+            throw ArgumentError(reason: "\(key) is a number.")
+        }
+    }
+
     func optionalBool(_ key: String) throws -> Bool? {
         switch values[key] {
         case nil, .null?:
@@ -286,8 +302,8 @@ extension VdbAgentTools {
              + "hidden, dimmed, checked, or focused. Names are what act uses." + untrusted,
              ["window": window], readOnly: true),
         tool("act", "Uses controls in an app window by name, in order, as a person would: press a button, toolbar item, "
-             + "or menu item; submit text to a field (Enter); type text without Enter; or choose a list's row or a grid's "
-             + "item by number (from 1) or text. Stops at the first step a person couldn't do, saying why; the steps "
+             + "or menu item; submit text to a field (Enter); type text without Enter; choose a list's row or a grid's "
+             + "item by number (from 1) or text; or slide a slider to a value. Stops at the first step a person couldn't do, saying why; the steps "
              + "before it stay done.",
              [
                 "window": window,
@@ -296,10 +312,11 @@ extension VdbAgentTools {
                     "items": [
                         "type": "object",
                         "properties": [
-                            "action": ["type": "string", "enum": ["press", "submit", "type", "choose"]],
+                            "action": ["type": "string", "enum": ["press", "submit", "type", "choose", "slide"]],
                             "name": ["type": "string", "description": "The control's name, from snapshot."],
                             "text": ["type": "string", "description": "For submit and type, or choose by text."],
                             "row": ["type": "integer", "minimum": 1, "description": "For choose by number, from 1."],
+                            "value": ["type": "number", "description": "For slide: the value, snapped to the slider's step and kept in its range."],
                         ] as [String: Any],
                         "required": ["action", "name"],
                     ] as [String: Any],

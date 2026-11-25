@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.415
+
+- App tests move sliders with `app:slide(name, value)`, and `app:value` reads them.
+- vdb's `act` slides a slider (`act 3 slide volume 40`), as does `vdb mcp`'s `act` tool, and a snapshot gives each slider's value.
+
 ## 0.8.414
 
 - `<Slider>` is back, for choosing a value: drag its knob, click its track, or, once it's clicked, use the arrow keys, Home, and End. With `step`, it only lands on whole steps. Apps hear `changed` as it moves and `committed` when it's let go, and read and set it with `value` and `setValue`.

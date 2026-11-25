@@ -153,12 +153,12 @@ public sealed partial class VdbSession
         var expected = action switch
         {
             "press" => 3,
-            "submit" or "type" or "choose" => 4,
+            "submit" or "type" or "choose" or "slide" => 4,
             _ => 0,
         };
         if (expected == 0)
         {
-            Error($"\"{Shorten(action)}\" isn't an action; act can press, submit, type, or choose");
+            Error($"\"{Shorten(action)}\" isn't an action; act can press, submit, type, choose, or slide");
             return;
         }
 
@@ -168,6 +168,7 @@ public sealed partial class VdbSession
             {
                 "press" => "act press takes a window and a control, such as act 3 press ok",
                 "choose" => "act choose takes a window, a control, and a row's number or quoted text, such as act 3 choose notes 2",
+                "slide" => "act slide takes a window, a control, and a number, such as act 3 slide volume 40",
                 _ => $"act {action} takes a window, a control, and quoted text, such as act 3 {action} name \"Ada\"",
             });
             return;
@@ -185,12 +186,22 @@ public sealed partial class VdbSession
             "press" => WindowControls.TryPress(window, name, out problem),
             "submit" => WindowControls.TrySubmit(window, name, words[3].Text, out problem),
             "type" => WindowControls.TryType(window, name, words[3].Text, out problem),
+            "slide" => Slide(window, name, words[3], out problem),
             _ => Choose(window, name, words[3], out problem),
         };
         if (done)
             Send("ok");
         else
             Error(problem!);
+    }
+
+    // A slider's value is a bare number, as written in any culture's absence: 40, or 7.5.
+    private static bool Slide(DesktopWindow window, string name, VdbWord value, out string? problem)
+    {
+        if (!value.IsQuoted && float.TryParse(value.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+            return WindowControls.TrySlide(window, name, number, out problem);
+        problem = $"a slider's value is a number, such as 40 or 7.5, not \"{Shorten(value.Text)}\"";
+        return false;
     }
 
     // A quoted row is its text, and a bare one its number, counting from 1.

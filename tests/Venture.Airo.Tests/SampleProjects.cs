@@ -67,6 +67,9 @@ internal static class SampleProjects
             window:on("boom", function()
               error("boom went off")
             end)
+            window:on("volume", function(event)
+              window:setText("result", event.kind .. " " .. tostring(math.tointeger(event.value) or event.value))
+            end)
 
             """);
         Write(project.AppFolder, Path.Combine("Resources", "main.uix"), """
@@ -85,7 +88,8 @@ internal static class SampleProjects
               <TextField name="name" x="12" y="76" width="276" height="24"/>
               <List name="fruits" x="12" y="108" width="276" height="60" selectable="true"/>
               <TextArea name="body" x="12" y="176" width="276" height="60"/>
-              <Text name="ticks" x="12" y="244" width="276" height="20" text="0"/>
+              <Text name="ticks" x="12" y="244" width="100" height="20" text="0"/>
+              <Slider name="volume" x="120" y="244" width="168" height="20" maxValue="10" step="1"/>
               <Grid name="looks" x="12" y="268" width="276" height="28" itemWidth="20" itemHeight="20" titles="none">
                 <Item name="light" title="Light" color="#FFFFFF"/>
                 <Item name="dark" title="Dark" color="#000000"/>

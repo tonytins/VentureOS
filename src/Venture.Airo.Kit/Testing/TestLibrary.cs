@@ -121,6 +121,13 @@ public static class TestLibrary
             return Done(state, "choose", chose, problem);
         });
 
+        Add(lua, "slide", state =>
+        {
+            var window = Front(state, app, "slide");
+            var value = (float)state.L_CheckNumber(3);
+            return Done(state, "slide", WindowControls.TrySlide(window, Name(state), value, out var problem), problem);
+        });
+
         Add(lua, "has", state =>
         {
             var window = Front(state, app, "has");

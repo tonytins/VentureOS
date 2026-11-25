@@ -22,6 +22,7 @@
 < control name="notes" kind=list rows=2
 < row "Milk"
 < row "Eggs"
+< control name="volume" kind=slider value=0
 < control name="newNote" kind=menuItem text="New Note"
 < ok
 # The dock's panel and the Trust alert are there, but not for vdb.

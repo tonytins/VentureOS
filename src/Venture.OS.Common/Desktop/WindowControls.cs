@@ -64,6 +64,38 @@ public static class WindowControls
         return true;
     }
 
+    /// <summary>
+    /// Moves a slider to a value, as a drag that ends there would: snapped to its step and kept in its range, then
+    /// <c>changed</c> and <c>committed</c> with the value it lands on. One that doesn't move reports nothing, as a drag
+    /// that stays put doesn't.
+    /// </summary>
+    public static bool TrySlide(DesktopWindow window, string name, float value, [NotNullWhen(false)] out string? problem)
+    {
+        if (!TryUse(window, name, out problem))
+            return false;
+        if (window.View.Script.Control(name) is not { Type: UIControlType.Slider })
+        {
+            problem = $"\"{name}\" isn't a slider";
+            return false;
+        }
+
+        if (!float.IsFinite(value))
+        {
+            problem = $"a slider's value is a number, not {value}";
+            return false;
+        }
+
+        var before = window.View.Value(name);
+        window.View.SetValue(name, value);
+        if (window.View.Value(name) is { } after && after != before)
+        {
+            Send(window, new UIEvent(UIEventKind.Changed, name, Value: after));
+            Send(window, new UIEvent(UIEventKind.Committed, name, Value: after));
+        }
+
+        return true;
+    }
+
     /// <summary>Chooses a list's or sidebar's row, or a grid's item, by its number.</summary>
     /// <param name="row">Counting from 1, as tests and agents count rows.</param>
     public static bool TryChoose(DesktopWindow window, string name, int row, [NotNullWhen(false)] out string? problem)
@@ -125,7 +157,7 @@ public static class WindowControls
             controls.Add(new ControlSnapshot(
                 control.Name,
                 KindOf(control.Type),
-                view.Text(control.Name),
+                control.Type is UIControlType.ProgressBar or UIControlType.Slider ? null : view.Text(control.Name),
                 view.Value(control.Name),
                 view.IsShowing(control.Name),
                 view.IsDisabled(control.Name),
@@ -174,6 +206,7 @@ public static class WindowControls
         UIControlType.TextArea => "textArea",
         UIControlType.List => "list",
         UIControlType.ProgressBar => "progressBar",
+        UIControlType.Slider => "slider",
         UIControlType.Region => "region",
         UIControlType.Shelf => "shelf",
         UIControlType.Grid => "grid",
@@ -291,7 +324,7 @@ public sealed record WindowSnapshot(string? Title, string? Subtitle, string? Pan
 /// ...), or <c>sidebar</c>, <c>titleField</c>, <c>toolbarItem</c>, or <c>menuItem</c>.
 /// </param>
 /// <param name="Text">A label's, button's, or field's text, or an item's title.</param>
-/// <param name="Value">A progress bar's value.</param>
+/// <param name="Value">A progress bar's or slider's value.</param>
 /// <param name="Checked">Whether a checkbox, radio button, or toggle is on; <see langword="false"/> for the rest.</param>
 /// <param name="Rows">A list's, sidebar's, or grid's rows; <see langword="null"/> for the rest.</param>
 /// <param name="Chosen">The chosen row, counting from 1.</param>
