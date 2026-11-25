@@ -242,6 +242,10 @@ clear for the grip, inside a sidebar on the right too.
   the desktop shows, until the window closes or the app quits; keep the
   timer it returns and call `timer:stop()` to stop sooner. Intervals start
   at 0.1 seconds. System Monitor uses one.
+- **Toasts:** `venture.ui.toast("Saved 3 notes.")` posts a notification with
+  your app's name and icon, which slides into the top-right corner and stays
+  in the history the bell opens. It asks nothing back, so use an alert for a
+  question. While the desktop is hidden, it's printed instead.
 - **More:** `venture.ui.preview(path)` opens a file in Quick Look,
   `venture.ui.launch(path)` opens another app, and
   `venture.ui.onNewWindow(fn)` adds New Window (Ctrl+N) to your app's menu;

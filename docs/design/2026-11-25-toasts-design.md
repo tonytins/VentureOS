@@ -1,6 +1,7 @@
 # Toasts and the notification history
 
-**Status:** proposed for 0.8.4xx, Hokutosei. **Date:** 2026-11-25.
+**Status:** built in 0.8.4xx, Hokutosei; [the HIG](../hig/README.md#notifications) says how it works now.
+**Date:** 2026-11-25.
 
 VentureOS tells a person about things that need no answer, such as an app that crashed and is starting again, in a
 modal alert that takes over the screen until they press OK. This design gives those heads-ups a place of their own:

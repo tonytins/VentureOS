@@ -56,8 +56,10 @@ The scopes for `needs`:
 
 Dice adds a command, so it needs `shell`. Ask for only what the app uses.
 Windows need no scope: any app can open them, and any script, app or not, can
-show a message with `venture.ui.alert(message, title)`, Quick Look a file with
-`venture.ui.preview(path)`, or open an app with `venture.ui.launch(app, file)`.
+show a message with `venture.ui.alert(message, title)`, post a toast with
+`venture.ui.toast(text)`, Quick Look a file with `venture.ui.preview(path)`, or
+open an app with `venture.ui.launch(app, file)`. An alert waits for OK; a toast
+is a heads-up that slides away on its own and stays in the history.
 
 ## Add a command in main.lua
 

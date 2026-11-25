@@ -19,7 +19,7 @@ the two can be kept in step. Where the system hasn't decided something yet, the 
 
 1. [Principles](#principles)
 2. [Foundations](#foundations): color, type, spacing, corners, depth, light and dark
-3. [Structure](#structure): windows, sidebars, the menu bar, the dock, alerts
+3. [Structure](#structure): windows, sidebars, the menu bar, the dock, alerts, notifications
 4. [Behavior](#behavior): states, focus, selection, the keyboard
 5. [Writing](#writing): voice, labels, errors
 6. [Using it outside VentureOS](#using-it-outside-ventureos)
@@ -146,6 +146,9 @@ VentureOS uses few layers, and keeps them subtle.
 - Windows cast a short drop shadow, 4 pixels.
 - A window that isn't in front fades a little, so the one in front stands out.
 - The menu bar and the window buttons have a soft gloss, after Mac OS X Tiger. Nothing else does.
+- The dock's shelf is translucent, and so are toasts and the notification history in the dark palette, with the
+  shelf's bright edge. Their body is nearly opaque, so their words read over any wallpaper; in the light palette it's
+  opaque white, since the light secondary text needs it.
 
 ### Light and dark
 
@@ -236,6 +239,25 @@ out of the way of windows.
 
 An alert is a small window, 380 pixels wide, with a message and its buttons in the bottom-right corner. Buttons are
 74 by 24 pixels, 8 apart. The button that answers the question goes on the right: OK, or Yes beside No.
+
+An alert is for something that needs an answer, such as whether to trust a computer. A heads-up that needs none, such
+as an app that crashed and is starting again, is a notification.
+
+### Notifications
+
+A notification tells a person something in passing, and asks nothing back. Apps post them with
+`venture.ui.toast(text)`; VentureOS posts its own, such as a crash.
+
+- **A toast** slides into the top-right corner, below the menu bar, 300 pixels wide, and slides out after 5 seconds.
+  Three show at most, newest on top. A click dismisses one; it never opens anything, and it never takes the keyboard.
+- **Each shows** its app's icon (32 pixels) and name, how long ago it came, and up to three lines of text. The name
+  and icon are always the app's own: an app supplies only the text.
+- **The history** keeps the newest 50 until VentureOS restarts: a column of cards down the right edge, each app's
+  notifications stacked with the newest on top. The bell beside the clock opens it, with a dot in the accent while
+  something arrived unseen, and so does VentureOS ▸ Notifications (Ctrl+Shift+N).
+- **Write** one or two short sentences that say what happened, in the [voice](#voice) below: "Saved 3 notes.", not
+  "Success!". Don't post what the person just did and can already see, and don't post in a loop: past three showing,
+  the rest wait, and a flood only reaches the history.
 
 ## Behavior
 
@@ -379,13 +401,14 @@ These aren't settled yet. Until they are, follow what VentureOS does today, and 
   ring beyond a field's accent outline.
 - **Icons and symbols.** There's no guidance yet on drawing app icons or the 16-pixel symbols in sidebars and menus,
   beyond their sizes and the icon's corner radius.
-- **Motion.** The dock slides in and out, but there are no rules yet for how anything moves.
+- **Motion.** The dock and toasts slide in and out, in 150 ms, but there are no rules yet for how anything moves.
 - **The name.** "VentureOS HIG" is a working title.
 
 ## Revision history
 
 | Date | Change |
 | --- | --- |
+| 2026-11-25 | Notifications: toasts, the history, and the bell; when to post one rather than an alert; their translucency under Depth. |
 | 2026-11-24 | The voice: calm, factual, and trusting the reader with what follows. Inspired by the System Voice of *ReBoot*, which announced what was happening in Mainframe in a few even words and left its audience to understand. |
 | 2026-11-24 | Title bars are blank unless the app gives a title; a subtitle takes the title's place. |
 | 2026-11-24 | First draft: principles, foundations, structure, behavior, writing, and using it outside VentureOS. |

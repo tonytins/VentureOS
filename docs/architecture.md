@@ -52,7 +52,9 @@ the code wins and this page is out of date.
   that opens the system's apps, and movable windows that show `.uix`
   interfaces, over the Earthset wallpaper, with apps' icons in the dock and
   About. Files is the desktop's own app, and Quick Look previews files.
-  Apps open windows through `venture.ui`; `Notes.app` has one.
+  Apps open windows through `venture.ui`; `Notes.app` has one. Toasts slide
+  into the top-right corner, from apps (`venture.ui.toast`), the system's
+  crash notices, and vdb, and a bell beside the clock opens their history.
 - **Not built yet:** keeping files across reboots,
   and published ISOs, which are ideas without a release. See the
   [roadmap](./ROADMAP.md); verified status is in the
@@ -1729,7 +1731,7 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   script commands, and `help` shows their commands as `From:` the app.
 - **Windows** (`venture.ui`, `UiLibrary`; no scope since 0.6, and a `ui`
   in `needs` or `-- Needs:` is accepted and ignored): any script, app or not,
-  gets `venture.ui.alert`, `preview`, and `launch` through `ISystemInfo.Desktop`
+  gets `venture.ui.alert`, `toast`, `preview`, and `launch` through `ISystemInfo.Desktop`
   (`ScriptDesktop`), since none calls the script back; an alert is printed
   while the desktop isn't on the screen (`WindowManager.IsShowing`). Only an
   app opens windows of its own:
@@ -1939,6 +1941,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | Current state and Lua's windows: toasts, the history, and `venture.ui.toast` described for anyone reading in; 0.8.4xx's toasts are done. |
 | 2026-11-25 | patch | vdb (§8.1): a session with a desktop posts a toast on install and on a computer's first connection since boot (`VdbTrust.FirstConnection`); `ui` gains `notifications`, and `vdb mcp` a ninth tool over it. |
 | 2026-11-25 | minor | Desktop: `NotificationHistory`, the column of cards the bar's bell (`MenuBar.ShowsBell`, drawn in pixels, with an unseen dot) and VentureOS ▸ Notifications (Ctrl+Shift+N) open; `NotificationCard` draws toasts and cards alike. A press the desktop takes itself (a toast, the bell, the history, or outside it) is `PointerOwner.Desktop`, and goes no further. |
 | 2026-11-25 | minor | Desktop: `Toasts` draws notifications in the top-right, over windows and panels and under the bar's menus, sliding in and out, asking for frames only as they move; a press on one dismisses it and goes no further. Crash and start-failure notices are toasts, not alerts. |

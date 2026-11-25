@@ -408,7 +408,7 @@ value, now that scroll bars are built in.
   screenshots; app windows only, not panels or the system's alerts.
 - [x] A developer's build boots to the desktop when `developer.local.lua`
   asks, with `venture.startDesktop()`.
-- [ ] Notification toasts and their history, opened from a bell beside the
+- [x] Notification toasts and their history, opened from a bell beside the
   clock ([their design](./design/2026-11-25-toasts-design.md)).
 - [ ] A simpler `<Slider>`, for choosing a value.
 
@@ -476,6 +476,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | 0.8.4xx: toasts and their history ship, with the bell, `venture.ui.toast`, crash notices as toasts, and vdb's posts and `notifications`; checked on boots in light and dark. A simpler `<Slider>` is next. |
 | 2026-11-25 | minor | 0.8.4xx: toasts are designed, passive, in the dock's shelf, with a history opened by a bell. 0.8.5xx, status items, is added by my decision, split from toasts since it's bigger. |
 | 2026-11-25 | patch | 0.8.4xx: `vdb mcp` ships, checked end to end on a boot, and vdb's `install.sh` builds every time, with `--rebuild` to clean first. Toasts come next. |
 | 2026-11-25 | patch | 0.8.4xx: a developer's build boots to the desktop with `venture.startDesktop()`, and the running system offers vdb's `ui`; a boot showed both. |
