@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.402
+
+- `venture.startDesktop()`, in `init.lua` or a developer's `developer.local.lua`, opens the desktop when boot finishes, in place of the prompt; leaving it lands at the prompt. Add it to your `developer.local.lua` to boot straight to the desktop.
+- vdb's `ui` feature: a trusted computer can list app windows, read their controls, press, type, submit, and choose by name, press keys, and take screenshots. Panels and VentureOS's own windows, such as the Trust alert, stay out of reach. The `vdb` tool learns to use it next.
+
 ## 0.8.309
 
 - Settings is redesigned around grids, after macOS's Appearance. Style shows pictures of Auto, Light, and Dark, with Auto's times only while it's chosen; the accent colors are circles, the chosen one named under it, with a custom color that opens the `#RRGGBB` field; Scroll bars shows pictures of Classic and Automatic. Wallpaper shows every wallpaper, the sky first, not only five. The window is larger, and resizable.

@@ -151,6 +151,26 @@ public sealed class VdbUiTests : IDisposable
     }
 }
 
+/// <summary>A screenshot made from the desktop's frame.</summary>
+public sealed class VdbScreenshotTests
+{
+    [Fact]
+    public void TakesRedGreenAndBlueFromEachPixelAndDropsAlpha()
+    {
+        var shot = VdbScreenshot.FromFrame([DesktopImage.Pack(255, 1, 2, 3), DesktopImage.Pack(0, 250, 251, 252)], 2, 1)!;
+
+        Assert.Equal([1, 2, 3, 250, 251, 252], shot.Rgb);
+        Assert.Null(shot.Problem());
+    }
+
+    [Theory]
+    [InlineData(2, 2)]
+    [InlineData(0, 1)]
+    [InlineData(-1, -2)]
+    public void RefusesAFrameThatIsNotTheSizeGiven(int width, int height) =>
+        Assert.Null(VdbScreenshot.FromFrame([0, 0], width, height));
+}
+
 /// <summary>The words of the <c>ui</c> feature's lines: quoting, escapes, and what isn't a word.</summary>
 public sealed class VdbWordsTests
 {

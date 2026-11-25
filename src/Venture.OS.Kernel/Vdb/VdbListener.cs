@@ -20,6 +20,7 @@ internal sealed class VdbListener
     private readonly VdbDeveloperMode developer;
     private readonly WindowManager windows;
     private readonly KernelVdbHost host;
+    private readonly KernelVdbDesktop desktop;
 
     // The desktop's words, for the Trust question's title and buttons.
     private readonly DesktopText text;
@@ -44,6 +45,7 @@ internal sealed class VdbListener
         this.developer = developer;
         this.windows = windows;
         host = new KernelVdbHost(appWindows, apps, appOutput);
+        desktop = new KernelVdbDesktop(windows);
         text = appWindows.Text;
 
         // Cosmos has no random generator, so nonces come from the CPU's timestamp counter, read at every use, and the
@@ -76,6 +78,19 @@ internal sealed class VdbListener
 
         return changed;
     }
+
+    /// <summary>
+    /// The screen the desktop draws on, for screenshots, while it's showing; the desktop sets it as it opens and
+    /// clears it as it closes.
+    /// </summary>
+    public Canvas? Screen
+    {
+        get => desktop.Screen;
+        set => desktop.Screen = value;
+    }
+
+    /// <summary>The keys vdb pressed since the last frame, which the desktop adds to the keyboard's.</summary>
+    public KeyPress[] TakeKeys() => desktop.TakeKeys();
 
     /// <summary>Closes any connection and stops listening, as the desktop closes.</summary>
     public void Stop()
@@ -130,6 +145,9 @@ internal sealed class VdbListener
             }
 
             session.Receive(buffer.AsSpan(0, count), now);
+
+            // A ui command may have changed a window, and redrawing for a line that changed nothing costs a frame.
+            changed = true;
         }
 
         session.Tick(now);
@@ -170,7 +188,7 @@ internal sealed class VdbListener
     {
         client = listener!.AcceptTcpClient();
         stream = client.GetStream();
-        session = new VdbSession(host, developer.Trust, Send, random.Fill, now);
+        session = new VdbSession(host, developer.Trust, Send, random.Fill, now, desktop);
         developer.IsConnected = true;
         KernelLog.WriteSerialLine("vdb: a computer connected.");
     }
@@ -267,6 +285,51 @@ internal sealed class VdbListener
 
         (client, stream, session) = (null, null, null);
         developer.IsConnected = false;
+    }
+
+    /// <summary>The running desktop, as a vdb session's ui commands reach it.</summary>
+    private sealed class KernelVdbDesktop(WindowManager windows) : IVdbDesktop
+    {
+        // More than a person types between two frames; past it, keys are refused rather than piling up.
+        private const int MaximumWaitingKeys = 256;
+
+        private readonly List<KeyPress> waiting = [];
+
+        public WindowManager Windows => windows;
+
+        // Keys still waiting when the desktop closes are dropped, rather than reaching the next one.
+        public Canvas? Screen
+        {
+            get;
+            set
+            {
+                field = value;
+                if (value is null)
+                    waiting.Clear();
+            }
+        }
+
+        public string? PressKeys(DesktopWindow window, IReadOnlyList<KeyPress> keys)
+        {
+            if (Screen is null)
+                return "the desktop isn't showing";
+            if (waiting.Count + keys.Count > MaximumWaitingKeys)
+                return $"{waiting.Count} keys are still waiting for the desktop; try again after a frame";
+            waiting.AddRange(keys);
+            return null;
+        }
+
+        public KeyPress[] TakeKeys()
+        {
+            if (waiting.Count == 0)
+                return [];
+            KeyPress[] taken = [.. waiting];
+            waiting.Clear();
+            return taken;
+        }
+
+        public VdbScreenshot? Screenshot() =>
+            Screen is { } canvas && canvas.GetBuffer() is { } frame ? VdbScreenshot.FromFrame(frame, canvas.Width, canvas.Height) : null;
     }
 
     /// <summary>The kernel's apps, as a vdb session reaches them.</summary>

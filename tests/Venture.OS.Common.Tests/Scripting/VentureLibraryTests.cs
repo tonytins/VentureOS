@@ -163,6 +163,7 @@ public sealed class VentureLibraryTests
     [InlineData("uptime", ScriptScopes.System)]
     [InlineData("memory", ScriptScopes.System)]
     [InlineData("net", ScriptScopes.Network)]
+    [InlineData("startDesktop", ScriptScopes.System)]
     public void RefusesFunctionsOutsideTheDeclaredScopes(string function, ScriptScopes scope)
     {
         var finished = Run(new FakeSystemInfo(), $"print(pcall(venture.{function}))", ScriptScopes.All & ~scope);
@@ -195,6 +196,35 @@ public sealed class VentureLibraryTests
         Run(new FakeSystemInfo { WallClock = null }, "print(venture.time())");
 
         Assert.Equal(["false\tnil\tUTC", "nil"], output.Lines);
+    }
+
+    [Fact]
+    public void AsksForTheDesktopAtBootUntilBootHasFinished()
+    {
+        BootDesktop boot = new();
+        FakeSystemInfo system = new() { BootDesktop = boot };
+
+        Run(system, "print(venture.startDesktop()) print(venture.startDesktop())");
+        Assert.True(boot.TakeAtBoot());
+        Assert.False(boot.TakeAtBoot());
+        Run(system, "print(venture.startDesktop())");
+        Run(new FakeSystemInfo(), "print(venture.startDesktop())");
+
+        Assert.Equal(
+            ["true", "true", "nil\tVentureOS has already booted; type desktop to open it",
+             "nil\tthis system doesn't boot, so it can't start in the desktop"],
+            output.Lines);
+    }
+
+    [Fact]
+    public void BootEndsAtThePromptUnlessTheDesktopWasAskedFor()
+    {
+        BootDesktop boot = new();
+
+        Assert.False(boot.TakeAtBoot());
+        Assert.True(boot.HasBooted);
+        Assert.NotNull(boot.Request());
+        Assert.False(boot.IsRequested);
     }
 
     [Fact]

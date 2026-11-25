@@ -102,6 +102,8 @@ internal sealed class DesktopCommand(
             foreach (var (title, script) in previews)
                 session.Windows.Open(new DesktopWindow(title, new UIView(script)));
 
+            if (vdb() is { } listener)
+                listener.Screen = canvas;
             MouseManager.SetScreenSize(canvas.Width, canvas.Height);
             MouseManager.SetPosition(canvas.Width / 2, canvas.Height / 2);
             MouseManager.ResetScrollDelta();
@@ -119,7 +121,7 @@ internal sealed class DesktopCommand(
                     session.RequestRedraw();
 
                 DesktopInput input = new(
-                    MouseManager.X, MouseManager.Y, MouseManager.LeftButton, scroll, ReadKeys(), Stopwatch.GetElapsedTime(opening));
+                    MouseManager.X, MouseManager.Y, MouseManager.LeftButton, scroll, Keys(), Stopwatch.GetElapsedTime(opening));
                 if (!session.Update(input))
                     continue;
 
@@ -149,7 +151,12 @@ internal sealed class DesktopCommand(
     private void Leave(DesktopSession? session, IShellOutput output)
     {
         // vdb listens only while the desktop runs, since the shell's prompt can't check it while it waits.
-        vdb()?.Stop();
+        if (vdb() is { } listener)
+        {
+            listener.Stop();
+            listener.Screen = null;
+        }
+
         session?.Leave();
         windows.IsShowing = false;
         session?.CloseDesktopWindows();
@@ -185,6 +192,14 @@ internal sealed class DesktopCommand(
             KernelLog.WriteSerialLine($"The credits couldn't be read: {exception.Message}");
             return null;
         }
+    }
+
+    /// <summary>The keyboard's keys, then any vdb pressed, which reach the window in front as typed ones do.</summary>
+    private KeyPress[] Keys()
+    {
+        var typed = ReadKeys();
+        var sent = vdb()?.TakeKeys() ?? [];
+        return sent.Length == 0 ? typed : typed.Length == 0 ? sent : [.. typed, .. sent];
     }
 
     /// <summary>Takes every waiting key, as the desktop sees them.</summary>

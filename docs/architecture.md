@@ -379,6 +379,14 @@ its output reaches serial too, and it can use the `venture` table. Ctrl+C or
 Esc stops it, and so does a 10-second limit, so a script that never finishes
 can't keep the shell from starting, even in a headless boot.
 
+`init.lua` can ask for the desktop with `venture.startDesktop()`
+(`BootDesktop`, on `ISystemInfo.BootDesktop`), as a developer's
+`developer.local.lua` does. It only asks, since the desktop runs until it's
+left: the first `Run` opens the desktop in place of the prompt, through the
+shell's `desktop` command, so one that can't open says why and the prompt
+follows. Leaving it lands at the prompt. Asking after boot is refused. This
+isn't a boot step, so it can't panic.
+
 | Step | Kind | Succeeds when | On failure |
 |---|---|---|---|
 | Filesystem | critical | The RAM disk registers, formats as FAT16, and mounts at `/mnt` | Reports which of the three failed, then panics |
@@ -508,7 +516,8 @@ how it's sealed, and [docs/vdb](./vdb/README.md) the protocol.
   turns it on, until restart. `init.lua` runs `/mnt/system/developer.local.lua`
   when a build has one: a git-ignored file that turns developer mode on and
   trusts the owner's own vdb, so their builds need no prompt and nobody
-  else's carries it.
+  else's carries it. It also asks for the desktop at boot, so an agent's
+  boot needs no keys typed into QEMU.
 - **Listening.** Sockets in Cosmos are safe on one thread only, and the shell
   blocks in `Console.ReadLine`, so vdb listens only while the desktop runs:
   `DesktopCommand`'s frame loop calls `VdbListener.Poll` each frame, which
@@ -540,6 +549,15 @@ how it's sealed, and [docs/vdb](./vdb/README.md) the protocol.
   keys fresh regardless.
 - **Output.** `HeldOutput.Echo` copies what apps print to a trusted
   computer, as `out` lines.
+- **ui.** A session given a desktop (`IVdbDesktop`) offers `ui`: app
+  windows listed, read (`WindowControls.Snapshot`), and used by name, with
+  the words app tests use, keys pressed, and screenshots. It reaches only
+  windows an app opened, never a panel or VentureOS's own, such as the Trust
+  alert; that rule is the session's, so every host keeps it. The kernel's
+  `KernelVdbDesktop` queues keys for the next frame, which `DesktopCommand`
+  adds to the keyboard's, and reads screenshots from the canvas the desktop
+  hands the listener while it shows. A screenshot goes out 16 data lines a
+  frame. Any vdb traffic redraws the frame.
 - **Failures** end the connection, or turn listening off with the reason in
   Settings; none reaches the desktop. With no NIC, turning it on reports
   that there's nothing to listen on.
@@ -1912,6 +1930,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | Boot (§4) and vdb (§8.1): `venture.startDesktop()` opens the desktop in place of the first prompt, for `developer.local.lua`; the kernel offers `ui`, queuing keys for the next frame and reading screenshots from the desktop's canvas. |
 | 2026-11-25 | patch | vdb (§8.1): vdb/1's `ui` feature in Common, offered when a session has a desktop (`IVdbDesktop`): `windows`, `snapshot`, `act`, `key`, and `screenshot`, over app windows only; the kernel doesn't offer it yet. |
 | 2026-11-25 | patch | Layout: airo's actions and reads (`app:press`, `app:choose`, ...) move into Common's `WindowControls`, with a snapshot of a window's controls, so vdb can use them too. |
 | 2026-11-25 | minor | Settings (§9): built from its project, Settings ships with grids for the style, accent, scroll bars, and every wallpaper, in a larger, resizable window. |

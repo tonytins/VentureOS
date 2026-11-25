@@ -87,6 +87,12 @@ public interface ISystemInfo
     /// <see langword="null"/> on a system without apps. The system's app manager runs its apps through it.
     /// </summary>
     Processes.Supervisor? Processes { get; }
+
+    /// <summary>
+    /// Whether boot ends in the desktop, which <c>venture.startDesktop()</c> asks for; <see langword="null"/> on a
+    /// system that doesn't boot, such as Roundhouse's Run or airo's tests.
+    /// </summary>
+    BootDesktop? BootDesktop { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>

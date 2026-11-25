@@ -406,7 +406,7 @@ value, now that scroll bars are built in.
 - [ ] `vdb mcp`: an MCP server through which an agent lists app windows,
   reads their controls, uses them by name, presses keys, and takes
   screenshots; app windows only, not panels or the system's alerts.
-- [ ] A developer's build boots to the desktop when `developer.local.lua`
+- [x] A developer's build boots to the desktop when `developer.local.lua`
   asks, with `venture.startDesktop()`.
 - [ ] Notification toasts.
 - [ ] A simpler `<Slider>`, for choosing a value.
@@ -459,6 +459,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | 0.8.4xx: a developer's build boots to the desktop with `venture.startDesktop()`, and the running system offers vdb's `ui`; a boot showed both. |
 | 2026-11-25 | minor | 0.8.4xx, loose threads and toasts, begins, by my word: `vdb mcp` first, then toasts, then a simpler `<Slider>`. |
 | 2026-11-25 | minor | 0.8.3xx is complete: Settings ships with grids, built from its project by my word, and a boot showed it. The next band is the owner's to plan. |
 | 2026-11-25 | patch | 0.8.3xx: Settings' project is redesigned around grids, with previews Roundhouse renders; it ships next. |

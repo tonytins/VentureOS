@@ -80,14 +80,24 @@ public class VentureKernel : Sys.Kernel, IShellHost
     {
         try
         {
+            // The shell step is critical, so boot panics before reaching here without a shell.
+            var current = shell ?? throw new InvalidOperationException("The shell wasn't set up during boot.");
+
+            // In place of the first prompt, the desktop, when init.lua asked for it; leaving it lands at the prompt.
+            // A desktop that can't open says why, as typing desktop would, and the prompt follows.
+            if (system.BootDesktop!.TakeAtBoot())
+            {
+                KernelLog.WriteSerialLine("Opening the desktop, as init.lua asked.");
+                current.Execute("desktop");
+                return;
+            }
+
             Console.Write($"{shellContext?.CurrentDirectory}> ");
             var input = Console.ReadLine();
 
             if (string.IsNullOrEmpty(input))
                 return;
 
-            // The shell step is critical, so boot panics before reaching here without a shell.
-            var current = shell ?? throw new InvalidOperationException("The shell wasn't set up during boot.");
             current.Execute(input);
 
             // Outside the desktop, the shell is what drives the system: apps that crashed during the command end, and

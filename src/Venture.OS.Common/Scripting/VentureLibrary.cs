@@ -33,6 +33,9 @@ namespace Venture.OS.Scripting;
 /// <item><description><c>venture.processes()</c>: the running apps, <c>{ id, name, identifier, state, seconds, kept }</c>
 /// each, or <c>nil</c>; and <c>venture.kill(target)</c>, which ends one by ID, name, or identifier, returning
 /// <c>true</c> and whether it's kept, so starts again, or <c>nil</c> and why.</description></item>
+/// <item><description><c>venture.startDesktop()</c>: asks for boot to end in the desktop rather than at the prompt,
+/// as a developer's <c>developer.local.lua</c> does, returning <c>true</c>, or <c>nil</c> and why, such as once boot
+/// has finished.</description></item>
 /// </list>
 /// <para>The functions other than <c>setAppearance</c> and <c>setUtcOffset</c> take no arguments and ignore any they're given. An exception from
 /// <see cref="ISystemInfo"/> becomes a Lua error, which <c>pcall</c> can catch, so a failing device can't stop the
@@ -75,6 +78,7 @@ public static class VentureLibrary
             Gated("setUtcOffset", ScriptScopes.System, scopes, lua => SetUtcOffset(lua, system.WallClock)),
             Gated("processes", ScriptScopes.System, scopes, lua => PushProcesses(lua, system.Processes)),
             Gated("kill", ScriptScopes.System, scopes, lua => Kill(lua, system.Processes)),
+            Gated("startDesktop", ScriptScopes.System, scopes, lua => StartDesktop(lua, system.BootDesktop)),
 
             // Replaced by ShellLibrary where the code has a lasting owner; elsewhere they explain why they can't work.
             Gated("command", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "command")),
@@ -528,6 +532,16 @@ public static class VentureLibrary
 
         lua.PushString(LuaText.Encode(unsaved));
         return 2;
+    }
+
+    private static int StartDesktop(ILuaState lua, BootDesktop? boot)
+    {
+        if (boot is null)
+            return Refuse(lua, "this system doesn't boot, so it can't start in the desktop");
+        if (boot.Request() is { } problem)
+            return Refuse(lua, problem);
+        lua.PushBoolean(true);
+        return 1;
     }
 
     private static int Refuse(ILuaState lua, string reason)

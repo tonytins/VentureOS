@@ -79,6 +79,9 @@ public sealed class SimulatedSystem(SimulatedDisk disk, string version, string c
     /// </summary>
     public Venture.OS.Vdb.VdbDeveloperMode? Developer { get; init; }
 
+    /// <summary>None: a run starts in the desktop already, and never boots.</summary>
+    public BootDesktop? BootDesktop => null;
+
     /// <summary>The run's apps' processes, which its app manager runs them through.</summary>
     public Venture.OS.Processes.Supervisor Processes { get; } = new(() => global::System.Diagnostics.Stopwatch.GetElapsedTime(Started));
 

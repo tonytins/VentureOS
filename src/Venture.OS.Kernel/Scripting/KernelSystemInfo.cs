@@ -35,6 +35,9 @@ internal sealed class KernelSystemInfo : ISystemInfo
     /// <summary>Developer mode, which the desktop's vdb listener follows.</summary>
     public Venture.OS.Vdb.VdbDeveloperMode? Developer { get; } = new();
 
+    /// <summary>Whether boot ends in the desktop, which the kernel checks once <c>init.lua</c> has run.</summary>
+    public BootDesktop? BootDesktop { get; } = new();
+
     /// <summary>The system's clock, whose offset the clock boot step restores.</summary>
     public Time.WallClock? WallClock => Startup.Bootstrap.WallClock;
 
