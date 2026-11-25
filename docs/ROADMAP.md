@@ -45,7 +45,7 @@ stage to the next, and add a line to the revision history.
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
 | 0.7 | Seto | released 2026-11-24, `v0.7.712`; [notes](./releases/0.7.md) | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; Roundhouse projects; nesting |
-| 0.8 | Hokutosei | in development | Making apps: airo and app tests, and richer interfaces |
+| 0.8 | Hokutosei | in development | Making apps: airo and app tests, richer interfaces, and scroll bars and grids |
 
 ## 0.4, Pere Marquette
 
@@ -366,6 +366,27 @@ UIScript can hold, and the apps' and About's changes ship.
 - [x] About VentureOS, a window of its own from `projects/about.rproj`,
   ships with its icon and credits; every app's About stays as it was.
 
+**0.8.3xx, scroll bars and grids**
+
+Lists and text areas show their own scroll bars, so an app no longer places a
+slider beside them, and `<Slider>` leaves UIScript, with `scrolls` and
+`direction`; the spec is still a draft, so this doesn't change its `version`.
+A grid holds items the app fills, as a list does, so Settings' wallpapers stop
+being five slots by hand.
+
+- [x] A scroll bar style in the look: classic or automatic, classic by default.
+- [ ] Lists, text areas, and the sidebar's rows draw their own bar when their
+  content doesn't fit: classic, a thumb in the accent on a track with an arrow
+  at each end, or automatic, a thin bar over the content shown while it
+  scrolls.
+- [ ] `<Slider>`, and `scrolls` and `direction` on `<Button>`, leave UIScript,
+  the reader, and Roundhouse; TextEdit and Terminal drop theirs, and
+  VentureOS's copies of Hudini's examples follow.
+- [ ] Settings' Appearance chooses the style, as does `appearance`.
+- [ ] UIScript: `<Grid>`, items with a picture and a title that the app fills
+  and the desktop wraps into rows; Roundhouse draws it, and Settings'
+  wallpapers move to it.
+
 ## Ideas
 
 Worth doing someday, in no order, and not yet given a release.
@@ -414,6 +435,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | 0.8.3xx begins, by my decision: scroll bars and grids. Lists and text areas draw their own bars, classic or automatic, and `<Slider>` leaves the draft spec with no new `version`; `<Grid>` replaces Settings' wallpaper slots. The scroll bar style joins the look. |
 | 2026-11-24 | patch | 0.8.2xx: text fields honour `alignment` as text areas do; a window with a right sidebar keeps the usual grip in its corner, by my decision, since a VentureOS sidebar isn't dragged wider. |
 | 2026-11-24 | patch | 0.8.2xx: text areas honour `alignment`, so About VentureOS's credits are centred; Earthset is credited, NASA's from Artemis II. Keyboard panes go to Ideas, by my decision. |
 | 2026-11-24 | minor | 0.8.2xx is complete: Roundhouse's designer adds controls and pictures to a sidebar, moves them in and out, and resizes a right sidebar from its left edge. The next band is the owner's to plan. |

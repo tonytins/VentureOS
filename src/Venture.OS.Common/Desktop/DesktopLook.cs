@@ -29,9 +29,19 @@ public enum DockMode
     Dodge,
 }
 
+/// <summary>How lists and text areas show that they scroll.</summary>
+public enum ScrollBarStyle
+{
+    /// <summary>Always shown when the content doesn't fit: a thumb in the accent on a track, with arrows at each end.</summary>
+    Classic,
+
+    /// <summary>A thin bar over the content, shown while it scrolls or the pointer is over it, and hidden otherwise.</summary>
+    Automatic,
+}
+
 /// <summary>
 /// The desktop's look as the user chose it: light, dark, or on a schedule; the accent; rounded or square window
-/// corners; and the wallpaper, by name, or the sky.
+/// corners; the wallpaper, by name, or the sky; the dock; and scroll bars.
 /// </summary>
 /// <param name="Mode">Light, dark, or on a schedule.</param>
 /// <param name="Accent">The accent as chosen.</param>
@@ -40,10 +50,30 @@ public enum DockMode
 /// <param name="DarkFrom">When a scheduled look turns dark, as a time of day.</param>
 /// <param name="DarkUntil">When it turns light again; before <paramref name="DarkFrom"/>, the dark runs overnight.</param>
 /// <param name="Dock">How the dock behaves.</param>
+/// <param name="ScrollBars">How lists and text areas show that they scroll.</param>
 public sealed record DesktopLook(
     LookMode Mode, UIColor Accent, bool RoundedCorners, string Wallpaper, TimeSpan DarkFrom, TimeSpan DarkUntil,
-    DockMode Dock = DockMode.Always)
+    DockMode Dock = DockMode.Always, ScrollBarStyle ScrollBars = ScrollBarStyle.Classic)
 {
+    /// <summary>A scroll bar style as written: <c>classic</c> or <c>automatic</c>.</summary>
+    public static string FormatScrollBars(ScrollBarStyle style) => style switch
+    {
+        ScrollBarStyle.Automatic => "automatic",
+        _ => "classic",
+    };
+
+    /// <summary>Reads a scroll bar style as written, or gives <see langword="false"/>.</summary>
+    public static bool TryParseScrollBars(string? text, out ScrollBarStyle style)
+    {
+        (var known, style) = text switch
+        {
+            "classic" => (true, ScrollBarStyle.Classic),
+            "automatic" => (true, ScrollBarStyle.Automatic),
+            _ => (false, ScrollBarStyle.Classic),
+        };
+        return known;
+    }
+
     /// <summary>A dock mode as written: <c>always</c>, <c>autohide</c>, or <c>dodge</c>.</summary>
     public static string FormatDock(DockMode mode) => mode switch
     {

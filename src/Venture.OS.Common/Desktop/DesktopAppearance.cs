@@ -132,7 +132,7 @@ public static class DesktopAppearance
         return string.Create(CultureInfo.InvariantCulture, $"""
             <?xml version="1.0" encoding="UTF-8"?>
             <!-- The desktop's look, which Settings and the appearance command change. -->
-            <Appearance version="{SupportedVersion}" mode="{DesktopLook.FormatMode(look.Mode)}" accent="{DesktopPalette.Format(look.Accent)}" corners="{(look.RoundedCorners ? "rounded" : "square")}" wallpaper="{look.Wallpaper}" darkFrom="{DesktopLook.FormatTime(look.DarkFrom)}" darkUntil="{DesktopLook.FormatTime(look.DarkUntil)}" dock="{DesktopLook.FormatDock(look.Dock)}"/>
+            <Appearance version="{SupportedVersion}" mode="{DesktopLook.FormatMode(look.Mode)}" accent="{DesktopPalette.Format(look.Accent)}" corners="{(look.RoundedCorners ? "rounded" : "square")}" wallpaper="{look.Wallpaper}" darkFrom="{DesktopLook.FormatTime(look.DarkFrom)}" darkUntil="{DesktopLook.FormatTime(look.DarkUntil)}" dock="{DesktopLook.FormatDock(look.Dock)}" scrollbars="{DesktopLook.FormatScrollBars(look.ScrollBars)}"/>
 
             """);
     }
@@ -177,6 +177,9 @@ public static class DesktopAppearance
 
         // A dock mode this VentureOS doesn't know is a newer one's; the dock stays always visible, as it always was.
         look = look with { Dock = DesktopLook.TryParseDock(root["dock"], out var dock) ? dock : DockMode.Always };
+
+        // Likewise a scroll bar style; scroll bars stay classic, always shown, so nothing that scrolls looks as if it doesn't.
+        look = look with { ScrollBars = DesktopLook.TryParseScrollBars(root["scrollbars"], out var bars) ? bars : ScrollBarStyle.Classic };
 
         if (root["wallpaper"] is { } wallpaper)
         {

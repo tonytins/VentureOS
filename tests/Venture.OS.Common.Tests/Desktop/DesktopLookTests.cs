@@ -116,6 +116,27 @@ public sealed class DesktopLookTests
     }
 
     [Theory]
+    [InlineData(ScrollBarStyle.Classic)]
+    [InlineData(ScrollBarStyle.Automatic)]
+    public void WritesScrollBarsAndReadsThemBack(ScrollBarStyle style)
+    {
+        var look = DesktopLook.Standard with { ScrollBars = style };
+
+        var text = DesktopAppearance.Write(look);
+
+        Assert.Contains($"""scrollbars="{DesktopLook.FormatScrollBars(style)}" """.TrimEnd(), text);
+        Assert.Equal(look, DesktopAppearance.Read(text));
+    }
+
+    [Theory]
+    [InlineData("""<Appearance mode="dark"/>""")]
+    [InlineData("""<Appearance mode="dark" scrollbars="overlay"/>""")]
+    public void ScrollBarsStayClassicWhenTheFileDoesntSayOrSaysSomethingNewer(string text)
+    {
+        Assert.Equal(ScrollBarStyle.Classic, DesktopAppearance.Read(text).ScrollBars);
+    }
+
+    [Theory]
     [InlineData("""<Appearance corners="round"/>""", "rounded or square")]
     [InlineData("""<Appearance wallpaper="../x"/>""", "isn't a wallpaper's name")]
     [InlineData("""<Appearance darkFrom="7pm"/>""", "darkFrom is a time")]

@@ -32,7 +32,7 @@ public sealed class DesktopAppearanceTests : IDisposable
         Assert.Null(problem);
         Assert.True(DesktopTheme.Palette.IsDark);
         Assert.Contains(
-            $"""<Appearance version="1" mode="dark" accent="#E8922A" corners="rounded" wallpaper="{DesktopLook.Standard.Wallpaper}" darkFrom="19:00" darkUntil="07:00" dock="always"/>""",
+            $"""<Appearance version="1" mode="dark" accent="#E8922A" corners="rounded" wallpaper="{DesktopLook.Standard.Wallpaper}" darkFrom="19:00" darkUntil="07:00" dock="always" scrollbars="classic"/>""",
             File.ReadAllText(SettingsFile));
     }
 
