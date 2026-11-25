@@ -20,6 +20,7 @@ public sealed class KeptAppsTests : IDisposable
     private readonly WindowManager windows = new(800, 600);
     private readonly AppManager apps;
     private readonly DesktopSession session;
+    private readonly StartupItems startup;
     private TimeSpan now;
 
     public KeptAppsTests()
@@ -28,10 +29,21 @@ public sealed class KeptAppsTests : IDisposable
         App("apps", "Watch", kept: true);
         App("apps", "Plain", kept: false);
         App("user/apps", "Sneaky", kept: true);
+        App("user/apps", "Timer", kept: false);
+        App("user/apps", "Broken", kept: false, main: "error('no clock to read', 0)");
+        Directory.CreateDirectory($"{root}/settings");
+        File.WriteAllText($"{root}/settings/startup.xml", """
+            <StartupItems version="1">
+              <App identifier="dev.example.timer"/>
+              <App identifier="dev.example.ghost"/>
+              <App identifier="dev.example.broken"/>
+            </StartupItems>
+            """);
+        startup = new StartupItems($"{root}/settings/startup.xml", app => apps!.FindBundle(app));
 
         CommandRegistry registry = new();
         apps = new AppManager(
-            $"{root}/apps", new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo(), windows: new AppWindows(windows, held),
+            $"{root}/apps", new RuntimeCommands(registry.IsBuiltIn), new FakeSystemInfo { StartupItems = startup }, windows: new AppWindows(windows, held),
             userAppsDirectory: $"{root}/user/apps", supervisor: new Supervisor(() => now));
         session = new DesktopSession(800, 600, apps, root, held, windows) { FallbackApp = "Shelf", Clock = () => now };
         Frame();
@@ -58,9 +70,34 @@ public sealed class KeptAppsTests : IDisposable
     }
 
     [Fact]
-    public void TheSystemsKeptAppsStartWithTheDesktopTheFallbackFirst()
+    public void TheSystemsKeptAppsStartWithTheDesktopTheFallbackFirstThenTheStartupItems()
     {
-        Assert.Equal(["Shelf", "Watch"], Running);
+        Assert.Equal(["Shelf", "Watch", "Timer"], Running);
+        Assert.Equal(RestartPolicy.Never, apps.Supervisor.FindApp("dev.example.timer")!.Policy);
+    }
+
+    [Fact]
+    public void AStartupItemThatIsntThereOrWontOpenIsToldInAToast()
+    {
+        var told = windows.Notifications.History.Select(notification => notification.Text).ToList();
+
+        Assert.Contains("dev.example.ghost couldn't open at startup: it isn't installed.", told);
+        Assert.Contains(told, text => text.StartsWith("Broken couldn't open at startup:", StringComparison.Ordinal)
+            && text.Contains("no clock to read", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void AStartupItemThatEndsStaysEndedAndTheyOpenOnceSinceVentureOSStarted()
+    {
+        Assert.True(apps.CloseApp("dev.example.timer", new RecordingOutput()));
+        Frame();
+        Assert.DoesNotContain("Timer", Running);
+
+        session.Leave();
+        DesktopSession next = new(800, 600, apps, root, held, windows) { FallbackApp = "Shelf", Clock = () => now };
+        next.Update(new DesktopInput(400, 300, false, Time: now));
+
+        Assert.DoesNotContain("Timer", Running);
     }
 
     [Fact]
@@ -85,12 +122,12 @@ public sealed class KeptAppsTests : IDisposable
         Assert.DoesNotContain("Plain", Running);
     }
 
-    private void App(string folder, string name, bool kept)
+    private void App(string folder, string name, bool kept, string main = "")
     {
         var contents = $"{root}/{folder}/{name}.app/Contents";
         Directory.CreateDirectory($"{contents}/Lua");
         File.WriteAllText($"{contents}/Info.xml",
             $"""<App version="1"><Info identifier="dev.example.{name.ToLowerInvariant()}" name="{name}"{(kept ? " kept=\"true\"" : "")}/></App>""");
-        File.WriteAllText($"{contents}/Lua/main.lua", "\n");
+        File.WriteAllText($"{contents}/Lua/main.lua", main + "\n");
     }
 }

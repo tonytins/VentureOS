@@ -82,6 +82,9 @@ public sealed class SimulatedSystem(SimulatedDisk disk, string version, string c
     /// <summary>None: a run starts in the desktop already, and never boots.</summary>
     public BootDesktop? BootDesktop => null;
 
+    /// <summary>None: a run doesn't boot, so nothing opens at startup.</summary>
+    public Venture.OS.Bundles.StartupItems? StartupItems => null;
+
     /// <summary>The run's apps' processes, which its app manager runs them through.</summary>
     public Venture.OS.Processes.Supervisor Processes { get; } = new(() => global::System.Diagnostics.Stopwatch.GetElapsedTime(Started));
 

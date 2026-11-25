@@ -1945,6 +1945,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | Startup items (§9): `StartupItems` (`/mnt/user/settings/startup.xml`, on `ISystemInfo.StartupItems`), opened once since boot by the session after the kept apps under `Never`, a toast for one missing or failing; `venture.startupItems`/`setStartupItem` (system scope), `venture.ui.askToOpenAtStartup` (VentureOS's own alert), and `dock="hidden"` with `venture.ui.setShownInDock`, which the dock's `venture.desktop.apps()` follows. `AppManager.FindBundle` finds an app by name, folder, or identifier. |
 | 2026-11-25 | minor | Kept apps (§9): system apps say `kept="true"` in `Info.xml`, and `<Info>` also reads `dock` (`shown` or `hidden`, used from 0.8.5xx's next phase); `DesktopSession` keeps what they say instead of naming Files and the Dock. |
 | 2026-11-25 | patch | Current state: sliders; 0.8.4xx is complete. |
 | 2026-11-25 | patch | Roundhouse's library and Insert menu offer Slider again; VentureOS's copies of Hudini's examples get their value sliders back (`optionspanel`'s volumes, `city/budget`'s figures). |

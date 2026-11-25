@@ -93,6 +93,12 @@ public interface ISystemInfo
     /// system that doesn't boot, such as Roundhouse's Run or airo's tests.
     /// </summary>
     BootDesktop? BootDesktop { get; }
+
+    /// <summary>
+    /// The apps the person chose to open with the desktop; <see langword="null"/> on a system that doesn't boot, such
+    /// as Roundhouse's Run or airo's tests.
+    /// </summary>
+    Bundles.StartupItems? StartupItems { get; }
 }
 
 /// <summary>Free and total space on a file system, in bytes.</summary>

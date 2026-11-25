@@ -51,6 +51,9 @@ internal static class TestDesktopText
         justNow ^now^
         minutesAgo ^%s min^
         hoursAgo ^%s hr^
+        openAtStartupAsk ^Open %s when the desktop starts?^
+        yes ^Yes^
+        no ^No^
         """;
 
     private static readonly Lazy<string> Folder = new(() =>

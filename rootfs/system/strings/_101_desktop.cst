@@ -61,3 +61,8 @@ moreFrom ^%s more from %s^
 justNow ^now^
 minutesAgo ^%s min^
 hoursAgo ^%s hr^
+
+// An app asking to open with the desktop, and the answers.
+openAtStartupAsk ^Open %s when the desktop starts?^
+yes ^Yes^
+no ^No^

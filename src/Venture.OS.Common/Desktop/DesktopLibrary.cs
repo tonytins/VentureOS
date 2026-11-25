@@ -97,6 +97,10 @@ public static class DesktopLibrary
                 if (listing.Bundle is not { } bundle || (bundle.Name == host.FallbackApp) != first)
                     continue;
 
+                // An app that stays out of the dock, as a startup item living in the menu bar may.
+                if (!host.IsShownInDock(bundle))
+                    continue;
+
                 lua.NewTable();
                 SetString(lua, "name", bundle.Name);
                 SetString(lua, "path", apps.ScriptPath(listing.Path));

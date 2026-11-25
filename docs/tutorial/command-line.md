@@ -44,6 +44,13 @@ The folder name, `Dice.app`, is how `open dice` finds it.
 | `main` | No | The script to run when the app opens. Defaults to `Contents/Lua/main.lua`. |
 | `icon` | No | A PNG inside the bundle, such as `Contents/Resources/AppIcon.png`, shown in the dock and in About. Make it 64 pixels square; the dock shrinks it to 48. A full background is rounded to a tile; paint what should be clear in exactly `#00FF01` (or leave it transparent) for a shape of its own, smoothed edges and all, such as a folder, which gets a soft shadow. Without an icon, the dock shows a tile with the app's initial. |
 | `description` | No | What the app is for, in a sentence, shown in its About window. |
+| `dock` | No | `shown`, the default, or `hidden` for an app that stays out of the dock, such as one that lives in the menu bar or runs in the background. `venture.ui.setShownInDock(shown)` changes it while the app runs. |
+
+An app that should open with the desktop can ask the person, with
+`venture.ui.askToOpenAtStartup(function(added) ... end)`: VentureOS asks in an alert only the person can answer, and
+the function hears whether they said yes. It returns `true` at once, asking nothing, when the app is already on the
+list. The person can also add or remove apps in Settings. An app that opens at startup and quits, is closed, or
+crashes stays ended until it's opened again.
 
 The scopes for `needs`:
 

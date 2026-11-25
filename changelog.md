@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.501
+
+- Apps can open with the desktop, after Files and the Dock, from the list in `/mnt/user/settings/startup.xml`. One that quits, is closed, or crashes stays ended; one that's missing or won't open is told in a toast. `venture.startupItems()` and `venture.setStartupItem(app, on)` read and change the list.
+- An app can ask to open at startup with `venture.ui.askToOpenAtStartup`: VentureOS asks in an alert only you can answer.
+- An app can stay out of the dock, with `dock="hidden"` in its `Info.xml` or `venture.ui.setShownInDock(false)`.
+
 ## 0.8.416
 
 - Roundhouse designs sliders again: Insert ▸ Slider and the library add one, the inspector offers `minValue`, `maxValue`, and `step`, and the canvas draws it as VentureOS does.

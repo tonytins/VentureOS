@@ -228,6 +228,40 @@ public sealed class VentureLibraryTests
     }
 
     [Fact]
+    public void ListsAndChangesTheStartupItems()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"venture-startup-lua-{Guid.NewGuid():N}");
+        var app = Path.Combine(root, "Weather.app");
+        Directory.CreateDirectory(Path.Combine(app, "Contents", "Lua"));
+        File.WriteAllText(Path.Combine(app, "Contents", "Info.xml"), """<App><Info identifier="dev.example.weather" name="Weather"/></App>""");
+        File.WriteAllText(Path.Combine(app, "Contents", "Lua", "main.lua"), "");
+        var weather = Venture.OS.Bundles.Bundle.Read(app, Venture.OS.Bundles.BundleKind.App);
+        Venture.OS.Bundles.StartupItems items = new(Path.Combine(root, "startup.xml"), name => name is "Weather" or "dev.example.weather" ? weather : null);
+        try
+        {
+            Run(new FakeSystemInfo { StartupItems = items }, """
+                print(#venture.startupItems())
+                print(venture.setStartupItem("Weather", true))
+                local item = venture.startupItems()[1]
+                print(item.identifier, item.name, item.running)
+                print(venture.setStartupItem("Ghost", true))
+                print(venture.setStartupItem("dev.example.weather", false))
+                print(#venture.startupItems())
+                """);
+            Run(new FakeSystemInfo(), "print(venture.startupItems(), venture.setStartupItem('Weather', true))");
+
+            Assert.Equal(
+                ["0", "true", "dev.example.weather\tWeather\tfalse", "nil\tthere's no app called Ghost", "true", "0",
+                 "nil\tnil\tthis system doesn't boot, so nothing opens at startup"],
+                output.Lines);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void SetsTheOffsetOrSaysWhyNot()
     {
         FakeSystemInfo system = new();

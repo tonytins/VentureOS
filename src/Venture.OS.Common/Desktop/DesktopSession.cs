@@ -942,9 +942,52 @@ public sealed class DesktopSession
             started = true;
         }
 
+        started |= OpenStartupItems();
         if (started)
             TellDock();
         return started;
+    }
+
+    /// <summary>
+    /// Opens the apps the person chose to open at startup, once since VentureOS started, after the kept apps, under
+    /// the <c>Never</c> policy, so one that quits or crashes stays ended. One that's missing or won't open is told in a
+    /// toast, with why, and the rest open.
+    /// </summary>
+    private bool OpenStartupItems()
+    {
+        if (apps?.SystemInfo?.StartupItems is not { HaveOpened: false } items)
+            return false;
+
+        items.HaveOpened = true;
+        var (identifiers, problem) = items.Load();
+        if (problem is not null)
+            Post("VentureOS", $"Nothing opened at startup: {problem}.", null);
+
+        var opened = false;
+        foreach (var identifier in identifiers)
+        {
+            if (items.Find(identifier) is not { } bundle)
+            {
+                Post("VentureOS", $"{identifier} couldn't open at startup: it isn't installed.", null);
+                continue;
+            }
+
+            if (apps.IsOpen(bundle.Identifier))
+                continue;
+
+            HeldOutput said = new();
+            if (apps.OpenApp(bundle.Name, workingDirectory, said, explainNeeds: true, RestartPolicy.Never))
+            {
+                opened = true;
+                ShowMessages(bundle.Name, bundle.Name);
+            }
+            else
+            {
+                Post(bundle.Name, $"{bundle.Name} couldn't open at startup: {string.Join(' ', said.Take()).Trim()}", bundle.Icon);
+            }
+        }
+
+        return opened;
     }
 
     /// <summary>The system's kept apps, the fallback app first, then the rest as their folders list.</summary>

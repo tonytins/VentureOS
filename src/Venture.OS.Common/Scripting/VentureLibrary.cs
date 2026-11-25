@@ -33,6 +33,10 @@ namespace Venture.OS.Scripting;
 /// <item><description><c>venture.processes()</c>: the running apps, <c>{ id, name, identifier, state, seconds, kept }</c>
 /// each, or <c>nil</c>; and <c>venture.kill(target)</c>, which ends one by ID, name, or identifier, returning
 /// <c>true</c> and whether it's kept, so starts again, or <c>nil</c> and why.</description></item>
+/// <item><description><c>venture.startupItems()</c>: the apps the person chose to open with the desktop, each
+/// <c>{ identifier, name, running }</c>, <c>name</c> being <c>nil</c> for one that's no longer installed; or <c>nil</c>
+/// on a system that doesn't boot. <c>venture.setStartupItem(app, on)</c> adds or removes one, by name or identifier,
+/// saving the list, and returns as <c>setAppearance</c> does.</description></item>
 /// <item><description><c>venture.startDesktop()</c>: asks for boot to end in the desktop rather than at the prompt,
 /// as a developer's <c>developer.local.lua</c> does, returning <c>true</c>, or <c>nil</c> and why, such as once boot
 /// has finished.</description></item>
@@ -79,6 +83,8 @@ public static class VentureLibrary
             Gated("processes", ScriptScopes.System, scopes, lua => PushProcesses(lua, system.Processes)),
             Gated("kill", ScriptScopes.System, scopes, lua => Kill(lua, system.Processes)),
             Gated("startDesktop", ScriptScopes.System, scopes, lua => StartDesktop(lua, system.BootDesktop)),
+            Gated("startupItems", ScriptScopes.System, scopes, lua => PushStartupItems(lua, system)),
+            Gated("setStartupItem", ScriptScopes.System, scopes, lua => SetStartupItem(lua, system.StartupItems)),
 
             // Replaced by ShellLibrary where the code has a lasting owner; elsewhere they explain why they can't work.
             Gated("command", ScriptScopes.Shell, scopes, lua => NotOwned(lua, "command")),
@@ -548,6 +554,51 @@ public static class VentureLibrary
 
         lua.PushString(LuaText.Encode(unsaved));
         return 2;
+    }
+
+    private static int PushStartupItems(ILuaState lua, ISystemInfo system)
+    {
+        if (system.StartupItems is not { } items)
+        {
+            lua.PushNil();
+            return 1;
+        }
+
+        var (identifiers, problem) = items.Load();
+        if (problem is not null)
+            return Refuse(lua, problem);
+
+        lua.CreateTable(identifiers.Count, 0);
+        for (var index = 0; index < identifiers.Count; index++)
+        {
+            lua.NewTable();
+            lua.PushString(LuaText.Encode(identifiers[index]));
+            lua.SetField(-2, "identifier");
+            if (items.Find(identifiers[index]) is { } bundle)
+            {
+                lua.PushString(LuaText.Encode(bundle.Name));
+                lua.SetField(-2, "name");
+            }
+
+            lua.PushBoolean(system.Processes?.FindApp(identifiers[index]) is not null);
+            lua.SetField(-2, "running");
+            lua.RawSetI(-2, index + 1);
+        }
+
+        return 1;
+    }
+
+    private static int SetStartupItem(ILuaState lua, Bundles.StartupItems? items)
+    {
+        var app = LuaText.Decode(lua.L_CheckString(1));
+        lua.L_CheckType(2, LuaType.LUA_TBOOLEAN);
+        var on = lua.ToBoolean(2);
+        if (items is null)
+            return Refuse(lua, "this system doesn't boot, so nothing opens at startup");
+        if (!items.TrySet(app, on, out var problem))
+            return Refuse(lua, problem);
+        lua.PushBoolean(true);
+        return 1;
     }
 
     private static int StartDesktop(ILuaState lua, BootDesktop? boot)

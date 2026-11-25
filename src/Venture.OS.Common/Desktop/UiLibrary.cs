@@ -182,6 +182,24 @@ public sealed class AppWindows(WindowManager windows, IShellOutput output, Func<
     /// </summary>
     public void MarkDesktopChanged() => desktopChanged = true;
 
+    // Apps that changed whether the dock shows them as they ran, by name, until VentureOS restarts.
+    private readonly Dictionary<string, bool> dockChoices = new(StringComparer.Ordinal);
+
+    /// <summary>Whether the dock shows an app: as it set with <c>setShownInDock</c>, else as its <c>Info.xml</c> says.</summary>
+    public bool IsShownInDock(Bundle bundle)
+    {
+        ArgumentNullException.ThrowIfNull(bundle);
+        return dockChoices.TryGetValue(bundle.Name, out var shown) ? shown : bundle.IsShownInDock;
+    }
+
+    /// <summary>Shows an app in the dock or leaves it out, until VentureOS restarts, as an app's own setting may.</summary>
+    public void SetShownInDock(string app, bool shown)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        dockChoices[app] = shown;
+        MarkDesktopChanged();
+    }
+
     /// <summary>Adds a listener for <see cref="MarkDesktopChanged"/>.</summary>
     /// <returns>What removes it again.</returns>
     public Action ListenToDesktop(Action listener)
@@ -472,6 +490,13 @@ public static class UiLibrary
             lua.PushBoolean(true);
             return 1;
         });
+        Function(state, "setShownInDock", app, host, (lua, desktop) =>
+        {
+            lua.L_CheckType(1, LuaType.LUA_TBOOLEAN);
+            desktop.SetShownInDock(app.Name, lua.ToBoolean(1));
+            return 0;
+        });
+        Function(state, "askToOpenAtStartup", app, host, (lua, desktop) => AskToOpenAtStartup(lua, owner, app, desktop, apps));
         Function(state, "toast", app, host, (lua, desktop) =>
         {
             if (desktop.Toast(LuaText.Decode(lua.L_CheckString(1)), app) is { } problem)
@@ -552,6 +577,55 @@ public static class UiLibrary
             Fail(lua, $"venture.ui.{function} needs a path, such as venture.ui.{function}(\"/mnt/notes.txt\")");
 
         return ShellPaths.Resolve(owner.Interpreter.WorkingDirectory ?? "/", LuaText.Decode(lua.ToString(1)));
+    }
+
+    /// <summary>
+    /// <c>venture.ui.askToOpenAtStartup(function(added) ... end)</c>: asks the person, in an alert, whether to open the
+    /// app with the desktop. Returns <c>true</c> at once, asking nothing, when it's already on the list; otherwise
+    /// <c>false</c>, and the function hears the answer later. The alert is VentureOS's own, so only the person answers it.
+    /// </summary>
+    private static int AskToOpenAtStartup(ILuaState lua, LuaOwner owner, Bundle app, AppWindows desktop, AppManager? apps)
+    {
+        if (!lua.IsNoneOrNil(1) && !lua.IsFunction(1))
+            return Fail(lua, "venture.ui.askToOpenAtStartup takes a function, such as venture.ui.askToOpenAtStartup(function(added) ... end)");
+        if (apps?.SystemInfo?.StartupItems is not { } items)
+            return Refuse(lua, "this system doesn't boot, so nothing opens at startup");
+        if (items.Contains(app.Identifier))
+        {
+            lua.PushBoolean(true);
+            return 1;
+        }
+
+        if (!desktop.Windows.IsShowing)
+            return Refuse(lua, "the desktop isn't showing, so there's nobody to ask");
+
+        int? reference = null;
+        if (lua.IsFunction(1))
+        {
+            lua.PushValue(1);
+            var made = lua.L_Ref(LuaDef.LUA_REGISTRYINDEX);
+            reference = made;
+            owner.AddUndo(() => owner.Interpreter.State.L_Unref(LuaDef.LUA_REGISTRYINDEX, made));
+        }
+
+        var workingDirectory = owner.Interpreter.WorkingDirectory ?? "/";
+        desktop.Windows.Open(DesktopAlert.Ask(
+            app.Name, desktop.Text.Get("openAtStartupAsk", app.Name), desktop.Text.Get("yes"), desktop.Text.Get("no"), yes =>
+            {
+                var added = false;
+                if (yes && !(added = items.TrySet(app.Identifier, true, out var problem)))
+                    desktop.Output.WriteLine($"{app.Name} couldn't be added to the startup items: {problem}");
+                if (reference is { } told && !owner.IsDisposed)
+                {
+                    owner.Call(told, state =>
+                    {
+                        state.PushBoolean(added);
+                        return 1;
+                    }, desktop.Output, workingDirectory, desktop.Stop?.Invoke());
+                }
+            }));
+        lua.PushBoolean(false);
+        return 1;
     }
 
     private static int Launch(ILuaState lua, LuaOwner owner, AppWindows host, AppManager? apps)

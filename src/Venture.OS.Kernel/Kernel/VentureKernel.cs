@@ -162,6 +162,9 @@ public class VentureKernel : Sys.Kernel, IShellHost
             (output, directory) => new ShellContext(output, this, commands) { CurrentDirectory = directory, HasConsole = false },
             system.Processes);
 
+        // The apps the person chose to open with the desktop, found among the system's apps.
+        system.StartupItems = new Bundles.StartupItems(Bootstrap.StartupItemsPath, app => appManager?.FindBundle(app));
+
         // Every script, app or not, can show an alert, Quick Look, or open an app through the same desktop.
         system.Desktop = new ScriptDesktop(appWindows, () => appManager);
         vdb = new VdbListener(system.Developer!, windows, appWindows, () => appManager, desktopOutput);

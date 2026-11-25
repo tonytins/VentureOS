@@ -51,6 +51,21 @@ public sealed class DesktopLibraryTests : IDisposable
     }
 
     [Fact]
+    public void AnAppOutOfTheDockIsntListedEvenOnceItAsks()
+    {
+        App("Ghost", "", "", extra: "dock=\"hidden\"");
+
+        Open("""
+            venture.ui.setShownInDock(false)
+            for _, app in ipairs(venture.desktop.apps()) do print(app.name) end
+            venture.ui.setShownInDock(true)
+            for _, app in ipairs(venture.desktop.apps()) do print(app.name) end
+            """);
+
+        Assert.Equal(["Zeta", "Alpha", "Zeta", "Alpha", "Probe"], output.Lines);
+    }
+
+    [Fact]
     public void OpensAnAppAndRestoresAWindow()
     {
         Open($$"""
@@ -121,14 +136,14 @@ public sealed class DesktopLibraryTests : IDisposable
         Assert.True(manager.OpenApp("Probe", root, output), string.Join('\n', output.Lines));
     }
 
-    private void App(string name, string needs, string main, bool icon = false)
+    private void App(string name, string needs, string main, bool icon = false, string extra = "")
     {
         var contents = $"{root}/apps/{name}.app/Contents";
         Directory.CreateDirectory($"{contents}/Lua");
         Directory.CreateDirectory($"{contents}/Resources");
         var iconAttribute = icon ? """ icon="Contents/Resources/AppIcon.png" """ : "";
         File.WriteAllText($"{contents}/Info.xml",
-            $"""<App version="1"><Info identifier="dev.example.{name.ToLowerInvariant()}" name="{name}" needs="{needs}"{iconAttribute}/></App>""");
+            $"""<App version="1"><Info identifier="dev.example.{name.ToLowerInvariant()}" name="{name}" needs="{needs}"{iconAttribute} {extra}/></App>""");
         File.WriteAllText($"{contents}/Lua/main.lua", main + "\n");
         if (icon)
             File.WriteAllText($"{contents}/Resources/AppIcon.png", "a picture");

@@ -43,6 +43,9 @@ internal static class Bootstrap
     /// <summary>The desktop's saved look, which Settings and the <c>appearance</c> command write.</summary>
     public const string AppearancePath = UserDirectoryPath + "/settings/appearance.xml";
 
+    /// <summary>The apps the person chose to open with the desktop.</summary>
+    public const string StartupItemsPath = UserDirectoryPath + "/settings/startup.xml";
+
     /// <summary>Every app's About window's interface, which About VentureOS falls back to.</summary>
     public const string AboutInterfacePath = SystemDirectoryPath + "/interfaces/about.uix";
 

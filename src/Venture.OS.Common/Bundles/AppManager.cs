@@ -78,6 +78,26 @@ public sealed class AppManager(
     /// <summary>An entry in an apps folder: a bundle that read, or the reason it didn't.</summary>
     /// <param name="Path">The bundle folder's full path.</param>
     /// <param name="IsUser">Whether it's one of the user's apps rather than the system's.</param>
+    /// <summary>The system this manager's apps run on, for what they reach through it, such as startup items.</summary>
+    public ISystemInfo? SystemInfo => system;
+
+    /// <summary>
+    /// The installed app with this name, folder name (<c>Weather.app</c>), or identifier, a system app before a
+    /// user's, or <see langword="null"/>.
+    /// </summary>
+    public Bundle? FindBundle(string app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        foreach (var listing in Available())
+        {
+            if (listing.Bundle is { } bundle
+                && (bundle.Identifier == app || bundle.Name == app || listing.Folder == app || listing.Folder == app + ".app"))
+                return bundle;
+        }
+
+        return null;
+    }
+
     public sealed record Listing(string Folder, Bundle? Bundle, string? Problem, string Path = "", bool IsUser = false);
 
     /// <summary>Where apps' windows go, or <see langword="null"/> without a desktop.</summary>

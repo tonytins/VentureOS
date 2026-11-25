@@ -34,16 +34,18 @@ public sealed class UiLibraryTests : IDisposable
     private readonly WindowManager windows = new(800, 600);
     private readonly AppManager manager;
     private readonly AppWindows host;
+    private readonly StartupItems startup;
 
     public UiLibraryTests()
     {
         Directory.CreateDirectory(Path.Combine(root, "apps"));
         CommandRegistry registry = new();
-        host = new AppWindows(windows, events);
+        host = new AppWindows(windows, events) { Text = TestDesktopText.Create() };
+        startup = new StartupItems(Path.Combine(root, "startup.xml"), app => manager!.FindBundle(app));
         manager = new AppManager(
             Path.Combine(root, "apps"),
             new RuntimeCommands(registry.IsBuiltIn),
-            new FakeSystemInfo(),
+            new FakeSystemInfo { StartupItems = startup },
             windows: host);
     }
 
@@ -396,6 +398,48 @@ public sealed class UiLibraryTests : IDisposable
         Assert.True(manager.CloseApp("Pad", new RecordingOutput()));
         Open("""venture.ui.toast("Shown.")""");
         Assert.Equal("Shown.", Assert.Single(windows.Notifications.Waiting).Text);
+    }
+
+    [Fact]
+    public void AnAppAsksToOpenAtStartupAndOnlyThePersonsYesAddsIt()
+    {
+        windows.IsShowing = true;
+        Open("""
+            print(venture.ui.askToOpenAtStartup(function(added) print("added", added) end))
+            """);
+
+        // The alert is VentureOS's own, titled for the app, so only the person answers it.
+        var alert = windows.Windows.Single(window => window.Title == "Pad" && window.View.Script.Control("yes") is not null);
+        Assert.Null(alert.App);
+        Assert.Empty(startup.Load().Identifiers);
+
+        Send(alert, new UIEvent(UIEventKind.Pressed, "yes"));
+
+        Assert.Equal("false", output.Lines[^1]);
+        Assert.Equal("added\ttrue", events.Lines[^1]);
+        Assert.Equal(["dev.example.pad"], startup.Load().Identifiers);
+    }
+
+    [Fact]
+    public void AnAppAlreadyOnTheListIsntAskedAndNoKeepsItOff()
+    {
+        windows.IsShowing = true;
+        Open("""
+            print(venture.ui.askToOpenAtStartup(function(added) print("added", added) end))
+            """);
+        Send(windows.Windows.Single(window => window.View.Script.Control("no") is not null), new UIEvent(UIEventKind.Pressed, "no"));
+        Assert.Equal("false", output.Lines[^1]);
+        Assert.Equal("added\tfalse", events.Lines[^1]);
+        Assert.Empty(startup.Load().Identifiers);
+
+        Assert.True(startup.TrySet("dev.example.pad", true, out _));
+        Assert.True(manager.CloseApp("Pad", new RecordingOutput()));
+        int Asking() => windows.Windows.Count(window => window.View.Script.Control("yes") is not null);
+        var asking = Asking();
+        Open("""print(venture.ui.askToOpenAtStartup())""");
+
+        Assert.Equal("true", output.Lines[^1]);
+        Assert.Equal(asking, Asking());
     }
 
     [Fact]
