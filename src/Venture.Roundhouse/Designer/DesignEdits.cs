@@ -31,6 +31,7 @@ public static class DesignEdits
         new("TextArea", 180, 100, null),
         new("List", 140, 120, null),
         new("ProgressBar", 140, 12, null),
+        new("Slider", 140, 20, null),
         new("Region", 100, 60, null),
         new("Shelf", 200, 72, null),
         new("Grid", 200, 120, null),

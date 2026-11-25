@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.416
+
+- Roundhouse designs sliders again: Insert ▸ Slider and the library add one, the inspector offers `minValue`, `maxValue`, and `step`, and the canvas draws it as VentureOS does.
+
 ## 0.8.415
 
 - App tests move sliders with `app:slide(name, value)`, and `app:value` reads them.

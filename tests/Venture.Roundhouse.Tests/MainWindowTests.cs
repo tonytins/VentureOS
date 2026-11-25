@@ -678,6 +678,8 @@ public sealed class MainWindowTests : IDisposable
 
         Command(window, "Insert", "ProgressBar").Run();
         Assert.Contains("<ProgressBar name=\"progressBar\"", window.Text);
+        Command(window, "Insert", "Slider").Run();
+        Assert.Contains("<Slider name=\"slider\"", window.Text);
         window.Close();
     });
 

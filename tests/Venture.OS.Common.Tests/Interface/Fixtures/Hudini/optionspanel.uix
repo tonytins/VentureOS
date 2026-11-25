@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- An original options panel. The demo host owns what these settings mean, and moves each volume by its − and +
-     buttons, showing it in the bar between them. -->
+<!-- An original options panel. The demo host owns what these settings mean. -->
 <UIScript version="1">
   <Panel width="1024" height="160" edge="bottom"/>
 
@@ -21,15 +20,11 @@
   <Text name="titleLabel" x="180" y="14" width="300" height="18" style="heading" string="title"/>
 
   <Text name="musicLabel" x="180" y="50" width="100" height="14" style="label" string="musicText"/>
-  <Button name="musicDown" x="290" y="50" width="20" height="14" text="−" tooltip="volumeTip"/>
-  <ProgressBar name="music" x="316" y="50" width="208" height="14" maxValue="100" tooltip="volumeTip"/>
-  <Button name="musicUp" x="530" y="50" width="20" height="14" text="+" tooltip="volumeTip"/>
+  <Slider name="music" x="290" y="50" width="260" height="14" maxValue="100" tooltip="volumeTip"/>
   <Text name="musicValue" x="562" y="50" width="60" height="14" style="label"/>
 
   <Text name="soundLabel" x="180" y="80" width="100" height="14" style="label" string="soundText"/>
-  <Button name="soundDown" x="290" y="80" width="20" height="14" text="−" tooltip="volumeTip"/>
-  <ProgressBar name="sound" x="316" y="80" width="208" height="14" maxValue="100" tooltip="volumeTip"/>
-  <Button name="soundUp" x="530" y="80" width="20" height="14" text="+" tooltip="volumeTip"/>
+  <Slider name="sound" x="290" y="80" width="260" height="14" maxValue="100" tooltip="volumeTip"/>
   <Text name="soundValue" x="562" y="80" width="60" height="14" style="label"/>
 
   <Button name="moveLot" x="660" y="50" width="120" height="24" string="moveLotText"/>

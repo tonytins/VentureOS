@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- The budget, a modal window that pauses the city while it's open. Reset asks first, in a
-     confirm window stacked on top. Each figure's − and + buttons move it, and the bar between them shows it. -->
+     confirm window stacked on top. -->
 <UIScript version="1">
   <Window width="320" height="214"/>
 
@@ -8,21 +8,15 @@
   <Style name="figure" textColor="text"/>
 
   <Text name="taxLabel" x="12" y="14" width="90" height="14" style="label" text="Tax rate"/>
-  <Button name="taxDown" x="110" y="14" width="18" height="14" text="−"/>
-  <ProgressBar name="tax" x="132" y="14" width="106" height="14" maxValue="20"/>
-  <Button name="taxUp" x="242" y="14" width="18" height="14" text="+"/>
+  <Slider name="tax" x="110" y="14" width="150" height="14" maxValue="20"/>
   <Text name="taxValue" x="268" y="14" width="44" height="14" style="figure"/>
 
   <Text name="roadsLabel" x="12" y="40" width="90" height="14" style="label" text="Roads"/>
-  <Button name="roadsDown" x="110" y="40" width="18" height="14" text="−"/>
-  <ProgressBar name="roads" x="132" y="40" width="106" height="14" maxValue="100"/>
-  <Button name="roadsUp" x="242" y="40" width="18" height="14" text="+"/>
+  <Slider name="roads" x="110" y="40" width="150" height="14" maxValue="100"/>
   <Text name="roadsValue" x="268" y="40" width="44" height="14" style="figure"/>
 
   <Text name="parksLabel" x="12" y="66" width="90" height="14" style="label" text="Parks"/>
-  <Button name="parksDown" x="110" y="66" width="18" height="14" text="−"/>
-  <ProgressBar name="parks" x="132" y="66" width="106" height="14" maxValue="100"/>
-  <Button name="parksUp" x="242" y="66" width="18" height="14" text="+"/>
+  <Slider name="parks" x="110" y="66" width="150" height="14" maxValue="100"/>
   <Text name="parksValue" x="268" y="66" width="44" height="14" style="figure"/>
 
   <Text name="income" x="12" y="98" width="296" height="14" style="figure"/>
