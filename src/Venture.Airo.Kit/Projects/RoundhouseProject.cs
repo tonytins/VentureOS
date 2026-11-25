@@ -154,7 +154,7 @@ public sealed class RoundhouseProject
             Directory.CreateDirectory(root);
             File.WriteAllText(Path.Combine(root, FileName), $"""
                 <?xml version="1.0" encoding="UTF-8"?>
-                <!-- A Roundhouse Project: Roundhouse makes its App/ into {FlatXml.EncodeValue(name, '"')}.app to run or export it. -->
+                <!-- A Roundhouse Project: Roundhouse makes its App/ into an .app named after App/Info.xml's name, to run or export it. -->
                 <Project version="{SupportedVersion}">
                   <Info name="{FlatXml.EncodeValue(name, '"')}"/>
                 </Project>

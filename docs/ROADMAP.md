@@ -351,10 +351,11 @@ Panes and the sidebar hold more than controls, as GNOME's do, so the About
 window can show its app's icon beside its credits. Roundhouse designs what
 UIScript can hold, and the apps' and About's changes ship.
 
-- [ ] A window that comes back to the front when the one before it closes or
+- [x] A window that comes back to the front when the one before it closes or
   minimizes gets its focused field back.
-- [ ] `airo build` names a bundle as the shipped one is named, so `--replace`
-  replaces System Monitor rather than adding a second one beside it.
+- [x] System Monitor ships as `System Monitor.app`, named after its app as
+  `airo build` names bundles, so `--replace` replaces it rather than adding a
+  second one beside it.
 - [ ] UIScript: a `<Visual>` may sit in a pane; its `<Image>` stays at the
   root.
 - [ ] UIScript: a `<Sidebar>` may hold controls and visuals, positioned in
