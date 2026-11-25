@@ -89,6 +89,23 @@ public sealed class RightSidebarTests
         Assert.Equal([new UIEvent(UIEventKind.Selected, "queue", Index: 0)], events);
     }
 
+    [Fact]
+    public void TheWindowKeepsItsGripInItsCornerOverTheSidebarAndItResizes()
+    {
+        Assert.Equal(new UIRect(window.X + window.Width - 16, window.Y + window.Height - 16, 16, 16), window.ResizeGrip);
+        var (x, y) = ((int)window.ResizeGrip.X + 8, (int)window.ResizeGrip.Y + 8);
+
+        manager.Update(new DesktopInput(x, y, true));
+        manager.Update(new DesktopInput(x + 50, y + 20, true));
+        manager.Update(new DesktopInput(x + 100, y + 40, true));
+        manager.Update(new DesktopInput(x + 100, y + 40, false));
+
+        // The content takes the growth; the sidebar keeps its width on the right.
+        Assert.Equal(500, window.Width);
+        Assert.Equal(new UIRect(window.X + 400, window.Y, 100, window.Height), window.SidebarBounds);
+        Assert.Empty(events);
+    }
+
     private static int Pack(UIColor color) => DesktopBackground.Pack(color.Red, color.Green, color.Blue);
 
     private void Click(int x, int y)

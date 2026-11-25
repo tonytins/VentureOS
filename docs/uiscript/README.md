@@ -285,7 +285,7 @@ Every control takes `name` and the position and size attributes. All of these ar
 | `<Text>` | Text at its position | `text` or `string`, `alignment` |
 | `<FormattedText>` | Text on a background, with an inset | `text` or `string`, `alignment` |
 | `<Button>` | A clickable button | `text` or `string`, `image`, `scrolls`, `direction` |
-| `<TextField>` | A one-line text entry | `text` or `string`, `placeholder` or `placeholderString`, `maximumLength`, `readOnly`, `secure` |
+| `<TextField>` | A one-line text entry | `text` or `string`, `placeholder` or `placeholderString`, `maximumLength`, `readOnly`, `secure`, `alignment` |
 | `<TextArea>` | A multi-line text entry | `text` or `string`, `placeholder` or `placeholderString`, `maximumLength`, `readOnly`, `follows`, `alignment` |
 | `<List>` | A scrollable list the host fills | `text` or `string`, shown as its first item, `selectable` |
 | `<Slider>` | A draggable thumb on a track | `scrolls`, `minValue`, `maxValue`, `orientation` |
@@ -295,8 +295,9 @@ Every control takes `name` and the position and size attributes. All of these ar
 
 - **`text` and `string`:** `text` is literal, and `string` names a `<String>`. A control takes one or the other, and
   `placeholder` and `placeholderString` work the same way.
-- **`alignment`:** `left`, `center`, or `right`, which defaults to `left`. A text area aligns each of its lines, and
-  places its caret and selection with them.
+- **`alignment`:** `left`, `center`, or `right`, which defaults to `left`. A text area aligns each of its lines, and a
+  text field its text while all of it fits; a field's text that doesn't fit fills it from the left and scrolls, as
+  before. Either places its caret, selection, and placeholder with the text.
 - **`maximumLength`:** the most characters a text field or text area accepts, which defaults to 256 for a field and
   65,536 for an area.
 - **`readOnly`:** `true` or `false`, which defaults to `false`. A read-only text field or text area never takes focus
@@ -749,8 +750,8 @@ reads `.uis` files into the same model.
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
-- **2026-11-24:** `<TextArea>` lists `alignment`, which aligns each line. Readers already accepted it there; one
-  that draws text areas on the left is plainer but still correct.
+- **2026-11-24:** `<TextArea>` and `<TextField>` list `alignment`: an area aligns each line, and a field its text
+  while it fits. Readers already accepted it there; one that draws them on the left is plainer but still correct.
 - **2026-11-24:** A `<Sidebar>` may hold controls and visuals in place of rows, placed from its own corner. One that
   does has no rows and no panes. A reader from before refuses it.
 - **2026-11-24:** `<Sidebar>` takes `edge`, `left` or `right`, the window's edge it runs down; left is the default. A

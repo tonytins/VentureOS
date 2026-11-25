@@ -414,6 +414,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | 0.8.2xx: text fields honour `alignment` as text areas do; a window with a right sidebar keeps the usual grip in its corner, by my decision, since a VentureOS sidebar isn't dragged wider. |
 | 2026-11-24 | patch | 0.8.2xx: text areas honour `alignment`, so About VentureOS's credits are centred; Earthset is credited, NASA's from Artemis II. Keyboard panes go to Ideas, by my decision. |
 | 2026-11-24 | minor | 0.8.2xx is complete: Roundhouse's designer adds controls and pictures to a sidebar, moves them in and out, and resizes a right sidebar from its left edge. The next band is the owner's to plan. |
 | 2026-11-24 | patch | 0.8.2xx: a sidebar may hold controls and visuals in place of rows, on either edge; the desktop draws them. Roundhouse's designer placing them is the band's last item. |

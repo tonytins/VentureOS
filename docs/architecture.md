@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,069 tests, and 296 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,074 tests, and 296 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1866,6 +1866,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | Desktop (§9): text fields align their text by `alignment` while it fits, with the caret, selection, clicks, and placeholder; a right sidebar's window keeps its grip in the corner. |
 | 2026-11-24 | patch | Desktop (§9): text areas align each line by `alignment`, the caret, selection, and clicks with them; Earthset's source is recorded. |
 | 2026-11-24 | patch | Roundhouse (§9): the designer adds controls and pictures to a sidebar, moves them in and out of it, and resizes a right sidebar from its left edge. |
 | 2026-11-24 | patch | Sidebars (§9): a sidebar may hold controls and visuals in place of rows, placed from its own corner on either edge. |

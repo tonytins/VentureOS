@@ -1107,7 +1107,9 @@ public sealed class UIView
         var lineHeight = LineHeight(size);
         if (state.Text.Length == 0 && !isFocused && state.Placeholder is { } placeholder)
         {
-            painter.DrawText(Fit(painter, placeholder, size, width - (2 * Inset)), x + Inset, y + Inset, DesktopTheme.SecondaryText, size);
+            var fitted = Fit(painter, placeholder, size, width - (2 * Inset));
+            painter.DrawText(fitted, x + Inset + LineShift(painter, control, fitted, size, width - (2 * Inset)), y + Inset,
+                DesktopTheme.SecondaryText, size);
             return;
         }
 
@@ -1284,7 +1286,7 @@ public sealed class UIView
         var shown = field.IsSecure ? new string('*', state.Text.Length) : state.Text;
         var start = Math.Clamp(state.FirstShown, 0, shown.Length);
         var size = TextSize(field);
-        var along = x - Place(field.Frame, field.InSidebar, false).X - Inset;
+        var along = x - Place(field.Frame, field.InSidebar, false).X - Inset - state.ShownShift;
         for (var count = start; count < shown.Length; count++)
         {
             var before = painter.MeasureText(shown[start..count], size);
@@ -1451,7 +1453,8 @@ public sealed class UIView
 
         if (shown.Length == 0 && !isFocused && state.Placeholder is { } placeholder)
         {
-            painter.DrawText(Fit(painter, placeholder, size, room), x + Inset, textY, DesktopTheme.SecondaryText, size);
+            var fitted = Fit(painter, placeholder, size, room);
+            painter.DrawText(fitted, x + Inset + LineShift(painter, control, fitted, size, room), textY, DesktopTheme.SecondaryText, size);
             return;
         }
 
@@ -1463,7 +1466,9 @@ public sealed class UIView
         var visible = shown[start..];
         while (visible.Length > 0 && painter.MeasureText(visible, size) > room)
             visible = visible[..^1];
-        (state.FirstShown, state.Measurer) = (start, painter);
+        // Text that fits sits as the field is aligned; text that doesn't fills it, so there's nothing to shift.
+        var textX = x + Inset + (visible.Length == shown.Length ? LineShift(painter, control, visible, size, room) : 0);
+        (state.FirstShown, state.ShownShift, state.Measurer) = (start, textX - x - Inset, painter);
 
         // The selection, behind the text it covers.
         var (from, length) = state.Cursor.Selection;
@@ -1471,16 +1476,16 @@ public sealed class UIView
         if (isFocused && last > first)
         {
             var left = painter.MeasureText(shown[start..first], size);
-            painter.FillRectangle(x + Inset + left, textY, painter.MeasureText(shown[first..last], size), LineHeight(size), DesktopTheme.Selection);
+            painter.FillRectangle(textX + left, textY, painter.MeasureText(shown[first..last], size), LineHeight(size), DesktopTheme.Selection);
         }
 
         var color = state.Disabled ? DesktopTheme.DisabledText : TextColor(control);
-        painter.DrawText(visible, x + Inset, textY, color, size);
+        painter.DrawText(visible, textX, textY, color, size);
 
         if (isFocused)
         {
             // A pixel past the advance, since glyphs can reach the end of their advance and would touch the caret.
-            var caretX = x + Inset + painter.MeasureText(shown[start..state.Caret], size) + 1;
+            var caretX = textX + painter.MeasureText(shown[start..state.Caret], size) + 1;
             painter.FillRectangle(caretX, textY, 1, LineHeight(size), TextColor(control));
         }
     }
@@ -1798,8 +1803,8 @@ public sealed class UIView
         };
 
     /// <summary>
-    /// How far a text area's line starts past its inset for the area's <c>alignment</c>: nothing on the left, half the
-    /// spare room centred, and all of it on the right. Drawing, the selection, the caret, and clicks share it.
+    /// How far a text field's or area's line starts past its inset for its <c>alignment</c>: nothing on the left, half
+    /// the spare room centred, and all of it on the right. Drawing, the selection, the caret, and clicks share it.
     /// </summary>
     private static int LineShift(IPainter painter, UIControl control, string line, int size, int room) =>
         control.Alignment switch
@@ -1880,6 +1885,9 @@ public sealed class UIView
 
         /// <summary>The first character a text field showed when last drawn, for placing the caret at a click.</summary>
         public int FirstShown { get; set; }
+
+        /// <summary>How far past its inset a text field's text was drawn for its alignment, for placing the caret at a click.</summary>
+        public int ShownShift { get; set; }
         public UIListState? List { get; init; }
 
         // A shelf control's icons, which its owner fills.

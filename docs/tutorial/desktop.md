@@ -226,8 +226,8 @@ corner. The window starts at its `width` and `height` and shrinks no further
 than `minWidth` and `minHeight` (or its starting size, without them). Give a
 control edge offsets to keep it to the window's edges: `edgeOffsetRight`
 alone pins it to the right, and `edgeOffsetLeft` with `edgeOffsetRight`
-stretches it, as Files' list does. Leave the bottom right 16 pixels clear for
-the grip.
+stretches it, as Files' list does. Leave the window's bottom right 16 pixels
+clear for the grip, inside a sidebar on the right too.
 
 ## More from Lua
 

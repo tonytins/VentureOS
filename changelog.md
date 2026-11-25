@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.210
+
+- A text field's `alignment` works too: its text sits left, centred, or right while it fits, with its caret, selection, and placeholder. Text too long for the field fills it and scrolls, as before.
+- A resizable window with a sidebar on the right keeps the same grip in its bottom-right corner as every other window.
+
 ## 0.8.209
 
 - A text area's `alignment` works: each line sits left, centred, or right, with its caret and selection, so About VentureOS's credits are centred.

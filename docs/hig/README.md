@@ -194,8 +194,9 @@ A window has a title bar, its content, and, if it has one, a sidebar down its le
   title bar, so there's no separate strip of buttons under it. A title bar with toolbar icons or a subtitle grows
   from 30 to 42 pixels.
 - **Leave room to grab.** A title bar keeps empty space beside the title, so the window can always be dragged.
-- **A resizable window** has a grip in its bottom-right corner. When it resizes, the sidebar keeps its width and the
-  content takes the rest.
+- **A resizable window** has a grip in its bottom-right corner, the same on every window, over a right sidebar's
+  shade when it has one. When it resizes, the sidebar keeps its width and the content takes the rest. A VentureOS
+  sidebar is part of the window's layout, not a pane the person drags wider, as GNOME's split views are.
 - **New windows cascade**, each 24 pixels down from the last, and stop above the dock when it's always shown.
 
 ### Sidebar and content
