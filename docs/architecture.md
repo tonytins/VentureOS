@@ -2,7 +2,7 @@
 
 > **Last reviewed:** 2026-11-11 · **Last updated:** 2026-11-24 · **Change:** minor (testing: the system's tests and the apps' own) · **Target:** Cosmos gen3 3.0.99, x64 (ARM64 builds)
 
-## Current state (2026-11-24)
+## Current state (2026-11-25)
 
 What exists on `main` today. The numbered sections below describe the
 design, and mark what's planned rather than built; where the code differs,
@@ -13,10 +13,11 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,127 tests, and 302 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,197 tests, and 302 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
-  command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
+  command-line tool in `tools/vdb` that sends apps to VentureOS and gives an agent its app windows over MCP
+  (51 tests),
   and `airo`, a C# command-line tool in `src/Venture.Airo` that builds
   Roundhouse Projects into apps and runs their tests, on `Venture.Airo.Kit`,
   which Roundhouse shares (`Venture.Airo.Tests`, 53 tests).
@@ -213,7 +214,8 @@ VentureOS/
 │  ├─ Venture.Roundhouse.Tests/    xUnit v3 tests that drive Roundhouse off-screen with Avalonia.Headless
 │  └─ Venture.Airo.Tests/          xUnit v3 tests for airo and Venture.Airo.Kit, on sample projects of their own
 ├─ projects/                      Roundhouse Projects: the built-in apps, each with its Tests/, and about.rproj
-├─ tools/vdb/                     vdb, a Swift command-line tool that sends apps to VentureOS (here until it has its own repository)
+├─ tools/vdb/                     vdb, a Swift command-line tool that sends apps to VentureOS and serves its app windows over MCP
+│                                  (here until it has its own repository); install.sh builds and installs it
 ├─ packaging/                     Roundhouse's packages for Linux, Windows, and macOS, after CityLimits'; writes dist/
 ├─ docs/                          architecture, roadmap, scorecard, the tutorials (tutorial/), the HIG (hig/), the UIScript drafts, and vdb's protocol
 ├─ .agents/skills/                C# and Cosmos guidance for agents
@@ -569,6 +571,13 @@ how it's sealed, and [docs/vdb](./vdb/README.md) the protocol.
   tests replay the same recorded conversations VentureOS's do, and both
   sides reproduce `sealed-lines.txt`, sealed by Python's `cryptography`. While following output, it sends an empty
   line every 10 seconds to stay under the idle limit.
+- **`vdb mcp`** serves the `ui` feature to an agent as eight MCP tools, on
+  stdio: `MCPServer` answers newline-delimited JSON-RPC by hand (initialize,
+  ping, tools/list, tools/call), and `VdbAgentTools` makes a connection when
+  a tool needs one, and again after 25 seconds unused or anything but a
+  refusal. Screenshots become PNGs with stored deflate blocks (`PNG`), so no
+  zlib is needed. Its [design](./design/2026-11-25-vdb-mcp-design.md) has the
+  why.
 
 ---
 
@@ -1930,6 +1939,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | vdb (§8.1): `vdb mcp`, the tool's MCP server, and `install.sh --rebuild`; the current state counts 2,197 tests for Common and 51 for vdb. |
 | 2026-11-25 | minor | Boot (§4) and vdb (§8.1): `venture.startDesktop()` opens the desktop in place of the first prompt, for `developer.local.lua`; the kernel offers `ui`, queuing keys for the next frame and reading screenshots from the desktop's canvas. |
 | 2026-11-25 | patch | vdb (§8.1): vdb/1's `ui` feature in Common, offered when a session has a desktop (`IVdbDesktop`): `windows`, `snapshot`, `act`, `key`, and `screenshot`, over app windows only; the kernel doesn't offer it yet. |
 | 2026-11-25 | patch | Layout: airo's actions and reads (`app:press`, `app:choose`, ...) move into Common's `WindowControls`, with a snapshot of a window's controls, so vdb can use them too. |

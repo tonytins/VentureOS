@@ -61,9 +61,11 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
   shipped `.app` in `rootfs/` may differ: an app ships when its project is  
   built into `rootfs/` with `airo build --replace`. See  
   [its README](projects/README.md).
-- `tools/vdb/` is vdb, a Swift package (`swift build`, `swift test`) that  
-  sends apps to a running VentureOS over [vdb/1](docs/vdb/README.md), whose  
-  recorded conversations both its tests and Common's replay. Swift Argument  
+- `tools/vdb/` is vdb, a Swift package (`swift build`, `swift test`,  
+  `./install.sh [--rebuild]`) that sends apps to a running VentureOS over  
+  [vdb/1](docs/vdb/README.md), whose recorded conversations both its tests  
+  and Common's replay, and whose `vdb mcp` gives an agent VentureOS's app  
+  windows over MCP. Swift Argument  
   Parser, swift-log, swift-crypto, and GitVersion are approved for it alone.  
   It moves to a repository of its own later.
 - `packaging/` holds the scripts that build Roundhouse into packages for  
@@ -97,10 +99,16 @@ cosmos build -p src/Venture.OS.Kernel               # no new warnings
 dotnet run --project src/Venture.Airo -- test projects/<App>.rproj  # a built-in app's own tests
 ```
 
-- To try a change on the running system, `./run.sh --vdb`, open the desktop,  
-  and send it with `vdb install <App>.app --launch --for 5`. A git-ignored  
+- To try a change on the running system, `./run.sh --vdb` and send it with  
+  `vdb install <App>.app --launch --for 5`. A git-ignored  
   `rootfs/system/developer.local.lua` (from `vdb identity --lua`) turns on  
-  developer mode and trusts the computer at boot, so no one has to press Trust.
+  developer mode, trusts the computer, and boots to the desktop, so no one  
+  types into QEMU or presses Trust.
+- To use an app on the running system, use `vdb mcp`'s tools when you have  
+  them, or the `ui` commands they're built on: `snapshot` to read a window's  
+  controls, `act` to press, type, submit, and choose by name, `key` for  
+  shortcuts, and `screenshot` to look. QEMU ignores xdotool's pointer, so  
+  don't click.
 
 - `cosmos check` also reports updates to the Cosmos CLI. Mention one to the  
   owner after the build succeeds.

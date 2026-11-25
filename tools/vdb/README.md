@@ -16,7 +16,12 @@ hasn't been tried yet.
 cd tools/vdb
 swift build -c release      # .build/release/vdb
 swift test
+./install.sh                # builds in release mode and installs it in ~/.local/bin
+./install.sh --rebuild      # cleans the build first, for when an incremental one goes wrong
 ```
+
+`install.sh` builds incrementally every time, so it's quick when nothing changed and never installs a stale vdb. It
+runs from any folder, and says when `~/.local/bin` isn't on your `PATH`.
 
 It uses [Swift Argument Parser](https://github.com/apple/swift-argument-parser),
 [swift-log](https://github.com/apple/swift-log), [swift-crypto](https://github.com/apple/swift-crypto) for the

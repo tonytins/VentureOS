@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.404
+
+- vdb's `install.sh` builds every time, incrementally, so it never installs a stale vdb, and `--rebuild` cleans the build first. It runs from any folder, stops at the first failure, and says when `~/.local/bin` isn't on your `PATH`.
+
 ## 0.8.403
 
 - `vdb mcp`: an MCP server, on standard input and output, through which an agent lists VentureOS's app windows, reads their controls, presses, types, submits, and chooses by name, presses keys, takes screenshots, and installs and opens apps. Add it to an agent as a stdio server. It connects when a tool first needs VentureOS, and again once the connection has gone quiet.

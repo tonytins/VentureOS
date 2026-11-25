@@ -1,6 +1,7 @@
 # vdb: driving apps over MCP
 
-**Status:** proposed for 0.8.4xx, Hokutosei. **Date:** 2026-11-25.
+**Status:** built in 0.8.4xx, Hokutosei; [docs/vdb](../vdb/README.md#ui) and
+[vdb's README](../../tools/vdb/README.md#use-with-an-agent) say how it works now. **Date:** 2026-11-25.
 
 An agent working on VentureOS can build an app, send it with `vdb install`, and read what it prints, but it can't
 use the app. QEMU's window takes keys from xdotool and ignores its pointer, so nothing an agent does reaches a
@@ -76,7 +77,7 @@ chosen row. It's built from the same reads, so it can't disagree with them.
 ### vdb/1 gains a `ui` feature
 
 VentureOS offers `ui` in its `hello` (`ok vdb/1 install launch ui`). A computer that doesn't know it never sends
-its commands; `vdb mcp` refuses to start against a VentureOS that doesn't offer it, saying which feature is missing.
+its commands; `vdb mcp` answers every tool with an error against a VentureOS that doesn't offer it, saying it's too old (built: it connects only when a tool needs it, so it can't refuse to start).
 The new commands, sealed like every other, after trust:
 
 | Command | Answer |

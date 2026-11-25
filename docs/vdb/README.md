@@ -7,7 +7,9 @@ built this way is in [its design](../design/2026-11-18-vdb-design.md), and why a
 [that design](../design/2026-11-19-vdb-encryption-design.md).
 
 VentureOS listens while the desktop runs and developer mode is on (Settings ▸ Developer, or
-`venture.developer.enable()`); under QEMU, `./run.sh --vdb` forwards the port. The [`vdb` tool](../../tools/vdb/README.md) sends apps.
+`venture.developer.enable()`); under QEMU, `./run.sh --vdb` forwards the port. A build whose `init.lua` calls
+`venture.startDesktop()`, as a developer's `developer.local.lua` does, boots to the desktop. The
+[`vdb` tool](../../tools/vdb/README.md) sends apps, and `vdb mcp` gives an agent the [ui](#ui) commands as MCP tools.
 
 ## Lines
 
