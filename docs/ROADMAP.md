@@ -45,7 +45,7 @@ stage to the next, and add a line to the revision history.
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
 | 0.7 | Seto | released 2026-11-24, `v0.7.712`; [notes](./releases/0.7.md) | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; Roundhouse projects; nesting |
-| 0.8 | Hokutosei | in development | Making apps: airo and app tests, richer interfaces, scroll bars and grids, and loose threads and toasts |
+| 0.8 | Hokutosei | in development | Making apps: airo and app tests, richer interfaces, scroll bars and grids, loose threads and toasts, and status items |
 
 ## 0.4, Pere Marquette
 
@@ -408,8 +408,25 @@ value, now that scroll bars are built in.
   screenshots; app windows only, not panels or the system's alerts.
 - [x] A developer's build boots to the desktop when `developer.local.lua`
   asks, with `venture.startDesktop()`.
-- [ ] Notification toasts.
+- [ ] Notification toasts and their history, opened from a bell beside the
+  clock ([their design](./design/2026-11-25-toasts-design.md)).
 - [ ] A simpler `<Slider>`, for choosing a value.
+
+**0.8.5xx, status items**
+
+Apps put items in the menu bar, as macOS's menu extras, and can stay out of
+the dock, living in the menu bar alone. Split from 0.8.4xx by my decision,
+since it's bigger than toasts. To be talked through before it starts,
+including whether apps that stay out of the dock start at boot.
+
+- [ ] UIScript: `<StatusItem>`, a new root, after the sidebar: one that holds
+  nothing is a button, one that holds menus drops them down, and one that
+  holds controls and visuals opens a small panel of them.
+- [ ] Items belong to supervised apps: one leaves the bar when its app ends,
+  and comes back when it starts again.
+- [ ] Apps that stay out of the dock, in `Info.xml` and changeable through
+  the `venture` API.
+- [ ] The bell and the clock as the bar's first status items.
 
 ## Ideas
 
@@ -459,6 +476,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | 0.8.4xx: toasts are designed, passive, in the dock's shelf, with a history opened by a bell. 0.8.5xx, status items, is added by my decision, split from toasts since it's bigger. |
 | 2026-11-25 | patch | 0.8.4xx: `vdb mcp` ships, checked end to end on a boot, and vdb's `install.sh` builds every time, with `--rebuild` to clean first. Toasts come next. |
 | 2026-11-25 | patch | 0.8.4xx: a developer's build boots to the desktop with `venture.startDesktop()`, and the running system offers vdb's `ui`; a boot showed both. |
 | 2026-11-25 | minor | 0.8.4xx, loose threads and toasts, begins, by my word: `vdb mcp` first, then toasts, then a simpler `<Slider>`. |
