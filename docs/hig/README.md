@@ -206,7 +206,8 @@ Its selection is softer than a list's selection, a neutral gray rather than the 
 it is what the user is looking at.
 
 A sidebar of places goes on the left, where it leads to the content. One that goes with the content instead, such as
-a radio's queue or a file's details, goes on the right (`edge="right"`), as Shortwave's player does. The traffic
+a radio's player or a file's details, goes on the right (`edge="right"`), as Shortwave's player does, and may hold
+controls of its own in place of rows. The traffic
 lights stay on the title bar's left either way, and the title and toolbar span only the content.
 
 ### The menu bar

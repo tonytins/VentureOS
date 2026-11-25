@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,052 tests, and 284 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,066 tests, and 285 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -1435,7 +1435,12 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   by the sidebar's width. With `edge="right"` (0.8.2xx) it runs down the
   right instead, the content's corner stays at the window's left, and the
   bar's items end short of it; `DesktopWindow.SidebarBounds` says where it
-  is for the frame and Roundhouse's designer. `UIView` keeps it as a selectable list placed left
+  is for the frame and Roundhouse's designer. A sidebar may hold controls
+  and visuals in place of rows (`UISidebar.HoldsContent`, each marked
+  `InSidebar`): `UIView.Place` measures them from the sidebar's corner,
+  level with the content's top, then moves them to the sidebar's edge, so
+  drawing, hits, and resizing serve them as any control; such a sidebar
+  has no list, and Lua's list calls on it say so. `UIView` keeps it as a selectable list placed left
   of that corner, so selection, scrolling, and Lua's list calls serve it
   unchanged; only its drawing differs: taller rows, no box, a rounded
   shade for the selection and hover, rows' icons as 16-pixel symbols in
@@ -1855,6 +1860,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | Sidebars (§9): a sidebar may hold controls and visuals in place of rows, placed from its own corner on either edge. |
 | 2026-11-24 | patch | Sidebars (§9): `edge="right"` puts a sidebar down the window's right, with the content at the left and the bar ending short of it. |
 | 2026-11-24 | patch | About VentureOS (§2, §9): its own interface, `about_system.uix`, with About and Credits panes and the credits from `credits.txt`, falling back to the apps' `about.uix`. |
 | 2026-11-24 | patch | Panes (§9): a pane holds visuals as well as controls, and `UIView` shows a visual only with its pane; the images stay at the root. |

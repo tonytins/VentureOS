@@ -61,6 +61,31 @@ public sealed class UIScriptSidebarTests
         Assert.Equal([new UIIgnoredAttribute("Sidebar", "colour", 1)], script.IgnoredAttributes);
     }
 
+    [Fact]
+    public void ASidebarMayHoldControlsAndVisualsInPlaceOfRows()
+    {
+        var script = UIScript.Parse($"""
+            {Head}
+            <Image name="art" path="art.png"/>
+            <Sidebar name="player" width="200" edge="right">
+              <Visual name="cover" image="art" x="20" y="10" width="160" height="160"/>
+              <Button name="stop" x="70" y="180" width="60" height="24" text="Stop"/>
+            </Sidebar>
+            <List name="stations" x="10" y="10" width="280" height="180"/>
+            </UIScript>
+            """);
+
+        Assert.True(script.Sidebar!.HoldsContent);
+        Assert.True(script.Visuals.Single().InSidebar);
+        Assert.True(script.Control("stop")!.InSidebar);
+        Assert.False(script.Control("stations")!.InSidebar);
+        Assert.Empty(script.IgnoredAttributes);
+    }
+
+    [Fact]
+    public void AnEmptySidebarIsAListOfRows() =>
+        Assert.False(UIScript.Parse($"""{Head}<Sidebar name="places" width="130"></Sidebar></UIScript>""").Sidebar!.HoldsContent);
+
     [Theory]
     [InlineData(null, UIEdge.Left)]
     [InlineData("left", UIEdge.Left)]
@@ -84,6 +109,10 @@ public sealed class UIScriptSidebarTests
     [InlineData("""<Sidebar name="go" width="100"/><ToolbarItem name="go" title="Go"/>""", "\"go\"")]
     [InlineData("""<Sidebar name="list" width="100"/><List name="list" x="0" y="0" width="10" height="10"/>""", "\"list\"")]
     [InlineData("""<Sidebar name="places" width="100" edge="top"/>""", "left or right, not \"top\"")]
+    [InlineData("""<Sidebar name="s" width="100"><Button name="b" x="0" y="0" width="1" height="1"/></Sidebar><Pane name="p" title="P"/>""", "a sidebar has one or the other")]
+    [InlineData("""<Sidebar name="s" width="100"><Pane name="p" title="P"/></Sidebar>""", "<Pane> can't be inside <Sidebar>; a sidebar holds controls and visuals")]
+    [InlineData("""<Sidebar name="s" width="100"><Image name="i" path="i.png"/></Sidebar>""", "<Image> can't be inside <Sidebar>")]
+    [InlineData("""<Sidebar name="s" width="100"><Button name="b" x="0" y="0" width="1" height="1" pane="p"/></Sidebar><Pane name="p" title="P"/>""", "inside the sidebar, so it can't be in a pane")]
     public void RefusesMistakes(string elements, string message)
     {
         var text = $"""{Head}{elements}</UIScript>""";

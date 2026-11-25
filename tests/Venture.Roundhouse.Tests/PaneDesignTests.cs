@@ -143,6 +143,28 @@ public sealed class PaneDesignTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void ASidebarThatHoldsControlsOpensWithThemMappedInIt() => TestApp.Run(() =>
+    {
+        File.WriteAllText(document, """
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Sidebar name="player" width="160" edge="right">
+                <Button name="stop" x="40" y="40" width="80" height="24" text="Stop"/>
+              </Sidebar>
+              <List name="stations" x="10" y="10" width="280" height="180"/>
+            </UIScript>
+            """);
+        var window = Open();
+        var stop = window.Map!.BoundsOf(Index(window, "stop"))!.Value;
+        var sidebar = window.Map.BoundsOf(Index(window, "player"))!.Value;
+
+        Assert.True(stop.X >= sidebar.X && stop.X + stop.Width <= sidebar.X + sidebar.Width);
+        Click(window, stop.X + 5, stop.Y + 5);
+        Assert.Equal(Index(window, "stop"), window.Selection);
+        window.Close();
+    });
+
     private MainWindow Open()
     {
         MainWindow window = new() { AskToLeave = _ => Task.FromResult(Bundles.LeaveChoice.DontSave) };

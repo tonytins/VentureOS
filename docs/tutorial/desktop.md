@@ -203,12 +203,21 @@ copy and paste. See [UIScript menus](../uiscript/README.md#menus).
   See [UIScript sidebar](../uiscript/README.md#sidebar).
 - **Panes:** for a sidebar that switches between sets of controls, as
   Settings has, add a `<Pane name="general" title="General">` for each row,
-  in order, holding its controls (or `pane="general"` on each control
-  instead, outside any pane). The sidebar shows the panes' titles and only
+  in order, holding its controls and pictures (`<Visual>`; their `<Image>`
+  stays outside, with the others), or `pane="general"` on each control
+  instead, outside any pane. The sidebar shows the panes' titles and only
   the chosen pane's controls, with no code of yours; a control in no pane
   shows on every pane. The rows are the document's, so `setItems` on that
   sidebar is an error, but `select` and the `selected` event work as usual.
   See [UIScript panes](../uiscript/README.md#panes).
+- **On the right:** `edge="right"` on `<Sidebar>` puts it down the window's
+  right, for something that goes with the content rather than leads to it.
+- **A sidebar of your own controls:** put controls and pictures inside the
+  `<Sidebar>`, as a radio's player sits beside its stations. Their positions
+  start at the sidebar's corner, level with the content's top, and edge
+  offsets keep them to the sidebar's edges. Such a sidebar has no rows, so
+  no panes or `setItems`; set its controls by name, as any others. See
+  [UIScript](../uiscript/README.md#a-sidebar-that-holds-controls).
 
 ## Resizing
 

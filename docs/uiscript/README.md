@@ -58,7 +58,7 @@ demo documents.
 - `DOCTYPE` declarations are not allowed, which also rules out custom entities. The five standard entities, such as
   `&lt;`, work as usual.
 - Every element is a direct child of `<UIScript>`, in any order, and holds no children, except where its section
-  says it may hold others, as a [`<Menu>`](#menus) and a [`<Pane>`](#panes) do. An element anywhere else refuses the
+  says it may hold others, as a [`<Menu>`](#menus), a [`<Pane>`](#panes), and a [`<Sidebar>`](#sidebar) do. An element anywhere else refuses the
   document.
 - No element holds text. Text goes in attributes.
 - Controls draw in document order, with later controls on top, whether they sit in `<UIScript>` or in a pane.
@@ -537,12 +537,44 @@ A host that shows sidebars:
 
 - Draws it at the window's `edge`, the window's full height, and makes the window wider by its width. When a
   resizable window resizes, the sidebar keeps its width and stays on its edge, and the content takes the rest.
-- Treats it as a selectable list of one-line rows under its name: it fills it, selects a row, and reports `selected`,
-  as for `<List selectable="true">`.
+- Treats an empty one as a selectable list of one-line rows under its name: it fills it, selects a row, and reports
+  `selected`, as for `<List selectable="true">`.
 - Sets it apart from the content, such as with its own shade, and marks the selected row.
 
 A reader from before `edge` ignores it and lists it, drawing the sidebar on the left: plainer, but still correct, since
 nothing in the content moves with the sidebar.
+
+### A sidebar that holds controls
+
+A sidebar may hold controls and visuals in place of rows, as a radio's player sits beside its stations:
+
+```xml
+<Image name="art" path="art.png"/>
+<Sidebar name="player" width="200" edge="right">
+  <Visual name="cover" image="art" x="52" y="16" width="96" height="96"/>
+  <Text name="station" x="10" y="122" width="180" height="24" alignment="center" text="Jazz Radio"/>
+  <Button name="stop" x="60" y="178" width="80" height="26" text="Stop"/>
+  <Slider name="volume" x="16" y="218" width="168" height="20" edgeOffsetLeft="16" edgeOffsetRight="16"/>
+</Sidebar>
+```
+
+Rules:
+
+- What a sidebar holds is placed from the sidebar's own corner, level with the content's top, and its edge offsets are
+  the sidebar's: its width, and the content's height. Its visuals' `<Image>`s stay in `<UIScript>`.
+- A sidebar that holds anything has no rows, so it can't also have panes. Either refuses the document, as does a
+  control in it naming a `pane`, or anything in it other than controls and visuals.
+- Its controls and visuals share the document's names, report events, and are shown, hidden, and set by name, as any
+  others are.
+
+A host that shows them:
+
+- Draws and hit-tests them where the sidebar is, on either edge, over its shade, and keeps them with it when a
+  resizable window resizes.
+- Has no rows to fill or select. VentureOS refuses `window:setItems` and the other list calls on such a sidebar.
+
+A reader from before sidebars could hold anything refuses one that does, rather than draw its controls over the
+content.
 
 ## Panes
 
@@ -716,6 +748,8 @@ reads `.uis` files into the same model.
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-24:** A `<Sidebar>` may hold controls and visuals in place of rows, placed from its own corner. One that
+  does has no rows and no panes. A reader from before refuses it.
 - **2026-11-24:** `<Sidebar>` takes `edge`, `left` or `right`, the window's edge it runs down; left is the default. A
   reader from before ignores it and draws the sidebar on the left.
 - **2026-11-24:** A `<Pane>` may hold visuals as well as controls; their `<Image>`s stay in `<UIScript>`. Visuals

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.207
+
+- A sidebar can hold controls and pictures of its own in place of rows, such as a radio's cover, title, Stop button, and volume beside its stations. They're placed from the sidebar's corner, on either edge, and stay with it when the window resizes. See [the spec](docs/uiscript/README.md#a-sidebar-that-holds-controls).
+
 ## 0.8.206
 
 - A sidebar can run down a window's right, with `edge="right"` on `<Sidebar>`, as Shortwave's player does. The traffic lights stay on the left, and the title and toolbar span only the content. Roundhouse's inspector offers the choice, and its designer selects the sidebar where it's drawn.

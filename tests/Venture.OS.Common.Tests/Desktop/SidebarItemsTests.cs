@@ -127,6 +127,27 @@ public sealed class SidebarItemsTests : IDisposable
         Assert.Equal(["General"], View.List("places")!.Items);
     }
 
+    [Fact]
+    public void ASidebarThatHoldsControlsHasNoRowsToSet()
+    {
+        Open("""
+            print(pcall(function() window:setItems("player", { "Home" }) end))
+            window:setText("nowPlaying", "Jazz Radio")
+            print(window:text("nowPlaying"))
+            """, """
+            <UIScript version="1">
+              <Window width="300" height="200"/>
+              <Sidebar name="player" width="160" edge="right">
+                <Text name="nowPlaying" x="10" y="10" width="140" height="20"/>
+              </Sidebar>
+            </UIScript>
+            """);
+
+        Assert.Contains(output.Lines, line => line.StartsWith("false") && line.Contains("is a sidebar that holds controls, not rows"));
+        Assert.Contains("Jazz Radio", output.Lines);
+        Assert.Null(View.List("player"));
+    }
+
     private UIView View => Assert.Single(windows.Windows).View;
 
     private void Open(string code, string document = Document)

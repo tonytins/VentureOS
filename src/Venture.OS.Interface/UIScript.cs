@@ -223,13 +223,20 @@ public sealed record UIText(string Value, bool IsReference)
     public static UIText Reference(string name) => new(name, true);
 }
 
-/// <summary>A decorative image, shown with its <see cref="Pane"/> when it's in one.</summary>
-public sealed record UIVisual(string Name, string Image, UIFrame Frame, int Line, string? Pane = null);
+/// <summary>
+/// A decorative image, shown with its <see cref="Pane"/> when it's in one, and placed from the sidebar's corner when
+/// it's <see cref="InSidebar"/>.
+/// </summary>
+public sealed record UIVisual(string Name, string Image, UIFrame Frame, int Line, string? Pane = null, bool InSidebar = false);
 
 /// <summary>A list a slider or scroll button moves, and for a button, which way.</summary>
 public sealed record UIScrollBinding(string List, UIScrollDirection? Direction);
 
-/// <summary>A control, with every attribute any control can take; those that don't apply are unset.</summary>
+/// <summary>
+/// A control, with every attribute any control can take; those that don't apply are unset. One
+/// <see cref="InSidebar"/> is placed from the sidebar's corner, and anchored to the sidebar's edges, rather than the
+/// content's.
+/// </summary>
 public sealed record UIControl(
     string Name,
     UIControlType Type,
@@ -250,7 +257,8 @@ public sealed record UIControl(
     (float Minimum, float Maximum)? ValueRange = null,
     UIOrientation? Orientation = null,
     bool Follows = false,
-    string? Pane = null);
+    string? Pane = null,
+    bool InSidebar = false);
 
 /// <summary>
 /// Which of the desktop's standard menus a document's menu adds to, so a host can merge it rather than show two
@@ -353,9 +361,9 @@ public sealed record UITitleField(string Name, string? Placeholder, int Line);
 /// A list of places down the window's <see cref="Edge"/>, the left unless the document says, as Nautilus and Finder
 /// have. The host draws it the window's full height, beside the content rather than in it, so it has a width and no
 /// position, and the window's own size is the content's. Code treats it as a selectable <c>&lt;List&gt;</c> of this
-/// name.
+/// name, unless it <see cref="HoldsContent"/>: controls and visuals of its own, in place of rows.
 /// </summary>
-public sealed record UISidebar(string Name, float Width, int Line, UIEdge Edge = UIEdge.Left);
+public sealed record UISidebar(string Name, float Width, int Line, UIEdge Edge = UIEdge.Left, bool HoldsContent = false);
 
 /// <summary>
 /// One of a sidebar's panes: a row in the sidebar, by <see cref="Title"/>, and the
@@ -531,10 +539,11 @@ public sealed class UIScript
         {
             var element = document.Children[at];
 
-            // Only a menu and a pane hold elements: a menu its items, separators, and submenus, and a pane its
-            // controls and visuals. Everything else sits in <UIScript>.
+            // Only a menu, a pane, and a sidebar hold elements: a menu its items, separators, and submenus, and a pane
+            // or a sidebar its controls and visuals. Everything else sits in <UIScript>.
             MenuDraft? holder = null;
             string? inPane = null;
+            var inSidebar = false;
             if (element.Parent != FlatXmlDocument.RootIndex)
             {
                 var parent = document.Children[element.Parent];
@@ -546,13 +555,17 @@ public sealed class UIScript
                     case "Pane" when element.Name == "Visual" || ControlType(element.Name) is not null:
                         inPane = paneNames[element.Parent];
                         break;
+                    case "Sidebar" when element.Name == "Visual" || ControlType(element.Name) is not null:
+                        inSidebar = true;
+                        break;
                     default:
                         throw new UIScriptException(
                             parent.Name switch
                             {
                                 "Menu" => $"<{element.Name}> can't be inside <Menu>; a menu holds menu items, separators, and submenus.",
                                 "Pane" => $"<{element.Name}> can't be inside <Pane>; a pane holds controls and visuals.",
-                                _ => $"<{element.Name}> can't be inside <{parent.Name}>; only a <Menu> or a <Pane> holds other elements.",
+                                "Sidebar" => $"<{element.Name}> can't be inside <Sidebar>; a sidebar holds controls and visuals.",
+                                _ => $"<{element.Name}> can't be inside <{parent.Name}>; only a <Menu>, a <Pane>, or a <Sidebar> holds other elements.",
                             },
                             element.Line);
                 }
@@ -604,7 +617,7 @@ public sealed class UIScript
 
                 case "Visual":
                     visuals.Add(new UIVisual(
-                        reader.RequiredString("name"), reader.RequiredString("image"), ReadFrame(reader), element.Line, inPane));
+                        reader.RequiredString("name"), reader.RequiredString("image"), ReadFrame(reader), element.Line, inPane, inSidebar));
                     break;
 
                 case "Menu":
@@ -666,7 +679,8 @@ public sealed class UIScript
                             null or "left" => UIEdge.Left,
                             "right" => UIEdge.Right,
                             var other => throw new UIScriptException($"A sidebar's edge is left or right, not \"{other}\".", element.Line),
-                        });
+                        },
+                        HoldsContent: document.ChildrenOf(at).Length > 0);
                     break;
 
                 case "Pane":
@@ -695,6 +709,14 @@ public sealed class UIScript
                             throw new UIScriptException(
                                 $"\"{control.Name}\" is inside the pane \"{inPane}\", so it doesn't name one with pane.", element.Line);
                         control = control with { Pane = inPane };
+                    }
+                    else if (inSidebar)
+                    {
+                        // A sidebar's controls are on every pane's window, beside them, so none is in a pane.
+                        if (control.Pane is not null)
+                            throw new UIScriptException(
+                                $"\"{control.Name}\" is inside the sidebar, so it can't be in a pane.", element.Line);
+                        control = control with { InSidebar = true };
                     }
                     else if (control.Pane is { } named)
                     {
@@ -1046,6 +1068,10 @@ public sealed class UIScript
 
         if (Panes.Count > 0 && Sidebar is null)
             throw new UIScriptException("Panes are a sidebar's rows, so a document with panes needs a <Sidebar>.", Panes[0].Line);
+        if (Panes.Count > 0 && Sidebar is { HoldsContent: true } holding)
+            throw new UIScriptException(
+                "Panes are a sidebar's rows, and this sidebar holds controls in place of rows; a sidebar has one or the other.",
+                holding.Line);
 
         foreach (var control in Controls)
             ValidateControl(control);

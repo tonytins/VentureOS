@@ -31,6 +31,13 @@ public sealed class DesignMap
         var children = document.Xml.Children;
         Window = FindWindow(children);
 
+        // The sidebar first, behind what it holds and its rows, so a click on one of its controls picks the control.
+        for (var index = 0; index < children.Count; index++)
+        {
+            if (children[index].Name == "Sidebar" && window.SidebarBounds is { } sidebar)
+                drawn.Add((index, sidebar with { Y = top, Height = window.Height - window.BarHeight }));
+        }
+
         // Visuals are drawn first and controls over them, each in document order, so later entries are in front.
         foreach (var visuals in (bool[])[true, false])
         {
@@ -46,7 +53,7 @@ public sealed class DesignMap
             }
         }
 
-        // The title bar's items and title field, and the sidebar down the window's left, around the content.
+        // The title bar's items and title field, around the content.
         var toolbarItem = 0;
         var pane = 0;
         for (var index = 0; index < children.Count; index++)
@@ -60,9 +67,6 @@ public sealed class DesignMap
                 case "TitleField":
                     if (window.TitleFieldBounds is { Width: > 0 } field)
                         drawn.Add((index, field));
-                    break;
-                case "Sidebar" when window.SidebarBounds is { } sidebar:
-                    drawn.Add((index, sidebar with { Y = top, Height = window.Height - window.BarHeight }));
                     break;
             }
         }

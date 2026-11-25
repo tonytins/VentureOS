@@ -194,19 +194,24 @@ public sealed class UIView
             SidebarWidth = (int)MathF.Ceiling(side.Width);
             IsSidebarOnRight = side.Edge == UIEdge.Right;
 
+            // A sidebar that holds controls has no rows: its controls are placed by Place, from its corner.
+        }
+
+        if (script.Sidebar is { HoldsContent: false } listed)
+        {
             // Left of the view's corner, or just past the content's right edge, held there as the window resizes.
             sidebar = new UIControl(
-                side.Name, UIControlType.List,
+                listed.Name, UIControlType.List,
                 IsSidebarOnRight
                     ? new UIFrame(0, 0, SidebarWidth, null, new UIEdgeOffsets(null, -SidebarWidth, SidebarInset, SidebarInset))
                     : new UIFrame(-SidebarWidth, 0, SidebarWidth, null, new UIEdgeOffsets(null, null, SidebarInset, SidebarInset)),
-                side.Line, IsSelectable: true);
+                listed.Line, IsSelectable: true);
             var rows = new UIListState();
             foreach (var pane in script.Panes)
                 rows.Items.Add(pane.Title);
             if (rows.Items.Count > 0)
                 rows.SelectedIndex = 0;
-            states[side.Name] = new State { List = rows };
+            states[listed.Name] = new State { List = rows };
         }
 
         // The title bar's parts share the namespace too: toolbar items are disabled and selected by name, and the
@@ -256,7 +261,10 @@ public sealed class UIView
     }
 
     /// <summary>The sidebar's name, which reads and fills like a list's, or <see langword="null"/> without one.</summary>
-    public string? SidebarName => sidebar?.Name;
+    public string? SidebarName => script.Sidebar?.Name;
+
+    /// <summary>Whether the sidebar holds controls and visuals of its own in place of rows, so it isn't a list.</summary>
+    public bool SidebarHoldsContent => script.Sidebar?.HoldsContent == true;
 
     /// <summary>How wide the sidebar is, in whole pixels, or 0 without one.</summary>
     public int SidebarWidth { get; }
@@ -334,12 +342,12 @@ public sealed class UIView
     public UIRect? Bounds(string name)
     {
         if (script.Control(name) is { } control)
-            return Place(control.Frame, control.Image is not null);
+            return Place(control.Frame, control.InSidebar, control.Image is not null);
 
         foreach (var visual in script.Visuals)
         {
             if (visual.Name == name)
-                return Place(visual.Frame, hasImage: true);
+                return Place(visual.Frame, visual.InSidebar, hasImage: true);
         }
 
         return null;
@@ -653,7 +661,7 @@ public sealed class UIView
         {
             var control = script.Controls[index];
             var state = states[control.Name];
-            if (Showing(state) && Place(control.Frame, control.Image is not null).Contains(x, y))
+            if (Showing(state) && Place(control.Frame, control.InSidebar, control.Image is not null).Contains(x, y))
                 return state.Tooltip;
         }
 
@@ -765,7 +773,7 @@ public sealed class UIView
             if (!Showing(states[visual.Name]))
                 continue;
 
-            var bounds = Offset(Place(visual.Frame, hasImage: true), originX, originY);
+            var bounds = Offset(Place(visual.Frame, visual.InSidebar, hasImage: true), originX, originY);
             var (x, y, width, height) = ((int)bounds.X, (int)bounds.Y, (int)bounds.Width, (int)bounds.Height);
             if (ScaledImage(visual, width, height) is { } image)
                 painter.DrawImage(image, x, y);
@@ -779,7 +787,7 @@ public sealed class UIView
             if (!Showing(state))
                 continue;
 
-            var bounds = Offset(Place(control.Frame, control.Image is not null), originX, originY);
+            var bounds = Offset(Place(control.Frame, control.InSidebar, control.Image is not null), originX, originY);
             var target = PainterFor(control, painter);
             switch (control.Type)
             {
@@ -849,7 +857,7 @@ public sealed class UIView
 
             case UIControlType.List when hit.IsSelectable:
                 var list = state.List!;
-                var index = RowAt(hit, list, y - Place(hit.Frame, false).Y);
+                var index = RowAt(hit, list, y - Place(hit.Frame, hit.InSidebar, false).Y);
                 if (index < 0 || index >= list.Items.Count)
                 {
                     lastListClick = null;
@@ -905,7 +913,7 @@ public sealed class UIView
         if (script.Control(name) is not { } slider)
             return;
 
-        var bounds = Place(slider.Frame, false);
+        var bounds = Place(slider.Frame, slider.InSidebar, false);
         var fraction = Vertical(slider, bounds)
             ? (y - bounds.Y) / Math.Max(1, bounds.Height)
             : (x - bounds.X) / Math.Max(1, bounds.Width);
@@ -1010,7 +1018,7 @@ public sealed class UIView
     // ---- Text areas ----
 
     private int VisibleLines(UIControl control) =>
-        Math.Max(1, (int)((Place(control.Frame, false).Height - (2 * Inset)) / LineHeight(TextSize(control))));
+        Math.Max(1, (int)((Place(control.Frame, control.InSidebar, false).Height - (2 * Inset)) / LineHeight(TextSize(control))));
 
     /// <summary>
     /// The text's wrapped lines, as (start, length) into it, worked out again only when the text or width changed.
@@ -1247,7 +1255,7 @@ public sealed class UIView
         if (state.Measurer is not { } painter || state.Lines is not { } lines || !ReferenceEquals(state.LinesText, state.Text))
             return state.Text.Length;
 
-        var bounds = Place(area.Frame, false);
+        var bounds = Place(area.Frame, area.InSidebar, false);
         var size = TextSize(area);
         var line = Math.Clamp(state.FirstLine + (int)((y - bounds.Y - Inset) / LineHeight(size)), 0, lines.Count - 1);
         var (start, length) = lines[line];
@@ -1272,7 +1280,7 @@ public sealed class UIView
         var shown = field.IsSecure ? new string('*', state.Text.Length) : state.Text;
         var start = Math.Clamp(state.FirstShown, 0, shown.Length);
         var size = TextSize(field);
-        var along = x - Place(field.Frame, false).X - Inset;
+        var along = x - Place(field.Frame, field.InSidebar, false).X - Inset;
         for (var count = start; count < shown.Length; count++)
         {
             var before = painter.MeasureText(shown[start..count], size);
@@ -1292,7 +1300,7 @@ public sealed class UIView
             var control = script.Controls[index];
             var state = states[control.Name];
             if (Showing(state) && !state.Disabled && control.Type != UIControlType.Text
-                && control.Type != UIControlType.Region && Place(control.Frame, control.Image is not null).Contains(x, y))
+                && control.Type != UIControlType.Region && Place(control.Frame, control.InSidebar, control.Image is not null).Contains(x, y))
                 return control;
         }
 
@@ -1364,7 +1372,7 @@ public sealed class UIView
     private void DrawButton(IPainter painter, UIControl control, State state, UIRect bounds)
     {
         var (x, y, width, height) = Ints(bounds);
-        var place = Place(control.Frame, control.Image is not null);
+        var place = Place(control.Frame, control.InSidebar, control.Image is not null);
         if (control.Image is { } imageName)
         {
             DrawImageButton(painter, control, state, place, imageName, x, y, width, height);
@@ -1516,7 +1524,7 @@ public sealed class UIView
 
         // The row under the pointer, by the same arithmetic a click uses.
         var hovered = -1;
-        var place = Place(control.Frame, false);
+        var place = Place(control.Frame, control.InSidebar, false);
         if (!state.Disabled && hover is { } at && place.Contains(at.X, at.Y))
             hovered = RowAt(control, list, at.Y - place.Y);
 
@@ -1623,12 +1631,22 @@ public sealed class UIView
     // ---- Layout and helpers ----
 
     /// <summary>Places a frame within the window, as Hudini's <c>placement</c> does.</summary>
-    private UIRect Place(UIFrame frame, bool hasImage)
+    private UIRect Place(UIFrame frame, bool hasImage) => Place(frame, inSidebar: false, hasImage);
+
+    /// <summary>
+    /// Where a frame is, relative to the view's corner. One in the sidebar is measured from the sidebar's corner,
+    /// level with the content's top, and anchored to its edges, then moved to where the sidebar is: left of the
+    /// corner, or past the content's right edge.
+    /// </summary>
+    private UIRect Place(UIFrame frame, bool inSidebar, bool hasImage)
     {
         var width = frame.Width ?? (hasImage ? FallbackImageSize : 0);
         var height = frame.Height ?? (hasImage ? FallbackImageSize : 0);
-        var (x, placedWidth) = Placement(frame.X, width, frame.EdgeOffsets?.Left, frame.EdgeOffsets?.Right, WindowSize.Width);
+        var across = inSidebar ? SidebarWidth : WindowSize.Width;
+        var (x, placedWidth) = Placement(frame.X, width, frame.EdgeOffsets?.Left, frame.EdgeOffsets?.Right, across);
         var (y, placedHeight) = Placement(frame.Y, height, frame.EdgeOffsets?.Top, frame.EdgeOffsets?.Bottom, WindowSize.Height);
+        if (inSidebar)
+            x += IsSidebarOnRight ? WindowSize.Width : -SidebarWidth;
         return new UIRect(x, y, placedWidth, placedHeight);
     }
 
@@ -1717,7 +1735,7 @@ public sealed class UIView
         LineHeight(TextSize(control)) + (ReferenceEquals(control, sidebar) ? SidebarRowExtra : 2);
 
     private int VisibleRows(UIControl control) =>
-        Math.Max(1, (int)((Place(control.Frame, false).Height - 2) / RowHeight(control)));
+        Math.Max(1, (int)((Place(control.Frame, control.InSidebar, false).Height - 2) / RowHeight(control)));
 
     /// <summary>
     /// The row at a height from a list's top, counting the room a separator takes before a group, or -1 for none.
@@ -1745,7 +1763,7 @@ public sealed class UIView
     private int LastFirstRow(UIControl control, UIListState list)
     {
         var rowHeight = RowHeight(control);
-        var room = Place(control.Frame, false).Height - 2;
+        var room = Place(control.Frame, control.InSidebar, false).Height - 2;
         var used = 0f;
         for (var first = list.Items.Count - 1; first >= 0; first--)
         {

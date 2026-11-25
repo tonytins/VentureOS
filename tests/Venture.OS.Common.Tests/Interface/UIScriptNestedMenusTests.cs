@@ -106,7 +106,7 @@ public sealed class UIScriptNestedMenusTests
     [InlineData("<Menu name='m' title='M'><Menu name='s' title='S'/></Menu><MenuItem menu='m' name='j' title='J'/>", "\"j\" names the menu \"m\", which holds its items inside it")]
     [InlineData("<Menu name='m' title='M'><Menu name='s' title='S'/></Menu><MenuItem menu='s' name='j' title='J'/>", "\"j\" names the submenu \"s\"")]
     [InlineData("<Menu name='m' title='M'><Button name='b' x='0' y='0' width='1' height='1'/></Menu>", "<Button> can't be inside <Menu>")]
-    [InlineData("<Menu name='m' title='M'><MenuItem name='i' title='I'><MenuItem name='j' title='J'/></MenuItem></Menu>", "<MenuItem> can't be inside <MenuItem>; only a <Menu> or a <Pane> holds other elements")]
+    [InlineData("<Menu name='m' title='M'><MenuItem name='i' title='I'><MenuItem name='j' title='J'/></MenuItem></Menu>", "<MenuItem> can't be inside <MenuItem>; only a <Menu>, a <Pane>, or a <Sidebar> holds other elements")]
     [InlineData("<Region name='r' x='0' y='0' width='1' height='1'><Menu name='m' title='M'/></Region>", "<Menu> can't be inside <Region>")]
     [InlineData("<Menu name='m' title='M'><MenuItem name='a' title='A' hotkey='S'/><Menu name='s' title='S' hotkey='s'/></Menu>", "Two entries in the M menu use the hotkey s")]
     [InlineData("<Menu name='m' title='M'><MenuItem name='a' title='A'/><Menu name='s' title='S'><MenuItem name='a' title='A'/></Menu></Menu>", "\"a\" is used more than once")]

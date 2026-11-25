@@ -1110,7 +1110,9 @@ public static class UiLibrary
         if (handle.View.List(name) is { } list)
             return list;
 
-        Fail(lua, $"window:{method} needs a list, and \"{name}\" in {handle.Document} isn't one");
+        Fail(lua, name == handle.View.SidebarName && handle.View.SidebarHoldsContent
+            ? $"window:{method} needs a list, and \"{name}\" in {handle.Document} is a sidebar that holds controls, not rows"
+            : $"window:{method} needs a list, and \"{name}\" in {handle.Document} isn't one");
         return null!;
     }
 
