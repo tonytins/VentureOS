@@ -913,8 +913,9 @@ public sealed class DesktopSession
     /// </summary>
     /// <returns>Whether it started.</returns>
     /// <summary>
-    /// Hands the fallback app to the supervisor to keep, the first time: from then on the supervisor starts it again
-    /// whenever it ends, at once after it's closed, with growing waits while it fails.
+    /// Hands the kept apps to the supervisor, the first time: every system app whose <c>Info.xml</c> says
+    /// <c>kept="true"</c>, such as Files and the Dock. From then on the supervisor starts each again whenever it ends,
+    /// at once after it's closed, with growing waits while it fails. A user app's <c>kept</c> counts for nothing.
     /// </summary>
     /// <returns>Whether it started now.</returns>
     private bool KeepFallbackRunning()
@@ -929,20 +930,39 @@ public sealed class DesktopSession
 
         // The fallback app first, so its windows land behind the dock's panel and anything opened after.
         var started = false;
-        foreach (var kept in (ReadOnlySpan<string?>)[FallbackApp, DockApp])
+        foreach (var kept in KeptApps())
         {
-            if (kept is null || IsAppOpen(kept))
+            if (IsAppOpen(kept.Name))
                 continue;
-            if (!apps.OpenApp(kept, workingDirectory, appOutput, explainNeeds: true, RestartPolicy.Always))
+            // By name, as the dock opens apps, since a path here is the host's, which a rooted run reads as its own.
+            if (!apps.OpenApp(kept.Name, workingDirectory, appOutput, explainNeeds: true, RestartPolicy.Always))
                 continue;
 
-            ShowMessages(kept, kept);
+            ShowMessages(kept.Name, kept.Name);
             started = true;
         }
 
         if (started)
             TellDock();
         return started;
+    }
+
+    /// <summary>The system's kept apps, the fallback app first, then the rest as their folders list.</summary>
+    private List<Bundle> KeptApps()
+    {
+        List<Bundle> kept = [];
+        foreach (var listing in apps!.Available())
+        {
+            if (listing is { IsUser: false, Bundle: { IsKept: true } bundle })
+            {
+                if (bundle.Name == FallbackApp)
+                    kept.Insert(0, bundle);
+                else
+                    kept.Add(bundle);
+            }
+        }
+
+        return kept;
     }
 
     private void Watch()

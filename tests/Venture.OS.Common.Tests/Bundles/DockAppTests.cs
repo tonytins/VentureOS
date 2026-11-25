@@ -202,7 +202,7 @@ public sealed class DockAppTests : IDisposable
         Directory.CreateDirectory($"{contents}/Resources");
         var iconAttribute = icon ? """ icon="Contents/Resources/AppIcon.png" """ : "";
         File.WriteAllText($"{contents}/Info.xml",
-            $"""<App version="1"><Info identifier="dev.example.{name.ToLowerInvariant()}" name="{name}"{iconAttribute}/></App>""");
+            $"""<App version="1"><Info identifier="dev.example.{name.ToLowerInvariant()}" name="{name}"{iconAttribute}{(name == "Files" ? " kept=\"true\"" : "")}/></App>""");
         File.WriteAllText($"{contents}/Lua/main.lua", main + "\n");
         if (window)
             File.WriteAllText($"{contents}/Resources/main.uix", """<UIScript><Window width="200" height="100"/></UIScript>""");

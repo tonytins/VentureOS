@@ -155,7 +155,7 @@ public sealed class MenuBarPanelTests : IDisposable
         Directory.CreateDirectory($"{contents}/Lua");
         Directory.CreateDirectory($"{contents}/Resources");
         File.WriteAllText($"{contents}/Info.xml",
-            $"""<App version="1"><Info identifier="dev.example.{name.ToLowerInvariant()}" name="{name}"/></App>""");
+            $"""<App version="1"><Info identifier="dev.example.{name.ToLowerInvariant()}" name="{name}"{(name == "Files" ? " kept=\"true\"" : "")}/></App>""");
         File.WriteAllText($"{contents}/Lua/main.lua", main + "\n");
         File.Copy(ShippedBar, $"{contents}/Resources/menubar.uix");
         File.WriteAllText($"{contents}/Resources/main.uix", """<UIScript><Window width="300" height="200"/></UIScript>""");

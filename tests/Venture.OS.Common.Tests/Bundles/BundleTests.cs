@@ -52,6 +52,30 @@ public sealed class BundleTests : IDisposable
     }
 
     [Fact]
+    public void ReadsWhetherItsKeptAndShownInTheDock()
+    {
+        var plain = Bundle.Read(App("Plain.app", "<App><Info identifier='dev.example.plain' name='Plain'/></App>"), BundleKind.App);
+        var daemon = Bundle.Read(App("Daemon.app",
+            "<App><Info identifier='dev.example.daemon' name='Daemon' kept='true' dock='hidden'/></App>"), BundleKind.App);
+
+        Assert.False(plain.IsKept);
+        Assert.True(plain.IsShownInDock);
+        Assert.True(daemon.IsKept);
+        Assert.False(daemon.IsShownInDock);
+        Assert.Empty(daemon.IgnoredAttributes);
+    }
+
+    [Theory]
+    [InlineData("kept='yes'", "kept=\"yes\" isn't true or false.")]
+    [InlineData("dock='away'", "dock=\"away\" isn't shown or hidden.")]
+    public void RefusesAKeptOrDockItCantRead(string attribute, string reason)
+    {
+        var path = App("Odd.app", $"<App><Info identifier='dev.example.odd' name='Odd' {attribute}/></App>");
+
+        Assert.Contains(reason, Assert.Throws<BundleException>(() => Bundle.Read(path, BundleKind.App)).Message);
+    }
+
+    [Fact]
     public void ListsAttributesItSkipped()
     {
         var path = App("Typo.app", "<App><Info identifier='dev.example.typo' name='Typo' nedds='files'/></App>");

@@ -51,7 +51,7 @@ public sealed class Bundle
 
     private const string InfoPath = "Contents/Info.xml";
 
-    private static readonly string[] InfoAttributes = ["identifier", "name", "version", "needs", "main", "icon", "image", "description"];
+    private static readonly string[] InfoAttributes = ["identifier", "name", "version", "needs", "main", "icon", "image", "description", "kept", "dock"];
 
     private Bundle(
         BundleKind kind,
@@ -92,6 +92,15 @@ public sealed class Bundle
 
     /// <summary>What it's for, in a sentence, as its About window shows it, or <see langword="null"/>.</summary>
     public string? Description { get; init; }
+
+    /// <summary>
+    /// Whether the desktop keeps it running, starting it with the desktop and again whenever it ends, as it does
+    /// Files and the Dock: <c>kept="true"</c>. Only a system app's counts, so an app can't make itself unkillable.
+    /// </summary>
+    public bool IsKept { get; init; }
+
+    /// <summary>Whether its icon shows in the dock while it runs: <c>dock="shown"</c>, the default, or <c>"hidden"</c>.</summary>
+    public bool IsShownInDock { get; init; } = true;
 
     /// <summary>The scopes it declares, for all its code.</summary>
     public ScriptScopes Needs { get; }
@@ -223,9 +232,24 @@ public sealed class Bundle
                 throw new BundleException($"{label} has no {main[(root.Length + 1)..]} to run.");
         }
 
+        var kept = info["kept"] switch
+        {
+            null or "false" => false,
+            "true" => true,
+            var other => throw Problem(label, info.Line, $"kept=\"{other}\" isn't true or false."),
+        };
+        var dock = info["dock"] switch
+        {
+            null or "shown" => true,
+            "hidden" => false,
+            var other => throw Problem(label, info.Line, $"dock=\"{other}\" isn't shown or hidden."),
+        };
+
         return new Bundle(kind, root, identifier, name, info["version"], needs, main, icon, ignored)
         {
             Description = string.IsNullOrWhiteSpace(info["description"]) ? null : info["description"]!.Trim(),
+            IsKept = kept,
+            IsShownInDock = dock,
         };
     }
 

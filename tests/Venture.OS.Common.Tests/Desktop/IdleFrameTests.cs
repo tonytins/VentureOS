@@ -24,7 +24,7 @@ public sealed class IdleFrameTests : IDisposable
         Directory.CreateDirectory(Path.Combine(contents, "Lua"));
         Directory.CreateDirectory(Path.Combine(contents, "Resources"));
         File.WriteAllText(Path.Combine(contents, "Info.xml"), """
-            <App version="1"><Info identifier="dev.example.shelf" name="Shelf" needs="ui"/></App>
+            <App version="1"><Info identifier="dev.example.shelf" name="Shelf" needs="ui" kept="true"/></App>
             """);
         File.WriteAllText(Path.Combine(contents, "Resources", "main.uix"), """
             <UIScript version="1" requires="menus">

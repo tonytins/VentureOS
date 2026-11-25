@@ -1703,8 +1703,11 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   It takes no more work, and `Supervisor.Tick` ends it, never in the middle of
   its code or of a frame's events; the desktop then says so, in front of the
   failures it explains. A failing startup ends it as failed to start.
-- **Kept apps:** the desktop opens its fallback app, Files, with the `Always`
-  policy, and the supervisor starts it again whenever it ends: at once when
+- **Kept apps:** the desktop opens every system app whose `Info.xml` says
+  `kept="true"` (`Bundle.IsKept`), Files and the Dock today, its fallback app
+  first, with the `Always` policy; a user app's `kept` counts for nothing, so
+  an app can't make itself unkillable. The supervisor starts each again
+  whenever it ends: at once when
   it's closed or killed, or on its first crash; after 2, 5, 10, then every 30
   seconds while it keeps failing; a minute of running settles it. The
   desktop ticks the supervisor every frame, and the shell after each command.
@@ -1942,6 +1945,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | Kept apps (§9): system apps say `kept="true"` in `Info.xml`, and `<Info>` also reads `dock` (`shown` or `hidden`, used from 0.8.5xx's next phase); `DesktopSession` keeps what they say instead of naming Files and the Dock. |
 | 2026-11-25 | patch | Current state: sliders; 0.8.4xx is complete. |
 | 2026-11-25 | patch | Roundhouse's library and Insert menu offer Slider again; VentureOS's copies of Hudini's examples get their value sliders back (`optionspanel`'s volumes, `city/budget`'s figures). |
 | 2026-11-25 | patch | `WindowControls.TrySlide`, shared by airo's `app:slide` and vdb's `act … slide` (and `vdb mcp`'s); snapshots name sliders `slider` and give no text for sliders and progress bars. |

@@ -415,19 +415,23 @@ value, now that scroll bars are built in.
 
 **0.8.5xx, status items**
 
-Apps put items in the menu bar, as macOS's menu extras, and can stay out of
-the dock, living in the menu bar alone. Split from 0.8.4xx by my decision,
-since it's bigger than toasts. To be talked through before it starts,
-including whether apps that stay out of the dock start at boot.
+Apps put items in the menu bar, as macOS's menu extras, can stay out of the
+dock, and can open with the desktop, as macOS's login items do, with a
+window, a status item, or nothing at all, as a daemon. The apps the desktop
+keeps running say so in their own `Info.xml` rather than in its code. Split
+from 0.8.4xx by my decision ([its design](./design/2026-11-25-status-items-design.md)).
 
+- [ ] Kept apps: a system app's `kept="true"`, which Files and the Dock
+  have, in place of the two the desktop named in its code.
+- [ ] Startup items, which I choose in Settings or an app asks for: opened
+  with the desktop, left ended if they quit or crash.
+- [ ] Apps that stay out of the dock, in `Info.xml` and through the
+  `venture` API.
 - [ ] UIScript: `<StatusItem>`, a new root, after the sidebar: one that holds
   nothing is a button, one that holds menus drops them down, and one that
-  holds controls and visuals opens a small panel of them.
-- [ ] Items belong to supervised apps: one leaves the bar when its app ends,
-  and comes back when it starts again.
-- [ ] Apps that stay out of the dock, in `Info.xml` and changeable through
-  the `venture` API.
-- [ ] The bell and the clock as the bar's first status items.
+  holds controls and visuals opens a small panel of them. It belongs to its
+  app's process, and the bell and the clock join its row.
+- [ ] Settings' Startup pane and System Monitor's Processes pane ship.
 
 ## Ideas
 
@@ -477,6 +481,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | 0.8.5xx, status items, begins, by my word, with its design: startup items as daemons, kept apps in `Info.xml`, and System Monitor's process list join it. |
 | 2026-11-25 | minor | 0.8.4xx is complete: the value slider ships, for apps and Hudini's games alike, with a glossed rail progress bars share; a boot showed it in light and dark. 0.8.5xx, status items, is next, to be talked through first. |
 | 2026-11-25 | patch | 0.8.4xx: toasts and their history ship, with the bell, `venture.ui.toast`, crash notices as toasts, and vdb's posts and `notifications`; checked on boots in light and dark. A simpler `<Slider>` is next. |
 | 2026-11-25 | minor | 0.8.4xx: toasts are designed, passive, in the dock's shelf, with a history opened by a bell. 0.8.5xx, status items, is added by my decision, split from toasts since it's bigger. |

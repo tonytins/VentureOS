@@ -28,7 +28,7 @@ public sealed class FallbackAppTests : IDisposable
         Directory.CreateDirectory(Path.Combine(contents, "Lua"));
         Directory.CreateDirectory(Path.Combine(contents, "Resources"));
         File.WriteAllText(Path.Combine(contents, "Info.xml"), """
-            <App version="1"><Info identifier="dev.example.shelf" name="Shelf" needs="ui files"/></App>
+            <App version="1"><Info identifier="dev.example.shelf" name="Shelf" needs="ui files" kept="true"/></App>
             """);
         File.WriteAllText(Path.Combine(contents, "Resources", "main.uix"), """
             <UIScript><Window width="200" height="100"/></UIScript>
