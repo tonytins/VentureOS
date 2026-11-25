@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- Earthset: the Earth setting behind the Moon, seen from Orion during Artemis II's lunar flyby on April 6, 2026. A
-     NASA photo (art002e009288), in the public domain: https://images.nasa.gov/details/art002e009288
-     Earthset-light.png or Earthset-dark.png beside the image would be shown in that mode instead. -->
-<Wallpaper version="1">
-  <Info identifier="dev.tonytins.ventureos.wallpaper.earthset" name="Earthset" image="Contents/Resources/Earthset.png"
-        icon="Contents/Resources/Thumbnail.png"
-        description="The Earth setting behind the Moon."/>
-</Wallpaper>

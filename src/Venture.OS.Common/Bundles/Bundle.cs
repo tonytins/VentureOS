@@ -14,12 +14,6 @@ public enum BundleKind
 
     /// <summary>Shared Lua modules with resources, <c>Name.library</c>, with <c>&lt;Library&gt;</c>. Not loaded yet.</summary>
     Library,
-
-    /// <summary>
-    /// A picture for the desktop, <c>Name.wallpaper</c>, with <c>&lt;Wallpaper&gt;</c>; its <c>image</c> is required,
-    /// and may have light and dark variants beside it (<see cref="Bundle.ImageFor"/>).
-    /// </summary>
-    Wallpaper,
 }
 
 /// <summary>An attribute a reader didn't know and skipped, which may be a typo; see <see cref="Bundle.IgnoredAttributes"/>.</summary>
@@ -108,34 +102,12 @@ public sealed class Bundle
     /// <summary>The full path of its icon, or <see langword="null"/>.</summary>
     public string? Icon { get; }
 
-    /// <summary>The full path of a wallpaper's picture; <see langword="null"/> for other kinds.</summary>
-    public string? Image { get; private init; }
-
-    /// <summary>
-    /// The picture to show in light or dark: the one beside <see cref="Image"/> named with <c>-light</c> or
-    /// <c>-dark</c> before its extension, such as <c>Earthset-dark.png</c>, when it exists, and otherwise the image
-    /// itself, which serves both. <see langword="null"/> for a bundle without an image.
-    /// </summary>
-    /// <param name="exists">Whether a file exists, so this can be tested without files.</param>
-    public string? ImageFor(bool dark, Func<string, bool>? exists = null)
-    {
-        if (Image is not { } image)
-            return null;
-
-        var dot = image.LastIndexOf('.');
-        var slash = image.LastIndexOf('/');
-        var variant = dot > slash
-            ? $"{image[..dot]}{(dark ? "-dark" : "-light")}{image[dot..]}"
-            : $"{image}{(dark ? "-dark" : "-light")}";
-        return (exists ?? File.Exists)(variant) ? variant : image;
-    }
-
     /// <summary>Attributes the reader didn't know and skipped. Worth logging while developing, to catch typos.</summary>
     public IReadOnlyList<IgnoredAttribute> IgnoredAttributes { get; }
 
     // Spelled out rather than through Enum.GetValues or ToString, which lean on runtime type metadata that
     // Cosmos's runtime may not have.
-    private static readonly BundleKind[] Kinds = [BundleKind.App, BundleKind.Theme, BundleKind.Library, BundleKind.Wallpaper];
+    private static readonly BundleKind[] Kinds = [BundleKind.App, BundleKind.Theme, BundleKind.Library];
 
     /// <summary>The root element name for a kind, such as <c>App</c>.</summary>
     public static string RootName(BundleKind kind) => kind switch
@@ -143,7 +115,6 @@ public sealed class Bundle
         BundleKind.App => "App",
         BundleKind.Theme => "Theme",
         BundleKind.Library => "Library",
-        BundleKind.Wallpaper => "Wallpaper",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
@@ -153,7 +124,6 @@ public sealed class Bundle
         BundleKind.App => "an app",
         BundleKind.Theme => "a theme",
         BundleKind.Library => "a library",
-        BundleKind.Wallpaper => "a wallpaper",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
@@ -163,7 +133,6 @@ public sealed class Bundle
         BundleKind.App => ".app",
         BundleKind.Theme => ".theme",
         BundleKind.Library => ".library",
-        BundleKind.Wallpaper => ".wallpaper",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 
@@ -254,21 +223,9 @@ public sealed class Bundle
                 throw new BundleException($"{label} has no {main[(root.Length + 1)..]} to run.");
         }
 
-        string? image = null;
-        if (info["image"] is { } imagePath)
-            image = Inside(root, imagePath, "image", label, info.Line);
-        if (kind == BundleKind.Wallpaper)
-        {
-            if (image is null)
-                throw Problem(label, info.Line, "A wallpaper's <Info> needs image=\"...\", such as Contents/Resources/Picture.png.");
-            if (!File.Exists(image))
-                throw new BundleException($"{label} has no {image[(root.Length + 1)..]} to show.");
-        }
-
         return new Bundle(kind, root, identifier, name, info["version"], needs, main, icon, ignored)
         {
             Description = string.IsNullOrWhiteSpace(info["description"]) ? null : info["description"]!.Trim(),
-            Image = image,
         };
     }
 

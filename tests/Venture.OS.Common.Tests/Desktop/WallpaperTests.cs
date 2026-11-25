@@ -5,7 +5,8 @@ using Venture.OS.Tests.Shell;
 namespace Venture.OS.Tests.Desktop;
 
 /// <summary>
-/// The desktop shows the look's wallpaper, from its bundle, in light or dark, and follows a change while it runs.
+/// The desktop shows the look's wallpaper, a PNG named after it, the same in light and dark, and follows a change while
+/// it runs.
 /// The look is shared, so these run with the appearance tests.
 /// </summary>
 [Collection(nameof(AppearanceCollection))]
@@ -20,9 +21,12 @@ public sealed class WallpaperTests : IDisposable
 
     public WallpaperTests()
     {
-        Bundle("Red", "Red.png");
-        Bundle("Night", "Night.png", "Night-dark.png");
-        Bundle("Clear", "Clear.png");
+        Directory.CreateDirectory(root);
+        foreach (var name in (string[])["Red.png", "Night.png", "Night-dark.png", "Clear.png", "notes.txt", ".hidden.png"])
+            File.WriteAllText(Path.Combine(root, name), "a picture");
+
+        // A bundle from before wallpapers were plain pictures isn't one any more.
+        Directory.CreateDirectory(Path.Combine(root, "Old.wallpaper", "Contents"));
         DesktopAppearance.WallpapersFolder = root;
     }
 
@@ -58,11 +62,11 @@ public sealed class WallpaperTests : IDisposable
     }
 
     [Fact]
-    public void ShowsTheDarkPictureInDark()
+    public void ShowsTheSamePictureInDark()
     {
         DesktopAppearance.Use(DesktopLook.Standard with { Wallpaper = "Night", Mode = LookMode.Dark });
 
-        Assert.Equal(Blue, Draw(Open()).At(10, 300));
+        Assert.Equal(Green, Draw(Open()).At(10, 300));
     }
 
     [Fact]
@@ -95,13 +99,16 @@ public sealed class WallpaperTests : IDisposable
     {
         RecordingOutput output = new();
         Venture.OS.Scripting.LuaRunner.Run(output, Path.GetTempPath(), lua => lua.DoString("""
-            for _, w in ipairs(venture.wallpapers()) do print(w.name, w.title, w.thumbnail ~= nil) end
+            for _, w in ipairs(venture.wallpapers()) do print(w.name, w.title, w.path:match("[^/]+$")) end
             print(venture.setAppearance{ wallpaper = "Nope" })
             print(venture.setAppearance{ wallpaper = "Night" })
             """), new FakeSystemInfo());
 
         Assert.Equal(
-            ["Clear\tClear\ttrue", "Night\tNight\ttrue", "Red\tRed\ttrue", "nil\tthere's no wallpaper named Nope", "true"],
+            [
+                "Clear\tClear\tClear.png", "Night\tNight\tNight.png", "Night-dark\tNight-dark\tNight-dark.png",
+                "Red\tRed\tRed.png", "nil\tthere's no wallpaper named Nope", "true",
+            ],
             output.Lines);
         Assert.Equal("Night", DesktopAppearance.Current.Wallpaper);
     }
@@ -125,13 +132,12 @@ public sealed class WallpaperTests : IDisposable
 
     private static DesktopImage Square(int pixel) => new(2, 2, [pixel, pixel, pixel, pixel]);
 
-    private void Bundle(string name, params string[] pictures)
+    [Fact]
+    public void TheShippedWallpapersArePlainPictures()
     {
-        var contents = Path.Combine(root, $"{name}.wallpaper", "Contents");
-        Directory.CreateDirectory(Path.Combine(contents, "Resources"));
-        foreach (var picture in pictures)
-            File.WriteAllText(Path.Combine(contents, "Resources", picture), "a picture");
-        File.WriteAllText(Path.Combine(contents, "Info.xml"),
-            $"""<Wallpaper version="1"><Info identifier="dev.example.{name.ToLowerInvariant()}" name="{name}" image="Contents/Resources/{pictures[0]}"/></Wallpaper>""");
+        var folder = Path.Combine(AppContext.BaseDirectory, "system", "wallpaper");
+
+        Assert.Equal(["Charger", "Earthset"], WallpaperCatalog.Read(folder).Select(wallpaper => wallpaper.Name));
+        Assert.Equal($"{folder}/Earthset.png", WallpaperCatalog.Find(folder, "Earthset")!.Path);
     }
 }

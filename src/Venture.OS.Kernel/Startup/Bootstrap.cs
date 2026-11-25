@@ -55,8 +55,8 @@ internal static class Bootstrap
     /// <summary>VentureOS's own icon, for the menu bar and About VentureOS.</summary>
     public const string SystemIconPath = SystemDirectoryPath + "/icons/VentureOS.png";
 
-    /// <summary>Where the wallpaper bundles are, such as Earthset.wallpaper.</summary>
-    public const string WallpapersDirectoryPath = SystemDirectoryPath + "/wallpapers";
+    /// <summary>Where the wallpapers are, each a PNG named after it, such as Earthset.png.</summary>
+    public const string WallpapersDirectoryPath = SystemDirectoryPath + "/wallpaper";
 
     /// <summary>Where the desktop's fonts are, with their licenses.</summary>
     public const string FontsDirectoryPath = SystemDirectoryPath + "/fonts";

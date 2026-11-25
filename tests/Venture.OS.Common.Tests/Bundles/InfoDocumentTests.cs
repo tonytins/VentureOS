@@ -117,7 +117,7 @@ public sealed class InfoDocumentTests : IDisposable
 
     [Theory]
     [InlineData("/a/Notes.app", BundleKind.App)]
-    [InlineData("/a/Earthset.wallpaper/", BundleKind.Wallpaper)]
+    [InlineData("/a/Earthset.wallpaper/", null)]
     [InlineData("/a/folder", null)]
     public void ABundlesKindComesFromItsFolder(string folder, BundleKind? kind)
     {

@@ -379,7 +379,7 @@ public static class VentureLibrary
     }
 
     /// <summary>
-    /// <c>venture.wallpapers()</c>: the wallpapers to choose from, each <c>{ name, title, thumbnail, description }</c>,
+    /// <c>venture.wallpapers()</c>: the wallpapers to choose from, each <c>{ name, title, path }</c>, the path its picture's,
     /// sorted by name, without the sky; <c>nil</c> on a system without an appearance.
     /// </summary>
     private static int PushWallpapers(ILuaState lua, IAppearance? appearance)
@@ -398,8 +398,7 @@ public static class VentureLibrary
             lua.NewTable();
             SetString(lua, "name", wallpaper.Name);
             SetString(lua, "title", wallpaper.Title);
-            SetString(lua, "thumbnail", wallpaper.Thumbnail);
-            SetString(lua, "description", wallpaper.Description);
+            SetString(lua, "path", wallpaper.Path);
             lua.RawSetI(-2, index + 1);
         }
 

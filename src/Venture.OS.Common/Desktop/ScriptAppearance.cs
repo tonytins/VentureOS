@@ -43,7 +43,7 @@ public sealed class ScriptAppearance : IAppearance
 
         List<WallpaperChoice> choices = [];
         foreach (var wallpaper in WallpaperCatalog.Read(folder))
-            choices.Add(new WallpaperChoice(wallpaper.Name, wallpaper.Bundle.Name, wallpaper.Thumbnail, wallpaper.Bundle.Description));
+            choices.Add(new WallpaperChoice(wallpaper.Name, wallpaper.Name, wallpaper.Path));
         return choices;
     }
 

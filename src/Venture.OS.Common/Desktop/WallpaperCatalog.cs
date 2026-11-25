@@ -1,40 +1,36 @@
-using Venture.OS.Bundles;
-
 namespace Venture.OS.Desktop;
 
-/// <summary>A wallpaper the desktop can show: its name, as the look keeps it, and its bundle.</summary>
-/// <param name="Name">The bundle's folder name without <c>.wallpaper</c>, such as <c>Earthset</c>, which the look keeps.</param>
-/// <param name="Bundle">The bundle, with its picture and any light and dark ones.</param>
-public sealed record Wallpaper(string Name, Bundle Bundle)
-{
-    /// <summary>A small picture for a picker: the bundle's icon when it has one, and otherwise its picture.</summary>
-    public string Thumbnail => Bundle.Icon ?? Bundle.Image!;
-}
+/// <summary>A wallpaper the desktop can show: its name, as the look keeps it, and its picture.</summary>
+/// <param name="Name">The picture's file name without <c>.png</c>, such as <c>Earthset</c>, which the look keeps.</param>
+/// <param name="Path">The full path of the picture, which a picker scales down itself.</param>
+public sealed record Wallpaper(string Name, string Path);
 
 /// <summary>
-/// The wallpapers in a folder, each a <c>Name.wallpaper</c> bundle (<see cref="BundleKind.Wallpaper"/>), by the name
-/// the look keeps: the folder's, so renaming a bundle's display name doesn't lose the choice.
+/// The wallpapers in a folder, each a PNG named after it, such as <c>Earthset.png</c>: one picture, shown in light and
+/// dark alike, with no thumbnail of its own, since a picker scales it down.
 /// </summary>
 public static class WallpaperCatalog
 {
-    /// <summary>Every wallpaper in a folder, sorted by name; ones that can't be read are left out, and say why.</summary>
-    /// <param name="problems">Where to say why a bundle was left out, or <see langword="null"/>.</param>
-    public static IReadOnlyList<Wallpaper> Read(string folder, List<string>? problems = null)
+    /// <summary>A wallpaper's file extension.</summary>
+    public const string Extension = ".png";
+
+    /// <summary>Every wallpaper in a folder, sorted by name; files that aren't PNGs, or have names the look can't keep, are passed over.</summary>
+    public static IReadOnlyList<Wallpaper> Read(string folder)
     {
         ArgumentNullException.ThrowIfNull(folder);
         List<Wallpaper> found = [];
         if (!Directory.Exists(folder))
             return found;
 
-        var extension = Bundle.Extension(BundleKind.Wallpaper);
-        foreach (var path in Directory.GetDirectories(folder))
+        foreach (var path in Directory.GetFiles(folder))
         {
-            var name = Path.GetFileName(path);
-            if (!name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            var file = System.IO.Path.GetFileName(path);
+            if (!file.EndsWith(Extension, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            if (Find(folder, name[..^extension.Length], problems) is { } wallpaper)
-                found.Add(wallpaper);
+            var name = file[..^Extension.Length];
+            if (DesktopLook.IsWallpaperName(name) && name != DesktopLook.Sky)
+                found.Add(new Wallpaper(name, path));
         }
 
         found.Sort((left, right) => StringComparer.OrdinalIgnoreCase.Compare(left.Name, right.Name));
@@ -42,8 +38,8 @@ public static class WallpaperCatalog
     }
 
     /// <summary>
-    /// The wallpaper with a name, as the look keeps it, or <see langword="null"/> when there's none or it can't be
-    /// read, which <paramref name="problems"/> hears why.
+    /// The wallpaper with a name, as the look keeps it, or <see langword="null"/> when there's none, which
+    /// <paramref name="problems"/> hears.
     /// </summary>
     public static Wallpaper? Find(string folder, string name, List<string>? problems = null)
     {
@@ -52,21 +48,11 @@ public static class WallpaperCatalog
         if (!DesktopLook.IsWallpaperName(name) || name == DesktopLook.Sky)
             return null;
 
-        var path = $"{folder.TrimEnd('/')}/{name}{Bundle.Extension(BundleKind.Wallpaper)}";
-        if (!Directory.Exists(path))
-        {
-            problems?.Add($"there's no wallpaper named {name} in {folder}");
-            return null;
-        }
+        var path = $"{folder.TrimEnd('/')}/{name}{Extension}";
+        if (File.Exists(path))
+            return new Wallpaper(name, path);
 
-        try
-        {
-            return new Wallpaper(name, Bundle.Read(path, BundleKind.Wallpaper));
-        }
-        catch (BundleException exception)
-        {
-            problems?.Add(exception.Message);
-            return null;
-        }
+        problems?.Add($"there's no wallpaper named {name} in {folder}");
+        return null;
     }
 }

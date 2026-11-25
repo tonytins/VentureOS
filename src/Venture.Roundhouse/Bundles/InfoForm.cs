@@ -97,8 +97,6 @@ public sealed class InfoForm : StackPanel
         }
 
         Choice(document, "icon", "Icon", "(none)", pictures);
-        if (document.Kind == BundleKind.Wallpaper)
-            Choice(document, "image", "Picture", "(none)", pictures);
 
         Preview(document);
         updating = false;
@@ -232,13 +230,12 @@ public sealed class InfoForm : StackPanel
     }
 
     /// <summary>
-    /// Shows the bundle's picture, or else its icon as VentureOS's dock makes it, from <see cref="DesktopIcon"/>: the
-    /// key colour cleared and a tile's corners rounded.
+    /// Shows the bundle's icon as VentureOS's dock makes it, from <see cref="DesktopIcon"/>: the key colour cleared and a
+    /// tile's corners rounded.
     /// </summary>
     private void Preview(InfoDocument document)
     {
-        var (picture, isIcon) = document.Bundle?.Image is { } image ? (image, false) : (document.Bundle?.Icon, true);
-        if (picture is null || !File.Exists(picture))
+        if (document.Bundle?.Icon is not { } picture || !File.Exists(picture))
             return;
 
         string? problem = null;
@@ -248,7 +245,7 @@ public sealed class InfoForm : StackPanel
             return;
         }
 
-        var shown = isIcon ? DesktopIcon.From(loaded, IconSize).Image : loaded;
+        var shown = DesktopIcon.From(loaded, IconSize).Image;
         WriteableBitmap bitmap = new(new PixelSize(shown.Width, shown.Height), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using (var locked = bitmap.Lock())
         {
@@ -259,11 +256,7 @@ public sealed class InfoForm : StackPanel
         Children.Add(new Image
         {
             Source = bitmap,
-
-            // An icon at its own size; a wallpaper's picture shrunk to fit.
-            Stretch = isIcon ? Stretch.None : Stretch.Uniform,
-            MaxWidth = 256,
-            MaxHeight = 256,
+            Stretch = Stretch.None,
             HorizontalAlignment = HorizontalAlignment.Left,
             Margin = new(118, 8, 0, 0),
         });

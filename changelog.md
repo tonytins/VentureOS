@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.307
+
+- Wallpapers are plain pictures: `Earthset.png` and `Charger.png` in `/mnt/system/wallpaper`, each named by its file. A chosen wallpaper keeps its name, so a saved look still shows it. The `.wallpaper` bundle, its thumbnail, and its light and dark pictures are gone, and Roundhouse no longer opens one.
+- `venture.wallpapers()` gives each wallpaper's `name`, `title`, and `path`, its picture; a grid scales it down, so there's no thumbnail.
+
 ## 0.8.306
 
 - Roundhouse designs grids: Insert ▸ Grid adds one, Insert ▸ Grid Item adds an item to the selected grid, and the outline shows each grid's items inside it. Move Into and Move Out only offer what VentureOS reads: an item into a grid, and never out of one.

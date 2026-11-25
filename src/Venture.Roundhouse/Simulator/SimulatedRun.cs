@@ -61,7 +61,7 @@ public sealed class SimulatedRun : IDisposable, IShellHost
         look = new Look(
             DesktopLook.Standard,
             disk.HostPath("/mnt/user/settings/appearance.xml"),
-            disk.HostPath("/mnt/system/wallpapers"),
+            disk.HostPath("/mnt/system/wallpaper"),
             () => System.WallClock?.Now?.TimeOfDay);
 
         Func<string, DesktopImage?> loadImage = path => SkiaImages.Load(path, Messages.Add);

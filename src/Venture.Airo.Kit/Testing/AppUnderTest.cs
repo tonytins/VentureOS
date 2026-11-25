@@ -45,7 +45,7 @@ public sealed class AppUnderTest : IDisposable, IShellHost
         this.appName = appName;
         before = (DesktopAppearance.Current, DesktopAppearance.SettingsPath, DesktopAppearance.WallpapersFolder, DesktopAppearance.TimeOfDay);
         DesktopAppearance.SettingsPath = disk.HostPath("/mnt/user/settings/appearance.xml");
-        DesktopAppearance.WallpapersFolder = disk.HostPath("/mnt/system/wallpapers");
+        DesktopAppearance.WallpapersFolder = disk.HostPath("/mnt/system/wallpaper");
         DesktopAppearance.TimeOfDay = () => system.WallClock?.Now?.TimeOfDay;
         DesktopAppearance.Use(DesktopLook.Standard);
         if (DesktopAppearance.Load().Problem is { } problem)

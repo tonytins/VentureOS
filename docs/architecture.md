@@ -13,7 +13,7 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,127 tests, and 300 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,125 tests, and 300 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
   apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS (29 tests),
@@ -940,10 +940,10 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   QEMU's framebuffer is 1280x800. The text console uses the same screen.
 - **Drawing.** The canvas doesn't blend, so the background is worked out
   once, as pixels, on the first frame, and each frame copies it, then draws
-  on top. It's the look's wallpaper, a `Name.wallpaper` bundle in
-  `DesktopAppearance.WallpapersFolder` (`/mnt/system/wallpapers`, found by
-  `WallpaperCatalog`), its `-light` or `-dark` picture when it has one for
-  the palette showing, scaled to cover the screen and cut from the middle;
+  on top. It's the look's wallpaper, a PNG named after it, such as
+  `Earthset.png`, in `DesktopAppearance.WallpapersFolder`
+  (`/mnt/system/wallpaper`, found by `WallpaperCatalog`), the same picture
+  in light and dark, scaled to cover the screen and cut from the middle;
   a change to the look's wallpaper redraws it on the next frame. With
   `sky`, a wallpaper that isn't there (said once in a message window), or a
   picture that can't be read, it's the sky, which `DesktopBackground` works
@@ -1093,7 +1093,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   the menus. The shortcuts are window key bindings, so a focused editor or
   field handles its own first.
 - **Bundles** (0.6.5xx): Roundhouse opens a bundle (`OpenBundle`,
-  an `.app` or `.wallpaper` folder), from its folder or any file in it, which
+  an `.app` folder), from its folder or any file in it, which
   `OpenBundle.Find` finds by its nearest bundle-named folder. The left pane
   splits: the bundle's files (`OpenBundle.Tree`, folders first, a linked
   folder listed but not entered) over the outline. A folder opens on its
@@ -1142,7 +1142,7 @@ interface and Fira Code for monospace, loaded from `/mnt/system/fonts`.
   `Bundle.FromInfo`, the same checks `Bundle.Read` makes on a saved file, and
   edits in place with `FlatXmlEditor` (`Venture.OS.Interface`), the flat-XML
   core `UIDocument` now builds on too. Needs are check boxes, written in
-  VentureOS's order; `main`, `icon`, and a wallpaper's `image` are chosen
+  VentureOS's order; `main` and `icon` are chosen
   from the bundle's files; the icon shows through `DesktopIcon` as the dock
   shows it. A refusal shows under its field. The form updates in place
   after a change, keeping the focused field, and is built again only for a
@@ -1903,6 +1903,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | minor | Desktop (§9): wallpapers are plain PNGs in `/mnt/system/wallpaper`, named by their files; the `.wallpaper` bundle kind, its thumbnails, and light and dark variants are gone; `venture.wallpapers()` gives `{ name, title, path }`. |
 | 2026-11-24 | patch | Roundhouse designs grids: the library's Grid, Insert ▸ Grid Item, and Move Into and Move Out kept to what the reader takes. |
 | 2026-11-24 | minor | Desktop (§9), interfaces: `<Grid>` and `<Item>` in UIScript, the reader, the schema, and `UIView`; `setItems`, `items`, `selected`, and `select` on grids, `event.item`; airo chooses grid items. Roundhouse doesn't design grids yet. |
 | 2026-11-24 | patch | Desktop (§9): the scroll bar style is chosen in Settings, with `appearance --scrollbars`, and through `venture.appearance` and `setAppearance`; an automatic bar shows however its content scrolls, and only for content that scrolls. |

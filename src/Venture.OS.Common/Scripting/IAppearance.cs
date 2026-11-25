@@ -42,10 +42,9 @@ public interface IAppearance
 
 /// <summary>A wallpaper to choose from.</summary>
 /// <param name="Name">What the look keeps, such as <c>Earthset</c>.</param>
-/// <param name="Title">What people see, from its bundle.</param>
-/// <param name="Thumbnail">The full path of a small picture of it.</param>
-/// <param name="Description">What it shows, or <see langword="null"/>.</param>
-public sealed record WallpaperChoice(string Name, string Title, string Thumbnail, string? Description);
+/// <param name="Title">What people see.</param>
+/// <param name="Path">The full path of its picture, which a grid scales down to show it.</param>
+public sealed record WallpaperChoice(string Name, string Title, string Path);
 
 /// <summary>
 /// A change to the look: each part that isn't <see langword="null"/> changes, as scripts write it.

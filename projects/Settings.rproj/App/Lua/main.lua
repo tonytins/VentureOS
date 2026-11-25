@@ -70,13 +70,13 @@ local function corners(shape)
   if ok then show() end
 end
 
--- Each slot shows its wallpaper's thumbnail, and choosing it shows it on the
--- desktop; a thumbnail that can't be read says so, and the slot stays.
+-- Each slot shows its wallpaper's picture, scaled down, and choosing it shows it on the
+-- desktop; a picture that can't be read says so, and the slot stays.
 for slot = 1, WALLPAPER_SLOTS do
   local wallpaper = wallpapers[slot]
   if wallpaper then
-    if wallpaper.thumbnail then
-      local ok, problem = window:setImage("thumb" .. slot, wallpaper.thumbnail)
+    if wallpaper.path then
+      local ok, problem = window:setImage("thumb" .. slot, wallpaper.path)
       if not ok then window:setText("status", problem) end
     end
     window:on("wallpaper" .. slot, function()

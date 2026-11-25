@@ -52,7 +52,7 @@ public sealed class InfoDocument
     {
         ArgumentNullException.ThrowIfNull(folder);
         var trimmed = folder.TrimEnd('/', '\\');
-        foreach (var kind in (BundleKind[])[BundleKind.App, BundleKind.Theme, BundleKind.Library, BundleKind.Wallpaper])
+        foreach (var kind in (BundleKind[])[BundleKind.App, BundleKind.Theme, BundleKind.Library])
         {
             if (trimmed.EndsWith(Bundle.Extension(kind), StringComparison.OrdinalIgnoreCase))
                 return kind;

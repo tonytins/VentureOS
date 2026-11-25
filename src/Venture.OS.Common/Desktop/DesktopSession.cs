@@ -94,7 +94,7 @@ public sealed class DesktopSession
 
     // The wallpaper the background was worked out with, by name, and each name's bundle, looked up once.
     private string? backgroundWallpaper;
-    private readonly Dictionary<string, Wallpaper?> wallpaperBundles = [];
+    private readonly Dictionary<string, Wallpaper?> wallpaperFiles = [];
     private readonly AppManager? apps;
     private readonly string workingDirectory;
     private readonly HeldOutput appOutput;
@@ -354,8 +354,7 @@ public sealed class DesktopSession
     /// when there's none or it couldn't be read.
     /// </summary>
     /// <remarks>
-    /// The picture is the look's wallpaper from <see cref="DesktopAppearance.WallpapersFolder"/>, its light or dark
-    /// one to match the palette when it has them. The sky, a wallpaper that isn't there, or a picture that can't be
+    /// The picture is the look's wallpaper from <see cref="DesktopAppearance.WallpapersFolder"/>. The sky, a wallpaper that isn't there, or a picture that can't be
     /// read shows the sky; a missing wallpaper is said once in a message window.
     /// </remarks>
     private DesktopImage? WallpaperPicture()
@@ -364,16 +363,16 @@ public sealed class DesktopSession
         if (name == DesktopLook.Sky || DesktopAppearance.WallpapersFolder is not { } folder || loadImage is null)
             return null;
 
-        if (!wallpaperBundles.TryGetValue(name, out var wallpaper))
+        if (!wallpaperFiles.TryGetValue(name, out var wallpaper))
         {
             List<string> problems = [];
             wallpaper = WallpaperCatalog.Find(folder, name, problems);
-            wallpaperBundles[name] = wallpaper;
+            wallpaperFiles[name] = wallpaper;
             foreach (var problem in problems)
                 appOutput.WriteLine($"Wallpaper: {problem}; showing the sky.");
         }
 
-        if (wallpaper?.Bundle.ImageFor(backgroundPalette.IsDark) is not { } path)
+        if (wallpaper?.Path is not { } path)
             return null;
         if (wallpapers.TryGetValue((path, Width, Height), out var known))
             return known;
