@@ -1,7 +1,7 @@
 # vdb
 
 vdb sends an app to a running VentureOS and opens it, from your computer, so you can try a change on the real
-system without rebuilding it. It stands in until VentureOS can keep files and install from a disk: an app it sends
+system without rebuilding it. `vdb mcp` lets an agent use VentureOS's app windows too, by name, as app tests do. It stands in until VentureOS can keep files and install from a disk: an app it sends
 lasts until VentureOS restarts.
 
 vdb lives in VentureOS's repository for now, beside the kernel it talks to, and will move to a repository of its
@@ -31,9 +31,9 @@ last release's tag, as the kernel does.
 
 The first time vdb connects, VentureOS asks whether to trust your computer. Choose **Trust** within 60 seconds.
 
-To skip both steps on your own builds, run `vdb identity --lua` and put what it prints in
-`rootfs/system/developer.local.lua`. Git ignores that file, so only your builds turn developer mode on at boot and
-trust your computer.
+To skip all of that on your own builds, run `vdb identity --lua` and put what it prints in
+`rootfs/system/developer.local.lua`. Git ignores that file, so only your builds turn developer mode on at boot,
+trust your computer, and boot straight to the desktop (`venture.startDesktop()`), with nothing to type into QEMU.
 
 ## Use
 
@@ -57,6 +57,36 @@ computer. It's a secret: every connection is encrypted with keys made from it, a
 knows your computer by a hash of it, its key ID, which the Trust alert shows. Delete it, and vdb makes a new one,
 which VentureOS asks about again.
 
+## Use with an agent
+
+`vdb mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server on standard input and output, which
+gives an agent VentureOS's app windows over vdb/1's [ui feature](../../docs/vdb/README.md#ui). Add it as a stdio
+server, such as for Claude Code:
+
+```sh
+claude mcp add vdb -- /path/to/vdb mcp        # --host and --port as for the other commands
+```
+
+| Tool | Does |
+|---|---|
+| `windows` | Lists the app windows, front first: each one's number, app, and title. |
+| `snapshot` | Reads a window's controls (the one in front unless `window` names one), each with its name, kind, text, value, rows, and state. |
+| `act` | Uses controls by name, in order: `press`, `submit` (Enter), `type`, or `choose` a row by number or text. It stops at the first step a person couldn't do, saying why, and the steps before it stay done. |
+| `key` | Presses keys, such as `Ctrl+Z` or `Enter`, for what has no name. They reach the window on the next frame. |
+| `screenshot` | The whole screen, as a PNG. |
+| `install` | Sends a `.app` folder from this computer and installs it, opening it with `launch`. |
+| `launch` | Opens an installed app. |
+| `output` | What apps printed since the last call. |
+
+The actions are app tests' (`app:press`, `app:choose`, ...), so what works in a test works here. Panels, such as the
+dock and the menu bar, and VentureOS's own windows, such as the Trust alert, can't be reached. Everything an app
+shows or prints is untrusted, and the tools tell the agent so.
+
+vdb connects when a tool first needs VentureOS, and again whenever the connection has closed or sat unused for 25
+seconds, so an agent can take its time between calls. It writes nothing to standard output but the protocol;
+`--verbose` logs every line on standard error. It speaks MCP versions 2025-06-18, 2025-03-26, and 2024-11-05, tools
+only, written by hand rather than with an MCP library.
+
 ## Limits
 
 - Everything after hello is encrypted and checked (ChaCha20-Poly1305), so what's sent can't be read or changed on
@@ -65,3 +95,4 @@ which VentureOS asks about again.
 - There's no forward secrecy: whoever later gets your identity file could read conversations they recorded.
 - An app is at most 256 files and 16 MiB, and a file at most 4 MiB. Symbolic links aren't sent.
 - vdb sends `.app` bundles only, not themes, libraries, or wallpapers.
+- Screenshots are uncompressed PNGs, since vdb has no zlib on every platform: a 1024 by 768 screen is about 2.3 MB.

@@ -136,6 +136,93 @@ public final class VdbClient {
         }
     }
 
+    /// Whether VentureOS offers `feature`, such as `ui`, once hello is done.
+    public func offers(_ feature: String) -> Bool {
+        features.contains(feature)
+    }
+
+    /// The app windows, front first.
+    public func windows() throws -> [VdbWindow] {
+        try uiCommand("windows").map { try VdbWindow(VdbAnswerLine($0)) }
+    }
+
+    /// What an app window shows: its controls, each with what a person would see of it.
+    public func snapshot(window: Int) throws -> VdbSnapshot {
+        let lines = try uiCommand("snapshot \(window)").map(VdbAnswerLine.init)
+        guard let head = lines.first, head.kind == "window" else {
+            throw VdbError.unexpected("a snapshot that doesn't start with its window")
+        }
+        var controls: [VdbControl] = []
+        for line in lines.dropFirst() {
+            switch line.kind {
+            case "control":
+                controls.append(try VdbControl(line))
+            case "row" where !controls.isEmpty && controls[controls.count - 1].rows != nil:
+                controls[controls.count - 1].rows!.append(line.words.first ?? "")
+            default:
+                // Lines a later VentureOS adds are skipped, as their keys are.
+                continue
+            }
+        }
+        return VdbSnapshot(
+            window: window, title: head.values["title"], subtitle: head.values["subtitle"], pane: head.values["pane"],
+            focused: head.values["focused"], controls: controls)
+    }
+
+    /// Uses a control in an app window by name, which brings the window to the front, and returns once the app has
+    /// handled it. A refusal says why a person couldn't have done it.
+    public func act(window: Int, _ action: VdbAction) throws {
+        _ = try uiCommand("act \(window) \(action.words)")
+    }
+
+    /// Presses keys in an app window, such as `Ctrl+Z` or `Enter`, which reach it on the desktop's next frame.
+    public func pressKeys(_ keys: [String], window: Int) throws {
+        guard !keys.isEmpty else {
+            throw VdbError.refused("there are no keys to press")
+        }
+        _ = try uiCommand("key \(window) " + keys.map(VdbWords.word).joined(separator: " "))
+    }
+
+    /// The screen as VentureOS last drew it.
+    public func screenshot() throws -> VdbScreenshot {
+        let lines = try uiCommand("screenshot")
+        guard let head = try lines.first.map(VdbAnswerLine.init), head.kind == "screen",
+              let width = head.int("width"), let height = head.int("height"), width > 0, height > 0 else {
+            throw VdbError.unexpected(lines.first ?? "a screenshot without its size")
+        }
+        var rgb: [UInt8] = []
+        rgb.reserveCapacity(width * height * 3)
+        for line in lines.dropFirst() where line.hasPrefix("data ") {
+            guard let bytes = Data(base64Encoded: String(line.dropFirst(5))) else {
+                throw VdbError.unexpected("a screenshot's data line that isn't base64")
+            }
+            rgb.append(contentsOf: bytes)
+        }
+        guard rgb.count == width * height * 3 else {
+            throw VdbError.unexpected("a \(width) by \(height) screenshot of \(rgb.count) bytes")
+        }
+        return VdbScreenshot(width: width, height: height, rgb: rgb)
+    }
+
+    /// Passes on what apps printed and is waiting, without waiting for more than `seconds`.
+    public func drainOutput(waiting seconds: Double = 0.1) throws {
+        try follow(for: seconds)
+    }
+
+    /// Sends one of the `ui` feature's commands, returning the lines before its `ok`.
+    func uiCommand(_ line: String) throws -> [String] {
+        try require("ui")
+        try sendLine(line)
+        var lines: [String] = []
+        while true {
+            let answer = try answer(waiting: line.split(separator: " ").first.map(String.init) ?? line)
+            if answer == "ok" {
+                return lines
+            }
+            lines.append(answer)
+        }
+    }
+
     /// Says goodbye.
     public func bye() throws {
         try command("bye")

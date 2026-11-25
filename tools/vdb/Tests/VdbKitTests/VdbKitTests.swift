@@ -121,6 +121,7 @@ struct IdentityTests {
         #expect(VdbIdentity.luaLines(for: "0123456789abcdef0123456789abcdef") == """
             venture.developer.enable()
             venture.developer.trust("0123456789abcdef0123456789abcdef")
+            venture.startDesktop()
             """)
     }
 }

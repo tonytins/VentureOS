@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.403
+
+- `vdb mcp`: an MCP server, on standard input and output, through which an agent lists VentureOS's app windows, reads their controls, presses, types, submits, and chooses by name, presses keys, takes screenshots, and installs and opens apps. Add it to an agent as a stdio server. It connects when a tool first needs VentureOS, and again once the connection has gone quiet.
+- `vdb identity --lua` adds `venture.startDesktop()`, so your builds boot straight to the desktop, where vdb is heard.
+
 ## 0.8.402
 
 - `venture.startDesktop()`, in `init.lua` or a developer's `developer.local.lua`, opens the desktop when boot finishes, in place of the prompt; leaving it lands at the prompt. Add it to your `developer.local.lua` to boot straight to the desktop.

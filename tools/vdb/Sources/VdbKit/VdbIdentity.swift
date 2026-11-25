@@ -66,11 +66,13 @@ public enum VdbIdentity {
         return identity
     }
 
-    /// The lines for a build's `developer.local.lua`, so VentureOS trusts this computer at every boot.
+    /// The lines for a build's `developer.local.lua`, so VentureOS trusts this computer at every boot, and boots to
+    /// the desktop, where vdb is heard.
     public static func luaLines(for identity: String) -> String {
         """
         venture.developer.enable()
         venture.developer.trust("\(identity)")
+        venture.startDesktop()
         """
     }
 }

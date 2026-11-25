@@ -15,7 +15,7 @@ struct Vdb: ParsableCommand {
             The first time, VentureOS asks whether to trust this computer.
             """,
         version: "\(GitVersion.version) (\(VdbProtocol.version))",
-        subcommands: [Install.self, Launch.self, Identity.self]
+        subcommands: [Install.self, Launch.self, Mcp.self, Identity.self]
     )
 }
 
@@ -115,6 +115,35 @@ struct Launch: ParsableCommand {
     }
 }
 
+struct Mcp: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Serves VentureOS's app windows to an agent over MCP, on standard input and output.",
+        discussion: """
+            An agent sees app windows and uses their controls by name, as app tests do, presses keys, takes \
+            screenshots, and installs and opens apps. It connects to VentureOS when a tool first needs it, and again \
+            whenever the connection has closed or sat unused. Panels and VentureOS's own windows can't be reached. \
+            Add it to an agent as a stdio server: vdb mcp [--host …] [--port …].
+            """)
+
+    @OptionGroup var connection: ConnectionOptions
+
+    func run() throws {
+        // Standard output is the protocol's alone, so everything vdb says goes to standard error.
+        Session.bootstrapLogging(verbose: connection.verbose)
+        let log = Logger(label: "vdb")
+        let identity = try Session.identity()
+        let tools = VdbAgentTools { output in
+            let transport = LoggedTransport(try TCPConnection(host: connection.host, port: connection.port), log: log)
+            let client = VdbClient(transport: transport, output: output, status: { log.notice("\($0)") })
+            try client.hello(identity: identity)
+            return client
+        }
+        MCPServer(tools: tools, version: GitVersion.version).run(
+            input: { readLine(strippingNewline: true) },
+            output: { line in FileHandle.standardOutput.write(Data((line + "\n").utf8)) })
+    }
+}
+
 struct Identity: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Prints this computer's identity, making one the first time.",
@@ -135,11 +164,7 @@ struct Identity: ParsableCommand {
 /// What every command that connects does: say hello, run, and say goodbye, with errors reported plainly.
 enum Session {
     static func run(_ options: ConnectionOptions, _ body: (VdbClient, Logger) throws -> Void) throws {
-        LoggingSystem.bootstrap { label in
-            var handler = StreamLogHandler.standardError(label: label)
-            handler.logLevel = options.verbose ? .debug : .warning
-            return handler
-        }
+        bootstrapLogging(verbose: options.verbose)
         let log = Logger(label: "vdb")
 
         do {
@@ -154,6 +179,15 @@ enum Session {
         } catch let error as VdbError {
             status("vdb: \(error)")
             throw ExitCode.failure
+        }
+    }
+
+    /// Logs to standard error: every line both ways with --verbose, otherwise only warnings.
+    static func bootstrapLogging(verbose: Bool) {
+        LoggingSystem.bootstrap { label in
+            var handler = StreamLogHandler.standardError(label: label)
+            handler.logLevel = verbose ? .debug : .warning
+            return handler
         }
     }
 
