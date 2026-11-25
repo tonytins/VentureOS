@@ -13,14 +13,14 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,197 tests, and 302 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,316 tests, and 302 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
-  apps' own tests are in their projects, in `projects/`, run by `airo test` (67 in all). Beside them, `vdb`, a Swift
+  apps' own tests are in their projects, in `projects/`, run by `airo test` (69 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS and gives an agent its app windows over MCP
-  (51 tests),
+  (54 tests),
   and `airo`, a C# command-line tool in `src/Venture.Airo` that builds
   Roundhouse Projects into apps and runs their tests, on `Venture.Airo.Kit`,
-  which Roundhouse shares (`Venture.Airo.Tests`, 53 tests).
+  which Roundhouse shares (`Venture.Airo.Tests`, 54 tests).
   Namespaces: `Venture.OS`, `Venture.OS.Kernel`, `Venture.OS.Startup`,
   `Venture.OS.Shell`, `Venture.OS.Shell.Commands`, and
   `Venture.OS.Scripting`.
@@ -55,6 +55,7 @@ the code wins and this page is out of date.
   Apps open windows through `venture.ui`; `Notes.app` has one. Toasts slide
   into the top-right corner, from apps (`venture.ui.toast`), the system's
   crash notices, and vdb, and a bell beside the clock opens their history.
+  Sliders choose values, on a glossed rail progress bars share.
 - **Not built yet:** keeping files across reboots,
   and published ISOs, which are ideas without a release. See the
   [roadmap](./ROADMAP.md); verified status is in the
@@ -1941,6 +1942,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | Current state: sliders; 0.8.4xx is complete. |
 | 2026-11-25 | patch | Roundhouse's library and Insert menu offer Slider again; VentureOS's copies of Hudini's examples get their value sliders back (`optionspanel`'s volumes, `city/budget`'s figures). |
 | 2026-11-25 | patch | `WindowControls.TrySlide`, shared by airo's `app:slide` and vdb's `act … slide` (and `vdb mcp`'s); snapshots name sliders `slider` and give no text for sliders and progress bars. |
 | 2026-11-25 | minor | Desktop: sliders drag, jump on a track click, take the keyboard (arrows, Home, End), snap to their step, and report `changed` and `committed` (`UIView.Slider.cs`); they and progress bars share the glossed rail (`RailTop`, `RailBottom`, `KnobEdge`); `setValue` and `value` work on sliders. |

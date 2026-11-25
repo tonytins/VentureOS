@@ -1,6 +1,7 @@
 # A value slider
 
-**Status:** proposed for 0.8.4xx, Hokutosei. **Date:** 2026-11-25.
+**Status:** built in 0.8.4xx, Hokutosei; [the spec](../uiscript/README.md#sliders) and [the HIG](../hig/README.md#sliders-and-progress-bars)
+say how it works now. **Date:** 2026-11-25.
 
 UIScript has no control for choosing a value. `<Slider>` came from Hudini, which had it from CityLimits' older C#
 code, which followed TSO's UIScript, where a list's scroll bar was a slider bound to it: one control doing two jobs.

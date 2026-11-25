@@ -231,6 +231,11 @@ clear for the grip, inside a sidebar on the right too.
 
 ## More from Lua
 
+- **Values:** a `<Slider name="volume" ... maxValue="100" step="1"/>` lets
+  someone choose a number. Its handler gets `event.kind`, `"changed"` as it
+  moves and `"committed"` when it's let go, and `event.value`;
+  `window:value("volume")` reads it and `window:setValue("volume", 40)` sets
+  it, as for a `<ProgressBar>`. Test it with `app:slide("volume", 40)`.
 - **A shell of its own:** `local shell = venture.openShell()` (with `shell` in
   `needs`), then `shell:run("ls")` returns what the command printed, and
   `shell:directory()` its current folder. Terminal is built on it.
