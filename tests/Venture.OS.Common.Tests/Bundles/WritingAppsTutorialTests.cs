@@ -161,9 +161,9 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
         Assert.True(item.IsStatusItem);
         Assert.Equal("Mix", item.Title);
 
-        item.EventHandler!(item, new UIEvent(UIEventKind.Committed, "volume", Value: 40));
+        item.EventHandler!(item, new UIEvent(UIEventKind.Committed, "volume", Value: 40.4f));
 
-        Assert.Contains(output.Lines, line => line.Contains("Volume 40", StringComparison.Ordinal));
+        Assert.Contains(output.Lines, line => line.EndsWith("Volume 40", StringComparison.Ordinal));
     }
 
     private void Build(string info, string main)

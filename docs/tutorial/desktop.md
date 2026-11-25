@@ -316,10 +316,12 @@ it as any document:
 ```lua
 local mixer = venture.ui.open("mixer.uix")
 mixer:on("volume", function(event)
-  if event.kind == "committed" then venture.ui.toast("Volume " .. event.value) end
+  if event.kind == "committed" then venture.ui.toast("Volume " .. math.floor(event.value)) end
 end)
 ```
 
+- A slider's value is a number with a fraction, so `math.floor` rounds it
+  for showing; without it, 40 shows as `40.0`.
 - What it holds decides a click: nothing, and it's a button, whose handler
   hears `pressed` with the item's name; `<Menu>`s, and they drop down under
   it; controls, as here, and they open in a panel under it, `width` by
