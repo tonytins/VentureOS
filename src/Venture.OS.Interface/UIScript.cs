@@ -38,11 +38,13 @@ public enum UIWindowRole
     Panel,
 }
 
-/// <summary>The edge of the screen a panel is pinned to.</summary>
+/// <summary>The edge of the screen a panel is pinned to (top or bottom), or of the window a sidebar sits on (left or right).</summary>
 public enum UIEdge
 {
     Top,
     Bottom,
+    Left,
+    Right,
 }
 
 /// <summary>How text sits in its control.</summary>
@@ -348,11 +350,12 @@ public enum UIToolbarPlacement
 public sealed record UITitleField(string Name, string? Placeholder, int Line);
 
 /// <summary>
-/// A list of places down the window's left, as Nautilus and Finder have. The host
-/// draws it the window's full height, beside the content rather than in it, so it has a width and no position, and
-/// the window's own size is the content's. Code treats it as a selectable <c>&lt;List&gt;</c> of this name.
+/// A list of places down the window's <see cref="Edge"/>, the left unless the document says, as Nautilus and Finder
+/// have. The host draws it the window's full height, beside the content rather than in it, so it has a width and no
+/// position, and the window's own size is the content's. Code treats it as a selectable <c>&lt;List&gt;</c> of this
+/// name.
 /// </summary>
-public sealed record UISidebar(string Name, float Width, int Line);
+public sealed record UISidebar(string Name, float Width, int Line, UIEdge Edge = UIEdge.Left);
 
 /// <summary>
 /// One of a sidebar's panes: a row in the sidebar, by <see cref="Title"/>, and the
@@ -657,7 +660,13 @@ public sealed class UIScript
                 case "Sidebar":
                     if (sidebar is not null)
                         throw new UIScriptException("There's more than one <Sidebar>; a window has one.", element.Line);
-                    sidebar = new UISidebar(reader.RequiredString("name"), reader.RequiredNumber("width"), element.Line);
+                    sidebar = new UISidebar(reader.RequiredString("name"), reader.RequiredNumber("width"), element.Line,
+                        reader.String("edge") switch
+                        {
+                            null or "left" => UIEdge.Left,
+                            "right" => UIEdge.Right,
+                            var other => throw new UIScriptException($"A sidebar's edge is left or right, not \"{other}\".", element.Line),
+                        });
                     break;
 
                 case "Pane":

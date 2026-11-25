@@ -510,7 +510,8 @@ A host that shows menus:
 
 ## Sidebar
 
-A document can give its window a sidebar: a list of places down the left, such as a file manager's bookmarks.
+A document can give its window a sidebar: a list of places down the left, such as a file manager's bookmarks, or
+down the right, such as a radio's queue beside its stations.
 
 ```xml
 <UIScript version="1">
@@ -524,14 +525,24 @@ A document can give its window a sidebar: a list of places down the left, such a
 
 `<Sidebar>` takes `name` and `width`, both required, and a document has at most one. It has no position: it sits
 beside the content rather than in it, so `<Window>`'s size and every control's position are the content's, and adding
-a sidebar moves nothing. A second `<Sidebar>`, or a width that isn't positive, refuses the document.
+a sidebar, on either edge, moves nothing. A second `<Sidebar>`, or a width that isn't positive, refuses the document.
+
+| Attribute | Required | Value |
+| --- | --- | --- |
+| `name` | Yes | The name code uses for it, as for a `<List>`. |
+| `width` | Yes | How wide it is, a positive number. |
+| `edge` | No | `left`, the default, or `right`: the window's edge it runs down. Anything else refuses the document. |
 
 A host that shows sidebars:
 
-- Draws it at the window's left, the window's full height, and makes the window wider by its width.
+- Draws it at the window's `edge`, the window's full height, and makes the window wider by its width. When a
+  resizable window resizes, the sidebar keeps its width and stays on its edge, and the content takes the rest.
 - Treats it as a selectable list of one-line rows under its name: it fills it, selects a row, and reports `selected`,
   as for `<List selectable="true">`.
 - Sets it apart from the content, such as with its own shade, and marks the selected row.
+
+A reader from before `edge` ignores it and lists it, drawing the sidebar on the left: plainer, but still correct, since
+nothing in the content moves with the sidebar.
 
 ## Panes
 
@@ -705,6 +716,8 @@ reads `.uis` files into the same model.
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-24:** `<Sidebar>` takes `edge`, `left` or `right`, the window's edge it runs down; left is the default. A
+  reader from before ignores it and draws the sidebar on the left.
 - **2026-11-24:** A `<Pane>` may hold visuals as well as controls; their `<Image>`s stay in `<UIScript>`. Visuals
   have no flat form. A reader from before refuses a visual in a pane.
 - **2026-11-24:** A host may leave a window's title out of its title bar, and a subtitle then takes the title's

@@ -219,6 +219,7 @@ public static class UIScriptSchema
         [
             new("name", UIAttributeGroup.Identity, UIAttributeKind.Name, IsRequired: true),
             new("width", UIAttributeGroup.Frame, UIAttributeKind.Number, IsRequired: true),
+            new("edge", UIAttributeGroup.Frame, UIAttributeKind.Choice, Choices: ["left", "right"]),
         ],
         ["Pane"] =
         [

@@ -75,7 +75,8 @@ public sealed class UIListState
 /// <para>The view owns the controls and their interaction state: text, values, focus, lists, and what's hidden or
 /// disabled. Its owner fills lists, sets text and values by name, draws into regions, and handles the events
 /// <see cref="Update"/> returns. Positions are relative to the view's corner, which the owner passes in.</para>
-/// <para>A document's <c>&lt;Sidebar&gt;</c> is a selectable list the view keeps and draws to the left of its corner,
+/// <para>A document's <c>&lt;Sidebar&gt;</c> is a selectable list the view keeps and draws to the left of its corner, or
+/// past the content's right edge with <c>edge="right"</c>,
 /// <see cref="SidebarWidth"/> wide, so it reads, fills, and reports like a <c>&lt;List&gt;</c> of its name; the
 /// window frame draws the shade behind it.</para>
 /// <para>With panes, the sidebar's rows are the panes' titles, and a control in a pane shows only while that pane's row
@@ -191,9 +192,14 @@ public sealed class UIView
         if (script.Sidebar is { } side)
         {
             SidebarWidth = (int)MathF.Ceiling(side.Width);
+            IsSidebarOnRight = side.Edge == UIEdge.Right;
+
+            // Left of the view's corner, or just past the content's right edge, held there as the window resizes.
             sidebar = new UIControl(
                 side.Name, UIControlType.List,
-                new UIFrame(-SidebarWidth, 0, SidebarWidth, null, new UIEdgeOffsets(null, null, SidebarInset, SidebarInset)),
+                IsSidebarOnRight
+                    ? new UIFrame(0, 0, SidebarWidth, null, new UIEdgeOffsets(null, -SidebarWidth, SidebarInset, SidebarInset))
+                    : new UIFrame(-SidebarWidth, 0, SidebarWidth, null, new UIEdgeOffsets(null, null, SidebarInset, SidebarInset)),
                 side.Line, IsSelectable: true);
             var rows = new UIListState();
             foreach (var pane in script.Panes)
@@ -254,6 +260,12 @@ public sealed class UIView
 
     /// <summary>How wide the sidebar is, in whole pixels, or 0 without one.</summary>
     public int SidebarWidth { get; }
+
+    /// <summary>Whether the sidebar is on the window's right (<c>edge="right"</c>) rather than its left.</summary>
+    public bool IsSidebarOnRight { get; }
+
+    /// <summary>How much of the window's width is left of the content: the sidebar's, when it's on the left.</summary>
+    public int LeadingSidebarWidth => IsSidebarOnRight ? 0 : SidebarWidth;
 
     /// <summary>The document this view shows.</summary>
     public UIScript Script => script;

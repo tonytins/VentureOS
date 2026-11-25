@@ -61,8 +61,8 @@ public sealed class DesignMap
                     if (window.TitleFieldBounds is { Width: > 0 } field)
                         drawn.Add((index, field));
                     break;
-                case "Sidebar" when window.View.SidebarWidth > 0:
-                    drawn.Add((index, new UIRect(window.X, top, window.View.SidebarWidth, window.Height - window.BarHeight)));
+                case "Sidebar" when window.SidebarBounds is { } sidebar:
+                    drawn.Add((index, sidebar with { Y = top, Height = window.Height - window.BarHeight }));
                     break;
             }
         }

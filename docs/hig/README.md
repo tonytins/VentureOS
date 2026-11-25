@@ -168,7 +168,7 @@ work on both, and switching must reach open windows without reopening them. If y
 
 ### Windows
 
-A window has a title bar, its content, and, if it has one, a sidebar down its left side.
+A window has a title bar, its content, and, if it has one, a sidebar down its left side, or its right.
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -204,6 +204,10 @@ For anything with places to choose from, such as folders, settings pages, or pac
 area. The sidebar is a list of places, a shade cooler than the content, from the top of the window to the bottom.
 Its selection is softer than a list's selection, a neutral gray rather than the accent, because the content beside
 it is what the user is looking at.
+
+A sidebar of places goes on the left, where it leads to the content. One that goes with the content instead, such as
+a radio's queue or a file's details, goes on the right (`edge="right"`), as Shortwave's player does. The traffic
+lights stay on the title bar's left either way, and the title and toolbar span only the content.
 
 ### The menu bar
 

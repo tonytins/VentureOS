@@ -117,6 +117,32 @@ public sealed class PaneDesignTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void ASidebarOnTheRightIsMappedWhereItsDrawn() => TestApp.Run(() =>
+    {
+        File.WriteAllText(document, """
+            <UIScript>
+              <Window width="300" height="200"/>
+              <Sidebar name="queue" width="100" edge="right"/>
+              <Pane name="now" title="Now">
+                <Button name="play" x="10" y="10" width="80" height="24" text="Play"/>
+              </Pane>
+              <Pane name="later" title="Later"/>
+            </UIScript>
+            """);
+        var window = Open();
+        var play = window.Map!.BoundsOf(Index(window, "play"))!.Value;
+        var sidebar = window.Map.BoundsOf(window.Document!.Xml!.Children.ToList().FindIndex(element => element.Name == "Sidebar"))!.Value;
+        var later = window.Map.BoundsOf(Index(window, "later"))!.Value;
+
+        Assert.True(sidebar.X >= play.X + 300 - 10);
+        Assert.Equal(100, (int)sidebar.Width);
+        Assert.True(later.X >= sidebar.X && later.X + later.Width <= sidebar.X + sidebar.Width);
+        Click(window, later.X + 5, later.Y + 5);
+        Assert.Equal("later", window.ShownPane);
+        window.Close();
+    });
+
     private MainWindow Open()
     {
         MainWindow window = new() { AskToLeave = _ => Task.FromResult(Bundles.LeaveChoice.DontSave) };

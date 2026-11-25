@@ -44,7 +44,8 @@ public enum FramePart
 /// window that isn't in front draws faded, as early Aqua did.</para>
 /// <para>A document with a <c>&lt;Sidebar&gt;</c> gets it down the window's left, its full height, in its own shade,
 /// as Nautilus has it in GNOME 45: the buttons sit on its top, and the title bar, title, and toolbar span only the
-/// content beside it. The view draws and handles its rows.</para>
+/// content beside it. With <c>edge="right"</c> it runs down the right instead, as Shortwave's player does, and the
+/// buttons stay on the title bar's left. The view draws and handles its rows.</para>
 /// <para>A resizable window (<c>resizable="true"</c> on <c>&lt;Window&gt;</c>) has a grip of dots in its bottom-right
 /// corner, over its content; dragging it resizes the content, and controls follow their edge offsets.</para>
 /// <para>Toolbar items and the idle title are laid out when the bar is drawn, since their widths come from the font,
@@ -280,7 +281,12 @@ public sealed class DesktopWindow
     internal UIRect? unzoomed;
 
     /// <summary>Where the view's corner is.</summary>
-    public (int X, int Y) ContentOrigin => (X + View.SidebarWidth, Y + BarHeight);
+    public (int X, int Y) ContentOrigin => (X + View.LeadingSidebarWidth, Y + BarHeight);
+
+    /// <summary>The sidebar, the window's full height down its left or right, or <see langword="null"/> without one.</summary>
+    public UIRect? SidebarBounds => View.SidebarWidth > 0
+        ? new UIRect(View.IsSidebarOnRight ? X + Width - View.SidebarWidth : X, Y, View.SidebarWidth, Height)
+        : null;
 
     /// <summary>Where a toolbar item was last drawn, by its position in the document.</summary>
     public UIRect ToolbarItemBounds(int index) => index >= 0 && index < itemBounds.Count ? itemBounds[index] : default;
@@ -309,7 +315,7 @@ public sealed class DesktopWindow
     private (int Left, int Right) TitleRoom()
     {
         var left = Math.Max(StartOfBar, startItemsRight + Margin);
-        var right = Math.Min(X + Width - Margin, endItemsLeft - Margin);
+        var right = Math.Min(EndOfBar, endItemsLeft - Margin);
         return (left, Math.Max(left, right));
     }
 
@@ -564,18 +570,21 @@ public sealed class DesktopWindow
             painter.FillRectangle(X + Shadow, Y + Shadow, Width, Height, DesktopTheme.Shadow);
         }
 
-        // A sidebar runs the window's full height, with the buttons on its top, and the title bar spans the content.
+        // A sidebar runs the window's full height, a line on the side it meets the content, and the title bar spans the
+        // content; on the left, the buttons sit on its top.
         var side = View.SidebarWidth;
-        if (side > 0)
+        if (SidebarBounds is { } sidebar)
         {
-            painter.FillRectangle(X, Y, side, Height, DesktopTheme.SidebarBackground);
-            painter.FillRectangle(X + side - 1, Y, 1, Height, DesktopTheme.Separator);
+            var (sideX, sideY, sideWidth, sideHeight) = ((int)sidebar.X, (int)sidebar.Y, (int)sidebar.Width, (int)sidebar.Height);
+            painter.FillRectangle(sideX, sideY, sideWidth, sideHeight, DesktopTheme.SidebarBackground);
+            painter.FillRectangle(View.IsSidebarOnRight ? sideX : sideX + sideWidth - 1, sideY, 1, sideHeight, DesktopTheme.Separator);
         }
 
         // Flat, in the header bar's color, with a faint line under it, as GNOME's header bars are, so the window reads
         // as one surface with the sidebar beside it.
-        painter.FillRectangle(X + side, Y, Width - side, bar, DesktopTheme.HeaderBar);
-        painter.FillRectangle(X + side, Y + bar - 1, Width - side, 1, DesktopTheme.Separator);
+        var lead = View.LeadingSidebarWidth;
+        painter.FillRectangle(X + lead, Y, Width - side, bar, DesktopTheme.HeaderBar);
+        painter.FillRectangle(X + lead, Y + bar - 1, Width - side, 1, DesktopTheme.Separator);
 
         var (hovered, hoveredIndex) = pointer is { } at ? Hit(at.X, at.Y) : (FramePart.None, -1);
         if (IsClosable)
@@ -727,7 +736,7 @@ public sealed class DesktopWindow
             }
         }
 
-        var right = X + Width - Margin;
+        var right = EndOfBar;
         for (var index = items.Count - 1; index >= 0; index--)
         {
             if (items[index].Placement != UIToolbarPlacement.End)
@@ -741,16 +750,19 @@ public sealed class DesktopWindow
 
         // With none at one end, the title's room reaches the bar's own edge there.
         startItemsRight = left > StartOfBar ? left - ItemGap : int.MinValue / 2;
-        endItemsLeft = right < X + Width - Margin ? right + ItemGap : int.MaxValue / 2;
+        endItemsLeft = right < EndOfBar ? right + ItemGap : int.MaxValue / 2;
     }
 
     private int ItemWidth(IPainter painter, UIToolbarItem item, int height, int size) =>
         HasSymbol(item) ? height : painter.MeasureText(item.Title, size) + (2 * ItemPadding);
 
-    // Where the bar's own room starts: after the buttons, and past the sidebar, whose top they sit on.
+    // Where the bar's own room starts: after the buttons, and past a sidebar on the left, whose top they sit on.
     private int StartOfBar => Math.Max(
         X + (IsClosable ? ButtonInset + (Buttons * ButtonSize) + ((Buttons - 1) * ButtonGap) + 12 : Margin),
-        X + View.SidebarWidth + Margin);
+        X + View.LeadingSidebarWidth + Margin);
+
+    // Where the bar's own room ends: short of the frame's right, or of a sidebar on the right.
+    private int EndOfBar => X + Width - (View.SidebarWidth - View.LeadingSidebarWidth) - Margin;
 
     private int Buttons => HasZoom ? 3 : 2;
 
@@ -896,7 +908,7 @@ public sealed class DesktopWindow
     /// </summary>
     private (int Start, int Width) Centre(int wanted, int left, int right)
     {
-        var (paneLeft, paneWidth) = (X + View.SidebarWidth, Width - View.SidebarWidth);
+        var (paneLeft, paneWidth) = (X + View.LeadingSidebarWidth, Width - View.SidebarWidth);
         var room = right - left;
         var width = Math.Clamp(wanted, 0, room);
         var side = Math.Max(left - paneLeft, paneLeft + paneWidth - right);

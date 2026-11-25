@@ -62,6 +62,19 @@ public sealed class UIScriptSidebarTests
     }
 
     [Theory]
+    [InlineData(null, UIEdge.Left)]
+    [InlineData("left", UIEdge.Left)]
+    [InlineData("right", UIEdge.Right)]
+    public void ReadsWhichEdgeItSitsOn(string? edge, UIEdge expected)
+    {
+        var attribute = edge is null ? "" : $" edge=\"{edge}\"";
+        var script = UIScript.Parse($"{Head}<Sidebar name=\"player\" width=\"200\"{attribute}/></UIScript>");
+
+        Assert.Equal(expected, script.Sidebar!.Edge);
+        Assert.Empty(script.IgnoredAttributes);
+    }
+
+    [Theory]
     [InlineData("""<Sidebar width="130"/>""", "name")]
     [InlineData("""<Sidebar name="places"/>""", "width")]
     [InlineData("""<Sidebar name="places" width="wide"/>""", "width")]
@@ -70,6 +83,7 @@ public sealed class UIScriptSidebarTests
     [InlineData("""<Sidebar name="a" width="100"/><Sidebar name="b" width="100"/>""", "more than one <Sidebar>")]
     [InlineData("""<Sidebar name="go" width="100"/><ToolbarItem name="go" title="Go"/>""", "\"go\"")]
     [InlineData("""<Sidebar name="list" width="100"/><List name="list" x="0" y="0" width="10" height="10"/>""", "\"list\"")]
+    [InlineData("""<Sidebar name="places" width="100" edge="top"/>""", "left or right, not \"top\"")]
     public void RefusesMistakes(string elements, string message)
     {
         var text = $"""{Head}{elements}</UIScript>""";

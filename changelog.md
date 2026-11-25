@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.206
+
+- A sidebar can run down a window's right, with `edge="right"` on `<Sidebar>`, as Shortwave's player does. The traffic lights stay on the left, and the title and toolbar span only the content. Roundhouse's inspector offers the choice, and its designer selects the sidebar where it's drawn.
+
 ## 0.8.205
 
 - About VentureOS has a window of its own, after Mojave's About This Mac: a sidebar with About, which shows what it always did, and Credits. The credits are in `/mnt/system/credits.txt`. Every app's About is unchanged.
