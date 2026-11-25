@@ -110,7 +110,8 @@ holds at most 600 characters, so every line fits; a line with a value cut short 
   `statusItem`, `sidebar`, `titleField`, `toolbarItem`, or `menuItem`. `kind` is never quoted.
 - An app's status item is a window of its own: its snapshot lists the item itself first, `kind=statusItem` with the
   bar's text, then its panel's controls or its menu's items. `act <id> press <name>` presses a button item by its
-  name, and its panel's controls work by name whether the panel is open or not. The bar's own items, the bell and the
+  name, and is `error` for one with a menu or panel, since a click opens those; its menu's items and its panel's
+  controls work by name, whether the panel is open or not. The bar's own items, the bell and the
   clock, stay out of reach.
 - `act` and `key` bring their window to the front, restoring it if it was minimized, as a click would. An action
   is answered `ok` once the app has handled it, in the same frame, or `error` with why a person couldn't do it,

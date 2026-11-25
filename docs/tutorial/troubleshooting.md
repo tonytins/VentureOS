@@ -55,3 +55,6 @@ A failing `main.lua` isn't a crash: the app just doesn't open, as above.
 Files is kept running: if it's closed, killed, or crashes, VentureOS starts
 it again, at once, and waits longer between tries if it keeps failing. Your
 apps aren't kept; once they end, they stay ended until they're opened again.
+That holds for apps in Settings ▸ Startup too: they open with the desktop,
+and a crash leaves them closed. System Monitor's Processes pane lists what's
+running, so an app with no window can be found and ended there.

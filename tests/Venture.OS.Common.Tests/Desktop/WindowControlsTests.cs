@@ -217,4 +217,25 @@ public sealed class WindowControlsTests
         window.ShowsTitle = false;
         Assert.Null(WindowControls.Snapshot(window).Title);
     }
+
+    [Theory]
+    [InlineData("""<UIScript><StatusItem name="mixer" title="Mix" width="200" height="60"/><Slider name="volume" x="10" y="20" width="180" height="20"/></UIScript>""", "panel")]
+    [InlineData("""<UIScript><StatusItem name="mixer" title="Mix"/><Menu name="m" title="Mix"><MenuItem name="mute" title="Mute"/></Menu></UIScript>""", "menu")]
+    public void AStatusItemThatOpensSomethingIsNotPressed(string document, string opens)
+    {
+        DesktopWindow item = new("Mix", new UIView(UIScript.Parse(document))) { EventHandler = (_, uiEvent) => events.Add(uiEvent) };
+
+        Assert.False(WindowControls.TryPress(item, "mixer", out var problem));
+        Assert.Contains($"opens a {opens}", problem);
+        Assert.Empty(events);
+    }
+
+    [Fact]
+    public void AStatusItemThatsAButtonIsPressed()
+    {
+        DesktopWindow item = new("Ping", new UIView(UIScript.Parse("""<UIScript><StatusItem name="ping" title="Ping"/></UIScript>"""))) { EventHandler = (_, uiEvent) => events.Add(uiEvent) };
+
+        Assert.True(WindowControls.TryPress(item, "ping", out _));
+        Assert.Equal([new UIEvent(UIEventKind.Pressed, "ping")], events);
+    }
 }

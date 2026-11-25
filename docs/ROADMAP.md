@@ -421,13 +421,13 @@ window, a status item, or nothing at all, as a daemon. The apps the desktop
 keeps running say so in their own `Info.xml` rather than in its code. Split
 from 0.8.4xx by my decision ([its design](./design/2026-11-25-status-items-design.md)).
 
-- [ ] Kept apps: a system app's `kept="true"`, which Files and the Dock
+- [x] Kept apps: a system app's `kept="true"`, which Files and the Dock
   have, in place of the two the desktop named in its code.
-- [ ] Startup items, which I choose in Settings or an app asks for: opened
+- [x] Startup items, which I choose in Settings or an app asks for: opened
   with the desktop, left ended if they quit or crash.
-- [ ] Apps that stay out of the dock, in `Info.xml` and through the
+- [x] Apps that stay out of the dock, in `Info.xml` and through the
   `venture` API.
-- [ ] UIScript: `<StatusItem>`, a new root, after the sidebar: one that holds
+- [x] UIScript: `<StatusItem>`, a new root, after the sidebar: one that holds
   nothing is a button, one that holds menus drops them down, and one that
   holds controls and visuals opens a small panel of them. It belongs to its
   app's process, and the bell and the clock join its row.
@@ -481,6 +481,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | 0.8.5xx is complete: apps put status items in the menu bar, stay out of the dock, and open at startup, which I choose in Settings or an app asks for; the kept apps say so in `Info.xml`. A boot showed a startup app's status items, in light and dark. |
 | 2026-11-25 | patch | 0.8.5xx: Settings' Startup pane and System Monitor's Processes pane ship. |
 | 2026-11-25 | minor | 0.8.5xx, status items, begins, by my word, with its design: startup items as daemons, kept apps in `Info.xml`, and System Monitor's process list join it. |
 | 2026-11-25 | minor | 0.8.4xx is complete: the value slider ships, for apps and Hudini's games alike, with a glossed rail progress bars share; a boot showed it in light and dark. 0.8.5xx, status items, is next, to be talked through first. |

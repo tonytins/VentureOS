@@ -76,7 +76,7 @@ since a person couldn't use it either.
 
 | Call | Does |
 |---|---|
-| `app:press(name)` | Presses a button, toolbar item, or menu item. |
+| `app:press(name)` | Presses a button, toolbar item, menu item, or a status item that's a button. |
 | `app:submit(name, text)` | Types `text` into a field or the title bar's field and presses Enter. |
 | `app:type(name, text)` | Types `text` into a field or text area, without Enter. |
 | `app:slide(name, value)` | Moves a slider to `value`, as a drag that ends there: snapped to its step and kept in its range, then `changed` and `committed`. |

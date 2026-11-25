@@ -19,7 +19,8 @@ the two can be kept in step. Where the system hasn't decided something yet, the 
 
 1. [Principles](#principles)
 2. [Foundations](#foundations): color, type, spacing, corners, depth, light and dark
-3. [Structure](#structure): windows, sidebars, the menu bar, the dock, alerts, notifications
+3. [Structure](#structure): windows, sidebars, the menu bar, status items, the dock, apps at startup, alerts,
+   notifications
 4. [Behavior](#behavior): states, focus, selection, the keyboard
 5. [Writing](#writing): voice, labels, errors
 6. [Using it outside VentureOS](#using-it-outside-ventureos)
@@ -230,11 +231,44 @@ The menu bar runs along the top of the screen and belongs to whichever app is in
     for whatever text has focus.
   - Help: About the app, or About VentureOS when no app is in front, so Help is never empty.
 
+### Status items
+
+An app can put a small item in the menu bar, left of the bell, as macOS's menu extras are: a reading, such as the
+weather, or a control kept close at hand, such as a volume. It's a `.uix` whose root is `<StatusItem>`, shown as its
+title, a 16-pixel symbol in the bar's text color, or both. What it holds decides what a click does:
+
+- **Nothing:** it's a button, and the app hears it pressed. Use it for one action, such as refreshing a reading.
+- **Menus:** they drop down under it, as an app's menus do from the bar. Use them for a few commands.
+- **Controls:** a panel of them opens under it, on the shelf's material, as toasts are, and closes on Escape, a
+  click outside, or the item again. Keep it small, a few controls; a panel that needs a title or a sidebar is a
+  window.
+
+Keep the item's text short, a few characters such as `72°` or `5:00`, since items share the bar with the app's menus,
+and past the room there the newest don't show. Put a reading in the title and update it with `setTitle`. Give an app
+one item unless it truly does two unrelated things. An item belongs to its app: it leaves the bar when the app ends.
+
 ### The dock
 
 The dock shows apps as 48-pixel icons on a translucent shelf at the bottom of the screen, with a dot under each open
 app and a label over the icon under the pointer. The user chooses whether it's always shown, hides itself, or gets
 out of the way of windows.
+
+An app that lives in the menu bar, or works out of sight, can stay out of the dock, with `dock="hidden"` in its
+`Info.xml`. A hidden app's minimized windows still show in the dock, so they can come back. An app whose windows
+are its point belongs in the dock.
+
+### Apps at startup
+
+The person chooses which apps open when the desktop starts, in Settings ▸ Startup; VentureOS calls this **Open at
+Startup**. Such an app may open a window, put a status item in the bar, or show nothing at all and work in the
+background. It opens once: if it quits, is closed, or crashes, it stays closed until it's opened again.
+
+- **Ask, don't add.** An app can't put itself on the list. It may ask, with `venture.ui.askToOpenAtStartup`, which
+  shows VentureOS's own alert; the person answers. Ask once, when the person turns on something that needs it, such
+  as a reminder, and not on the app's first launch.
+- **Show that it's running.** An app with no window and no status item can only be seen in System Monitor's
+  Processes pane. Prefer a status item, so the person knows it's there and can reach it.
+- Files and the Dock are **kept**: VentureOS restarts them whenever they end. Only system apps can be kept.
 
 ### Alerts
 
@@ -423,6 +457,7 @@ These aren't settled yet. Until they are, follow what VentureOS does today, and 
 
 | Date | Change |
 | --- | --- |
+| 2026-11-25 | Status items, apps staying out of the dock, and apps at startup: what an item holds and when to use each kind, and asking rather than adding. |
 | 2026-11-25 | Sliders and progress bars: the shared, glossed rail, the knob, and when to use a slider; Depth's gloss rule takes in the rail's fill, by the owner's choice. |
 | 2026-11-25 | Notifications: toasts, the history, and the bell; when to post one rather than an alert; their translucency under Depth. |
 | 2026-11-24 | The voice: calm, factual, and trusting the reader with what follows. Inspired by the System Voice of *ReBoot*, which announced what was happening in Mainframe in a few even words and left its audience to understand. |

@@ -292,13 +292,50 @@ An app with the `system` scope can do what the dock does through
 
 | Function | Does |
 |---|---|
-| `venture.desktop.apps()` | Every app, Files first, then the system's and the user's: `{ name, path, icon, identifier, user, open }` each |
+| `venture.desktop.apps(all)` | Every app in the dock, Files first, then the system's and the user's: `{ name, path, icon, identifier, user, open }` each; with `all` true, the apps out of the dock too, each with `docked` saying which |
 | `venture.desktop.open(path)` | Opens an app as the dock does: brings it forward if it's open, with a new window if it has none |
 | `venture.desktop.minimized()` | Minimized windows, `{ id, title, app }` each |
 | `venture.desktop.restore(id)` | Brings a minimized window back |
 | `venture.desktop.onChange(fn)` | Calls `fn` when apps open, close, start, or end, or windows are minimized or restored, at most once a frame |
 
 `Dock.app` in `rootfs/system/apps` is all of this in about fifty lines.
+
+## Status items
+
+An app can put an item in the menu bar, left of the bell, as a weather
+reading or a timer. Write `<StatusItem>` in place of `<Window>`, and open
+it as any document:
+
+```xml
+<UIScript version="1">
+  <StatusItem name="mixer" title="Mix" width="200" height="60"/>
+  <Slider name="volume" x="10" y="20" width="180" height="20" maxValue="100"/>
+</UIScript>
+```
+
+```lua
+local mixer = venture.ui.open("mixer.uix")
+mixer:on("volume", function(event)
+  if event.kind == "committed" then venture.ui.toast("Volume " .. event.value) end
+end)
+```
+
+- What it holds decides a click: nothing, and it's a button, whose handler
+  hears `pressed` with the item's name; `<Menu>`s, and they drop down under
+  it; controls, as here, and they open in a panel under it, `width` by
+  `height`, placed from the panel's corner.
+- `title` is its text in the bar, and `image` names an `<Image>` drawn as a
+  16-pixel symbol, as toolbar icons are; `setTitle` changes the text, so
+  `mixer:setTitle("Mix 40")` keeps a reading current.
+- It's a window of your app's, without a frame: it leaves the bar when the
+  app quits, and an app whose only interface is status items keeps running
+  without a window. Give such an app `dock="hidden"` in its
+  [`Info.xml`](./command-line.md#describe-the-app-in-infoxml), and ask to
+  open it at startup, so it's there whenever the desktop is.
+- In tests, `app:press("ping")` presses an item that's a button; a menu's
+  items and a panel's controls are used by name, as any others.
+- See [UIScript status items](../uiscript/README.md#status-items) and
+  [the HIG](../hig/README.md#status-items).
 
 When something's off, [Troubleshooting](./troubleshooting.md) lists what
 VentureOS says and what to do.

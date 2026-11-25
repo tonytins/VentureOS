@@ -38,6 +38,17 @@ public static class WindowControls
     {
         if (!TryUse(window, name, out problem))
             return false;
+
+        // A status item that drops a menu or opens a panel is never pressed: a click opens it instead, so pressing it
+        // would hand the app an event no person could cause. Its menu items and controls are used by name.
+        if (window.View.Script is { StatusItem: { } item } script && item.Name == name
+            && (script.Menus.Count > 0 || script.Controls.Count > 0 || script.Visuals.Count > 0))
+        {
+            problem = $"\"{name}\" opens a {(script.Menus.Count > 0 ? "menu" : "panel")} rather than being pressed; "
+                + "use what's in it by name";
+            return false;
+        }
+
         Send(window, new UIEvent(UIEventKind.Pressed, name));
         return true;
     }

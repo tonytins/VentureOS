@@ -13,11 +13,11 @@ the code wins and this page is out of date.
   (the shell framework, Lua support, bundles, and the desktop's drawing); the
   interface formats, `Venture.OS.Interface` (UIScript, flat XML, and CST
   tables, needing only the BCL and CSTNet); and an xUnit v3 test project
-  for the library, `Venture.OS.Common.Tests` (2,316 tests, and 302 for Roundhouse, including runs of
+  for the library, `Venture.OS.Common.Tests` (2,366 tests, and 303 for Roundhouse, including runs of
   the shipped scripts and library, `Dock.app` in a desktop, and the tutorial's example). The built-in
-  apps' own tests are in their projects, in `projects/`, run by `airo test` (69 in all). Beside them, `vdb`, a Swift
+  apps' own tests are in their projects, in `projects/`, run by `airo test` (77 in all). Beside them, `vdb`, a Swift
   command-line tool in `tools/vdb` that sends apps to VentureOS and gives an agent its app windows over MCP
-  (54 tests),
+  (55 tests),
   and `airo`, a C# command-line tool in `src/Venture.Airo` that builds
   Roundhouse Projects into apps and runs their tests, on `Venture.Airo.Kit`,
   which Roundhouse shares (`Venture.Airo.Tests`, 54 tests).
@@ -55,7 +55,10 @@ the code wins and this page is out of date.
   Apps open windows through `venture.ui`; `Notes.app` has one. Toasts slide
   into the top-right corner, from apps (`venture.ui.toast`), the system's
   crash notices, and vdb, and a bell beside the clock opens their history.
-  Sliders choose values, on a glossed rail progress bars share.
+  Sliders choose values, on a glossed rail progress bars share. Apps can put
+  status items in the menu bar, stay out of the dock, and open at startup,
+  as the person chooses in Settings; the apps the desktop keeps running say
+  so in their `Info.xml`.
 - **Not built yet:** keeping files across reboots,
   and published ISOs, which are ideas without a release. See the
   [roadmap](./ROADMAP.md); verified status is in the
@@ -1711,6 +1714,35 @@ running, since its interpreter would vanish under it (`LuaOwner.IsRunning`).
   it's closed or killed, or on its first crash; after 2, 5, 10, then every 30
   seconds while it keeps failing; a minute of running settles it. The
   desktop ticks the supervisor every frame, and the shell after each command.
+- **Startup items:** the apps the person chose to open with the desktop,
+  by identifier, in `/mnt/user/settings/startup.xml` (`StartupItems`, on
+  `ISystemInfo.StartupItems`; `<StartupItems version="1">` of `<App
+  identifier>`, unknown parts skipped, a newer version refused). The
+  session opens them once since boot (`HaveOpened`), after the kept apps,
+  under the `Never` policy, so one that ends stays ended; one that's
+  missing or fails gets a toast, and the rest open. Settings' Startup pane
+  changes the list through `venture.startupItems` and `setStartupItem`
+  (system scope); an app can only ask, through
+  `venture.ui.askToOpenAtStartup`, whose alert is VentureOS's own (`App`
+  null), so the app can't answer it. `AppManager.FindBundle` finds an app
+  by name, folder, or identifier.
+- **Out of the dock:** `dock="hidden"` in `Info.xml` (`Bundle.IsShownInDock`),
+  or `venture.ui.setShownInDock` while it runs (`AppWindows`), keeps an
+  app's icon out of `venture.desktop.apps()`, and so out of the dock;
+  `apps(true)` lists them too, with `docked`. Its minimized windows still
+  show.
+- **Status items:** a `.uix` whose root is `<StatusItem>` opens as a window
+  of its app's (`DesktopWindow.IsStatusItem`) that the window manager keeps
+  but never draws, focuses, or minimizes. Each frame the session builds the
+  bar's `MenuGroup.Status` menus from them, only when `StatusKey()` changes,
+  allocating nothing otherwise, and `MenuBar` draws them right to left from
+  the bell, dropping the newest past the room. What the document holds
+  decides a click (`BarMenu.Pressed`): a press reported to the app, its
+  menus dropped down, or its view drawn as a panel on the shelf's card
+  under the item (`DesktopSession.StatusItems.cs`), which Escape, a click
+  outside, or the item closes. It ends with its app, as any window does.
+  `WindowControls` reaches its panel's controls and menu items by name, and
+  presses only an item that's a button.
 - **`ps` and `kill`:** `venture.processes()` lists the running apps (ID, name,
   identifier, state, seconds running, and whether they're kept), and
   `venture.kill(target)` ends one by ID, name, or identifier, refusing the
@@ -1945,6 +1977,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | 0.8.5xx is complete (§9): startup items, out of the dock, and status items described in §9; `WindowControls.TryPress` refuses a status item that opens a menu or panel, since a click opens those rather than pressing them. |
 | 2026-11-25 | minor | Status items reach the tools (§9): Roundhouse's `RenderCommand` draws a status item in a bar of its own, with its menu or panel open; `WindowControls` snapshots and acts on one by name (`statusItem` kind), and vdb's `windows` marks it; `venture.desktop.apps(true)` lists hidden apps with `docked`; airo's `SimulatedSystem` has `StartupItems`. Settings ships a Startup pane and System Monitor a Processes pane. |
 | 2026-11-25 | minor | Status items: UIScript's `<StatusItem>` root (`UIWindowRole.StatusItem`, `UIScript.StatusItem`); a status item is an app window the window manager keeps but never draws or focuses (`DesktopWindow.IsStatusItem`), which the session adds to the bar as a `MenuGroup.Status` menu, drawn right to left from the bell; a button or panel acts on a press (`BarMenu.Pressed`), and a panel is the item's view on the shelf's card (`DesktopSession.StatusItems.cs`). |
 | 2026-11-25 | minor | Startup items (§9): `StartupItems` (`/mnt/user/settings/startup.xml`, on `ISystemInfo.StartupItems`), opened once since boot by the session after the kept apps under `Never`, a toast for one missing or failing; `venture.startupItems`/`setStartupItem` (system scope), `venture.ui.askToOpenAtStartup` (VentureOS's own alert), and `dock="hidden"` with `venture.ui.setShownInDock`, which the dock's `venture.desktop.apps()` follows. `AppManager.FindBundle` finds an app by name, folder, or identifier. |

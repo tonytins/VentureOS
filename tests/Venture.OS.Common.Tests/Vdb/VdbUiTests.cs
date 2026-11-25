@@ -155,9 +155,11 @@ public sealed class VdbUiTests : IDisposable
         Send(session, $"snapshot {item.Id}");
         Assert.Contains(computer.Heard, line => line == "control name=\"mixer\" kind=statusItem text=\"Mix\"");
 
+        // Its panel's controls are used by name; the item itself opens the panel, so it isn't pressed.
         Send(session, $"act {item.Id} press mixer");
+        Assert.Contains(computer.Heard, line => line.StartsWith("error", StringComparison.Ordinal) && line.Contains("opens a panel", StringComparison.Ordinal));
         Send(session, $"act {item.Id} slide volume 4");
-        Assert.Equal(new UIEvent(UIEventKind.Pressed, "mixer"), heard[0]);
+        Assert.DoesNotContain(heard, uiEvent => uiEvent.Kind == UIEventKind.Pressed);
         Assert.Equal(4, item.View.Value("volume"));
     }
 

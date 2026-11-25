@@ -1,6 +1,6 @@
 # Status items, startup items, and kept apps
 
-**Status:** proposed for 0.8.5xx, Hokutosei. **Date:** 2026-11-25.
+**Status:** built in 0.8.5xx, Hokutosei; [the HIG](../hig/README.md#status-items) and [the spec](../uiscript/README.md#status-items) say how it works now. **Date:** 2026-11-25.
 
 VentureOS's menu bar has a clock and, since 0.8.4xx, a bell, both drawn by the desktop. An app can't put anything
 there, can't stay out of the dock, and can't start with the desktop; and the two apps the desktop keeps running,

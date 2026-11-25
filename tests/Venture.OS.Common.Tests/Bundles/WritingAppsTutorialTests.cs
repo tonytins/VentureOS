@@ -148,6 +148,24 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
         Assert.Matches(@"^[1-6] = [1-6]$", output.Lines[0]);
     }
 
+    [Fact]
+    public void TheStatusItemsMixerOpensInTheBarAndHearsItsSlider()
+    {
+        Build(Block(CommandLine, "xml", 0), Block(CommandLine, "lua", 0) + "\n" + BlockWith(Desktop, "lua", "mixer.uix"));
+        var resources = Path.Combine(apps, "Dice.app", "Contents", "Resources");
+        Directory.CreateDirectory(resources);
+        File.WriteAllText(Path.Combine(resources, "mixer.uix"), BlockWith(Desktop, "xml", "<StatusItem"));
+
+        Assert.True(manager.OpenApp("dice", root, output), string.Join('\n', output.Lines));
+        var item = Assert.Single(windows.Windows);
+        Assert.True(item.IsStatusItem);
+        Assert.Equal("Mix", item.Title);
+
+        item.EventHandler!(item, new UIEvent(UIEventKind.Committed, "volume", Value: 40));
+
+        Assert.Contains(output.Lines, line => line.Contains("Volume 40", StringComparison.Ordinal));
+    }
+
     private void Build(string info, string main)
     {
         var contents = Path.Combine(apps, "Dice.app", "Contents");
@@ -166,6 +184,11 @@ public sealed partial class WritingAppsTutorialTests : IDisposable
         Assert.True(index < blocks.Count, $"The tutorial has no {language} block {index}.");
         return blocks[index].Groups[2].Value;
     }
+
+    /// <summary>The one code block in a language that holds <paramref name="text"/>, so a test needn't count blocks.</summary>
+    private static string BlockWith(string tutorial, string language, string text) =>
+        Assert.Single(CodeBlock().Matches(tutorial), match => match.Groups[1].Value == language && match.Groups[2].Value.Contains(text, StringComparison.Ordinal))
+            .Groups[2].Value;
 
     private static string InfoLine(string xml) => xml.Split('\n').Single(line => line.TrimStart().StartsWith("<Info")).Trim();
 

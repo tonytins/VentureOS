@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.504
+
+- Pressing a status item that opens a menu or a panel, with vdb's `act` or an app test's `app:press`, now says why it can't, since a click opens those; use what's in them by name. A status item that's a button is pressed as before.
+
 ## 0.8.503
 
 - Settings has a Startup pane: the apps that open with the desktop, Remove to take one off, and every other installed app to add.
