@@ -95,61 +95,36 @@ public static class TestLibrary
     private static void PushFunctions(ILuaState lua, AppUnderTest app)
     {
         lua.NewTable();
-        Add(lua, "press", state =>
-        {
-            var (window, name) = Usable(state, app, "press");
-            app.Send(window, new UIEvent(UIEventKind.Pressed, name));
-            return 0;
-        });
+        Add(lua, "press", state => Done(state, "press", WindowControls.TryPress(Front(state, app, "press"), Name(state), out var problem), problem));
         Add(lua, "submit", state =>
         {
-            var (window, name) = Usable(state, app, "submit");
+            var window = Front(state, app, "submit");
             var text = LuaText.Decode(state.L_CheckString(3));
-            window.View.SetText(name, text);
-            app.Send(window, new UIEvent(UIEventKind.Submitted, name, text));
-            return 0;
+            return Done(state, "submit", WindowControls.TrySubmit(window, Name(state), text, out var problem), problem);
         });
         Add(lua, "type", state =>
         {
-            var (window, name) = Usable(state, app, "type");
+            var window = Front(state, app, "type");
             var text = LuaText.Decode(state.L_CheckString(3));
-            window.View.SetText(name, text);
-            app.Send(window, new UIEvent(UIEventKind.Changed, name, text));
-            return 0;
+            return Done(state, "type", WindowControls.TryType(window, Name(state), text, out var problem), problem);
         });
         Add(lua, "choose", state =>
         {
-            var (window, name) = Usable(state, app, "choose");
-            if (ChoicesOf(window.View, name) is not { } choices)
-                return Fail(state, $"app:choose: \"{name}\" isn't a list or a grid");
+            var window = Front(state, app, "choose");
+            var name = Name(state);
 
             // A row or item is chosen by its number, from 1, by its text, as a person reads it, or by a grid item's name.
-            long index;
-            if (state.Type(3) == LuaType.LUA_TSTRING)
-            {
-                var text = LuaText.Decode(state.ToString(3));
-                index = choices.IndexOf(text) + 1;
-                if (index == 0)
-                    return Fail(state, $"app:choose: \"{name}\" has no row \"{text}\"; its rows are {string.Join(", ", choices.Rows)}");
-            }
-            else
-            {
-                index = state.L_CheckInteger(3);
-                if (index < 1 || index > choices.Rows.Count)
-                    return Fail(state, $"app:choose: \"{name}\" has {choices.Rows.Count} rows, so there's no row {index}");
-            }
-
-            // As a click does: the list or grid selects it, then reports it.
-            var chosen = (int)index - 1;
-            choices.Select(chosen);
-            app.Send(window, new UIEvent(UIEventKind.Selected, name, Index: chosen, Item: choices.ItemName(chosen)));
-            return 0;
+            string? problem;
+            var chose = state.Type(3) == LuaType.LUA_TSTRING
+                ? WindowControls.TryChoose(window, name, LuaText.Decode(state.ToString(3)), out problem)
+                : WindowControls.TryChoose(window, name, Row(state), out problem);
+            return Done(state, "choose", chose, problem);
         });
 
         Add(lua, "has", state =>
         {
             var window = Front(state, app, "has");
-            return PushBoolean(state, Has(window, Name(state)));
+            return PushBoolean(state, WindowControls.Has(window, Name(state)));
         });
         Add(lua, "text", state => PushText(state, Named(state, app, "text").View.Text(Name(state))));
         Add(lua, "checked", state => PushBoolean(state, Named(state, app, "checked").View.IsSelected(Name(state))));
@@ -177,9 +152,8 @@ public static class TestLibrary
         });
         Add(lua, "chosen", state =>
         {
-            var selected = ChoicesNamed(state, app, "chosen").Selected;
-            if (selected >= 0)
-                state.PushInteger(selected + 1);
+            if (ChoicesNamed(state, app, "chosen").Chosen is { } chosen)
+                state.PushInteger(chosen);
             else
                 state.PushNil();
             return 1;
@@ -275,95 +249,29 @@ public static class TestLibrary
         }
     }
 
-    // Whether the window has a control, list, menu item, toolbar item, or title field of that name.
-    private static bool Has(DesktopWindow window, string name) =>
-        window.View.Bounds(name) is not null || window.View.List(name) is not null || InBars(window, name);
-
-    // Whether it's in the menu bar or the title bar, which are always there while the window is, rather than among
-    // the window's controls.
-    private static bool InBars(DesktopWindow window, string name)
-    {
-        var script = window.View.Script;
-        if (script.TitleField?.Name == name)
-            return true;
-        foreach (var item in script.ToolbarItems)
-        {
-            if (item.Name == name)
-                return true;
-        }
-
-        foreach (var menu in script.Menus)
-        {
-            foreach (var entry in menu.AllEntries())
-            {
-                if (entry.Name == name)
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
     // The front window, once the control named by the call's first argument is in it.
     private static DesktopWindow Named(ILuaState state, AppUnderTest app, string function)
     {
         var window = Front(state, app, function);
-        var name = Name(state);
-        if (!Has(window, name))
-            throw Error(state, $"app:{function}: there's no \"{name}\" in {window.Title}");
+        if (!WindowControls.TryFind(window, Name(state), out var problem))
+            throw Error(state, $"app:{function}: {problem}");
         return window;
     }
 
-    // The front window and the control a person is about to use, which has to be showing and not dimmed.
-    private static (DesktopWindow Window, string Name) Usable(ILuaState state, AppUnderTest app, string function)
-    {
-        var window = Named(state, app, function);
-        var name = Name(state);
-
-        // The menu bar and title bar are always there, so only dimming counts for what's in them.
-        if (!InBars(window, name) && !window.View.IsShowing(name))
-            throw Error(state, $"app:{function}: \"{name}\" isn't showing, so a person couldn't use it");
-        if (window.View.IsDisabled(name))
-            throw Error(state, $"app:{function}: \"{name}\" is dimmed, so a person couldn't use it");
-        return (window, name);
-    }
-
-    private static Choices ChoicesNamed(ILuaState state, AppUnderTest app, string function) =>
-        ChoicesOf(Named(state, app, function).View, Name(state))
+    private static WindowChoices ChoicesNamed(ILuaState state, AppUnderTest app, string function) =>
+        WindowControls.Choices(Named(state, app, function), Name(state))
             ?? throw Error(state, $"app:{function}: \"{Name(state)}\" isn't a list or a grid");
 
-    /// <summary>A list's rows or a grid's items, which a test reads and picks from alike, as a person does.</summary>
-    private static Choices? ChoicesOf(UIView view, string name) => (view.List(name), view.Grid(name)) switch
+    // A row's number, which Lua may give as any integer; one past an int's range is no row any list has.
+    private static int Row(ILuaState state)
     {
-        ({ } list, _) => new Choices([.. list.Items], list.SelectedIndex, index => list.SelectedIndex = index, _ => null),
-        (_, { } grid) => new Choices(
-            [.. grid.Items.Select(item => item.Title)], grid.SelectedIndex, index => grid.SelectedIndex = index,
-            index => grid.Items[index].Name, [.. grid.Items.Select(item => item.Name)]),
-        _ => null,
-    };
-
-    /// <param name="Rows">What a person reads: a list's rows or a grid's titles.</param>
-    /// <param name="Names">A grid's item names, which a test may choose by too.</param>
-    private sealed record Choices(
-        IReadOnlyList<string> Rows, int Selected, Action<int> Select, Func<int, string?> ItemName, IReadOnlyList<string?>? Names = null)
-    {
-        public int IndexOf(string text)
-        {
-            for (var index = 0; index < Rows.Count; index++)
-            {
-                if (Rows[index] == text)
-                    return index;
-            }
-
-            for (var index = 0; index < (Names?.Count ?? 0); index++)
-            {
-                if (Names![index] == text)
-                    return index;
-            }
-
-            return -1;
-        }
+        var row = state.L_CheckInteger(3);
+        return row is < int.MinValue or > int.MaxValue ? 0 : (int)row;
     }
+
+    // An action's end: nothing to return when it was done, else Lua's error with the reason.
+    private static int Done(ILuaState state, string function, bool done, string? problem) =>
+        done ? 0 : Fail(state, $"app:{function}: {problem}");
 
     // The control's name: the argument after the app itself, since these are called as app:press("ok").
     private static string Name(ILuaState state) => LuaText.Decode(state.L_CheckString(2));

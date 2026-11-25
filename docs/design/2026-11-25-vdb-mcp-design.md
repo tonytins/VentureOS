@@ -97,9 +97,10 @@ turn and stops at the first error, leaving earlier steps applied and saying whic
 
 ### Answering without holding the loop
 
-`VdbSession` is driven from the desktop's frame loop. An `act` hands the event to the app and answers when the app
-has handled it, on a later frame, with a bounded wait (airo's five seconds), answering `error` if the app doesn't
-respond in time. A screenshot is read from the framebuffer in one frame and sent over the following ones, so the
+`VdbSession` is driven from the desktop's frame loop, and handing an app an event runs its Lua handler at once,
+under the same limit a click's handler runs under, as airo's tests rely on. So an `act` is answered in the frame it
+arrives in, once the handler has returned: nothing waits on the app or the network. (Corrected while building
+phase 1; the first draft had the answer come on a later frame.) A screenshot is read from the framebuffer in one frame and sent over the following ones, so the
 line limits and the loop's pace both hold.
 
 ### `vdb mcp`

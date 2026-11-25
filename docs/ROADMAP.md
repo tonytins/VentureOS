@@ -1,6 +1,6 @@
 # VentureOS roadmap
 
-> **Last updated:** 2026-11-24 · **Latest release:** 0.7, Seto · **Next:** 0.8, Hokutosei, in development
+> **Last updated:** 2026-11-25 · **Latest release:** 0.7, Seto · **Next:** 0.8, Hokutosei, in development
 
 Where VentureOS is going: the release in development, the ones after it, and
 ideas not yet given a release. What has shipped is in
@@ -45,7 +45,7 @@ stage to the next, and add a line to the revision history.
 | 0.5 | Cassiopeia | released 2026-11-18, `v0.5.506`; [notes](./releases/0.5.md) | The desktop's look: images and icons, a glossy menu bar with a clock, header bars, sidebars, and look options |
 | 0.6 | Izumo | released 2026-11-18, `v0.6.505`; [notes](./releases/0.6.md) | Roundhouse, VentureOS's IDE: a live preview, a round-trip writer, an interface designer, Run in a simulated desktop, and bundle editing |
 | 0.7 | Seto | released 2026-11-24, `v0.7.712`; [notes](./releases/0.7.md) | vdb, for sending apps to a running VentureOS; apps as supervised processes; the dock and the menu bar as apps; refinements; the CST specification; Roundhouse projects; nesting |
-| 0.8 | Hokutosei | in development | Making apps: airo and app tests, richer interfaces, and scroll bars and grids |
+| 0.8 | Hokutosei | in development | Making apps: airo and app tests, richer interfaces, scroll bars and grids, and loose threads and toasts |
 
 ## 0.4, Pere Marquette
 
@@ -394,6 +394,23 @@ being five slots by hand.
   rendered previews and colors, every wallpaper, and a larger, resizable
   window; it ships.
 
+**0.8.4xx, loose threads and toasts**
+
+Mostly tying up loose threads, with one new feature. An agent can't use an
+app on the running system, since QEMU takes xdotool's keys but not its
+pointer, so `vdb mcp` lets it use app windows by name, with the words app
+tests use ([its design](./design/2026-11-25-vdb-mcp-design.md)). Apps gain
+notification toasts, and a simpler `<Slider>` comes back for choosing a
+value, now that scroll bars are built in.
+
+- [ ] `vdb mcp`: an MCP server through which an agent lists app windows,
+  reads their controls, uses them by name, presses keys, and takes
+  screenshots; app windows only, not panels or the system's alerts.
+- [ ] A developer's build boots to the desktop when `developer.local.lua`
+  asks, with `venture.startDesktop()`.
+- [ ] Notification toasts.
+- [ ] A simpler `<Slider>`, for choosing a value.
+
 ## Ideas
 
 Worth doing someday, in no order, and not yet given a release.
@@ -442,6 +459,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | 0.8.4xx, loose threads and toasts, begins, by my word: `vdb mcp` first, then toasts, then a simpler `<Slider>`. |
 | 2026-11-25 | minor | 0.8.3xx is complete: Settings ships with grids, built from its project by my word, and a boot showed it. The next band is the owner's to plan. |
 | 2026-11-25 | patch | 0.8.3xx: Settings' project is redesigned around grids, with previews Roundhouse renders; it ships next. |
 | 2026-11-24 | minor | 0.8.3xx: wallpapers are plain pictures in `/mnt/system/wallpaper`, by my decision; the `.wallpaper` bundle, its thumbnail, and light and dark variants, which nothing used, are gone. |

@@ -175,13 +175,6 @@ public sealed class AppUnderTest : IDisposable, IShellHost
         return [.. commandOutput.Lines];
     }
 
-    /// <summary>Hands <paramref name="uiEvent"/> to <paramref name="window"/>'s app, as the desktop does after a click or a key.</summary>
-    public void Send(DesktopWindow window, UIEvent uiEvent)
-    {
-        ArgumentNullException.ThrowIfNull(window);
-        window.EventHandler?.Invoke(window, uiEvent);
-    }
-
     /// <summary>Closes the app, puts back the look that was there before, and deletes the copy.</summary>
     public void Dispose()
     {

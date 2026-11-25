@@ -159,7 +159,8 @@ VentureOS/
 │  │  ├─ Vdb/                      Venture.OS.Vdb: vdb/1 without sockets (VdbSession), the seal, trust, and developer mode
 │  │  ├─ Processes/                Venture.OS.Processes: AppProcess and the Supervisor, which AppManager opens apps through
 │  │  └─ Desktop/                  Venture.OS.Desktop: UIView, windows, the menu bar, the dock, palettes, DesktopSession,
-│  │                               and UiLibrary (venture.ui), all drawn through IPainter
+│  │                               UiLibrary (venture.ui), all drawn through IPainter, and WindowControls (using a
+│  │                               window's controls by name, for app tests and vdb)
 │  ├─ Venture.OS.Interface/        the interface formats: the BCL and CSTNet, AOT-compatible, warnings as errors
 │  │  ├─ UIScript.cs               Venture.OS.Interface: .uix (UIScript) documents, with menus, sidebars, and style roles
 │  │  ├─ UIDocument.cs             a .uix as an editor holds it: its exact text, where everything sits, and its UIScript
@@ -172,7 +173,8 @@ VentureOS/
 │  │  │                            the .app) and FolderNames (what a new app or project may be called)
 │  │  ├─ Simulation/               Venture.Airo.Simulation: SimulatedDisk (a fresh copy of rootfs/) and SimulatedSystem
 │  │  └─ Testing/                  Venture.Airo.Testing: ProjectTests (a project's Tests/*.lua), AppUnderTest (its app on a
-│  │                               fresh disk, with no desktop), and TestLibrary (the test table and the app it's handed)
+│  │                               fresh disk, with no desktop), and TestLibrary (the test table and the app it's handed, over
+│  │                               Common's WindowControls)
 │  ├─ Venture.Airo/                airo, the build tool (System.CommandLine): AiroCommand, airo build and airo test
 │  └─ Venture.Roundhouse/          Roundhouse, VentureOS's IDE: an Avalonia app (Roundhouse) on Common and Interface
 │     ├─ Bundles/                  Venture.Roundhouse.Bundles: OpenBundle, a bundle's files and their unsaved edits
@@ -1909,6 +1911,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | patch | Layout: airo's actions and reads (`app:press`, `app:choose`, ...) move into Common's `WindowControls`, with a snapshot of a window's controls, so vdb can use them too. |
 | 2026-11-25 | minor | Settings (§9): built from its project, Settings ships with grids for the style, accent, scroll bars, and every wallpaper, in a larger, resizable window. |
 | 2026-11-25 | patch | Scripting: `venture.wallpapers()` gives paths as the script sees them (`FileRoot.Venture`), so Roundhouse's Run and airo can show them; Roundhouse's `--render` takes `--scrollbars`, flashing automatic bars (`UIView.FlashScrollBars`) so a picture shows them. |
 | 2026-11-24 | minor | Desktop (§9): wallpapers are plain PNGs in `/mnt/system/wallpaper`, named by their files; the `.wallpaper` bundle kind, its thumbnails, and light and dark variants are gone; `venture.wallpapers()` gives `{ name, title, path }`. |
