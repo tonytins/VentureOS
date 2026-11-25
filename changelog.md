@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.202
+
+- System Monitor's bundle is now `System Monitor.app`, named after the app, so `airo build --replace` updates it instead of adding a second copy beside it.
+
 ## 0.8.201
 
 - Closing or minimizing a window gives the one behind it back its text field, caret and all, as clicking it would. Before, typing went nowhere until you clicked the field again.

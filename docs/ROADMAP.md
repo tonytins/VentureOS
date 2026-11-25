@@ -411,6 +411,7 @@ Worth doing someday, in no order, and not yet given a release.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-24 | patch | 0.8.2xx: the window behind gets its focused field back when the one in front closes or minimizes, and System Monitor ships as `System Monitor.app`, the first space in a built-in path, by my decision over renaming airo's bundles. |
 | 2026-11-24 | minor | 0.8 is Hokutosei, about making apps, by my decision. 0.8.2xx begins: richer interfaces, with pictures in panes, sidebars that hold controls on either edge, the focus fix, and shipping the About window. |
 | 2026-11-24 | minor | 0.8.1xx is complete: AGENTS.md and REVIEW.md say VentureOS's tests cover the system and the built-in apps are tested in their projects; the app guide's testing step uses a project, and its tests are run. The next band is the owner's to plan. |
 | 2026-11-24 | patch | 0.8.1xx: Roundhouse's Run ▸ Test runs the open project's tests, edits and all, into the Log. |
