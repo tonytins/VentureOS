@@ -116,6 +116,24 @@ public sealed class MenuBar
     /// </summary>
     public string? Status { get; set; }
 
+    /// <summary>Whether the bar shows the notification bell, left of <see cref="Status"/>.</summary>
+    public bool ShowsBell { get; set; }
+
+    /// <summary>Whether a dot beside the bell says something arrived unseen.</summary>
+    public bool BellDot { get; set; }
+
+    /// <summary>Whether the bell is on, as the history it opens is open: drawn as an open menu's title is.</summary>
+    public bool BellOn { get; set; }
+
+    // Where the bell was last drawn, for clicks.
+    private UIRect bell;
+
+    // The bell, a row at a time: each row's width, centered; a gap, then the clapper.
+    private static readonly int[] BellRows = [2, 4, 6, 6, 8, 8, 8, 8, 10, 12, 0, 4];
+
+    /// <summary>Whether a point is on the bell.</summary>
+    public bool OnBell(int x, int y) => ShowsBell && bell.Contains(x, y);
+
     // An icon title's silhouette in the open title's text color, made when first shown and kept until the icon
     // or the color changes.
     private (DesktopImage Icon, UIColor Color, DesktopImage Silhouette)? silhouette;
@@ -441,11 +459,44 @@ public sealed class MenuBar
             x += width;
         }
 
+        var statusX = painter.Width - StatusMargin;
         if (Status is { Length: > 0 } status)
-            painter.DrawText(status, painter.Width - StatusMargin - painter.MeasureText(status, Size), textY, DesktopTheme.Text, Size);
+        {
+            statusX -= painter.MeasureText(status, Size);
+            painter.DrawText(status, statusX, textY, DesktopTheme.Text, Size);
+        }
+
+        if (ShowsBell)
+            DrawBell(painter, statusX - StatusMargin);
 
         for (var level = 0; level < levels.Count; level++)
             DrawMenu(painter, level);
+    }
+
+    // The bell and its dot, ending at right; on, it's drawn as an open title is, in the accent.
+    private void DrawBell(IPainter painter, int right)
+    {
+        const int BellWidth = 12;
+        const int DotSize = 6;
+        var width = BellWidth + (2 * TitlePadding) + (BellDot ? DotSize + 2 : 0);
+        bell = new UIRect(right - width, 0, width, Height - 1);
+        var color = DesktopTheme.Text;
+        if (BellOn)
+        {
+            painter.FillRectangle((int)bell.X, 0, width, Height - 1, DesktopTheme.Accent);
+            color = DesktopTheme.HighlightedText;
+        }
+
+        var centerX = (int)bell.X + TitlePadding + (BellWidth / 2);
+        var top = (Height - 1 - BellRows.Length) / 2;
+        for (var row = 0; row < BellRows.Length; row++)
+            painter.FillRectangle(centerX - (BellRows[row] / 2), top + row, BellRows[row], 1, color);
+
+        if (BellDot && !BellOn)
+        {
+            DesktopTheme.FillRoundedGradient(painter, centerX + (BellWidth / 2) + 2, (Height - 1 - DotSize) / 2, DotSize, DotSize,
+                DotSize / 2, DesktopTheme.Accent, DesktopTheme.Accent);
+        }
     }
 
     private DesktopImage Silhouette(DesktopImage icon, UIColor color)

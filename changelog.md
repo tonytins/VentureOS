@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.409
+
+- A bell beside the clock opens the notification history, with a dot beside it while something arrived that you haven't seen. So does VentureOS ▸ Notifications (Ctrl+Shift+N).
+- The history is a column of cards down the right edge: each app's notifications stacked, newest on top, with how many more are under it; click a stack to see them all, and again to fold it. Clear All empties it. It scrolls when there's more than fits, and Escape or a click outside closes it. While it's open, no toasts show; what arrives goes into it.
+
 ## 0.8.408
 
 - `vdb mcp` says goodbye when its agent goes, so VentureOS takes the next computer at once rather than calling itself busy for up to 30 seconds.

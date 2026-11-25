@@ -13,23 +13,13 @@ namespace Venture.OS.Desktop;
 public sealed class Toasts(Notifications notifications)
 {
     /// <summary>How wide a toast is.</summary>
-    public const int Width = 300;
+    public const int Width = NotificationCard.Width;
 
     /// <summary>The room between a toast and the screen's edge, the menu bar, and the next toast.</summary>
     public const int Margin = 8;
 
-    /// <summary>The icon's size.</summary>
-    public const int IconSize = 32;
-
-    /// <summary>The most lines of a toast's text; more end in an ellipsis.</summary>
-    public const int MaximumLines = 3;
-
     /// <summary>How long a toast takes to slide in or out, as long as the dock's.</summary>
     public static readonly TimeSpan SlideTime = WindowManager.SlideTime;
-
-    private const int Padding = 10;
-    private const int CornerRadius = 10;
-    private const int LineHeight = 18;
 
     private readonly List<Shown> shown = [];
 
@@ -109,7 +99,7 @@ public sealed class Toasts(Notifications notifications)
     }
 
     /// <summary>Draws the toasts at the top-right, below <paramref name="top"/>.</summary>
-    /// <param name="icon">An icon by path, at <see cref="IconSize"/>, or VentureOS's for <see langword="null"/>.</param>
+    /// <param name="icon">An icon by path, at <see cref="NotificationCard.IconSize"/>, or VentureOS's for <see langword="null"/>.</param>
     public void Draw(IPainter painter, int top, TimeSpan now, Func<string?, DesktopImage?> icon, DesktopText text)
     {
         ArgumentNullException.ThrowIfNull(painter);
@@ -120,55 +110,13 @@ public sealed class Toasts(Notifications notifications)
         var y = top + Margin;
         foreach (var toast in shown)
         {
-            var notification = toast.Notification;
-            var textRoom = Width - (2 * Padding) - IconSize - Padding;
-            var lines = UIView.Wrap(painter, notification.Text, DesktopTheme.TextSize, textRoom);
-            if (lines.Count > MaximumLines)
-            {
-                lines[MaximumLines - 1] = UIView.Fit(painter, lines[MaximumLines - 1] + " " + lines[MaximumLines], DesktopTheme.TextSize, textRoom);
-                if (!lines[MaximumLines - 1].EndsWith('…'))
-                    lines[MaximumLines - 1] += "…";
-                lines.RemoveRange(MaximumLines, lines.Count - MaximumLines);
-            }
-
-            var height = Math.Max(IconSize, LineHeight * (1 + lines.Count)) + (2 * Padding);
+            var lines = NotificationCard.Lines(painter, toast.Notification.Text);
             var x = painter.Width - Margin - Width + Offset(toast, now);
+            var height = NotificationCard.Draw(painter, x, y, toast.Notification, lines, now, icon, text);
             drawn.Add((toast, new UIRect(x, y, Width, height)));
-            DrawCard(painter, x, y, Width, height);
-
-            if (icon(notification.Icon) is { } picture)
-                painter.DrawImage(picture, x + Padding, y + Padding);
-
-            var textX = x + Padding + IconSize + Padding;
-            var age = Age(now - notification.Posted, text);
-            var ageWidth = painter.MeasureText(age, DesktopTheme.CaptionSize);
-            painter.DrawText(UIView.Fit(painter, notification.Title, DesktopTheme.TextSize, textRoom - ageWidth - Padding),
-                textX, y + Padding, DesktopTheme.Text, DesktopTheme.TextSize);
-            painter.DrawText(age, x + Width - Padding - ageWidth, y + Padding + 2, DesktopTheme.SecondaryText, DesktopTheme.CaptionSize);
-            for (var line = 0; line < lines.Count; line++)
-                painter.DrawText(lines[line], textX, y + Padding + (LineHeight * (line + 1)), DesktopTheme.Text, DesktopTheme.TextSize);
-
             y += height + Margin;
         }
     }
-
-    /// <summary>
-    /// A toast's or a card's body: the window's short shadow, the shelf's bright edge, and the body over it, so the
-    /// body is never fainter than its contrast was checked at.
-    /// </summary>
-    public static void DrawCard(IPainter painter, int x, int y, int width, int height)
-    {
-        DesktopTheme.FillRoundedGradient(painter, x, y + 2, width, height, CornerRadius, DesktopTheme.Shadow, DesktopTheme.Shadow);
-        DesktopTheme.FillRoundedGradient(painter, x, y, width, height, CornerRadius, DesktopTheme.NotificationEdge, DesktopTheme.NotificationEdge);
-        DesktopTheme.FillRoundedGradient(painter, x + 1, y + 1, width - 2, height - 2, CornerRadius - 1,
-            DesktopTheme.NotificationBackground, DesktopTheme.NotificationBackground);
-    }
-
-    /// <summary>How long ago, in the desktop's words: now, then minutes, then hours.</summary>
-    public static string Age(TimeSpan age, DesktopText text) =>
-        age < TimeSpan.FromMinutes(1) ? text.Get("justNow")
-        : age < TimeSpan.FromHours(1) ? text.Get("minutesAgo", ((int)age.TotalMinutes).ToString(System.Globalization.CultureInfo.InvariantCulture))
-        : text.Get("hoursAgo", ((int)age.TotalHours).ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     // How far right of its place a toast is: off the screen as it starts and as it finishes leaving.
     private static int Offset(Shown toast, TimeSpan now)

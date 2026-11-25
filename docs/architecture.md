@@ -1939,6 +1939,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | Desktop: `NotificationHistory`, the column of cards the bar's bell (`MenuBar.ShowsBell`, drawn in pixels, with an unseen dot) and VentureOS ▸ Notifications (Ctrl+Shift+N) open; `NotificationCard` draws toasts and cards alike. A press the desktop takes itself (a toast, the bell, the history, or outside it) is `PointerOwner.Desktop`, and goes no further. |
 | 2026-11-25 | minor | Desktop: `Toasts` draws notifications in the top-right, over windows and panels and under the bar's menus, sliding in and out, asking for frames only as they move; a press on one dismisses it and goes no further. Crash and start-failure notices are toasts, not alerts. |
 | 2026-11-25 | patch | Desktop: `Notifications`, on `WindowManager` so it outlasts each visit, holds toasts waiting to show and the history (newest 50); `venture.ui.toast` posts to it, and the palette gains `NotificationBackground` and `NotificationEdge`. Nothing draws it yet. |
 | 2026-11-25 | minor | vdb (§8.1): `vdb mcp`, the tool's MCP server, and `install.sh --rebuild`; the current state counts 2,197 tests for Common and 51 for vdb. |

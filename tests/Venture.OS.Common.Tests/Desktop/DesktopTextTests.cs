@@ -83,6 +83,7 @@ public sealed class DesktopTextTests : IDisposable
             selectAll ^Choose Everything^
             aboutSystem ^This Computer^
             returnToShell ^Back to the Prompt^
+            notifications ^Heads-Ups^
             ok ^Fine^
             """);
         DesktopSession session = new(800, 600, text: new DesktopText(root, reports.Add));

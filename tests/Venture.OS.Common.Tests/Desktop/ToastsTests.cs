@@ -131,7 +131,7 @@ public sealed class ToastsTests
         session.Draw(painter);
 
         var lines = painter.Texts.Where(text => text.Text.StartsWith("word", StringComparison.Ordinal)).ToList();
-        Assert.Equal(Toasts.MaximumLines, lines.Count);
+        Assert.Equal(NotificationCard.MaximumLines, lines.Count);
         Assert.EndsWith("…", lines[^1].Text);
     }
 
@@ -159,6 +159,6 @@ public sealed class ToastsTests
     [InlineData(7200, "2 hr")]
     public void SaysHowLongAgoInTheDesktopsWords(int seconds, string said)
     {
-        Assert.Equal(said, Toasts.Age(TimeSpan.FromSeconds(seconds), session.Text));
+        Assert.Equal(said, NotificationCard.Age(TimeSpan.FromSeconds(seconds), session.Text));
     }
 }

@@ -95,10 +95,17 @@ A notification is an icon, a title, a text, and when it came:
 - **The bell** sits left of the clock, drawn by the desktop as the clock is, in the bar's text color. It's the bar's
   first item that takes a click. A dot in the accent, beside it, shows while something arrived since the history was
   last opened.
-- A click on the bell opens the history; a click on it again, Escape, or a click anywhere outside closes it.
+- A click on the bell opens the history; a click on it again, Escape, or a click anywhere outside closes it. A
+  click outside goes no further, so closing the history never presses something by accident.
+- The VentureOS menu has **Notifications** (Ctrl+Shift+N), which does what the bell does, for the keyboard and for
+  what can't point, such as vdb (added while building phase 3, so a boot could be checked; the owner had chosen the
+  bell, not ruled out a shortcut).
+- The bell is drawn by the desktop, a row of pixels at a time, in the bar's text color, so it needs no picture and
+  follows every palette; a drawn icon can replace it.
 - The history is a column down the right edge, from below the menu bar to above the dock's panel (the work area's
-  height), 300 pixels wide. It has no backing: a heading, **Notifications**, and **Clear All**, then a card per app,
-  newest app first, made of the same shelf as a toast.
+  height), 300 pixels wide. It has no backing: a heading, **Notifications**, and **Clear All** in the accent, on a
+  card of their own so they read over any wallpaper, then a card per app, newest app first, made of the same shelf
+  as a toast.
 - Each app's card shows its newest notification, with "2 more from Terminal" under it when there are more, and the
   edges of the ones beneath peeking out below, as on macOS. A click on a stacked card expands it to show all of that
   app's notifications; a click on its heading collapses it again.
@@ -170,7 +177,7 @@ answers that it isn't a command, which an older vdb never sends.
 - **Drawing cost.** Blending three toasts and a column is more software blending per frame than the dock alone; it
   should be measured on a boot.
 - **A crash loop** posts a toast every restart; the flood rule bounds what shows, and the history keeps 50.
-- **The bell's icon** is a placeholder until the owner draws or approves one.
+- **The bell** is drawn in pixels as a placeholder until the owner draws or approves an icon.
 
 ## Calls made in writing it
 

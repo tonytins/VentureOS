@@ -37,6 +37,12 @@ public sealed class DesktopSession
     /// <summary>The item that closes the desktop.</summary>
     public const string ReturnToShellItem = "returnToShell";
 
+    /// <summary>
+    /// The item that opens and closes the notification history, as the bell does, with Ctrl+Shift+N, for the
+    /// keyboard and for what can't point, such as vdb.
+    /// </summary>
+    public const string NotificationsItem = "notifications";
+
     /// <summary>The app menu's item that closes the app.</summary>
     public const string QuitItem = "quit";
 
@@ -149,8 +155,11 @@ public sealed class DesktopSession
         Bar,
         Windows,
 
-        /// <summary>A toast, which a press dismisses; the windows under it never see it.</summary>
-        Toast,
+        /// <summary>
+        /// The desktop's own: a toast, which a press dismisses; the bell; the history; or a press outside the open
+        /// history, which closes it. The windows under it never see it.
+        /// </summary>
+        Desktop,
     }
 
     /// <summary>Opens the desktop on a screen of this size.</summary>
@@ -193,6 +202,7 @@ public sealed class DesktopSession
         SystemMenuItems = new UIMenu("venture", "VentureOS", null,
         [
             new UIMenuEntry(AboutItem, Text.Get("aboutSystem"), 'A', null, 0),
+            new UIMenuEntry(NotificationsItem, Text.Get("notifications"), 'N', new UIShortcut(Control: true, Shift: true, Alt: false, 'N'), 0),
             new UIMenuEntry(null, null, null, null, 0),
             new UIMenuEntry(ReturnToShellItem, Text.Get("returnToShell"), 'R', new UIShortcut(Control: true, Shift: true, Alt: false, 'Q'), 0),
         ], 0);
@@ -389,6 +399,35 @@ public sealed class DesktopSession
     /// An app's icon at a size, read and made the first time and kept after, or <see langword="null"/> when it has
     /// none or it couldn't be read.
     /// </summary>
+    /// <summary>
+    /// Who a press belongs to: an open menu or the bar; the bell, which opens and closes the history; the history, or
+    /// anywhere outside it, which closes it; a toast, which it dismisses; or else the windows.
+    /// </summary>
+    private PointerOwner PressOwner(int x, int y)
+    {
+        if (BarShows && !MenuBar.IsOpen && MenuBar.OnBell(x, y))
+        {
+            History.Toggle();
+            historyChanged = true;
+            return PointerOwner.Desktop;
+        }
+
+        if (MenuBar.IsOpen || (BarShows && MenuBar.Contains(x, y)))
+            return PointerOwner.Bar;
+
+        if (History.IsOpen)
+        {
+            if (History.Contains(x, y))
+                History.Press(x, y);
+            else
+                History.Close();
+            historyChanged = true;
+            return PointerOwner.Desktop;
+        }
+
+        return Toasts.Press(x, y, Clock()) ? PointerOwner.Desktop : PointerOwner.Windows;
+    }
+
     /// <summary>Posts the system's own notification about an app, titled with its name and showing its icon.</summary>
     private void Post(string title, string text, string? icon)
     {
@@ -396,13 +435,24 @@ public sealed class DesktopSession
         _ = Windows.Notifications.TryPost(title, text, null, icon, show: true, out _, out _);
     }
 
+    /// <summary>The notification history, which the bell opens.</summary>
+    public NotificationHistory History => history ??= new NotificationHistory(Windows.Notifications);
+
+    private NotificationHistory? history;
+
+    // Whether the history changed this frame, such as opening or scrolling, so the frame is drawn.
+    private bool historyChanged;
+
+    // The notifications as last drawn, so a new one, or one cleared, draws the bell's dot and the history again.
+    private int drawnNotifications = -1;
+
     /// <summary>The toasts showing in the top-right corner, from <see cref="WindowManager.Notifications"/>.</summary>
     public Toasts Toasts => toasts ??= new Toasts(Windows.Notifications);
 
     private Toasts? toasts;
 
     // A toast's icon: the app's, or VentureOS's for the system's own, at the toast's size.
-    private DesktopImage? ToastIcon(string? path) => Icon(path ?? systemIcon, Toasts.IconSize)?.Image;
+    private DesktopImage? ToastIcon(string? path) => Icon(path ?? systemIcon, NotificationCard.IconSize)?.Image;
 
     private DesktopIcon? Icon(string? path, int size, bool shadow = true)
     {
@@ -528,7 +578,12 @@ public sealed class DesktopSession
         // Keys: the open menu takes them all; otherwise shortcuts and menu hotkeys come before the windows.
         foreach (var key in input.KeysPressed)
         {
-            if (MenuBar.IsOpen)
+            if (History.IsOpen && !MenuBar.IsOpen && key.Key == DesktopKey.Escape)
+            {
+                History.Close();
+                historyChanged = true;
+            }
+            else if (MenuBar.IsOpen)
             {
                 if (MenuBar.UpdateKey(key) is { } chosen)
                     Choose(chosen, happened);
@@ -549,9 +604,7 @@ public sealed class DesktopSession
         // The pointer: a press belongs to what it lands on until it's released.
         if (pressed)
         {
-            owner = MenuBar.IsOpen || (BarShows && MenuBar.Contains(x, y)) ? PointerOwner.Bar
-                : Toasts.Press(x, y, Clock()) ? PointerOwner.Toast
-                : PointerOwner.Windows;
+            owner = PressOwner(x, y);
         }
 
         if (owner == PointerOwner.Bar || MenuBar.IsOpen)
@@ -561,7 +614,10 @@ public sealed class DesktopSession
                 Choose(chosen, happened);
         }
 
-        var overWindows = !MenuBar.IsOpen && !(BarShows && MenuBar.Contains(x, y)) && owner != PointerOwner.Toast;
+        var overHistory = History.Contains(x, y);
+        if (overHistory && input.Scroll != 0)
+            historyChanged |= History.Scroll(input.Scroll);
+        var overWindows = !MenuBar.IsOpen && !(BarShows && MenuBar.Contains(x, y)) && owner != PointerOwner.Desktop && !overHistory;
         Windows.ShowsHover = overWindows;
         DesktopInput windowInput = new(
             x,
@@ -609,7 +665,15 @@ public sealed class DesktopSession
 
         // The clock is brought up to date every frame, even when something else already calls for a redraw.
         var clockChanged = UpdateClock();
-        var toastsChanged = Toasts.Update(Clock());
+        // While the history is open, what arrives goes straight into it, and no toasts show.
+        if (History.IsOpen)
+            Windows.Notifications.MarkSeen();
+        var toastsChanged = Toasts.Update(Clock(), hidden: History.IsOpen);
+        MenuBar.ShowsBell = true;
+        MenuBar.BellOn = History.IsOpen;
+        MenuBar.BellDot = Windows.Notifications.HasUnseen;
+        toastsChanged |= historyChanged || Windows.Notifications.Version != drawnNotifications;
+        historyChanged = false;
         var changed = !drawn || clockChanged || toastsChanged || input.HasEvents || redrawRequested || Windows.IsSliding || Windows.ScrollBarsChanging
             || !string.Equals(DesktopAppearance.Current.Wallpaper, backgroundWallpaper, StringComparison.Ordinal) || happened.Count > 0 || restarted || ticked
             || !ReferenceEquals(DesktopTheme.Palette, backgroundPalette)
@@ -663,6 +727,8 @@ public sealed class DesktopSession
 
         // Over every window and panel, and under the bar's open menus.
         Toasts.Draw(painter, MenuBar.Height, Clock(), ToastIcon, Text);
+        History.Draw(painter, Windows.WorkArea, Windows.Notifications.Now, ToastIcon, Text);
+        drawnNotifications = Windows.Notifications.Version;
         if (BarShows)
             MenuBar.Draw(painter);
         Windows.DrawTooltip(painter);
@@ -681,6 +747,10 @@ public sealed class DesktopSession
                 break;
             case MenuGroup.System when item == ReturnToShellItem:
                 IsFinished = true;
+                break;
+            case MenuGroup.System when item == NotificationsItem:
+                History.Toggle();
+                historyChanged = true;
                 break;
             case MenuGroup.App when item == QuitItem:
                 Quit(choice.Menu.Menu.Title);
