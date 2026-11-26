@@ -13,6 +13,9 @@
   <String name="cancelText" table="DemoText:6" index="4"/>
   <String name="moveText" table="DemoText:6" index="5"/>
   <String name="keyTip" table="DemoText:6" index="6"/>
+  <!-- Replaces the appearance's scroll bar thumb for this window only, as a window that looks
+       different from the rest does. Read alone, it's an unused image. -->
+  <Image name="scrollThumb" path="scroll/thumb-private.png"/>
 
   <Style name="label" textColor="#FFF99D" fontSize="12"/>
 

@@ -865,6 +865,12 @@ Hudini follows the changes of 2026-11-24 and 2026-11-25. Its lists and text area
 it refuses scroll sliders and scroll buttons as VentureOS does. Its sliders take `step`, report `committed`, take the
 keyboard when pressed, and run bottom to top when tall, and its text fields and text areas follow `alignment`.
 
+As a host, Hudini can also read a game's windows with an
+[appearance](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md#appearances): a separate document of
+images, styles, and scroll bar art they share, which a window uses by name without declaring. It isn't part of this
+spec, and no element of it appears in a window. A window that leans on one names styles or images it doesn't
+declare, so VentureOS refuses it, as it refuses any such name.
+
 ## Change log
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
