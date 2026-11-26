@@ -262,7 +262,7 @@ phases:
 
 - [x] Phase 1, the UIScript reader: `.uix` files read with Hudini's rules,
   tested against Hudini's examples, plus a `menus` feature
-  ([draft](../uiscript/menus.md)) for the global menu bar.
+  ([draft](../uiscript/README.md#menus)) for the global menu bar.
 - [x] Phase 2, drawing and `desktop`: graphics mode, a frame loop, the blue
   desktop and pointer, and a way back to the shell.
 - [x] Phase 3, windows: Tiger-style frames (title bar, close dot, dragging,
@@ -327,7 +327,7 @@ with the close and minimize buttons on top, as Big Sur's Finder does.
   address shows the full path, keeping its end when cut.
 - [x] Phase 2, `<Sidebar>` in UIScript: a flat list down the window's left,
   with a name and a width and no position, behind `requires="sidebar"`, and
-  drafted for Hudini in [uiscript/sidebar.md](../uiscript/sidebar.md).
+  drafted for Hudini in [the UIScript spec](../uiscript/README.md#sidebar).
 - [x] Phase 3, the sidebar in the frame: drawn the window's full height in
   its own shade, with the buttons on top and the title bar over the
   content only. Files' bookmarks move into one.

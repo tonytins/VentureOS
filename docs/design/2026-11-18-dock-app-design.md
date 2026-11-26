@@ -1,6 +1,6 @@
 # The dock and the menu bar as apps
 
-**Status:** built in 0.7.3xx, Seto; the [architecture](../architecture.md) and [writing apps](../writing-apps.md) say how it works now. The bar's panel is its own `menubar.uix` in Files, beside `main.uix`, and a desktop without a bar app, as in tests, still draws the bar itself. Since 0.7.4xx, a panel is written `<Panel edge="…">` rather than `<Window role="panel">`; see [the draft](../uiscript/panel.md).
+**Status:** built in 0.7.3xx, Seto; the [architecture](../architecture.md) and [writing apps](../writing-apps.md) say how it works now. The bar's panel is its own `menubar.uix` in Files, beside `main.uix`, and a desktop without a bar app, as in tests, still draws the bar itself. Since 0.7.4xx, a panel is written `<Panel edge="…">` rather than `<Window role="panel">`; see [the spec](../uiscript/README.md#panel).
 **Date:** 2026-11-18.
 
 The dock becomes `Dock.app`, a system app written in Lua like Files, instead of code inside the desktop, and the
@@ -101,7 +101,7 @@ hides, the work area runs to the bottom edge. Top panels span the screen; bottom
 
 **Older readers.** Both attributes are skippable: a reader without panels shows an ordinary window holding the
 shelf. That's plainer but works, so neither needs a `requires` name, as with `subtitle`. They're drafted for Hudini
-in `docs/uiscript/panel.md`.
+in [the spec](../uiscript/README.md#panel).
 
 ## The shelf
 
