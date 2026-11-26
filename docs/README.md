@@ -12,5 +12,5 @@ system written in C# and based on the [Cosmos](https://github.com/CosmosOS/Cosmo
 - [History](./history/): the roadmap VentureOS was planned with until 0.4.
 - [Scorecard](./scorecard.md): verified status of every area, with the evidence for each row, and known issues.
 - [Tutorials](./tutorial/): write an app, step by step: [a command-line app](./tutorial/command-line.md), [a desktop app](./tutorial/desktop.md), and [troubleshooting](./tutorial/troubleshooting.md).
-- [VentureOS HIG](./hig/): how VentureOS looks, behaves, and talks, and how apps outside it can share that design.
+- [Venture Design Language](./design-language/): how Venture's software looks, behaves, and talks, and how apps on other platforms share that design.
 - [UIScript](./uiscript/): the spec for UIScript, the format of `.uix` interfaces, which VentureOS keeps and Hudini reads a subset of.

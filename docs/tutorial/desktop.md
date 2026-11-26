@@ -10,8 +10,8 @@ and runs its tests. Everything here also works by hand.
 
 A window should look and speak like the rest of VentureOS: say what colors
 are for rather than what they are, use the standard menus, and write
-messages in [the HIG's voice](../hig/README.md#voice). The
-[VentureOS HIG](../hig/README.md) has the rest.
+messages in [the design language's voice](../design-language/foundations.md#voice). The
+[Venture Design Language](../design-language/apps.md) has the rest.
 
 ## Give the app a window
 
@@ -337,7 +337,7 @@ end)
 - In tests, `app:press("ping")` presses an item that's a button; a menu's
   items and a panel's controls are used by name, as any others.
 - See [UIScript status items](../uiscript/README.md#status-items) and
-  [the HIG](../hig/README.md#status-items).
+  [the system book](../design-language/system.md#status-items).
 
 When something's off, [Troubleshooting](./troubleshooting.md) lists what
 VentureOS says and what to do.

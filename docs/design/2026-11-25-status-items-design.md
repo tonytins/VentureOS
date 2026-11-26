@@ -1,6 +1,6 @@
 # Status items, startup items, and kept apps
 
-**Status:** built in 0.8.5xx, Hokutosei; [the HIG](../hig/README.md#status-items) and [the spec](../uiscript/README.md#status-items) say how it works now. **Date:** 2026-11-25.
+**Status:** built in 0.8.5xx, Hokutosei; [the system book](../design-language/system.md#status-items) and [the spec](../uiscript/README.md#status-items) say how it works now. **Date:** 2026-11-25.
 
 VentureOS's menu bar has a clock and, since 0.8.4xx, a bell, both drawn by the desktop. An app can't put anything
 there, can't stay out of the dock, and can't start with the desktop; and the two apps the desktop keeps running,
@@ -168,7 +168,7 @@ as the bar is.
 - `rootfs/system/apps/`: `kept="true"` on Files and the Dock; `rootfs/user/settings/startup.xml`, empty.
 - `projects/Settings.rproj`, `projects/SystemMonitor.rproj`: the Startup and Processes panes, with their tests.
 - `src/Venture.Roundhouse/`: opening and drawing a status item.
-- Docs: the HIG (status items, startup items, the dock), the spec, the architecture page, the scorecard, the
+- Docs: the system book (status items, startup items, the dock), the spec, the architecture page, the scorecard, the
   roadmap, the tutorials.
 
 ## Risks
@@ -197,6 +197,6 @@ after the sidebar's logic; out of the dock in `Info.xml` and the API. These were
 
 - How wide the bar's room is, and the gap between items.
 - The Startup and Processes panes' layouts, in Settings' and System Monitor's projects.
-- The alert's exact words, in the HIG's voice.
+- The alert's exact words, in the design language's voice.
 - The phases of the rollout, starting with `kept` and the session's kept apps, the smallest change with the most
   behind it.

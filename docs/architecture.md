@@ -223,7 +223,7 @@ VentureOS/
 ├─ tools/vdb/                     vdb, a Swift command-line tool that sends apps to VentureOS and serves its app windows over MCP
 │                                  (here until it has its own repository); install.sh builds and installs it
 ├─ packaging/                     Roundhouse's packages for Linux, Windows, and macOS, after CityLimits'; writes dist/
-├─ docs/                          architecture, roadmap, scorecard, the tutorials (tutorial/), the HIG (hig/), the UIScript drafts, and vdb's protocol
+├─ docs/                          architecture, roadmap, scorecard, the tutorials (tutorial/), the design language (design-language/), the UIScript drafts, and vdb's protocol
 ├─ .agents/skills/                C# and Cosmos guidance for agents
 ├─ GitInfo.txt                    the base version, which every commit counts up from
 ├─ global.json                    opts dotnet test into Microsoft.Testing.Platform
@@ -1977,6 +1977,7 @@ in the clear (2026-11-11).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-26 | patch | Layout (§2): the VentureOS HIG is renamed the Venture Design Language and split into three books in `docs/design-language/`: foundations (roles, type, spacing, corners, depth, states, focus, the keyboard, and the voice), system (the palette, windows, the menu bar, status items, the dock, alerts, and notifications), and apps (the contract for apps on VentureOS or elsewhere). |
 | 2026-11-25 | patch | 0.8.5xx is complete (§9): startup items, out of the dock, and status items described in §9; `WindowControls.TryPress` refuses a status item that opens a menu or panel, since a click opens those rather than pressing them. |
 | 2026-11-25 | minor | Status items reach the tools (§9): Roundhouse's `RenderCommand` draws a status item in a bar of its own, with its menu or panel open; `WindowControls` snapshots and acts on one by name (`statusItem` kind), and vdb's `windows` marks it; `venture.desktop.apps(true)` lists hidden apps with `docked`; airo's `SimulatedSystem` has `StartupItems`. Settings ships a Startup pane and System Monitor a Processes pane. |
 | 2026-11-25 | minor | Status items: UIScript's `<StatusItem>` root (`UIWindowRole.StatusItem`, `UIScript.StatusItem`); a status item is an app window the window manager keeps but never draws or focuses (`DesktopWindow.IsStatusItem`), which the session adds to the bar as a `MenuGroup.Status` menu, drawn right to left from the bell; a button or panel acts on a press (`BarMenu.Pressed`), and a panel is the item's view on the shelf's card (`DesktopSession.StatusItems.cs`). |

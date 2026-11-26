@@ -122,8 +122,8 @@ venture.command {
 - `venture.args` reads those words: it handles `-s 20`, `--sides 20`, and
   `--help`, and explains mistakes, such as `--sides` without a number. When
   it returns `nil`, it has already told the user what went wrong.
-- Its messages follow [the HIG's voice](../hig/README.md#voice): they say
-  what's wrong, and what's allowed, in a few words.
+- Its messages follow [the design language's voice](../design-language/foundations.md#voice):
+  they say what's wrong, and what's allowed, in a few words.
 
 Command names use lowercase letters, digits, and hyphens.
 

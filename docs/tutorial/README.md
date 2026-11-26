@@ -28,4 +28,4 @@ same shape: a command and a window that share their notes.
 - Anything an app writes to the RAM disk, such as `/mnt`, is gone after a
   reboot.
 - A desktop app should look and speak like the rest of VentureOS. The
-  [VentureOS HIG](../hig/README.md) describes how.
+  [Venture Design Language](../design-language/apps.md) describes how.

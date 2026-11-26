@@ -1,6 +1,6 @@
 # A value slider
 
-**Status:** built in 0.8.4xx, Hokutosei; [the spec](../uiscript/README.md#sliders) and [the HIG](../hig/README.md#sliders-and-progress-bars)
+**Status:** built in 0.8.4xx, Hokutosei; [the spec](../uiscript/README.md#sliders) and [the design language](../design-language/apps.md#sliders-and-progress-bars)
 say how it works now. **Date:** 2026-11-25.
 
 UIScript has no control for choosing a value. `<Slider>` came from Hudini, which had it from CityLimits' older C#
@@ -120,7 +120,7 @@ The owner chose the first.
 - VentureOS's copies of Hudini's examples get their sliders back, in place of the progress bar between − and +
   buttons, as Hudini has them, so the copies come closer to Hudini's originals; their README says so.
 
-### The HIG
+### The design language
 
 The Depth section's gloss rule changes, by the owner's choice: the menu bar, the window buttons, and the filled part
 of sliders and progress bars. Structure gains a Slider entry: what it's for, `step`, the two events, and when to use
@@ -138,7 +138,7 @@ a slider rather than − and + buttons.
 - `src/Venture.Roundhouse/`: the library, inspector, and designer.
 - `tests/`: the reader, events, keys, snapping, drawing, contrast, `app:slide`, vdb, and the copies of Hudini's
   examples.
-- Docs: the HIG, the spec, the tutorials if they mention values, the architecture page, the scorecard, the roadmap.
+- Docs: the design language, the spec, the tutorials if they mention values, the architecture page, the scorecard, the roadmap.
 
 ## Risks
 
@@ -152,7 +152,7 @@ a slider rather than − and + buttons.
 
 The owner decided: a value slider, for apps and games equally; `<Slider>` again; optional `step`, no ticks;
 `changed` and `committed`; direction from shape; the keyboard; libadwaita's look with Tiger's gloss on the rail's
-fill, shared by the progress bar, and the HIG's gloss rule changing with it. These were the writer's calls:
+fill, shared by the progress bar, and the design language's gloss rule changing with it. These were the writer's calls:
 
 - A click on the track jumps the thumb there; `committed` follows each key press.
 - `setValue` snaps and clamps, and reports nothing.

@@ -1,6 +1,6 @@
 # Toasts and the notification history
 
-**Status:** built in 0.8.4xx, Hokutosei; [the HIG](../hig/README.md#notifications) says how it works now.
+**Status:** built in 0.8.4xx, Hokutosei; [the system book](../design-language/system.md#notifications) says how it works now.
 **Date:** 2026-11-25.
 
 VentureOS tells a person about things that need no answer, such as an app that crashed and is starting again, in a
@@ -153,7 +153,7 @@ answers that it isn't a command, which an older vdb never sends.
 ### Words
 
 **Notifications**, **Clear All**, **No notifications**, "{count} more from {app}", and the ages ("now", "1 min",
-"{n} min", "{n} hr") go in `_101_desktop.cst`, through `DesktopText`, in the HIG's voice.
+"{n} min", "{n} hr") go in `_101_desktop.cst`, through `DesktopText`, in the design language's voice.
 
 ## Where the code goes
 
@@ -167,7 +167,7 @@ answers that it isn't a command, which an older vdb never sends.
 - `src/Venture.OS.Kernel/`: nothing new beyond what the desktop does; the frame loop already ticks the session.
 - `tools/vdb/`: `notifications` in VdbKit and as a tool.
 - `rootfs/system/strings/_101_desktop.cst`: the words. `rootfs/system/icons/`: the bell, a symbolic icon.
-- Docs: the HIG (a Notifications section; Depth gains the toasts' shelf), the architecture page, the scorecard, the
+- Docs: the system book (a Notifications section; Materials gains the toasts' shelf), the architecture page, the scorecard, the
   roadmap, docs/vdb, and the tutorials' mention of `venture.ui.toast`.
 
 ## Risks
@@ -195,7 +195,7 @@ for the owner to check:
 
 ## Left to whoever builds it
 
-- Exact spacing inside a toast and a card, from the HIG's spacing scale.
+- Exact spacing inside a toast and a card, from the design language's spacing scale.
 - How the slide eases, within 150 ms.
 - How expanding a stacked card animates, if at all.
 - The phases of the rollout.

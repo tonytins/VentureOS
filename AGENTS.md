@@ -80,8 +80,9 @@ Every .NET project lives in its own folder, under `src/`, or `tests/` for tests,
 [docs/architecture.md](docs/architecture.md) explains how the system works,  
 [docs/ROADMAP.md](docs/ROADMAP.md) tracks releases and ideas, and  
 [docs/scorecard.md](docs/scorecard.md) records verified status, and  
-[docs/hig](docs/hig/README.md), the VentureOS HIG, records the design  
-language the desktop draws; change it with the look. Read  
+[docs/design-language](docs/design-language/README.md), the Venture Design  
+Language, records the design the desktop draws and apps follow; change it  
+with the look. Read  
 `docs/architecture.md` before changing boot, storage, networking, or the shell.
 
 Never commit build output (`bin/`, `obj/`, `output-*/`, `dist/`, `*.iso`, `*.img`).
@@ -227,7 +228,7 @@ There is no host process underneath, because VentureOS is the host: an unhandled
   button labels, go in `rootfs/system/strings/_101_desktop.cst`, read  
   through `DesktopText` by key, not in C#. Messages, developers' errors,  
   and the kernel's log stay in code. Write them all in  
-  [the HIG's voice](docs/hig/README.md#voice).
+  [the design language's voice](docs/design-language/foundations.md#voice).
 - Use `KernelLog.WriteLine` for messages a headless boot should be able to  
   check (boot results, the banner, failures). Ordinary command output goes to  
   the console only.
