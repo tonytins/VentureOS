@@ -58,12 +58,12 @@ demo documents.
 - `DOCTYPE` declarations are not allowed, which also rules out custom entities. The five standard entities, such as
   `&lt;`, work as usual.
 - Every element is a direct child of `<UIScript>`, in any order, and holds no children, except where its section
-  says it may hold others, as a [`<Menu>`](#menus), a [`<Pane>`](#panes), a [`<Sidebar>`](#sidebar), and a [`<Grid>`](#grid) do. An element anywhere else refuses the
+  says it may hold others, as a [`<Menu>`](#menus), a [`<Pane>`](#panes), a [`<Tab>`](#tabs), a [`<Sidebar>`](#sidebar), and a [`<Grid>`](#grid) do. An element anywhere else refuses the
   document.
 - No element holds text. Text goes in attributes.
-- Controls draw in document order, with later controls on top, whether they sit in `<UIScript>` or in a pane.
+- Controls draw in document order, with later controls on top, whether they sit in `<UIScript>`, in a pane, or in a tab.
   Visuals draw before all controls.
-- Names are unique among controls, visuals, title bar elements, menus and their items, and panes, and within each
+- Names are unique among controls, visuals, title bar elements, menus and their items, panes, and tabs, and within each
   kind of resource. A control and an image may share a name.
 
 ## Root
@@ -123,7 +123,7 @@ Rules:
   Another edge needs a reader that knows it.
 - A panel has no title bar and isn't resized by a grip, so `resizable` and `subtitle` mean nothing on it. Written
   anyway, they're ignored and listed, as unknown attributes are.
-- A panel can't have toolbar items, a title field, a sidebar, or panes. Any of these refuses the document.
+- A panel can't have toolbar items, a title field, a sidebar, panes, or tabs. Any of these refuses the document.
 - A panel may have menus. How the host shows them is the host's choice.
 - A document with both a `<Window>` and a `<Panel>`, or with two panels, refuses the document.
 - `<Panel>` holds nothing. Its controls sit in `<UIScript>`, as a window's do, so the rest of a document reads the
@@ -170,7 +170,7 @@ extras are, such as a weather reading or a timer. What it holds decides what a c
 | `image` | No | An `<Image>`, a symbol the bar draws in its text color. A status item needs a title, an image, or both. |
 | `width`, `height` | For a panel | The panel's size; a status item holding controls or visuals needs both. |
 
-A status item has no title bar or sidebar, so a toolbar item, a title field, or a sidebar refuses the document, as
+A status item has no title bar or sidebar, so a toolbar item, a title field, a sidebar, or a tab refuses the document, as
 do menus and controls together. A host that shows status items:
 
 - Draws them on the bar's right, before whatever it keeps there itself, such as a clock, and leaves out those past
@@ -491,11 +491,13 @@ bar, so adding these moves nothing.
 | `title` | Yes | The item's text, or its hover text when it shows an image. |
 | `image` | No | An `<Image>` the item shows in place of its title, as a symbol. |
 | `placement` | No | `end`, the default, or `start`: which end of the bar the item sits at. |
+| `tab` | No | A `<Tab>` the item shows, which makes the item that tab's. See [Tabs](#tabs). |
 
 Items at each end run in document order: at the start, left to right after the window's buttons; at the end, the last
 at the right edge. A click reports `pressed` with its name, as a button does. A host decides whether that happens on
 the press or the release, as it does for its buttons: Hudini reports both on the press, and VentureOS on the release.
-A host can dim an item, and show it held down, so items can work as tabs.
+A host can dim an item, and show it held down. An item that names a [`<Tab>`](#tabs) works as one with no code
+of the app's.
 
 `<TitleField>` makes the title editable, as an address bar is. It takes `name`, which is required, and
 `placeholder`. A document has at most one. While the title field is empty, the bar shows the placeholder in place of
@@ -763,6 +765,65 @@ A reader without panes refuses `<Pane>` as an unknown element. That's deliberate
 without them would draw every pane's controls over each other. A reader from before visuals could sit in panes
 refuses a `<Visual>` inside one, rather than draw it on every pane.
 
+## Tabs
+
+A window's toolbar items can switch **tabs**, as a game's city panel switches between its figures, its ordinances,
+and its neighbours: each tab is a set of controls, and choosing its item shows them in place of the other tabs'.
+Tabs are panes' twin for the title bar. A sidebar switches panes and the toolbar switches tabs, and they're separate
+elements so that the two can never switch the same set of controls.
+
+```xml
+<UIScript version="1">
+  <Window width="300" height="180"/>
+
+  <ToolbarItem name="cityTab" title="City" tab="city"/>
+  <ToolbarItem name="ordinancesTab" title="Ordinances" tab="ordinances"/>
+  <ToolbarItem name="refresh" title="Refresh"/>
+
+  <Tab name="city">
+    <Text name="populationLabel" x="12" y="14" width="120" height="14" text="Population"/>
+    <Text name="population" x="140" y="14" width="148" height="14"/>
+  </Tab>
+  <Tab name="ordinances">
+    <Button name="curfew" x="12" y="10" width="140" height="26" text="Curfew"/>
+  </Tab>
+</UIScript>
+```
+
+A tab holds its controls and visuals, and one directly in `<UIScript>` shows on every tab. A visual's `<Image>`
+stays in `<UIScript>`, with the other resources. A tab has no title: its toolbar item gives its text, or its image.
+
+| Attribute | Required | Value |
+| --- | --- | --- |
+| `name` | Yes | The name toolbar items use for it. |
+
+Rules:
+
+- Exactly one `<ToolbarItem>` names each tab with `tab`. A tab no item names, two items naming the same tab, or a
+  `tab` that names no tab refuses the document. A toolbar item without `tab` stays an ordinary item.
+- A tab holds controls and visuals only, not resources, panes, other tabs, or anything else. Anything else refuses
+  the document.
+- Tabs only nest. A control takes no `tab`: one that does refuses the document, rather than being read as a control
+  on every tab.
+- A tab may hold nothing, for a tab whose content the host draws.
+- A document may have both tabs and panes. A control or visual sits in one of them at most, and one in a tab shows
+  whichever pane is selected.
+- Positions in a tab are the window's content's, as for any control: a tab is a set of controls, not a box.
+- The first tab, in document order, starts selected.
+
+A host that shows tabs:
+
+- Shows a control or visual in a tab only while that tab's item is selected, as well as when the host hasn't hidden
+  it. A host hiding one and a tab hiding it are separate: switching tabs never shows what the host hid.
+- Shows the selected tab's item held down, and the others not.
+- Selects a tab when its item is clicked, unless the item is disabled, and still reports `pressed` with the item's
+  name, so an app can follow it, such as by retitling its window. Setting an item's selection by name selects its
+  tab, and reports no event.
+
+A reader without tabs refuses `<Tab>` as an unknown element. That's deliberate: a reader that drew the document
+without them would draw every tab's controls over each other. A reader that knows toolbar items but not `tab` never
+sees one alone, since a document with `tab` has a `<Tab>` too.
+
 ## Events
 
 Controls report what the person does as events carrying the control's name.
@@ -835,7 +896,8 @@ The format leaves to the host everything about live data and drawing. A host:
 
 ### VentureOS
 
-VentureOS reads version 1, the whole spec, nested menus and submenus included. Its menu bar opens a submenu beside
+VentureOS reads version 1, the whole spec but `<Tab>`, nested menus and submenus included. It refuses `<Tab>` as
+an unknown element until it shows tabs. Its menu bar opens a submenu beside
 its entry, on the right or, without room, the left, when the pointer rests on the entry or with the right arrow, and
 keeps it open while the pointer crosses toward it. Left and Esc close the innermost submenu.
 
@@ -875,6 +937,10 @@ declare, so VentureOS refuses it, as it refuses any such name.
 
 Newest first. Hudini kept the spec before 2026-11-20, and changes before the draft are in Hudini's history.
 
+- **2026-11-25:** `<Tab>`, a set of controls and visuals that a toolbar item switches, as a sidebar switches panes,
+  and `tab` on `<ToolbarItem>`, which names the item's tab. Tabs only nest, and a control with `tab` is refused.
+  Hudini shows them first; VentureOS refuses them for now. A reader from before refuses `<Tab>` as an unknown
+  element; `version` stays `1`.
 - **2026-11-25:** `<StatusItem>`, a root in place of `<Window>` or `<Panel>`: an app's item in a menu bar, a button,
   a drop-down of its menus, or a panel of its controls, after the sidebar's logic. A reader from before refuses it as
   an unknown element; `version` stays `1`.
