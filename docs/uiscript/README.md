@@ -861,9 +861,9 @@ refuses menus, sidebars, shelves, grids, panes, and status items as unknown elem
 [UISCRIPT.md](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) says how a Swift host uses it, and how it
 reads `.uis` files into the same model.
 
-Hudini hasn't followed the 2026-11-24 change yet: it still reads scroll sliders and scroll buttons, which VentureOS
-refuses, so a document using them reads in Hudini and not here until it does. A plain `<Slider>` reads the same in
-both; Hudini doesn't know `step` or `committed` yet.
+Hudini follows the changes of 2026-11-24 and 2026-11-25. Its lists and text areas draw the classic scroll bar, and
+it refuses scroll sliders and scroll buttons as VentureOS does. Its sliders take `step`, report `committed`, take the
+keyboard when pressed, and run bottom to top when tall, and its text fields and text areas follow `alignment`.
 
 ## Change log
 

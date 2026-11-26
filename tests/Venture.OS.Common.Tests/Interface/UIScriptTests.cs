@@ -47,7 +47,7 @@ public sealed class UIScriptTests
         Assert.Equal(UIStyleColor.Literal(new UIColor(0xFF, 0xF9, 0x9D)), script.Styles["history"].Colors.Text);
         Assert.Equal(UIStyleSize.Points(14), script.Styles["entry"].FontSize);
 
-        // Upgraded ahead of Hudini: the history shows its own scroll bar, where a slider and two buttons were.
+        // The history shows its own scroll bar, where a slider and two buttons were before 2026-11-24.
         Assert.Equal(["chatHistory", "chatEntry"], script.Controls.Select(control => control.Name));
         Assert.Equal(new UIFrame(40, 45, 340, 150, null), script.Control("chatHistory")!.Frame);
         Assert.Equal(1, script.Control("chatHistory")!.LegacyId);

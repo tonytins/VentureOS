@@ -429,8 +429,8 @@ public sealed class UIScriptException(string message, int? line = null)
 /// </summary>
 /// <remarks>
 /// <para>This reads the UIScript spec VentureOS keeps (docs/uiscript/, Draft, version 1). Hudini reads a subset of
-/// it, so a document Hudini reads reads the same here, except a slider or a button that scrolls a list by hand
-/// (<c>scrolls</c> or <c>direction</c>), which the spec dropped on 2026-11-24 and this reader refuses, saying why. A
+/// it, so a document Hudini reads reads the same here. A slider or a button that scrolls a list by hand
+/// (<c>scrolls</c> or <c>direction</c>), which the spec dropped on 2026-11-24, is refused by both, saying why. A
 /// plain slider, choosing a value, came back on 2026-11-25. A document reads completely and validly, or throws
 /// <see cref="UIScriptException"/>.</para>
 /// <list type="bullet">

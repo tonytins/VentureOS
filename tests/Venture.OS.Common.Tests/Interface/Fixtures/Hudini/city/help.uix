@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Help, a window that stays open, minimizes, and resizes by the grip in its corner. The host
-     fills the read-only text, and the area, with its own scroll bar, follows the window's edges. -->
+     fills the read-only text, and the area, with its own scroll bar, follows the window's edges. It
+     stops 16 pixels above the bottom, so the grip never covers the bar's down arrow. -->
 <UIScript version="1">
   <Window width="320" height="200" minWidth="240" minHeight="120" resizable="true"/>
 
-  <TextArea name="helpText" x="8" y="8" width="304" height="184" readOnly="true"
-            edgeOffsetLeft="8" edgeOffsetRight="8" edgeOffsetTop="8" edgeOffsetBottom="8"/>
+  <TextArea name="helpText" x="8" y="8" width="304" height="176" readOnly="true"
+            edgeOffsetLeft="8" edgeOffsetRight="8" edgeOffsetTop="8" edgeOffsetBottom="16"/>
 </UIScript>
