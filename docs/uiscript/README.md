@@ -918,8 +918,10 @@ both in `src/Venture.OS.Interface`; both must match this spec.
 ### Hudini
 
 Hudini reads a subset, the parts a raylib game needs: the root, `<Window>` and `<Panel>`, resources, styles,
-visuals, every control but `<Shelf>` and `<Grid>`, and the title bar's `<ToolbarItem>` and `<TitleField>`. It
-refuses menus, sidebars, shelves, grids, panes, and status items as unknown elements, and skips `subtitle` and toolbar items' `image` and `placement`. Its
+visuals, every control but `<Shelf>` and `<Grid>`, the title bar's `<ToolbarItem>` and `<TitleField>`, tabs, and
+a sidebar of panes, in both of a pane's forms. It refuses menus, shelves, grids, and status items as unknown
+elements, and a sidebar with rows the host fills or controls of its own. It skips `subtitle`, toolbar items' `image`
+and `placement`, and a sidebar's `edge`. Its
 [UISCRIPT.md](https://github.com/tonytins/Hudini/blob/main/docs/UISCRIPT.md) says how a Swift host uses it, and how it
 reads `.uis` files into the same model.
 
